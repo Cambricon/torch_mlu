@@ -84,25 +84,59 @@ void CnnlMatmulExHeuristicResult::get(
       return_algo_count));
 }
 
-void CnnlBatchMatmulHeuristicResult::get(
+void CnnlStrideBatchMatmulHeuristicResult::get(
     cnnlHandle_t handle,
-    cnnlMatMulDescriptor_t bmm_desc,
+    bool transa,
+    bool transb,
+    float alpha,
+    float beta,
+    int m,
+    int n,
+    int k,
+    int lda,
+    int ldb,
+    int ldc,
+    int ldd,
+    int64_t stride_a,
+    int64_t stride_b,
+    int64_t stride_c,
+    int64_t stride_d,
+    int* bs_ptr,
+    cnnlStrideBatchMatMulDescriptor_t bmm_desc,
     cnnlTensorDescriptor_t self_desc,
     cnnlTensorDescriptor_t other_desc,
     cnnlTensorDescriptor_t output_desc,
+    cnnlTensorDescriptor_t out_of_place_desc,
     cnnlMatMulPrefer_t preference,
     int requested_algo_count,
     int* return_algo_count) {
   auto hr = mut_hr();
   TORCH_MLU_CHECK(
       requested_algo_count == 1, "requested_algo_count only supports 1.");
-  TORCH_CNNL_CHECK(cnnlGetBatchMatMulAlgoHeuristic(
+  TORCH_CNNL_CHECK(cnnlGetStrideBatchMatMulAlgoHeuristic_v2(
       handle,
       bmm_desc,
       self_desc,
       other_desc,
       output_desc,
-      preference,
+      out_of_place_desc,
+      transa,
+      transb,
+      &alpha,
+      &beta,
+      m,
+      n,
+      k,
+      lda,
+      ldb,
+      ldc,
+      ldd,
+      bs_ptr,
+      &stride_a,
+      &stride_b,
+      &stride_c,
+      &stride_d,
+      nullptr,
       requested_algo_count,
       &hr,
       return_algo_count));

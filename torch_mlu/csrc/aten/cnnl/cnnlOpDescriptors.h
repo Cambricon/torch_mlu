@@ -208,6 +208,18 @@ class CnnlUniqueDescriptor : public CnnlDescriptor<
   void set(bool sorted, int dim, bool return_inverse, bool return_counts);
 };
 
+class CnnlStrideBatchMatmulDescriptor : public CnnlDescriptor<
+                                            cnnlStrideBatchMatMulStruct,
+                                            &cnnlStrideBatchMatMulDescCreate,
+                                            &cnnlStrideBatchMatMulDescDestroy> {
+ public:
+  CnnlStrideBatchMatmulDescriptor() {}
+  void set_attr(
+      cnnlStrideBatchMatMulDescAttribute_t attr,
+      const void* buf,
+      size_t size_in_bytes);
+};
+
 class CnnlUniqueConsecutiveDescriptor
     : public CnnlDescriptor<
           cnnlUniqueConsecutiveStruct,

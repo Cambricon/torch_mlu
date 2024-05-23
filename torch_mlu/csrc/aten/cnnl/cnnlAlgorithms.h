@@ -99,12 +99,12 @@ class CnnlMatmulExAlgorithm : public CnnlAlgorithm<
   CnnlMatmulExAlgorithm() {}
 };
 
-class CnnlBatchMatmulAlgorithm : public CnnlAlgorithm<
-                                     cnnlBatchMatMulAlgoStruct,
-                                     &cnnlBatchMatMulAlgoCreate,
-                                     &cnnlBatchMatMulAlgoDestroy> {
+class CnnlStrideBatchMatmulAlgorithm : public CnnlAlgorithm<
+                                           cnnlStrideBatchMatMulAlgoStruct,
+                                           &cnnlStrideBatchMatMulAlgoCreate,
+                                           &cnnlStrideBatchMatMulAlgoDestroy> {
  public:
-  CnnlBatchMatmulAlgorithm() {}
+  CnnlStrideBatchMatmulAlgorithm() {}
 };
 
 } // namespace torch_mlu

@@ -34,44 +34,54 @@ namespace torch_mlu {
 namespace ops {
 
 void cnnl_baddbmm_out_internal(
-    at::Tensor& result,
+    bool transa,
+    bool transb,
+    int32_t m,
+    int32_t n,
+    int32_t k,
+    int32_t batch_size,
+    const at::Tensor& self,
+    int32_t ldc,
+    int64_t stride_c,
+    const at::Scalar& alpha,
     const at::Tensor& batch1,
+    int32_t lda,
+    int64_t stride_a,
     const at::Tensor& batch2,
-    const at::Scalar& alpha_,
-    const at::Scalar& beta_,
-    bool is_trans_batch1_,
-    bool is_trans_batch2_,
+    int32_t ldb,
+    int64_t stride_b,
+    const at::Scalar& beta,
+    at::Tensor& result,
+    int32_t ldd,
+    int64_t stride_d,
     bool allow_tf32_) {
   // get tensor impl
   auto batch1_impl = getMluTensorImpl(batch1);
   auto batch2_impl = getMluTensorImpl(batch2);
   auto result_impl = getMluTensorImpl(result);
+  auto self_impl = getMluTensorImpl(self);
 
   // create the desc
-  CnnlMatmulDescriptor bmm_desc;
-  CnnlMatmulAlgorithm bmm_algo;
+  CnnlStrideBatchMatmulDescriptor bmm_desc;
+  CnnlStrideBatchMatmulAlgorithm bmm_algo;
   cnnlMatMulPrefer_t preference;
-  CnnlBatchMatmulHeuristicResult bmm_hr;
+  CnnlStrideBatchMatmulHeuristicResult bmm_hr;
 
   int return_algo_count;
   int requested_algo_count = 1;
-  int32_t use_stride = beta_.to<c10::complex<double>>() == 0.0 ? 1 : 0;
-  int32_t is_trans_batch1 = is_trans_batch1_;
-  int32_t is_trans_batch2 = is_trans_batch2_;
+  int32_t use_stride = beta.to<c10::complex<double>>() == 0.0 ? 1 : 0;
+  int32_t is_trans_batch1 = int(transa);
+  int32_t is_trans_batch2 = int(transb);
   int32_t allow_tf32 = allow_tf32_;
 
-  bmm_desc.set_attr(CNNL_MATMUL_ALLOW_TF32, &(allow_tf32), sizeof(int32_t));
-  bmm_desc.set_attr(CNNL_MATMUL_USE_STRIDE, &(use_stride), sizeof(int32_t));
-  bmm_desc.set_attr(
-      CNNL_MATMUL_DESC_TRANSA, &(is_trans_batch1), sizeof(int32_t));
-  bmm_desc.set_attr(
-      CNNL_MATMUL_DESC_TRANSB, &(is_trans_batch2), sizeof(int32_t));
+  bmm_desc.set_attr(CNNL_STRIDE_BMM_ALLOW_TF32, &(allow_tf32), sizeof(int32_t));
 
   auto input_cnnl_type = getCnnlType(batch1_impl);
   auto compute_cnnl_type = input_cnnl_type == CNNL_DTYPE_HALF ||
           input_cnnl_type == CNNL_DTYPE_BFLOAT16
       ? CNNL_DTYPE_FLOAT
       : input_cnnl_type;
+  auto self_desc = getTensorDesc(self_impl, input_cnnl_type, CNNL_LAYOUT_ARRAY);
   auto batch1_desc =
       getTensorDesc(batch1_impl, input_cnnl_type, CNNL_LAYOUT_ARRAY);
   auto batch2_desc =
@@ -79,12 +89,32 @@ void cnnl_baddbmm_out_internal(
   auto result_desc = getTensorDesc(
       result_impl, input_cnnl_type, CNNL_LAYOUT_ARRAY, compute_cnnl_type);
 
+  int batch_size_array = {batch_size};
+  auto alpha_ = alpha.to<float>();
+  auto beta_ = beta.to<float>();
   // get current handle
   auto handle = getCurrentHandle();
 
   bmm_hr.get(
       handle,
+      transa,
+      transb,
+      alpha_,
+      beta_,
+      m,
+      n,
+      k,
+      lda,
+      ldb,
+      ldc,
+      ldd,
+      stride_a,
+      stride_b,
+      stride_c,
+      stride_d,
+      &batch_size_array,
       bmm_desc.desc(),
+      self_desc.get(),
       batch1_desc.get(),
       batch2_desc.get(),
       result_desc.get(),
@@ -93,9 +123,9 @@ void cnnl_baddbmm_out_internal(
       &return_algo_count);
 
   size_t workspace_size = 0;
-
-  TORCH_CNNL_CHECK(cnnlGetBatchMatMulHeuristicResult(
-      bmm_hr.hr(), bmm_algo.mut_algo(), &workspace_size));
+  cnnlStrideBatchMatMulAlgo_t algo_ = bmm_algo.mut_algo();
+  TORCH_CNNL_CHECK(cnnlGetStrideBatchMatMulHeuristicResult(
+      bmm_hr.hr(), &algo_, &workspace_size));
 
   auto workspace_ptr =
       torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
@@ -103,6 +133,7 @@ void cnnl_baddbmm_out_internal(
   auto batch1_ptr = batch1_impl->mlu_data_ptr();
   auto batch2_ptr = batch2_impl->mlu_data_ptr();
   auto result_ptr = result_impl->mlu_data_ptr();
+  auto self_ptr = self_impl->mlu_data_ptr();
 
   // complex are not supported
   AT_DISPATCH_FLOATING_TYPES_AND2(
@@ -111,24 +142,36 @@ void cnnl_baddbmm_out_internal(
       result.scalar_type(),
       "MLU bmm",
       [&] {
-        // More details in Note [beta and alpha type in matmul ops]
-        using math_type = MLUAccumulateType_t<scalar_t>;
-        auto alpha = alpha_.to<math_type>();
-        auto beta = beta_.to<math_type>();
-        TORCH_CNNL_CHECK(cnnlBatchMatMulBCast_v2(
+        TORCH_CNNL_CHECK(cnnlStrideBatchMatMul_v3(
             handle,
             bmm_desc.desc(),
             bmm_algo.algo(),
-            &alpha,
+            transa,
+            transb,
+            m,
+            n,
+            k,
+            &batch_size_array,
+            &alpha_,
             batch1_desc.get(),
             batch1_ptr,
+            lda,
+            &stride_a,
             batch2_desc.get(),
             batch2_ptr,
-            &beta,
+            ldb,
+            &stride_b,
+            &beta_,
+            self_desc.get(),
+            self_ptr,
+            ldc,
+            &stride_c,
+            workspace_ptr.get(),
+            workspace_size,
             result_desc.get(),
             result_ptr,
-            workspace_ptr.get(),
-            workspace_size));
+            ldd,
+            &stride_d));
       });
 }
 } // namespace ops

@@ -71,21 +71,52 @@ void cnnl_addmm_out_internal(
   int32_t is_trans_mat1 = is_trans_mat1_;
   int32_t is_trans_mat2 = is_trans_mat2_;
   int32_t allow_tf32 = allow_tf32_;
+  int64_t ldc = result.strides()[0];
+  int64_t lda = mat1.strides()[0];
+  int64_t ldb = mat2.strides()[0];
+  int64_t m = is_trans_mat1_ ? mat1.sizes()[1] : mat1.sizes()[0];
+  int64_t k = is_trans_mat1_ ? mat1.sizes()[0] : mat1.sizes()[1];
+  int64_t n = is_trans_mat2_ ? mat2.sizes()[0] : mat2.sizes()[1];
+  if (m <= 1) {
+    ldc = std::max<int64_t>(n, 1);
+  }
+
+  if (is_trans_mat1_) {
+    if (k <= 1) {
+      lda = std::max<int64_t>(m, 1);
+    }
+  } else {
+    if (m <= 1) {
+      lda = std::max<int64_t>(k, 1);
+    }
+  }
+
+  if (is_trans_mat2_) {
+    if (n <= 1) {
+      ldb = std::max<int64_t>(k, 1);
+    }
+  } else {
+    if (k <= 1) {
+      ldb = std::max<int64_t>(n, 1);
+    }
+  }
 
   matmul_desc.set_attr(CNNL_MATMUL_ALLOW_TF32, &(allow_tf32), sizeof(int32_t));
   matmul_desc.set_attr(
       CNNL_MATMUL_DESC_TRANSA, &(is_trans_mat1), sizeof(int32_t));
   matmul_desc.set_attr(
       CNNL_MATMUL_DESC_TRANSB, &(is_trans_mat2), sizeof(int32_t));
+  matmul_desc.set_attr(CNNL_MATMUL_DESC_LDA, &(lda), sizeof(int32_t));
+  matmul_desc.set_attr(CNNL_MATMUL_DESC_LDB, &(ldb), sizeof(int32_t));
+  matmul_desc.set_attr(CNNL_MATMUL_DESC_LDC, &(ldc), sizeof(int32_t));
 
-  if (&result != &self) {
+  if (beta_.to<float>() != 0.0f) {
     // for addmm
     int32_t use_beta = 1;
     matmul_desc.set_attr(CNNL_MATMUL_USE_BETA, &(use_beta), sizeof(int32_t));
   }
 
   // TODO(xushuo): CNNL_MATMUL_DESC_TRANSC will be supported in the future
-
   // get descriptor
   auto input_cnnl_type = getCnnlType(self_impl);
   auto self_desc = getTensorDesc(self_impl, input_cnnl_type);
