@@ -13,7 +13,7 @@ import torch_mlu
 from torch.cuda._memory_viz import profile_plot, _profile_to_snapshot
 from torch.cuda._memory_viz import trace_plot
 from torch.cuda._memory_viz import segment_plot
-from torch.testing._internal.common_utils import IS_WINDOWS, IS_LINUX, parametrize
+from torch.testing._internal.common_utils import IS_WINDOWS, IS_LINUX, IS_X86, parametrize
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
@@ -418,7 +418,7 @@ class TestCachingAllocator(TestCase):
         finally:
             torch.mlu.memory._record_memory_history(None)
 
-    @unittest.skipIf(not IS_LINUX, "cpp contexts are linux only")
+    @unittest.skipIf(not (IS_LINUX and IS_X86), "cpp contexts are linux and x86 arch only")
     @testinfo()
     def test_memory_snapshot_with_cpp(self):
         self._download_flamegraph()
@@ -453,7 +453,7 @@ class TestCachingAllocator(TestCase):
         self.assertTrue("test_memory_profiler_viz" in plot)
         self.assertTrue("category" in plot)
 
-    @unittest.skipIf(not IS_LINUX, "cpp contexts are linux only")
+    @unittest.skipIf(not (IS_LINUX and IS_X86), "cpp contexts are linux and x86 arch only")
     @testinfo()
     def test_memory_plots(self):
         for context, stacks in (
@@ -487,7 +487,7 @@ class TestCachingAllocator(TestCase):
             finally:
                 torch.mlu.memory._record_memory_history(None)
 
-    @unittest.skipIf(not IS_LINUX, "cpp contexts are linux only")
+    @unittest.skipIf(not (IS_LINUX and IS_X86), "cpp contexts are linux and x86 arch only")
     @testinfo()
     def test_memory_plots_free_stack(self):
         for context in ["alloc", "all", "state"]:

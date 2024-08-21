@@ -168,7 +168,7 @@ fetch_cn_dep_func() {
 
   if [ -f "/etc/os-release" ]; then
     source /etc/os-release
-    if [ ${OS_TYPE} == "ubuntu" ] || [ ${OS_TYPE} == "debian" ] || [ ${OS_TYPE} == "centos" ] || [ ${OS_TYPE} == "kylin" ]; then
+    if [ ${OS_TYPE} == "ubuntu" ] || [ ${OS_TYPE} == "debian" ] || [ ${OS_TYPE} == "centos" ] || [ ${OS_TYPE} == "kylin" ] || [ ${OS_TYPE} == "anolis" ]; then
       echo "[NOTICE] Manual Specify OS ${OS_TYPE}:${OS_VERSION} ......"
     else
       OS_TYPE=${ID}
@@ -300,7 +300,7 @@ fetch_cn_dep_func() {
           popd
         fi
       done
-      elif [ ${OS_TYPE} == "kylin" ]; then
+    elif [ ${OS_TYPE} == "kylin" ]; then
       for (( i =0; i < ${n}; i++))
       do
         PACKAGE_DIST="Kylin"
@@ -338,6 +338,45 @@ fetch_cn_dep_func() {
           PACKAGE_PATH=${PACKAGE_SERVER}"/"${arr_branch[$i]}"/"${arr_modules[$i]}"/"${PACKAGE_OS}"/"${PACKAGE_ARCH}"/"${PACKAGE_DIST}"/"${PACKAGE_DIST_VER}"/"${arr_vers[$i]}"/"${PACKAGE_FILE}
           echo "PACKAGE_PATH: $PACKAGE_PATH"
           wget ${PACKAGE_PATH} -P ${PACKAGE_DOWNLOAD_DIR}
+          pushd ${PACKAGE_EXTRACT_DIR}
+          rpm2cpio ../${PACKAGE_DOWNLOAD_DIR}/$PACKAGE_FILE | cpio -div
+          popd
+        fi
+      done
+    elif [ ${OS_TYPE} == "anolis" ]; then
+      for (( i =0; i < ${n}; i++))
+      do
+        PACKAGE_DIST="Anolis"
+        PACKAGE_DIST_VER=${OS_VERSION}
+        if [ ${arr_modules[$i]} == "cntoolkit" ]; then
+          PACKAGE_FILE=${arr_modules[$i]}"-"${arr_vers[$i]}".an8.${PACKAGE_ARCH}.rpm"
+          echo "PACKAGE_FILE: $PACKAGE_FILE"
+          PACKAGE_PATH=${PACKAGE_SERVER}"/"${arr_branch[$i]}"/"${arr_modules[$i]}"/"${PACKAGE_OS}"/"${PACKAGE_ARCH}"/"${PACKAGE_DIST}"/"${PACKAGE_DIST_VER}"/"${arr_vers[$i]}"/"${PACKAGE_FILE}
+          echo "PACKAGE_PATH: $PACKAGE_PATH"
+          MODULE_PURE_VER=`echo ${arr_vers[$i]} | cut -d '-' -f 1`
+          wget ${PACKAGE_PATH} -P ${PACKAGE_DOWNLOAD_DIR} -nv
+          # extract in extract dir
+          pushd ${PACKAGE_DOWNLOAD_DIR}
+          rpm2cpio $PACKAGE_FILE | cpio -div
+          popd
+          pushd ${PACKAGE_EXTRACT_DIR}
+          for filename in ../${PACKAGE_DOWNLOAD_DIR}/var/${arr_modules[$i]}"-"$MODULE_PURE_VER/*.rpm; do
+            rpm2cpio $filename | cpio -div
+          done
+          popd
+        else
+          if [[ ${arr_branch[$i]} == "daily" || ${arr_branch[$i]} == "temp" ]];then
+            VERSION_FILE_PATH=${PACKAGE_SERVER}"/"${arr_branch[$i]}"/"${arr_modules[$i]}"/"${PACKAGE_OS}"/"${PACKAGE_ARCH}"/"${PACKAGE_DIST}"/"${PACKAGE_DIST_VER}"/"${arr_vers[$i]}"/version.txt"
+            wget $VERSION_FILE_PATH -P ${PACKAGE_DOWNLOAD_DIR} -nv
+            PACKAGE_FILE=$(cat ${PACKAGE_DOWNLOAD_DIR}"/version.txt" | awk -F '=' '{if($1=="file") print $2}')
+            rm ${PACKAGE_DOWNLOAD_DIR}"/version.txt"
+          else
+            PACKAGE_FILE=${arr_modules[$i]}"-"${arr_vers[$i]}".an8.${PACKAGE_ARCH}.rpm"
+          fi
+          echo "PACKAGE_FILE: $PACKAGE_FILE"
+          PACKAGE_PATH=${PACKAGE_SERVER}"/"${arr_branch[$i]}"/"${arr_modules[$i]}"/"${PACKAGE_OS}"/"${PACKAGE_ARCH}"/"${PACKAGE_DIST}"/"${PACKAGE_DIST_VER}"/"${arr_vers[$i]}"/"${PACKAGE_FILE}
+          echo "PACKAGE_PATH: $PACKAGE_PATH"
+          wget ${PACKAGE_PATH} -P ${PACKAGE_DOWNLOAD_DIR} -nv
           pushd ${PACKAGE_EXTRACT_DIR}
           rpm2cpio ../${PACKAGE_DOWNLOAD_DIR}/$PACKAGE_FILE | cpio -div
           popd
