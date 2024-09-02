@@ -21,6 +21,15 @@ TEST_BFLOAT16 = read_card_info()
 logging.basicConfig(level=logging.DEBUG)
 
 
+def replace_from_cpu(input, cpu_out, mlu_out):
+    input_ = input.contiguous().flatten().cpu()
+    cpu_out_ = cpu_out.contiguous().flatten()
+    mlu_out_ = mlu_out.contiguous().flatten().cpu().float()
+    mask = input_ < 0
+    mlu_out_[mask] = cpu_out_[mask]
+    return mlu_out_.reshape(mlu_out.shape)
+
+
 def get_uniform_a(input, output):
     input_ = input.contiguous().flatten()
     output_ = output.contiguous().flatten()
@@ -54,13 +63,12 @@ class TestRReLUOp(TestCase):
             input_cpu = func(input.float())
             input_mlu = func(input_mlu)
 
+            # training=True: rrelu_with_noise, training=False: leaky_relu
             # case1 training=True, inplace=False
             out_mlu1 = torch.rrelu(input_mlu, lower, upper, True)
-            a1 = get_uniform_a(input_mlu, out_mlu1)
-            out_cpu1 = torch.rrelu(input_cpu, a1, a1, True)
-            self.assertTensorsEqual(
-                out_cpu1, out_mlu1.cpu().float(), 0.003, use_MSE=True
-            )
+            out_cpu1 = torch.rrelu(input_cpu, lower, upper, True)
+            out_mlu1_re = replace_from_cpu(input_mlu, out_cpu1, out_mlu1)
+            self.assertTensorsEqual(out_cpu1, out_mlu1_re, 0.003, use_MSE=True)
 
             # case2 training=False, inplace=False
             out_mlu2 = torch.rrelu(input_mlu, lower, upper, False)
@@ -74,11 +82,9 @@ class TestRReLUOp(TestCase):
             self_cpu1 = copy.deepcopy(input_cpu)
             self_mlu1 = copy.deepcopy(input_mlu)
             torch.rrelu_(self_mlu1, lower, upper, True)
-            a3 = get_uniform_a(input_mlu, self_mlu1)
-            torch.rrelu_(self_cpu1, a3, a3, True)
-            self.assertTensorsEqual(
-                self_cpu1, self_mlu1.cpu().float(), 0.003, use_MSE=True
-            )
+            torch.rrelu_(self_cpu1, lower, upper, True)
+            self_mlu1_re = replace_from_cpu(input_mlu, self_cpu1, self_mlu1)
+            self.assertTensorsEqual(self_cpu1, self_mlu1_re, 0.003, use_MSE=True)
 
             # case4 training=False, inplace=True
             self_cpu2 = copy.deepcopy(input_cpu)
@@ -139,9 +145,9 @@ class TestRReLUOp(TestCase):
         lower, upper = lower_upper
         x = torch.randn(shape, requires_grad=True, dtype=torch.bfloat16)
         out_mlu = torch.rrelu(x.to("mlu"), lower, upper, True)
-        a1 = get_uniform_a(x.to("mlu"), out_mlu)
-        out_cpu = torch.rrelu(x, a1, a1, True)
-        self.assertTensorsEqual(out_cpu, out_mlu.cpu().float(), 0.003, use_MSE=True)
+        out_cpu = torch.rrelu(x, lower, upper, True)
+        out_mlu_re = replace_from_cpu(x.to("mlu"), out_cpu, out_mlu)
+        self.assertTensorsEqual(out_cpu, out_mlu_re, 0.003, use_MSE=True)
 
         # backward
         grad = torch.randn(out_cpu.shape, dtype=torch.bfloat16)

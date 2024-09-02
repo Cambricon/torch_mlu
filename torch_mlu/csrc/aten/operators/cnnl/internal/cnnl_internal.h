@@ -1546,5 +1546,13 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_bwd_internal(
     const at::Tensor& philox_seed,
     const at::Tensor& philox_offset,
     const int64_t custom_mask_type);
+
+void cnnl_rrelu_with_noise_internal(
+    at::Tensor& output,
+    const at::Tensor& noise,
+    const at::Tensor& self,
+    c10::optional<at::Generator> gen,
+    const float lower,
+    const float upper);
 } // namespace ops
 } // namespace torch_mlu
