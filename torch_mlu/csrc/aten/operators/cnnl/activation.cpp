@@ -558,6 +558,7 @@ at::Tensor& cnnl_threshold_backward_out(
 // aten::rrelu will dispatch to aten::rrelu_with_noise
 static void rrelu_out_mlu(
     at::Tensor& output,
+    const at::Tensor& noise,
     const at::Tensor& self,
     at::Scalar lower,
     at::Scalar upper,
@@ -570,18 +571,19 @@ static void rrelu_out_mlu(
       self.scalar_type(),
       "cnnl_rrelu",
       [&] {
-        at::Scalar negative_slope;
         if (training) {
-          auto gen = at::get_generator_or_default<at::CPUGeneratorImpl>(
-              generator, at::detail::getDefaultCPUGenerator());
-          at::uniform_real_distribution<double> uniform(
-              lower.to<scalar_t>(), upper.to<scalar_t>());
-          const scalar_t r = (scalar_t)uniform(gen);
-          negative_slope = at::Scalar(r);
+          cnnl_rrelu_with_noise_internal(
+              output,
+              noise,
+              self,
+              generator,
+              lower.to<float>(),
+              upper.to<float>());
         } else {
+          at::Scalar negative_slope;
           negative_slope = (lower.to<float>() + upper.to<float>()) / 2;
+          at::leaky_relu_out(output, self, negative_slope);
         }
-        at::leaky_relu_out(output, self, negative_slope);
       });
 }
 
@@ -612,7 +614,7 @@ at::Tensor& cnnl_rrelu_with_noise_out(
       output_arg{out, "out", 3};
   checkAllSameMLU(
       "cnnl_rrelu_with_noise_out", {self_arg, noise_arg, output_arg});
-  rrelu_out_mlu(out, self, lower, upper, training, generator);
+  rrelu_out_mlu(out, noise, self, lower, upper, training, generator);
   return out;
 }
 at::Tensor& cnnl_rrelu_with_noise_(

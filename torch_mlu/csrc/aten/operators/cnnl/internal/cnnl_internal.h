@@ -1603,5 +1603,12 @@ void cnnl_foreach_binary_tensors_op(
     const cnnlForeachOpMode_t& op_mode,
     const cnnlForeachBinaryMode_t& mode);
 
+void cnnl_rrelu_with_noise_internal(
+    at::Tensor& output,
+    const at::Tensor& noise,
+    const at::Tensor& self,
+    std::optional<at::Generator> gen,
+    const float lower,
+    const float upper);
 } // namespace ops
 } // namespace torch_mlu
