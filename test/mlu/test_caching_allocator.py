@@ -105,7 +105,7 @@ class TestCachingAllocator(TestCase):
                 #       memory checks below to fail.
                 return torch.mlu.FloatTensor(
                     *size
-                )  # torch.tensor(*size, dtype=torch.float32, device='mlu')
+                )  # use torch.tensor may include extra memory usage.
 
         def assert_change(comp=1, empty_cache=False, reset_peak=False):
             # comp > 0: increased
@@ -341,9 +341,33 @@ class TestCachingAllocator(TestCase):
         tensor.fill_(1)
         self.assertTrue((tensor == 1).all())
 
+    @staticmethod
+    def _download_flamegraph(flamegraph_script=None):
+        if flamegraph_script is None:
+            flamegraph_script = f"/tmp/{os.getuid()}_flamegraph.pl"
+        if not os.path.exists(flamegraph_script):
+            print(f"Try downloading flamegraph.pl...")
+            import urllib.request
+            import subprocess
+
+            try:
+                urllib.request.urlretrieve(
+                    "http://gitmirror.cambricon.com/git_repos/cache/flamegraph.pl",
+                    flamegraph_script,
+                )
+            except:
+                urllib.request.urlretrieve(
+                    "https://raw.githubusercontent.com/brendangregg/FlameGraph/master/flamegraph.pl",
+                    flamegraph_script,
+                )
+            finally:
+                print(f"Downloading flamegraph.pl to: {flamegraph_script}")
+                subprocess.check_call(["chmod", "+x", flamegraph_script])
+
     # @unittest.skip("not test")
     @testinfo()
     def test_memory_snapshot(self):
+        self._download_flamegraph()
         try:
             torch.mlu.memory.empty_cache()
             torch.mlu.memory._record_memory_history("state", stacks="python")
@@ -397,6 +421,7 @@ class TestCachingAllocator(TestCase):
     @unittest.skipIf(not IS_LINUX, "cpp contexts are linux only")
     @testinfo()
     def test_memory_snapshot_with_cpp(self):
+        self._download_flamegraph()
         try:
             torch.mlu.memory.empty_cache()
             torch.mlu.memory._record_memory_history("state", stacks="all")
@@ -490,6 +515,7 @@ class TestCachingAllocator(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_memory_snapshot_script(self):
+        self._download_flamegraph()
         try:
             torch.mlu.memory.empty_cache()
             torch.mlu.memory._record_memory_history("state", stacks="python")
