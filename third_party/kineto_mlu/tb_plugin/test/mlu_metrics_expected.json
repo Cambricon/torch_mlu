@@ -1,0 +1,2922 @@
+
+{
+  "schemaVersion": 1,
+  "deviceProperties": [
+    {
+      "id": 0, "name": "MLU370", "totalMem(MiB)": 24576,
+      "computeMajor": 3, "computeMinor": 0,
+      "FP16ComputingSupported": 1, "INT4ComputingSupported": 1,
+      "INT8ComputingSupported": 1, "BF16ComputingSupported": 1,
+      "TF32ComputingSupported": 0, "clusterCount": 8,
+      "maxClusterCountPerUnionTask": 32, "McorePerCluster": 4,
+      "maxQuadrantCount": 2, "maxUnionTypePerQuadrant": 4,
+      "maxClusterPerUnionLimitTask": 8
+    },
+    {
+      "id": 1, "name": "MLU370", "totalMem(MiB)": 24576,
+      "computeMajor": 3, "computeMinor": 0,
+      "FP16ComputingSupported": 1, "INT4ComputingSupported": 1,
+      "INT8ComputingSupported": 1, "BF16ComputingSupported": 1,
+      "TF32ComputingSupported": 0, "clusterCount": 8,
+      "maxClusterCountPerUnionTask": 32, "McorePerCluster": 4,
+      "maxQuadrantCount": 2, "maxUnionTypePerQuadrant": 4,
+      "maxClusterPerUnionLimitTask": 8
+    },
+    {
+      "id": 2, "name": "MLU370", "totalMem(MiB)": 24576,
+      "computeMajor": 3, "computeMinor": 0,
+      "FP16ComputingSupported": 1, "INT4ComputingSupported": 1,
+      "INT8ComputingSupported": 1, "BF16ComputingSupported": 1,
+      "TF32ComputingSupported": 0, "clusterCount": 8,
+      "maxClusterCountPerUnionTask": 32, "McorePerCluster": 4,
+      "maxQuadrantCount": 2, "maxUnionTypePerQuadrant": 4,
+      "maxClusterPerUnionLimitTask": 8
+    },
+    {
+      "id": 3, "name": "MLU370", "totalMem(MiB)": 24576,
+      "computeMajor": 3, "computeMinor": 0,
+      "FP16ComputingSupported": 1, "INT4ComputingSupported": 1,
+      "INT8ComputingSupported": 1, "BF16ComputingSupported": 1,
+      "TF32ComputingSupported": 0, "clusterCount": 8,
+      "maxClusterCountPerUnionTask": 32, "McorePerCluster": 4,
+      "maxQuadrantCount": 2, "maxUnionTypePerQuadrant": 4,
+      "maxClusterPerUnionLimitTask": 8
+    },
+    {
+      "id": 4, "name": "MLU370", "totalMem(MiB)": 24576,
+      "computeMajor": 3, "computeMinor": 0,
+      "FP16ComputingSupported": 1, "INT4ComputingSupported": 1,
+      "INT8ComputingSupported": 1, "BF16ComputingSupported": 1,
+      "TF32ComputingSupported": 0, "clusterCount": 8,
+      "maxClusterCountPerUnionTask": 32, "McorePerCluster": 4,
+      "maxQuadrantCount": 2, "maxUnionTypePerQuadrant": 4,
+      "maxClusterPerUnionLimitTask": 8
+    },
+    {
+      "id": 5, "name": "MLU370", "totalMem(MiB)": 24576,
+      "computeMajor": 3, "computeMinor": 0,
+      "FP16ComputingSupported": 1, "INT4ComputingSupported": 1,
+      "INT8ComputingSupported": 1, "BF16ComputingSupported": 1,
+      "TF32ComputingSupported": 0, "clusterCount": 8,
+      "maxClusterCountPerUnionTask": 32, "McorePerCluster": 4,
+      "maxQuadrantCount": 2, "maxUnionTypePerQuadrant": 4,
+      "maxClusterPerUnionLimitTask": 8
+    },
+    {
+      "id": 6, "name": "MLU370", "totalMem(MiB)": 24576,
+      "computeMajor": 3, "computeMinor": 0,
+      "FP16ComputingSupported": 1, "INT4ComputingSupported": 1,
+      "INT8ComputingSupported": 1, "BF16ComputingSupported": 1,
+      "TF32ComputingSupported": 0, "clusterCount": 8,
+      "maxClusterCountPerUnionTask": 32, "McorePerCluster": 4,
+      "maxQuadrantCount": 2, "maxUnionTypePerQuadrant": 4,
+      "maxClusterPerUnionLimitTask": 8
+    },
+    {
+      "id": 7, "name": "MLU370", "totalMem(MiB)": 24576,
+      "computeMajor": 3, "computeMinor": 0,
+      "FP16ComputingSupported": 1, "INT4ComputingSupported": 1,
+      "INT8ComputingSupported": 1, "BF16ComputingSupported": 1,
+      "TF32ComputingSupported": 0, "clusterCount": 8,
+      "maxClusterCountPerUnionTask": 32, "McorePerCluster": 4,
+      "maxQuadrantCount": 2, "maxUnionTypePerQuadrant": 4,
+      "maxClusterPerUnionLimitTask": 8
+    }
+  ],
+  "traceEvents": [
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918183261752, "dur": 776,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 1,
+      "Profiler Event Index": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918183261793, "dur": 34,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 2,
+      "Profiler Event Index": 1
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918183261844, "dur": 682,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 3,
+      "Profiler Event Index": 2
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918183262691, "dur": 6072658,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 4,
+      "Profiler Event Index": 3, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918183262717, "dur": 6072626,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 5,
+      "Profiler Event Index": 4, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918183262738, "dur": 6071654,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 6,
+      "Profiler Event Index": 5
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918189334449, "dur": 889,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 7,
+      "Profiler Event Index": 6
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335548, "dur": 40,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 8,
+      "Profiler Event Index": 7
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335559, "dur": 12,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 9,
+      "Profiler Event Index": 8
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335576, "dur": 12,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 10,
+      "Profiler Event Index": 9
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335653, "dur": 117,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 11,
+      "Profiler Event Index": 10, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335660, "dur": 110,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 12,
+      "Profiler Event Index": 11, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335672, "dur": 11,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 13,
+      "Profiler Event Index": 12
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335686, "dur": 83,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 14,
+      "Profiler Event Index": 13
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::add", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335872, "dur": 351,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 15,
+      "Profiler Event Index": 14, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::resize_", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335939, "dur": 5,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 16,
+      "Profiler Event Index": 15
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336265, "dur": 128,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 17,
+      "Profiler Event Index": 16, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336277, "dur": 115,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 18,
+      "Profiler Event Index": 17, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336284, "dur": 9,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 19,
+      "Profiler Event Index": 18
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336295, "dur": 96,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 20,
+      "Profiler Event Index": 19
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336436, "dur": 937981,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 21,
+      "Profiler Event Index": 20
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336440, "dur": 15,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 22,
+      "Profiler Event Index": 21
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336458, "dur": 937954,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 23,
+      "Profiler Event Index": 22
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918190274460, "dur": 31185,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 24,
+      "Profiler Event Index": 23, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918190274469, "dur": 31176,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 25,
+      "Profiler Event Index": 24, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918190274479, "dur": 192,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 26,
+      "Profiler Event Index": 25
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918190274675, "dur": 30968,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 27,
+      "Profiler Event Index": 26
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322573, "dur": 30,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 28,
+      "Profiler Event Index": 27
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322580, "dur": 11,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 29,
+      "Profiler Event Index": 28
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322594, "dur": 9,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 30,
+      "Profiler Event Index": 29
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322619, "dur": 148,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 31,
+      "Profiler Event Index": 30, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322634, "dur": 132,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 32,
+      "Profiler Event Index": 31, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322641, "dur": 15,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 33,
+      "Profiler Event Index": 32
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322659, "dur": 106,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 34,
+      "Profiler Event Index": 33
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322780, "dur": 10,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 35,
+      "Profiler Event Index": 34
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322782, "dur": 4,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 36,
+      "Profiler Event Index": 35
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322787, "dur": 2,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 37,
+      "Profiler Event Index": 36
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322795, "dur": 76,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 38,
+      "Profiler Event Index": 37, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322796, "dur": 75,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 39,
+      "Profiler Event Index": 38, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322799, "dur": 5,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 40,
+      "Profiler Event Index": 39
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322805, "dur": 65,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 41,
+      "Profiler Event Index": 40
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::add", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322880, "dur": 81,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 42,
+      "Profiler Event Index": 41, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::resize_", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322901, "dur": 2,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 43,
+      "Profiler Event Index": 42
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322967, "dur": 82,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 44,
+      "Profiler Event Index": 43, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322968, "dur": 81,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 45,
+      "Profiler Event Index": 44, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322970, "dur": 4,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 46,
+      "Profiler Event Index": 45
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322975, "dur": 73,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 47,
+      "Profiler Event Index": 46
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918190323066, "dur": 940550,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 48,
+      "Profiler Event Index": 47
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918190323068, "dur": 16,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 49,
+      "Profiler Event Index": 48
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918190323086, "dur": 940523,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 50,
+      "Profiler Event Index": 49
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918191263653, "dur": 31113,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 51,
+      "Profiler Event Index": 50, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918191263661, "dur": 31105,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 52,
+      "Profiler Event Index": 51, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918191263669, "dur": 183,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 53,
+      "Profiler Event Index": 52
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918191263855, "dur": 30909,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 54,
+      "Profiler Event Index": 53
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311511, "dur": 29,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 55,
+      "Profiler Event Index": 54
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311518, "dur": 10,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 56,
+      "Profiler Event Index": 55
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311532, "dur": 8,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 57,
+      "Profiler Event Index": 56
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311556, "dur": 142,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 58,
+      "Profiler Event Index": 57, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311571, "dur": 127,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 59,
+      "Profiler Event Index": 58, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311577, "dur": 11,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 60,
+      "Profiler Event Index": 59
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311590, "dur": 107,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 61,
+      "Profiler Event Index": 60
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311710, "dur": 9,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 62,
+      "Profiler Event Index": 61
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311711, "dur": 3,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 63,
+      "Profiler Event Index": 62
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311716, "dur": 3,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 64,
+      "Profiler Event Index": 63
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311725, "dur": 80,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 65,
+      "Profiler Event Index": 64, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311727, "dur": 78,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 66,
+      "Profiler Event Index": 65, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311729, "dur": 6,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 67,
+      "Profiler Event Index": 66
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311736, "dur": 68,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 68,
+      "Profiler Event Index": 67
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::add", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311813, "dur": 85,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 69,
+      "Profiler Event Index": 68, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::resize_", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311834, "dur": 2,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 70,
+      "Profiler Event Index": 69
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311904, "dur": 81,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 71,
+      "Profiler Event Index": 70, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311905, "dur": 80,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 72,
+      "Profiler Event Index": 71, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311907, "dur": 4,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 73,
+      "Profiler Event Index": 72
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311912, "dur": 72,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 74,
+      "Profiler Event Index": 73
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918191312001, "dur": 938551,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 75,
+      "Profiler Event Index": 74
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918191312003, "dur": 13,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 76,
+      "Profiler Event Index": 75
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918191312018, "dur": 938526,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 77,
+      "Profiler Event Index": 76
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918192250593, "dur": 31026,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 78,
+      "Profiler Event Index": 77, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918192250602, "dur": 31016,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 79,
+      "Profiler Event Index": 78, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918192250617, "dur": 19,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 80,
+      "Profiler Event Index": 79
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918192250639, "dur": 30978,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 81,
+      "Profiler Event Index": 80
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298512, "dur": 28,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 82,
+      "Profiler Event Index": 81
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298520, "dur": 10,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 83,
+      "Profiler Event Index": 82
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298533, "dur": 6,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 84,
+      "Profiler Event Index": 83
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298555, "dur": 141,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 85,
+      "Profiler Event Index": 84, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298570, "dur": 126,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 86,
+      "Profiler Event Index": 85, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298577, "dur": 11,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 87,
+      "Profiler Event Index": 86
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298590, "dur": 105,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 88,
+      "Profiler Event Index": 87
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298708, "dur": 9,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 89,
+      "Profiler Event Index": 88
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298709, "dur": 2,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 90,
+      "Profiler Event Index": 89
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298712, "dur": 4,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 91,
+      "Profiler Event Index": 90
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298721, "dur": 75,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 92,
+      "Profiler Event Index": 91, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298723, "dur": 72,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 93,
+      "Profiler Event Index": 92, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298725, "dur": 5,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 94,
+      "Profiler Event Index": 93
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298731, "dur": 63,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 95,
+      "Profiler Event Index": 94
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::add", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298804, "dur": 81,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 96,
+      "Profiler Event Index": 95, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::resize_", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298825, "dur": 1,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 97,
+      "Profiler Event Index": 96
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298891, "dur": 78,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 98,
+      "Profiler Event Index": 97, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298892, "dur": 77,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 99,
+      "Profiler Event Index": 98, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298894, "dur": 3,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 100,
+      "Profiler Event Index": 99
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298898, "dur": 70,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 101,
+      "Profiler Event Index": 100
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298984, "dur": 940681,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 102,
+      "Profiler Event Index": 101
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298986, "dur": 16,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 103,
+      "Profiler Event Index": 102
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918192299003, "dur": 940655,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 104,
+      "Profiler Event Index": 103
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918193239707, "dur": 30841,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 105,
+      "Profiler Event Index": 104, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918193239716, "dur": 30831,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 106,
+      "Profiler Event Index": 105, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918193239725, "dur": 16,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 107,
+      "Profiler Event Index": 106
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918193239744, "dur": 30801,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 108,
+      "Profiler Event Index": 107
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287429, "dur": 24,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 109,
+      "Profiler Event Index": 108
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287434, "dur": 10,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 110,
+      "Profiler Event Index": 109
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287446, "dur": 7,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 111,
+      "Profiler Event Index": 110
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287468, "dur": 139,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 112,
+      "Profiler Event Index": 111, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287483, "dur": 123,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 113,
+      "Profiler Event Index": 112, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287490, "dur": 10,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 114,
+      "Profiler Event Index": 113
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287502, "dur": 103,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 115,
+      "Profiler Event Index": 114
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287617, "dur": 10,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 116,
+      "Profiler Event Index": 115
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287619, "dur": 3,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 117,
+      "Profiler Event Index": 116
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287623, "dur": 4,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 118,
+      "Profiler Event Index": 117
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287633, "dur": 75,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 119,
+      "Profiler Event Index": 118, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287635, "dur": 73,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 120,
+      "Profiler Event Index": 119, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287637, "dur": 4,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 121,
+      "Profiler Event Index": 120
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287642, "dur": 65,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 122,
+      "Profiler Event Index": 121
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::add", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287717, "dur": 86,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 123,
+      "Profiler Event Index": 122, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::resize_", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287737, "dur": 2,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 124,
+      "Profiler Event Index": 123
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287809, "dur": 79,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 125,
+      "Profiler Event Index": 124, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287811, "dur": 77,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 126,
+      "Profiler Event Index": 125, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287813, "dur": 3,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 127,
+      "Profiler Event Index": 126
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287817, "dur": 70,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 128,
+      "Profiler Event Index": 127
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::randn", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287902, "dur": 937758,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 129,
+      "Profiler Event Index": 128
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287904, "dur": 16,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 130,
+      "Profiler Event Index": 129
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::normal_", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287921, "dur": 937734,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 131,
+      "Profiler Event Index": 130
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::to", "pid": 133464, "tid": 133464,
+    "ts": 1698918194225699, "dur": 31056,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 132,
+      "Profiler Event Index": 131, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::_to_copy", "pid": 133464, "tid": 133464,
+    "ts": 1698918194225706, "dur": 31048,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 133,
+      "Profiler Event Index": 132, "Fwd thread id": 0, "Sequence number": 0
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::empty_strided", "pid": 133464, "tid": 133464,
+    "ts": 1698918194225715, "dur": 18,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 134,
+      "Profiler Event Index": 133
+    }
+  },
+  {
+    "ph": "X", "cat": "cpu_op", "name": "aten::copy_", "pid": 133464, "tid": 133464,
+    "ts": 1698918194225735, "dur": 31018,
+    "args": {
+      "Trace name": "PyTorch Profiler", "Trace iteration": 0,
+      "External id": 135,
+      "Profiler Event Index": 134
+    }
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMalloc", "pid": 133464, "tid": 133464,
+    "ts": 1698918189334332, "dur": 20,
+    "args": {
+      "External id": 6,
+      "cbid": 69, "correlation": 1
+    }
+  },
+  {
+    "ph": "f", "id": 1, "pid": 133464, "tid": 133464, "ts": 1698918189334332,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335229, "dur": 42,
+    "args": {
+      "External id": 7,
+      "cbid": 80, "correlation": 4
+    }
+  },
+  {
+    "ph": "s", "id": 4, "pid": 133464, "tid": 133464, "ts": 1698918189335229,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335212, "dur": 60,
+    "args": {
+      "External id": 7,
+      "cbid": 170, "correlation": 3
+    }
+  },
+  {
+    "ph": "f", "id": 3, "pid": 133464, "tid": 133464, "ts": 1698918189335212,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335280, "dur": 53,
+    "args": {
+      "External id": 7,
+      "cbid": 239, "correlation": 5
+    }
+  },
+  {
+    "ph": "f", "id": 5, "pid": 133464, "tid": 133464, "ts": 1698918189335280,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335703, "dur": 13,
+    "args": {
+      "External id": 14,
+      "cbid": 80, "correlation": 9
+    }
+  },
+  {
+    "ph": "s", "id": 9, "pid": 133464, "tid": 133464, "ts": 1698918189335703,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335701, "dur": 17,
+    "args": {
+      "External id": 14,
+      "cbid": 170, "correlation": 8
+    }
+  },
+  {
+    "ph": "f", "id": 8, "pid": 133464, "tid": 133464, "ts": 1698918189335701,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335724, "dur": 42,
+    "args": {
+      "External id": 14,
+      "cbid": 239, "correlation": 10
+    }
+  },
+  {
+    "ph": "f", "id": 10, "pid": 133464, "tid": 133464, "ts": 1698918189335724,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnnlCreate", "pid": 133464, "tid": 133464,
+    "ts": 1698918189335964, "dur": 94,
+    "args": {
+      "External id": 15,
+      "cbid": 14, "correlation": 12
+    }
+  },
+  {
+    "ph": "f", "id": 12, "pid": 133464, "tid": 133464, "ts": 1698918189335964,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnnlGetOpTensorWorkspaceSize_v2", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336094, "dur": 48,
+    "args": {
+      "External id": 15,
+      "cbid": 281, "correlation": 25
+    }
+  },
+  {
+    "ph": "f", "id": 25, "pid": 133464, "tid": 133464, "ts": 1698918189336094,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnInvokeKernel", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336168, "dur": 43,
+    "args": {
+      "External id": 15,
+      "cbid": 91, "correlation": 28
+    }
+  },
+  {
+    "ph": "s", "id": 28, "pid": 133464, "tid": 133464, "ts": 1698918189336168,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnnlOpTensor", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336147, "dur": 66,
+    "args": {
+      "External id": 15,
+      "cbid": 157, "correlation": 26
+    }
+  },
+  {
+    "ph": "f", "id": 26, "pid": 133464, "tid": 133464, "ts": 1698918189336147,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyDtoHAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336308, "dur": 12,
+    "args": {
+      "External id": 20,
+      "cbid": 81, "correlation": 35
+    }
+  },
+  {
+    "ph": "s", "id": 35, "pid": 133464, "tid": 133464, "ts": 1698918189336308,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336307, "dur": 15,
+    "args": {
+      "External id": 20,
+      "cbid": 170, "correlation": 34
+    }
+  },
+  {
+    "ph": "f", "id": 34, "pid": 133464, "tid": 133464, "ts": 1698918189336307,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918189336328, "dur": 62,
+    "args": {
+      "External id": 20,
+      "cbid": 239, "correlation": 36
+    }
+  },
+  {
+    "ph": "f", "id": 36, "pid": 133464, "tid": 133464, "ts": 1698918189336328,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMalloc", "pid": 133464, "tid": 133464,
+    "ts": 1698918190274493, "dur": 163,
+    "args": {
+      "External id": 26,
+      "cbid": 69, "correlation": 37
+    }
+  },
+  {
+    "ph": "f", "id": 37, "pid": 133464, "tid": 133464, "ts": 1698918190274493,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190274698, "dur": 21,
+    "args": {
+      "External id": 27,
+      "cbid": 80, "correlation": 40
+    }
+  },
+  {
+    "ph": "s", "id": 40, "pid": 133464, "tid": 133464, "ts": 1698918190274698,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190274695, "dur": 26,
+    "args": {
+      "External id": 27,
+      "cbid": 170, "correlation": 39
+    }
+  },
+  {
+    "ph": "f", "id": 39, "pid": 133464, "tid": 133464, "ts": 1698918190274695,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190274731, "dur": 30908,
+    "args": {
+      "External id": 27,
+      "cbid": 239, "correlation": 41
+    }
+  },
+  {
+    "ph": "f", "id": 41, "pid": 133464, "tid": 133464, "ts": 1698918190274731,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190305641, "dur": 1,
+    "args": {
+      "External id": 27,
+      "cbid": 239, "correlation": 42
+    }
+  },
+  {
+    "ph": "f", "id": 42, "pid": 133464, "tid": 133464, "ts": 1698918190305641,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322681, "dur": 27,
+    "args": {
+      "External id": 34,
+      "cbid": 80, "correlation": 45
+    }
+  },
+  {
+    "ph": "s", "id": 45, "pid": 133464, "tid": 133464, "ts": 1698918190322681,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322676, "dur": 34,
+    "args": {
+      "External id": 34,
+      "cbid": 170, "correlation": 44
+    }
+  },
+  {
+    "ph": "f", "id": 44, "pid": 133464, "tid": 133464, "ts": 1698918190322676,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322721, "dur": 41,
+    "args": {
+      "External id": 34,
+      "cbid": 239, "correlation": 46
+    }
+  },
+  {
+    "ph": "f", "id": 46, "pid": 133464, "tid": 133464, "ts": 1698918190322721,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322811, "dur": 7,
+    "args": {
+      "External id": 41,
+      "cbid": 80, "correlation": 50
+    }
+  },
+  {
+    "ph": "s", "id": 50, "pid": 133464, "tid": 133464, "ts": 1698918190322811,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322810, "dur": 9,
+    "args": {
+      "External id": 41,
+      "cbid": 170, "correlation": 49
+    }
+  },
+  {
+    "ph": "f", "id": 49, "pid": 133464, "tid": 133464, "ts": 1698918190322810,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322823, "dur": 44,
+    "args": {
+      "External id": 41,
+      "cbid": 239, "correlation": 51
+    }
+  },
+  {
+    "ph": "f", "id": 51, "pid": 133464, "tid": 133464, "ts": 1698918190322823,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnInvokeKernel", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322940, "dur": 14,
+    "args": {
+      "External id": 42,
+      "cbid": 91, "correlation": 68
+    }
+  },
+  {
+    "ph": "s", "id": 68, "pid": 133464, "tid": 133464, "ts": 1698918190322940,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnnlOpTensor", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322928, "dur": 29,
+    "args": {
+      "External id": 42,
+      "cbid": 157, "correlation": 66
+    }
+  },
+  {
+    "ph": "f", "id": 66, "pid": 133464, "tid": 133464, "ts": 1698918190322928,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyDtoHAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322982, "dur": 7,
+    "args": {
+      "External id": 47,
+      "cbid": 81, "correlation": 75
+    }
+  },
+  {
+    "ph": "s", "id": 75, "pid": 133464, "tid": 133464, "ts": 1698918190322982,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322981, "dur": 9,
+    "args": {
+      "External id": 47,
+      "cbid": 170, "correlation": 74
+    }
+  },
+  {
+    "ph": "f", "id": 74, "pid": 133464, "tid": 133464, "ts": 1698918190322981,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918190322994, "dur": 53,
+    "args": {
+      "External id": 47,
+      "cbid": 239, "correlation": 76
+    }
+  },
+  {
+    "ph": "f", "id": 76, "pid": 133464, "tid": 133464, "ts": 1698918190322994,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMalloc", "pid": 133464, "tid": 133464,
+    "ts": 1698918191263683, "dur": 157,
+    "args": {
+      "External id": 53,
+      "cbid": 69, "correlation": 77
+    }
+  },
+  {
+    "ph": "f", "id": 77, "pid": 133464, "tid": 133464, "ts": 1698918191263683,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191263877, "dur": 20,
+    "args": {
+      "External id": 54,
+      "cbid": 80, "correlation": 80
+    }
+  },
+  {
+    "ph": "s", "id": 80, "pid": 133464, "tid": 133464, "ts": 1698918191263877,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191263874, "dur": 23,
+    "args": {
+      "External id": 54,
+      "cbid": 170, "correlation": 79
+    }
+  },
+  {
+    "ph": "f", "id": 79, "pid": 133464, "tid": 133464, "ts": 1698918191263874,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191263907, "dur": 30852,
+    "args": {
+      "External id": 54,
+      "cbid": 239, "correlation": 81
+    }
+  },
+  {
+    "ph": "f", "id": 81, "pid": 133464, "tid": 133464, "ts": 1698918191263907,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191294762, "dur": 1,
+    "args": {
+      "External id": 54,
+      "cbid": 239, "correlation": 82
+    }
+  },
+  {
+    "ph": "f", "id": 82, "pid": 133464, "tid": 133464, "ts": 1698918191294762,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311610, "dur": 25,
+    "args": {
+      "External id": 61,
+      "cbid": 80, "correlation": 85
+    }
+  },
+  {
+    "ph": "s", "id": 85, "pid": 133464, "tid": 133464, "ts": 1698918191311610,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311607, "dur": 31,
+    "args": {
+      "External id": 61,
+      "cbid": 170, "correlation": 84
+    }
+  },
+  {
+    "ph": "f", "id": 84, "pid": 133464, "tid": 133464, "ts": 1698918191311607,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311649, "dur": 44,
+    "args": {
+      "External id": 61,
+      "cbid": 239, "correlation": 86
+    }
+  },
+  {
+    "ph": "f", "id": 86, "pid": 133464, "tid": 133464, "ts": 1698918191311649,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311695, "dur": 1,
+    "args": {
+      "External id": 61,
+      "cbid": 239, "correlation": 87
+    }
+  },
+  {
+    "ph": "f", "id": 87, "pid": 133464, "tid": 133464, "ts": 1698918191311695,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311744, "dur": 7,
+    "args": {
+      "External id": 68,
+      "cbid": 80, "correlation": 90
+    }
+  },
+  {
+    "ph": "s", "id": 90, "pid": 133464, "tid": 133464, "ts": 1698918191311744,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311743, "dur": 8,
+    "args": {
+      "External id": 68,
+      "cbid": 170, "correlation": 89
+    }
+  },
+  {
+    "ph": "f", "id": 89, "pid": 133464, "tid": 133464, "ts": 1698918191311743,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311755, "dur": 46,
+    "args": {
+      "External id": 68,
+      "cbid": 239, "correlation": 91
+    }
+  },
+  {
+    "ph": "f", "id": 91, "pid": 133464, "tid": 133464, "ts": 1698918191311755,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnInvokeKernel", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311875, "dur": 17,
+    "args": {
+      "External id": 69,
+      "cbid": 91, "correlation": 108
+    }
+  },
+  {
+    "ph": "s", "id": 108, "pid": 133464, "tid": 133464, "ts": 1698918191311875,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnnlOpTensor", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311863, "dur": 30,
+    "args": {
+      "External id": 69,
+      "cbid": 157, "correlation": 106
+    }
+  },
+  {
+    "ph": "f", "id": 106, "pid": 133464, "tid": 133464, "ts": 1698918191311863,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyDtoHAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311919, "dur": 7,
+    "args": {
+      "External id": 74,
+      "cbid": 81, "correlation": 115
+    }
+  },
+  {
+    "ph": "s", "id": 115, "pid": 133464, "tid": 133464, "ts": 1698918191311919,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311918, "dur": 9,
+    "args": {
+      "External id": 74,
+      "cbid": 170, "correlation": 114
+    }
+  },
+  {
+    "ph": "f", "id": 114, "pid": 133464, "tid": 133464, "ts": 1698918191311918,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918191311931, "dur": 52,
+    "args": {
+      "External id": 74,
+      "cbid": 239, "correlation": 116
+    }
+  },
+  {
+    "ph": "f", "id": 116, "pid": 133464, "tid": 133464, "ts": 1698918191311931,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192250663, "dur": 30,
+    "args": {
+      "External id": 81,
+      "cbid": 80, "correlation": 119
+    }
+  },
+  {
+    "ph": "s", "id": 119, "pid": 133464, "tid": 133464, "ts": 1698918192250663,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192250659, "dur": 37,
+    "args": {
+      "External id": 81,
+      "cbid": 170, "correlation": 118
+    }
+  },
+  {
+    "ph": "f", "id": 118, "pid": 133464, "tid": 133464, "ts": 1698918192250659,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192250708, "dur": 30904,
+    "args": {
+      "External id": 81,
+      "cbid": 239, "correlation": 120
+    }
+  },
+  {
+    "ph": "f", "id": 120, "pid": 133464, "tid": 133464, "ts": 1698918192250708,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192281615, "dur": 1,
+    "args": {
+      "External id": 81,
+      "cbid": 239, "correlation": 121
+    }
+  },
+  {
+    "ph": "f", "id": 121, "pid": 133464, "tid": 133464, "ts": 1698918192281615,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298611, "dur": 25,
+    "args": {
+      "External id": 88,
+      "cbid": 80, "correlation": 124
+    }
+  },
+  {
+    "ph": "s", "id": 124, "pid": 133464, "tid": 133464, "ts": 1698918192298611,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298607, "dur": 31,
+    "args": {
+      "External id": 88,
+      "cbid": 170, "correlation": 123
+    }
+  },
+  {
+    "ph": "f", "id": 123, "pid": 133464, "tid": 133464, "ts": 1698918192298607,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298649, "dur": 43,
+    "args": {
+      "External id": 88,
+      "cbid": 239, "correlation": 125
+    }
+  },
+  {
+    "ph": "f", "id": 125, "pid": 133464, "tid": 133464, "ts": 1698918192298649,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298737, "dur": 6,
+    "args": {
+      "External id": 95,
+      "cbid": 80, "correlation": 129
+    }
+  },
+  {
+    "ph": "s", "id": 129, "pid": 133464, "tid": 133464, "ts": 1698918192298737,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298737, "dur": 7,
+    "args": {
+      "External id": 95,
+      "cbid": 170, "correlation": 128
+    }
+  },
+  {
+    "ph": "f", "id": 128, "pid": 133464, "tid": 133464, "ts": 1698918192298737,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298748, "dur": 43,
+    "args": {
+      "External id": 95,
+      "cbid": 239, "correlation": 130
+    }
+  },
+  {
+    "ph": "f", "id": 130, "pid": 133464, "tid": 133464, "ts": 1698918192298748,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnInvokeKernel", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298863, "dur": 15,
+    "args": {
+      "External id": 96,
+      "cbid": 91, "correlation": 147
+    }
+  },
+  {
+    "ph": "s", "id": 147, "pid": 133464, "tid": 133464, "ts": 1698918192298863,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnnlOpTensor", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298851, "dur": 30,
+    "args": {
+      "External id": 96,
+      "cbid": 157, "correlation": 145
+    }
+  },
+  {
+    "ph": "f", "id": 145, "pid": 133464, "tid": 133464, "ts": 1698918192298851,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyDtoHAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298905, "dur": 7,
+    "args": {
+      "External id": 101,
+      "cbid": 81, "correlation": 154
+    }
+  },
+  {
+    "ph": "s", "id": 154, "pid": 133464, "tid": 133464, "ts": 1698918192298905,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298904, "dur": 8,
+    "args": {
+      "External id": 101,
+      "cbid": 170, "correlation": 153
+    }
+  },
+  {
+    "ph": "f", "id": 153, "pid": 133464, "tid": 133464, "ts": 1698918192298904,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918192298917, "dur": 50,
+    "args": {
+      "External id": 101,
+      "cbid": 239, "correlation": 155
+    }
+  },
+  {
+    "ph": "f", "id": 155, "pid": 133464, "tid": 133464, "ts": 1698918192298917,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193239769, "dur": 30,
+    "args": {
+      "External id": 108,
+      "cbid": 80, "correlation": 158
+    }
+  },
+  {
+    "ph": "s", "id": 158, "pid": 133464, "tid": 133464, "ts": 1698918193239769,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193239765, "dur": 36,
+    "args": {
+      "External id": 108,
+      "cbid": 170, "correlation": 157
+    }
+  },
+  {
+    "ph": "f", "id": 157, "pid": 133464, "tid": 133464, "ts": 1698918193239765,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193239814, "dur": 30726,
+    "args": {
+      "External id": 108,
+      "cbid": 239, "correlation": 159
+    }
+  },
+  {
+    "ph": "f", "id": 159, "pid": 133464, "tid": 133464, "ts": 1698918193239814,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193270543, "dur": 1,
+    "args": {
+      "External id": 108,
+      "cbid": 239, "correlation": 160
+    }
+  },
+  {
+    "ph": "f", "id": 160, "pid": 133464, "tid": 133464, "ts": 1698918193270543,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287523, "dur": 24,
+    "args": {
+      "External id": 115,
+      "cbid": 80, "correlation": 163
+    }
+  },
+  {
+    "ph": "s", "id": 163, "pid": 133464, "tid": 133464, "ts": 1698918193287523,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287519, "dur": 30,
+    "args": {
+      "External id": 115,
+      "cbid": 170, "correlation": 162
+    }
+  },
+  {
+    "ph": "f", "id": 162, "pid": 133464, "tid": 133464, "ts": 1698918193287519,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287561, "dur": 41,
+    "args": {
+      "External id": 115,
+      "cbid": 239, "correlation": 164
+    }
+  },
+  {
+    "ph": "f", "id": 164, "pid": 133464, "tid": 133464, "ts": 1698918193287561,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287604, "dur": 1,
+    "args": {
+      "External id": 115,
+      "cbid": 239, "correlation": 165
+    }
+  },
+  {
+    "ph": "f", "id": 165, "pid": 133464, "tid": 133464, "ts": 1698918193287604,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287648, "dur": 6,
+    "args": {
+      "External id": 122,
+      "cbid": 80, "correlation": 168
+    }
+  },
+  {
+    "ph": "s", "id": 168, "pid": 133464, "tid": 133464, "ts": 1698918193287648,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287648, "dur": 7,
+    "args": {
+      "External id": 122,
+      "cbid": 170, "correlation": 167
+    }
+  },
+  {
+    "ph": "f", "id": 167, "pid": 133464, "tid": 133464, "ts": 1698918193287648,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287658, "dur": 46,
+    "args": {
+      "External id": 122,
+      "cbid": 239, "correlation": 169
+    }
+  },
+  {
+    "ph": "f", "id": 169, "pid": 133464, "tid": 133464, "ts": 1698918193287658,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287706, "dur": 1,
+    "args": {
+      "External id": 122,
+      "cbid": 239, "correlation": 170
+    }
+  },
+  {
+    "ph": "f", "id": 170, "pid": 133464, "tid": 133464, "ts": 1698918193287706,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnInvokeKernel", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287781, "dur": 15,
+    "args": {
+      "External id": 123,
+      "cbid": 91, "correlation": 186
+    }
+  },
+  {
+    "ph": "s", "id": 186, "pid": 133464, "tid": 133464, "ts": 1698918193287781,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnnlOpTensor", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287769, "dur": 29,
+    "args": {
+      "External id": 123,
+      "cbid": 157, "correlation": 184
+    }
+  },
+  {
+    "ph": "f", "id": 184, "pid": 133464, "tid": 133464, "ts": 1698918193287769,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyDtoHAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287824, "dur": 6,
+    "args": {
+      "External id": 128,
+      "cbid": 81, "correlation": 193
+    }
+  },
+  {
+    "ph": "s", "id": 193, "pid": 133464, "tid": 133464, "ts": 1698918193287824,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287823, "dur": 8,
+    "args": {
+      "External id": 128,
+      "cbid": 170, "correlation": 192
+    }
+  },
+  {
+    "ph": "f", "id": 192, "pid": 133464, "tid": 133464, "ts": 1698918193287823,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918193287835, "dur": 51,
+    "args": {
+      "External id": 128,
+      "cbid": 239, "correlation": 194
+    }
+  },
+  {
+    "ph": "f", "id": 194, "pid": 133464, "tid": 133464, "ts": 1698918193287835,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnMemcpyHtoDAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918194225760, "dur": 32,
+    "args": {
+      "External id": 135,
+      "cbid": 80, "correlation": 197
+    }
+  },
+  {
+    "ph": "s", "id": 197, "pid": 133464, "tid": 133464, "ts": 1698918194225760,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtMemcpyAsync", "pid": 133464, "tid": 133464,
+    "ts": 1698918194225755, "dur": 41,
+    "args": {
+      "External id": 135,
+      "cbid": 170, "correlation": 196
+    }
+  },
+  {
+    "ph": "f", "id": 196, "pid": 133464, "tid": 133464, "ts": 1698918194225755,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918194225808, "dur": 30940,
+    "args": {
+      "External id": 135,
+      "cbid": 239, "correlation": 198
+    }
+  },
+  {
+    "ph": "f", "id": 198, "pid": 133464, "tid": 133464, "ts": 1698918194225808,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtQueueSync", "pid": 133464, "tid": 133464,
+    "ts": 1698918194256751, "dur": 1,
+    "args": {
+      "External id": 135,
+      "cbid": 239, "correlation": 199
+    }
+  },
+  {
+    "ph": "f", "id": 199, "pid": 133464, "tid": 133464, "ts": 1698918194256751,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918189335306, "dur": 7,
+    "args": {
+      "External id": 7,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 4,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.05711022272986865
+    }
+  },
+  {
+    "ph": "f", "id": 4, "pid": 0, "tid": 1, "ts": 1698918189335306,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918189335751, "dur": 2,
+    "args": {
+      "External id": 14,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 9,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.1386481802426343
+    }
+  },
+  {
+    "ph": "f", "id": 9, "pid": 0, "tid": 1, "ts": 1698918189335751,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "kernel", "name": "void MLUOpTensorElementParam110<float, float, float, float>(float const*, float const*, float*, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned int, unsigned int, cnnlOpTensorDesc_t, bool)", "pid": 0, "tid": 1,
+    "ts": 1698918189336194, "dur": 4,
+    "args": {
+      "External id": 15,
+      
+      "queued": 0, "device": 0, "context": 1,
+      "stream": 1, "correlation": 28,
+      "kernel type": "UNION",
+      "dimx": 4, "dimy": 1, "dimz": 1,
+      "tasktopo": 0,
+      "tasktopo_node": 0
+    }
+  },
+  {
+    "ph": "f", "id": 28, "pid": 0, "tid": 1, "ts": 1698918189336194,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy DtoH", "pid": 0, "tid": 1,
+    "ts": 1698918189336364, "dur": 14,
+    "args": {
+      "External id": 20,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 35,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.027016074564365798
+    }
+  },
+  {
+    "ph": "f", "id": 35, "pid": 0, "tid": 1, "ts": 1698918189336364,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918190274757, "dur": 30866,
+    "args": {
+      "External id": 27,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 40,
+      "bytes": 409600000, "memory bandwidth (GB/s)": 13.270129159566695
+    }
+  },
+  {
+    "ph": "f", "id": 40, "pid": 0, "tid": 1, "ts": 1698918190274757,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918190322742, "dur": 8,
+    "args": {
+      "External id": 34,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 45,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.0468384074941452
+    }
+  },
+  {
+    "ph": "f", "id": 45, "pid": 0, "tid": 1, "ts": 1698918190322742,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918190322853, "dur": 2,
+    "args": {
+      "External id": 41,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 50,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.14260249554367202
+    }
+  },
+  {
+    "ph": "f", "id": 50, "pid": 0, "tid": 1, "ts": 1698918190322853,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "kernel", "name": "void MLUOpTensorElementParam110<float, float, float, float>(float const*, float const*, float*, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned int, unsigned int, cnnlOpTensorDesc_t, bool)", "pid": 0, "tid": 1,
+    "ts": 1698918190322956, "dur": 4,
+    "args": {
+      "External id": 42,
+      
+      "queued": 0, "device": 0, "context": 1,
+      "stream": 1, "correlation": 68,
+      "kernel type": "UNION",
+      "dimx": 4, "dimy": 1, "dimz": 1,
+      "tasktopo": 0,
+      "tasktopo_node": 0
+    }
+  },
+  {
+    "ph": "f", "id": 68, "pid": 0, "tid": 1, "ts": 1698918190322956,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy DtoH", "pid": 0, "tid": 1,
+    "ts": 1698918190323025, "dur": 11,
+    "args": {
+      "External id": 47,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 75,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.03559668950787577
+    }
+  },
+  {
+    "ph": "f", "id": 75, "pid": 0, "tid": 1, "ts": 1698918190323025,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918191263933, "dur": 30810,
+    "args": {
+      "External id": 54,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 80,
+      "bytes": 409600000, "memory bandwidth (GB/s)": 13.294193358589704
+    }
+  },
+  {
+    "ph": "f", "id": 80, "pid": 0, "tid": 1, "ts": 1698918191263933,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918191311672, "dur": 8,
+    "args": {
+      "External id": 61,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 85,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.04841442749939482
+    }
+  },
+  {
+    "ph": "f", "id": 85, "pid": 0, "tid": 1, "ts": 1698918191311672,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918191311785, "dur": 2,
+    "args": {
+      "External id": 68,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 90,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.14064697609001406
+    }
+  },
+  {
+    "ph": "f", "id": 90, "pid": 0, "tid": 1, "ts": 1698918191311785,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "kernel", "name": "void MLUOpTensorElementParam110<float, float, float, float>(float const*, float const*, float*, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned int, unsigned int, cnnlOpTensorDesc_t, bool)", "pid": 0, "tid": 1,
+    "ts": 1698918191311891, "dur": 3,
+    "args": {
+      "External id": 69,
+      
+      "queued": 0, "device": 0, "context": 1,
+      "stream": 1, "correlation": 108,
+      "kernel type": "UNION",
+      "dimx": 4, "dimy": 1, "dimz": 1,
+      "tasktopo": 0,
+      "tasktopo_node": 0
+    }
+  },
+  {
+    "ph": "f", "id": 108, "pid": 0, "tid": 1, "ts": 1698918191311891,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy DtoH", "pid": 0, "tid": 1,
+    "ts": 1698918191311962, "dur": 10,
+    "args": {
+      "External id": 74,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 115,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.03861376580751038
+    }
+  },
+  {
+    "ph": "f", "id": 115, "pid": 0, "tid": 1, "ts": 1698918191311962,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918192250731, "dur": 30865,
+    "args": {
+      "External id": 81,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 119,
+      "bytes": 409600000, "memory bandwidth (GB/s)": 13.270409905013219
+    }
+  },
+  {
+    "ph": "f", "id": 119, "pid": 0, "tid": 1, "ts": 1698918192250731,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918192298671, "dur": 5,
+    "args": {
+      "External id": 88,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 124,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.06744225257123589
+    }
+  },
+  {
+    "ph": "f", "id": 124, "pid": 0, "tid": 1, "ts": 1698918192298671,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918192298777, "dur": 2,
+    "args": {
+      "External id": 95,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 129,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.15772870662460567
+    }
+  },
+  {
+    "ph": "f", "id": 129, "pid": 0, "tid": 1, "ts": 1698918192298777,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "kernel", "name": "void MLUOpTensorElementParam110<float, float, float, float>(float const*, float const*, float*, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned int, unsigned int, cnnlOpTensorDesc_t, bool)", "pid": 0, "tid": 1,
+    "ts": 1698918192298880, "dur": 3,
+    "args": {
+      "External id": 96,
+      
+      "queued": 0, "device": 0, "context": 1,
+      "stream": 1, "correlation": 147,
+      "kernel type": "UNION",
+      "dimx": 4, "dimy": 1, "dimz": 1,
+      "tasktopo": 0,
+      "tasktopo_node": 0
+    }
+  },
+  {
+    "ph": "f", "id": 147, "pid": 0, "tid": 1, "ts": 1698918192298880,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy DtoH", "pid": 0, "tid": 1,
+    "ts": 1698918192298945, "dur": 10,
+    "args": {
+      "External id": 101,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 154,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.03681546249424758
+    }
+  },
+  {
+    "ph": "f", "id": 154, "pid": 0, "tid": 1, "ts": 1698918192298945,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918193239840, "dur": 30686,
+    "args": {
+      "External id": 108,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 158,
+      "bytes": 409600000, "memory bandwidth (GB/s)": 13.34790914584005
+    }
+  },
+  {
+    "ph": "f", "id": 158, "pid": 0, "tid": 1, "ts": 1698918193239840,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918193287582, "dur": 5,
+    "args": {
+      "External id": 115,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 163,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.06856359273225918
+    }
+  },
+  {
+    "ph": "f", "id": 163, "pid": 0, "tid": 1, "ts": 1698918193287582,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918193287690, "dur": 2,
+    "args": {
+      "External id": 122,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 168,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.1569242840329541
+    }
+  },
+  {
+    "ph": "f", "id": 168, "pid": 0, "tid": 1, "ts": 1698918193287690,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "kernel", "name": "void MLUOpTensorElementParam110<float, float, float, float>(float const*, float const*, float*, unsigned int, unsigned int, unsigned int, unsigned int, unsigned long, unsigned long, unsigned long, unsigned int, unsigned int, cnnlOpTensorDesc_t, bool)", "pid": 0, "tid": 1,
+    "ts": 1698918193287798, "dur": 3,
+    "args": {
+      "External id": 123,
+      
+      "queued": 0, "device": 0, "context": 1,
+      "stream": 1, "correlation": 186,
+      "kernel type": "UNION",
+      "dimx": 4, "dimy": 1, "dimz": 1,
+      "tasktopo": 0,
+      "tasktopo_node": 0
+    }
+  },
+  {
+    "ph": "f", "id": 186, "pid": 0, "tid": 1, "ts": 1698918193287798,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy DtoH", "pid": 0, "tid": 1,
+    "ts": 1698918193287865, "dur": 10,
+    "args": {
+      "External id": 128,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 193,
+      "bytes": 400, "memory bandwidth (GB/s)": 0.036924213052709313
+    }
+  },
+  {
+    "ph": "f", "id": 193, "pid": 0, "tid": 1, "ts": 1698918193287865,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_memcpy", "name": "Memcpy HtoD", "pid": 0, "tid": 1,
+    "ts": 1698918194225832, "dur": 30901,
+    "args": {
+      "External id": 135,
+      
+      "device": 0, "context": 1,
+      "stream": 1, "correlation": 197,
+      "bytes": 409600000, "memory bandwidth (GB/s)": 13.25495649940741
+    }
+  },
+  {
+    "ph": "f", "id": 197, "pid": 0, "tid": 1, "ts": 1698918194225832,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "ph": "X", "cat": "mlu_runtime", "name": "cnrtSyncDevice", "pid": 133464, "tid": 133464,
+    "ts": 1698918194273754, "dur": 7,
+    "args": {
+      "External id": 200,
+      "cbid": 199, "correlation": 200
+    }
+  },
+  {
+    "ph": "f", "id": 200, "pid": 133464, "tid": 133464, "ts": 1698918194273754,
+    "cat": "async_cpu_to_mlu", "name": "async_mlu", "bp": "e"
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 133464, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 133464, "tid": 0,
+    "args": {
+      "labels": "CPU"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 133464, "tid": 0,
+    "args": {
+      "sort_index": 133464
+    }
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 0, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 0, "tid": 0,
+    "args": {
+      "labels": "MLU 0"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 0, "tid": 0,
+    "args": {
+      "sort_index": 16777216
+    }
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 1, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 1, "tid": 0,
+    "args": {
+      "labels": "MLU 1"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 1, "tid": 0,
+    "args": {
+      "sort_index": 16777217
+    }
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 2, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 2, "tid": 0,
+    "args": {
+      "labels": "MLU 2"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 2, "tid": 0,
+    "args": {
+      "sort_index": 16777218
+    }
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 3, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 3, "tid": 0,
+    "args": {
+      "labels": "MLU 3"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 3, "tid": 0,
+    "args": {
+      "sort_index": 16777219
+    }
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 4, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 4, "tid": 0,
+    "args": {
+      "labels": "MLU 4"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 4, "tid": 0,
+    "args": {
+      "sort_index": 16777220
+    }
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 5, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 5, "tid": 0,
+    "args": {
+      "labels": "MLU 5"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 5, "tid": 0,
+    "args": {
+      "sort_index": 16777221
+    }
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 6, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 6, "tid": 0,
+    "args": {
+      "labels": "MLU 6"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 6, "tid": 0,
+    "args": {
+      "sort_index": 16777222
+    }
+  },
+  {
+    "name": "process_name", "ph": "M", "ts": 1698918183261529, "pid": 7, "tid": 0,
+    "args": {
+      "name": "python"
+    }
+  },
+  {
+    "name": "process_labels", "ph": "M", "ts": 1698918183261529, "pid": 7, "tid": 0,
+    "args": {
+      "labels": "MLU 7"
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 7, "tid": 0,
+    "args": {
+      "sort_index": 16777223
+    }
+  },
+  {
+    "name": "thread_name", "ph": "M", "ts": 1698918183261529, "pid": 0, "tid": 1,
+    "args": {
+      "name": "stream 1 "
+    }
+  },
+  {
+    "name": "thread_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 0, "tid": 1,
+    "args": {
+      "sort_index": 1
+    }
+  },
+  {
+    "name": "thread_name", "ph": "M", "ts": 1698918183261529, "pid": 133464, "tid": 133464,
+    "args": {
+      "name": "thread 133464 (python)"
+    }
+  },
+  {
+    "name": "thread_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 133464, "tid": 133464,
+    "args": {
+      "sort_index": 133464
+    }
+  },
+  {
+    "name": "thread_name", "ph": "M", "ts": 1698918183261529, "pid": 133464, "tid": 133464,
+    "args": {
+      "name": "thread 133464 (python)"
+    }
+  },
+  {
+    "name": "thread_sort_index", "ph": "M", "ts": 1698918183261529, "pid": 133464, "tid": 133464,
+    "args": {
+      "sort_index": 133464
+    }
+  },
+  {
+    "ph": "X", "cat": "Trace", "ts": 1698918183261415, "dur": 11012366,
+    "pid": "Spans", "tid": "PyTorch Profiler",
+    "name": "PyTorch Profiler (0)",
+    "args": {
+      "Op count": 0
+    }
+  },
+  {
+    "name": "process_sort_index", "ph": "M", "ts": 1698918183261415,
+    "pid": "Spans", "tid": 0,
+    "args": {
+      "sort_index": 536870912
+    }
+  },
+  {
+    "name": "Iteration Start: PyTorch Profiler", "ph": "i", "s": "g",
+    "pid": "Traces", "tid": "Trace PyTorch Profiler", "ts": 1698918183261415
+  },
+  {
+    "name": "Record Window End", "ph": "i", "s": "g",
+    "pid": "", "tid": "", "ts": 1698918194274213
+  },
+  {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187223005, "args":{"MLU Utilization":1}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187223005, "args":{"MLU Utilization":0}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187223005, "args":{"MLU Utilization":0.0}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187224005, "args":{"MLU Utilization":0.0}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187225005, "args":{"MLU Utilization":0.6}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187226005, "args":{"MLU Utilization":0.5}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187227005, "args":{"MLU Utilization":0.6}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187228005, "args":{"MLU Utilization":0.2}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187229005, "args":{"MLU Utilization":0.6}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187230005, "args":{"MLU Utilization":0.1}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187231005, "args":{"MLU Utilization":0.5}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187232005, "args":{"MLU Utilization":0.2}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187233005, "args":{"MLU Utilization":0.3}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187234005, "args":{"MLU Utilization":0.4}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187235005, "args":{"MLU Utilization":0.4219409282700422}}, {"ph":"C", "name":"MLU 0 Utilization", "pid":0, "ts":1621401187236901, "args":{"MLU Utilization":0}}]
+}

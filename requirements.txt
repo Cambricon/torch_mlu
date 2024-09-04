@@ -1,0 +1,13 @@
+numpy==1.26.4
+pytest==7.4.3
+scipy>=1.12.0
+pillow
+pandas
+typing
+cpplint
+pylint
+librosa
+unittest-xml-reporting
+chardet
+pyyaml
+einops

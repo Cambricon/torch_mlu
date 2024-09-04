@@ -1,0 +1,139 @@
+{
+    "test_tanh": [
+        {
+            "CaseName": "test_tanh_backward",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlActivationBackward",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tanh_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlActivationBackward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tanh_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tanh_permute",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tanh_tensor_scalar_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tanh_tensor_scalar_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tanh_tensor_scalar_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        }
+    ]
+}

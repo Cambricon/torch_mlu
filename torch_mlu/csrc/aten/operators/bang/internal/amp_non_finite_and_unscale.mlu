@@ -1,0 +1,601 @@
+/*************************************************************************
+ * Copyright (C) [2019-2022] by Cambricon, Inc.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+#include <stdio.h>
+#include "common_util.h"
+#include "amp_non_finite_and_unscale.h"
+
+#define REM_FOR_STACK (128 * 1024)
+#if __BANG_ARCH__
+#define MAX_NRAM_SIZE (__MLU_NRAM_SIZE__ * 1024 - REM_FOR_STACK)
+#else
+#define MAX_NRAM_SIZE (384 * 1024)
+#endif
+
+#define PAD_UP(x, y) (x / y + (int)(x % y > 0)) * y
+#define PAD_DOWN(x, y) ((x / y) * y)
+#define CEIL_ALIGN(x, align) (((x) + (align) - 1) / (align) * (align))
+
+#define ALIGN_NUM 128
+#define NFU_ALIGN_SIZE 128
+#define CYCLE_BUF_NUM 64
+#define FOUND_INF_NRAM_SIZE 64
+#define INV_SCALE_NRAM_SIZE 64
+#define FOUND_INF_VALUE_SIZE 4
+
+
+__nram__ char nram_buff[MAX_NRAM_SIZE];
+
+template <typename T>
+__mlu_func__ void loadInput(char *nram_input,
+                            T *dram_input[],
+                            const int32_t size,
+                            const int32_t list_length,
+                            uint64_t *tensor_elem_num,
+                            int32_t *tensor_id,
+                            uint64_t *tensor_offset_num) {
+  int32_t size_cpy = size;
+  int32_t nram_offset = 0;
+  size_t size_rem = 0;
+
+  for (int32_t i = *tensor_id; i < list_length; ++i) {
+    if (size_cpy <= 0) {
+      break;
+    }
+    size_rem = (tensor_elem_num[i] - *tensor_offset_num) * (sizeof(T));
+    if (size_rem > size_cpy) {
+      __memcpy_async((void *)(nram_input + nram_offset),
+                     (void *)(dram_input[i] + *tensor_offset_num), size_cpy, GDRAM2NRAM);
+
+      *tensor_offset_num += (size_cpy / int32_t(sizeof(T)));
+      break;
+    }
+    __memcpy_async((void *)(nram_input + nram_offset), (void *)(dram_input[i] + *tensor_offset_num),
+                   size_rem, GDRAM2NRAM);
+
+    *tensor_id += 1;
+    *tensor_offset_num = 0;
+    size_cpy -= size_rem;
+    nram_offset += size_rem;
+  }
+}
+
+template <typename T>
+__mlu_func__ void storeOutput(T *dram_output[],
+                              char *nram_output,
+                              const int32_t size,
+                              const int32_t list_length,
+                              uint64_t *tensor_elem_num,
+                              int32_t *tensor_id,
+                              uint64_t *tensor_offset_num) {
+  int32_t size_cpy = size;
+  int32_t nram_offset = 0;
+  size_t size_rem = 0;
+
+  for (int32_t i = *tensor_id; i < list_length; ++i) {
+    if (size_cpy <= 0) {
+      break;
+    }
+    size_rem = (tensor_elem_num[i] - *tensor_offset_num) * sizeof(T);
+    if (size_rem > size_cpy) {
+      __memcpy_async(dram_output[i] + *tensor_offset_num, nram_output + nram_offset, size_cpy,
+                     NRAM2GDRAM);
+
+      *tensor_offset_num += (size_cpy / sizeof(T));
+      break;
+    }
+
+    __memcpy_async(dram_output[i] + *tensor_offset_num, nram_output + nram_offset, size_rem,
+                   NRAM2GDRAM);
+    *tensor_id += 1;
+    *tensor_offset_num = 0;
+    size_cpy -= size_rem;
+    nram_offset += size_rem;
+  }
+}
+
+template <typename T>
+__mlu_func__ void checkAmpFiniteAndNan(T *ram_input,
+                                       float *found_inf,
+                                       T *ram_temp1,
+                                       const int32_t deal_num) {
+#if __BANG_ARCH__ > 300
+  if (sizeof(T) == sizeof(half)) {
+    __bang_band_scalar(ram_temp1, ram_input, (half)INFINITY, deal_num);
+    __bang_eq_scalar(ram_temp1, ram_temp1, (half)INFINITY, deal_num);
+  } else {
+    __bang_band_scalar(ram_temp1, ram_input, (float)INFINITY, deal_num);
+    __bang_eq_scalar(ram_temp1, ram_temp1, (float)INFINITY, deal_num);
+  }
+  *((uint32_t *)ram_temp1) = __bang_findfirst1((T *)ram_temp1, deal_num);
+  if (*(uint32_t *)ram_temp1 != -1) {
+    *found_inf = 1.0;
+    return;
+  }
+# endif
+}
+
+template <typename T>
+__mlu_func__ void computeAmpUnscale(T *ram_output,
+                                    T *ram_input,
+                                    float *ram_inv_scale,
+                                    const int32_t deal_num) {
+  if (*ram_inv_scale != 1.0) {
+    if (sizeof(T) == sizeof(half)) {
+      __bang_half2float((float *)ram_output, (half *)ram_input, deal_num);
+      __bang_mul_scalar((float *)ram_output, (float *)ram_output, *ram_inv_scale, deal_num);
+#if __BANG_ARCH__ >= 322
+      __bang_float2half_rn((half *)ram_output, (float *)ram_output, deal_num);
+#endif
+    } else {
+      __bang_mul_scalar((float *)ram_output, (float *)ram_input, *ram_inv_scale, deal_num);
+    }
+  } else {
+    __bang_add_scalar(ram_output, ram_input, 0, deal_num);
+    return;
+  }
+}
+
+template <typename T>
+__mlu_func__ void computeAmpNramOffset(int32_t *output_input_gap,
+                                       int32_t *ping_pong_gap,
+                                       int32_t *span_num_deal,
+                                       int32_t *input_dwidth,
+                                       int32_t *output_dwidth,
+                                       int32_t *ram_temp1_offset,
+                                       int32_t *ram_temp2_offset,
+                                       int32_t *ram_inv_scale_offset,
+                                       int32_t *ram_exp_bits_check_offset,
+                                       int32_t *ram_found_inf_ping_offset,
+                                       const int32_t &tensor_num_per_core = 0) {
+  /* nram space split
+   * |ping          |pong          |nram_temp |exp_check |inv_scale |founf_inf_ping|found_inf_pong|
+   * |output |input |output |input |          |          |          |              |              |
+   */
+  *output_dwidth = sizeof(half);
+  *input_dwidth = sizeof(half);
+  int32_t ping_pong_size = 0;
+  const int32_t ping_pong_temp_split_num = 6;
+  // FOUND_INF_NRAM_SIZE equals 64 maybe for memory alignment
+  ping_pong_size = MAX_NRAM_SIZE - 2 * FOUND_INF_NRAM_SIZE - CYCLE_BUF_NUM * (*input_dwidth) -
+                   INV_SCALE_NRAM_SIZE;
+
+  *span_num_deal = PAD_DOWN(ping_pong_size / sizeof(half) / ping_pong_temp_split_num, ALIGN_NUM);
+  *output_input_gap = *span_num_deal * (*input_dwidth);
+
+  *ram_found_inf_ping_offset = ping_pong_temp_split_num * (*span_num_deal) * (*input_dwidth) +
+                               CYCLE_BUF_NUM * (*input_dwidth) + INV_SCALE_NRAM_SIZE;
+  *ping_pong_gap = 2 * (*span_num_deal) * (*input_dwidth);
+  *ram_temp1_offset = 2 * (*ping_pong_gap);
+  *ram_temp2_offset = *ram_temp1_offset;
+  *ram_inv_scale_offset = 3 * (*ping_pong_gap) + CYCLE_BUF_NUM * (*input_dwidth);
+  *ram_exp_bits_check_offset = 3 * (*ping_pong_gap);
+}
+
+template <>
+__mlu_func__ void computeAmpNramOffset<float>(int32_t *output_input_gap,
+                                              int32_t *ping_pong_gap,
+                                              int32_t *span_num_deal,
+                                              int32_t *input_dwidth,
+                                              int32_t *output_dwidth,
+                                              int32_t *ram_temp1_offset,
+                                              int32_t *ram_temp2_offset,
+                                              int32_t *ram_inv_scale_offset,
+                                              int32_t *ram_exp_bits_check_offset,
+                                              int32_t *ram_found_inf_ping_offset,
+                                              const int32_t &tensor_num_per_core) {
+  *output_dwidth = sizeof(float);
+  *input_dwidth = sizeof(float);
+  int32_t ping_pong_size = 0;
+  /* 3XX nram space split
+   * |ping        |pong        |nram_temp    |exp_check |inv_scale |founf_inf_ping |found_inf_pong |
+   * |output/input|output/input|             |          |          |               |               |
+   */
+  const int32_t ping_pong_temp_split_num = 3;
+  ping_pong_size = MAX_NRAM_SIZE - 2 * FOUND_INF_NRAM_SIZE - CYCLE_BUF_NUM * (*input_dwidth) -
+                 INV_SCALE_NRAM_SIZE;
+
+  *span_num_deal = PAD_DOWN(ping_pong_size / sizeof(float) / ping_pong_temp_split_num, ALIGN_NUM);
+  *ram_found_inf_ping_offset = ping_pong_temp_split_num * (*span_num_deal) * (*input_dwidth) +
+                               CYCLE_BUF_NUM * (*input_dwidth) + INV_SCALE_NRAM_SIZE;
+  *ping_pong_gap = (*span_num_deal) * (*input_dwidth);
+  *ram_temp1_offset = 2 * (*ping_pong_gap);
+  *ram_temp2_offset = *ram_temp1_offset;
+  *ram_inv_scale_offset = 3 * (*ping_pong_gap) + CYCLE_BUF_NUM * (*input_dwidth);
+  *ram_exp_bits_check_offset = 3 * (*ping_pong_gap);
+}
+
+template <typename T>
+__mlu_func__ void pipelineCompute(char *ram_tensor_list_addr[],
+                                  uint64_t *ram_tensor_list_num,
+                                  char *ping_input,
+                                  char *ram_found_inf_ping,
+                                  char *ram_inv_scale,
+                                  char *ram_temp1,
+                                  char *ram_temp2,
+                                  char *ping_output,
+                                  float *output_found_inf,
+                                  int32_t ping_pong_gap,
+                                  int32_t span_num_deal,
+                                  int32_t repeat,
+                                  int32_t remain,
+                                  int32_t align_rem,
+                                  const int32_t span_num_deal_size,
+                                  int32_t tensor_length,
+                                  int32_t *id_load,
+                                  int32_t *id_store,
+                                  uint64_t *offset_store,
+                                  uint64_t *offset_load,
+                                  void **output) {
+  if (repeat > 0) {
+    loadInput(ping_input, (T **)ram_tensor_list_addr, span_num_deal_size, tensor_length,
+              ram_tensor_list_num, id_load, offset_load);
+    __asm__ volatile("sync;");
+  }
+
+  if (repeat > 1) {
+    loadInput(ping_input + ping_pong_gap, (T **)ram_tensor_list_addr, span_num_deal_size,
+              tensor_length, ram_tensor_list_num, id_load, offset_load);
+    checkAmpFiniteAndNan((T *)ping_input, (float *)ram_found_inf_ping, (T *)ram_temp1,
+                         span_num_deal);
+    computeAmpUnscale((T *)ping_output, (T *)ping_input, (float *)ram_inv_scale, span_num_deal);
+
+    __asm__ volatile("sync;");
+  }
+
+  for (int32_t i = 0; i < repeat - 2; i++) {
+    storeOutput((T **)output, ping_output + ((i) % 2) * ping_pong_gap, span_num_deal_size,
+                tensor_length, ram_tensor_list_num, id_store, offset_store);
+    if (*(float *)(ram_found_inf_ping + (i % 2) * FOUND_INF_NRAM_SIZE) == 1.0) {
+      __memcpy_async((void *)output_found_inf,
+                     (void *)(ram_found_inf_ping + (i % 2) * FOUND_INF_NRAM_SIZE),
+                     FOUND_INF_VALUE_SIZE, NRAM2GDRAM);
+    }
+    loadInput(ping_input + (i % 2) * ping_pong_gap, (T **)ram_tensor_list_addr, span_num_deal_size,
+              tensor_length, ram_tensor_list_num, id_load, offset_load);
+
+    checkAmpFiniteAndNan((T *)(ping_input + ((i + 1) % 2) * ping_pong_gap),
+                         (float *)(ram_found_inf_ping + ((i + 1) % 2) * FOUND_INF_NRAM_SIZE),
+                         (T *)ram_temp1, span_num_deal);
+    computeAmpUnscale((T *)(ping_output + ((i + 1) % 2) * ping_pong_gap),
+                      (T *)(ping_input + ((i + 1) % 2) * ping_pong_gap), (float *)ram_inv_scale,
+                      span_num_deal);
+
+    __asm__ volatile("sync;");
+  }
+  if (repeat > 1) {
+    storeOutput((T **)output, ping_output + ((repeat - 2) % 2) * ping_pong_gap,
+                span_num_deal * sizeof(T), tensor_length, ram_tensor_list_num, id_store,
+                offset_store);
+
+    if (*(float *)(ram_found_inf_ping + ((repeat - 2) % 2) * FOUND_INF_NRAM_SIZE) == 1.0) {
+      __memcpy_async((void *)output_found_inf,
+                     (void *)(ram_found_inf_ping + ((repeat - 2) % 2) * FOUND_INF_NRAM_SIZE),
+                     FOUND_INF_VALUE_SIZE, NRAM2GDRAM);
+    }
+  }
+  if (remain > 0) {
+    loadInput(ping_input + (repeat % 2) * ping_pong_gap, (T **)ram_tensor_list_addr,
+              remain * sizeof(T), tensor_length, ram_tensor_list_num, id_load,
+              offset_load);
+  }
+  if (repeat > 0) {
+    checkAmpFiniteAndNan((T *)(ping_output + ((repeat - 1) % 2) * ping_pong_gap),
+                         (float *)(ram_found_inf_ping + ((repeat - 1) % 2) * FOUND_INF_NRAM_SIZE),
+                         (T *)ram_temp1, span_num_deal);
+    computeAmpUnscale((T *)(ping_output + ((repeat - 1) % 2) * ping_pong_gap),
+                      (T *)(ping_input + ((repeat - 1) % 2) * ping_pong_gap),
+                      (float *)ram_inv_scale, span_num_deal);
+  }
+  __asm__ volatile("sync;");
+  if (repeat > 0) {
+    storeOutput((T **)output, ping_output + ((repeat - 1) % 2) * ping_pong_gap,
+                span_num_deal * sizeof(T), tensor_length, ram_tensor_list_num, id_store,
+                offset_store);
+    if (*(float *)(ram_found_inf_ping + ((repeat - 1) % 2) * FOUND_INF_NRAM_SIZE) == 1.0) {
+      __memcpy_async((void *)output_found_inf,
+                     (void *)(ram_found_inf_ping + ((repeat - 1) % 2) * FOUND_INF_NRAM_SIZE),
+                     FOUND_INF_VALUE_SIZE, NRAM2GDRAM);
+    }
+  }
+  if (remain > 0) {
+    checkAmpFiniteAndNan((T *)(ping_input + (repeat % 2) * ping_pong_gap),
+                         (float *)(ram_found_inf_ping + (repeat % 2) * FOUND_INF_NRAM_SIZE),
+                         (T *)ram_temp1, align_rem);
+    computeAmpUnscale((T *)(ping_output + (repeat % 2) * ping_pong_gap),
+                      (T *)(ping_input + (repeat % 2) * ping_pong_gap), (float *)ram_inv_scale,
+                      align_rem);
+    __asm__ volatile("sync;");
+
+    storeOutput((T **)output, ping_output + ((repeat) % 2) * ping_pong_gap, remain * sizeof(T),
+                tensor_length, ram_tensor_list_num, id_store, offset_store);
+    if (*(float *)(ram_found_inf_ping + (repeat % 2) * FOUND_INF_NRAM_SIZE) == 1.0) {
+      __memcpy_async((void *)output_found_inf,
+                     (void *)(ram_found_inf_ping + (repeat % 2) * FOUND_INF_NRAM_SIZE),
+                     FOUND_INF_VALUE_SIZE, NRAM2GDRAM);
+    }
+  }
+}
+
+template <typename T, typename C>
+__mlu_global__ void MLUUnion1KernelAmpNonFiniteCheckAndUnscaleList(C chunk,
+                                                                   const float *found_inf,
+                                                                   const float *inv_scale,
+                                                                   float *output_found_inf,
+                                                                   const int32_t tensors_num) {
+  if (coreId == 0x80) {
+    return;
+  }
+  int32_t output_input_gap = 0;
+  int32_t ping_pong_gap = 0;
+  int32_t span_num_deal = 0;
+  int32_t input_dwidth = 0;
+  int32_t output_dwidth = 0;
+
+  int32_t ram_temp1_offset = 0;
+  int32_t ram_temp2_offset = 0;
+  int32_t ram_inv_scale_offset = 0;
+  int32_t ram_exp_bits_check_offset = 0;
+  int32_t ram_found_inf_ping_offset = 0;
+#if __BANG_ARCH__ >= 590
+  uint64_t num_per_core = 0;
+  uint64_t total_num = 0;
+  uint64_t offset_num = 0;
+#else
+  int32_t num_per_core = 0;
+  int32_t total_num = 0;
+  int32_t offset_num = 0;
+#endif
+
+  int32_t tensor_id = 0;
+  int32_t tensor_offset_num = 0;
+  int32_t tensor_num_per_core = 1;
+
+  for (int32_t i = 0; i < tensors_num; ++i) {
+    total_num += chunk.input_numel[i];
+  }
+  if (taskDim == 1) {
+    num_per_core = total_num;
+  } else {
+    num_per_core = total_num / taskDim + (int32_t)((total_num % taskDim) > taskId);
+    offset_num = (total_num % taskDim) > taskId
+                     ? (total_num / taskDim + 1) * taskId
+                     : total_num / taskDim * taskId + total_num % taskDim;
+    for (int32_t i = 0; i < tensors_num; ++i) {
+      tensor_id = i;
+      if (offset_num < chunk.input_numel[i]) {
+        tensor_offset_num = offset_num;
+        break;
+      }
+
+      offset_num -= chunk.input_numel[i];
+    }
+  }
+
+  uint64_t cur_num_per_core = chunk.input_numel[tensor_id] - offset_num;
+  if (cur_num_per_core >= num_per_core) {
+    tensor_num_per_core = 1;
+  } else {
+    for (int32_t j = tensor_id + 1; j < tensors_num; ++j) {
+      if (cur_num_per_core < num_per_core) {
+        ++tensor_num_per_core;
+        cur_num_per_core += chunk.input_numel[j];
+      } else {
+        break;
+      }
+    }
+  }
+
+  const int32_t nram_threshold_value_for_tensor_list = 4096;
+  int32_t threshold_num =
+      nram_threshold_value_for_tensor_list / (sizeof(MLUaddr) + sizeof(uint64_t));
+  const int32_t num2nram =
+      ((tensor_num_per_core >= threshold_num) ? threshold_num : tensor_num_per_core);
+  computeAmpNramOffset<T>(&output_input_gap, &ping_pong_gap, &span_num_deal, &input_dwidth,
+                          &output_dwidth, &ram_temp1_offset, &ram_temp2_offset,
+                          &ram_inv_scale_offset, &ram_exp_bits_check_offset,
+                          &ram_found_inf_ping_offset, num2nram);
+  char *ram_temp1 = nram_buff + ram_temp1_offset;
+  char *ram_temp2 = nram_buff + ram_temp2_offset;
+  char *ram_inv_scale = nram_buff + ram_inv_scale_offset;
+  char *ram_found_inf_ping = nram_buff + ram_found_inf_ping_offset;
+  char **ram_tensor_list_addr = nullptr;
+  uint64_t *ram_tensor_list_num = nullptr;
+
+  char *ping_input = (char *)nram_buff + output_input_gap;
+  char *ping_output = (char *)nram_buff;
+
+  uint64_t offset_load = tensor_offset_num;
+  uint64_t offset_store = tensor_offset_num;
+  const int32_t span_num_deal_size = span_num_deal * input_dwidth;
+
+  const int32_t INV_SCALE_VALUE_SIZE = 4;
+
+  __bang_write_value((T *)ram_temp1, span_num_deal, (T)0);
+  __bang_write_value((T *)ram_temp2, span_num_deal, (T)0);
+  __bang_write_value((T *)ping_input, span_num_deal, (T)0);
+  __bang_write_value((T *)(ping_input + ping_pong_gap), span_num_deal, (T)0);
+  __bang_write_value((T *)ping_output, span_num_deal, (T)0);
+  __bang_write_value((T *)(ping_output + ping_pong_gap), span_num_deal, (T)0);
+
+  __memcpy_async(ram_found_inf_ping, found_inf, FOUND_INF_VALUE_SIZE, GDRAM2NRAM);
+  __memcpy_async(ram_found_inf_ping + FOUND_INF_NRAM_SIZE, found_inf, FOUND_INF_VALUE_SIZE,
+                 GDRAM2NRAM);
+  __memcpy_async(ram_inv_scale, inv_scale, INV_SCALE_VALUE_SIZE, GDRAM2NRAM);
+  int32_t id_load = 0;
+  int32_t id_store = 0;
+  int32_t tensor_length = 0;
+
+  int32_t loop_time_per_core = tensor_num_per_core / threshold_num;
+  int32_t rem_num_per_core = tensor_num_per_core % threshold_num;
+  __asm__ volatile("sync;");
+
+  int32_t repeat = 0;
+  int32_t remain = 0;
+  int32_t sum_per_loop = 0;
+  int32_t sum_per_core = 0;
+  int32_t align_rem = 0;
+  void** output = (void**)chunk.input;
+  for (int32_t k = 0; k < loop_time_per_core; ++k) {
+    sum_per_loop = 0;
+    id_load = 0;
+    id_store = 0;
+    ram_tensor_list_addr = chunk.input + tensor_id + k * threshold_num;
+    ram_tensor_list_num = chunk.input_numel + tensor_id + k * threshold_num;
+    __asm__ volatile("sync;");
+    tensor_length = threshold_num;
+    output = (void **)ram_tensor_list_addr;
+    for (int32_t i = 0; i < threshold_num; ++i) {
+      sum_per_loop += ram_tensor_list_num[i];
+    }
+    if (k == 0) {
+      sum_per_loop -= offset_load;
+    }
+
+    if (sum_per_loop >= (num_per_core - sum_per_core)) {
+      repeat = (num_per_core - sum_per_core) / span_num_deal;
+      remain = (num_per_core - sum_per_core) % span_num_deal;
+      sum_per_core += span_num_deal;
+
+    } else {
+      repeat = sum_per_loop / span_num_deal;
+      remain = sum_per_loop % span_num_deal;
+      sum_per_core += sum_per_loop;
+    }
+    align_rem = CEIL_ALIGN(remain, ALIGN_NUM);
+
+    pipelineCompute<T>(ram_tensor_list_addr, ram_tensor_list_num, ping_input, ram_found_inf_ping,
+                       ram_inv_scale, ram_temp1, ram_temp2, ping_output,
+                       output_found_inf, ping_pong_gap, span_num_deal, repeat, remain, align_rem,
+                       span_num_deal_size, tensor_length, &id_load, &id_store, &offset_store,
+                       &offset_load, output);
+  }
+  if (rem_num_per_core > 0) {
+    uint64_t sum_rem_each_core = 0;
+    id_load = 0;
+    id_store = 0;
+    ram_tensor_list_addr = chunk.input + tensor_id + loop_time_per_core * threshold_num;
+    ram_tensor_list_num = chunk.input_numel + tensor_id + loop_time_per_core * threshold_num;
+    __asm__ volatile("sync;");
+    tensor_length = rem_num_per_core;
+    output = (void **)ram_tensor_list_addr;
+
+    for (int32_t i = 0; i < rem_num_per_core; ++i) {
+      sum_rem_each_core += ram_tensor_list_num[i];
+    }
+    if (loop_time_per_core == 0) {
+      sum_rem_each_core -= offset_load;
+    }
+
+#if __BANG_ARCH__ >= 590
+    const int64_t cur_deal_num = ((num_per_core - sum_per_core) >= sum_rem_each_core)
+                                     ? sum_rem_each_core
+                                     : (num_per_core - sum_per_core);
+#else
+    const int32_t cur_deal_num = ((num_per_core - sum_per_core) >= sum_rem_each_core)
+                                     ? sum_rem_each_core
+                                     : (num_per_core - sum_per_core);
+#endif
+
+    remain = (num_per_core - sum_per_core) % span_num_deal;
+
+    if ((num_per_core - sum_per_core) >= span_num_deal) {
+      repeat = (num_per_core - sum_per_core) / span_num_deal;
+    } else {
+      repeat = cur_deal_num / span_num_deal;
+    }
+    align_rem = CEIL_ALIGN(remain, ALIGN_NUM);
+
+    pipelineCompute<T>(ram_tensor_list_addr, ram_tensor_list_num, ping_input, ram_found_inf_ping,
+                       ram_inv_scale, ram_temp1, ram_temp2, ping_output,
+                       output_found_inf, ping_pong_gap, span_num_deal, repeat, remain, align_rem,
+                       span_num_deal_size, tensor_length, &id_load, &id_store, &offset_store,
+                       &offset_load, output);
+  }
+}
+
+template <typename T>
+__mlu_global__ void MLUUnion1KernelAmpNonFiniteCheckAndUnscale(T *scaled_grad,
+                                                               const float *found_inf,
+                                                               const float *inv_scale,
+                                                               float *output_found_inf,
+                                                               int32_t element_num) {
+  if (coreId == 0x80) {
+    return;
+  }
+  int32_t output_input_gap = 0;
+  int32_t ping_pong_gap = 0;
+  int32_t span_num_deal = 0;
+  int32_t input_dwidth = 0;
+  int32_t output_dwidth = 0;
+
+  int32_t ram_temp1_offset = 0;
+  int32_t ram_temp2_offset = 0;
+  int32_t ram_inv_scale_offset = 0;
+  int32_t ram_exp_bits_check_offset = 0;
+  int32_t ram_found_inf_ping_offset = 0;
+
+  computeAmpNramOffset<T>(&output_input_gap, &ping_pong_gap, &span_num_deal, &input_dwidth,
+                          &output_dwidth, &ram_temp1_offset, &ram_temp2_offset,
+                          &ram_inv_scale_offset, &ram_exp_bits_check_offset,
+                          &ram_found_inf_ping_offset);
+  char *ram_temp1 = nram_buff + ram_temp1_offset;
+  char *ram_temp2 = nram_buff + ram_temp2_offset;
+  char *ram_inv_scale = nram_buff + ram_inv_scale_offset;
+  char *ram_found_inf_ping = nram_buff + ram_found_inf_ping_offset;
+  const int32_t span_num_deal_size = span_num_deal * input_dwidth;
+
+  char *ping_input = (char *)nram_buff + output_input_gap;
+  char *ping_output = (char *)nram_buff;
+  uint64_t num_per_core = 0;
+
+  const int32_t INV_SCALE_VALUE_SIZE = 4;
+
+  __bang_write_value((T *)ram_temp1, span_num_deal, (T)0);
+  __bang_write_value((T *)ram_temp2, span_num_deal, (T)0);
+  __bang_write_value((T *)ping_input, span_num_deal, (T)0);
+  __bang_write_value((T *)(ping_input + ping_pong_gap), span_num_deal, (T)0);
+  __bang_write_value((T *)ping_output, span_num_deal, (T)0);
+  __bang_write_value((T *)(ping_output + ping_pong_gap), span_num_deal, (T)0);
+
+  __memcpy_async(ram_found_inf_ping, found_inf, FOUND_INF_VALUE_SIZE, GDRAM2NRAM);
+  __memcpy_async(ram_found_inf_ping + FOUND_INF_NRAM_SIZE, found_inf, FOUND_INF_VALUE_SIZE,
+                 GDRAM2NRAM);
+  __memcpy_async(ram_inv_scale, inv_scale, INV_SCALE_VALUE_SIZE, GDRAM2NRAM);
+  __asm__ volatile("sync;");
+
+  char **ram_tensor_list_addr = (char **)&scaled_grad;
+  uint64_t ram_tensor_list_num[1] = {uint64_t(element_num)};
+  int32_t tensor_length = 1;
+  int32_t id_load = 0;
+  int32_t id_store = 0;
+  uint64_t offset_num = 0;
+  if (taskDim == 1) {
+    num_per_core = element_num;
+  } else {
+    num_per_core = element_num / taskDim + (int32_t)((element_num % taskDim) > taskId);
+    offset_num = (element_num % taskDim) > taskId
+                     ? (element_num / taskDim + 1) * taskId
+                     : element_num / taskDim * taskId + element_num % taskDim;
+  }
+  uint64_t offset_load = offset_num;
+  uint64_t offset_store = offset_num;
+  const int32_t repeat = num_per_core / span_num_deal;
+  const int32_t remain = num_per_core % span_num_deal;
+  const int32_t align_rem = CEIL_ALIGN(remain, ALIGN_NUM);
+  void **output_ptr = (void **)&scaled_grad;
+  pipelineCompute<T>(ram_tensor_list_addr, ram_tensor_list_num, ping_input, ram_found_inf_ping,
+                     ram_inv_scale, ram_temp1, ram_temp2, ping_output,
+                     output_found_inf, ping_pong_gap, span_num_deal, repeat, remain, align_rem,
+                     span_num_deal_size, tensor_length, &id_load, &id_store, &offset_store,
+                     &offset_load, output_ptr);
+}

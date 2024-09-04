@@ -1,0 +1,99 @@
+{
+    "test_unsqueeze": [
+        {
+            "CaseName": "test_unsqueeze",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unsqueeze_bfloat16",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unsqueeze_channel_last",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unsqueeze_inplace",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unsqueeze_inplace_channel_last",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 20
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unsqueeze_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unsqueeze_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        }
+    ]
+}

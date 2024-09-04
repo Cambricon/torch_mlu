@@ -1,0 +1,65 @@
+{
+    "test_rnn_gru": [
+        {
+            "CaseName": "test_rnn_gru_concat",
+            "Events": [
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 896
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 10752
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 8320
+                },
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 896
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1024
+                },
+                {
+                    "Name": "cnnlActivationBackward",
+                    "# of Calls": 896
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1792
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2048
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 3968
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1280
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2048
+                }
+            ]
+        }
+    ]
+}

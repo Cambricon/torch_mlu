@@ -1,0 +1,104 @@
+{
+    "test_randint": [
+        {
+            "CaseName": "test_randint",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandGenerateDescreteUniform",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 42
+                }
+            ]
+        },
+        {
+            "CaseName": "test_randint_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandGenerateDescreteUniform",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 42
+                }
+            ]
+        },
+        {
+            "CaseName": "test_randint_high",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlRandGenerateDescreteUniform",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_randint_out",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandGenerateDescreteUniform",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 42
+                }
+            ]
+        }
+    ]
+}

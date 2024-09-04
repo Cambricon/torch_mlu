@@ -1,0 +1,131 @@
+- file: path/to/file_1.cpp
+  commit_id: 81dbc487c727d7c1513500c6bbde877b3fc77b12
+  source_info:
+  - source_file: aten/src/ATen/native/LossNLL2d.cpp
+    associated_code:
+    - start_line: 114
+      end_line: 117
+    - start_line: 181
+      end_line: 189
+  - source_file: aten/src/ATen/cuda/CUDASparseDescriptors.h
+    associated_code:
+    - start_line: 167
+      end_line: 189
+  - source_file: torch/testing/_internal/common_methods_invocations.py
+    associated_code:
+    - start_line: 10709
+      end_line: 10720
+
+- file: path/to/file_2.cpp
+  commit_id: eae9751e82cd70af4dbcc0e48350dd832693af68
+  source_info:
+  - source_file: torch/csrc/autograd/autograd_not_implemented_fallback.cpp
+    associated_code:
+    - start_line: 235
+      end_line: 284
+  - source_file: torch/csrc/autograd/VariableTypeUtils.h
+    associated_code:
+    - start_line: 74
+      end_line: 83
+    - start_line: 35
+      end_line: 40
+
+- file: path/to/file_3.py
+  commit_id: eae9751e82cd70af4dbcc0e48350dd832693af68
+  source_info:
+  - source_file: test/test_ops.py
+    associated_code:
+    - start_line: 800
+      end_line: 1024
+    - start_line: 33
+      end_line: 38
+    - start_line: 29
+      end_line: 33
+    - start_line: 31
+      end_line: 36
+
+- file: path/to/file_4.cpp
+  commit_id: 81dbc487c727d7c1513500c6bbde877b3fc77b12
+  source_info:
+  - source_file: aten/src/ATen/cuda/CUDASparseDescriptors.cpp
+    associated_code:
+    - start_line: 12
+      end_line: 85
+  - source_file: aten/src/ATen/cuda/CUDASparseDescriptors.h
+    associated_code:
+    - start_line: 58
+      end_line: 72
+    - start_line: 161
+      end_line: 180
+    - start_line: 220
+      end_line: -1
+  - source_file: torch/testing/_internal/common_methods_invocations.py
+    associated_code:
+    - start_line: 10356
+      end_line: 10697
+    - start_line: 10200
+      end_line: 10300
+    - start_line: 12819
+      end_line: -1
+
+- file: path/to/file_5.py
+  commit_id: ae4c85960f43347447dd236bc7f8932751bcca65
+  source_info:
+  - source_file: torch/nested/_internal/nested_tensor.py
+    associated_code:
+    - start_line: 300
+      end_line: 350
+  - source_file: torch/nested/_internal/ops.py
+
+- file: path/to/file_6.py
+  commit_id: e4352182bd29904ea35181eea1a3863cafb292d5
+  source_info:
+  - source_file: torch/_dynamo/guards.py
+    associated_code:
+    - start_line: 1000
+      end_line: 1080
+  - source_file: torch/_dynamo/source.py
+    associated_code:
+    - start_line: 52
+      end_line: 56
+    - start_line: 52
+      end_line: 62
+    - start_line: 49
+      end_line: 54
+    - start_line: 58
+      end_line: 65
+    - start_line: 56
+      end_line: 62
+
+- file: path/to/file_7.cpp
+  commit_id: 46c9d646dd7e27c8e278a3a22d942039c443f38c
+  source_info:
+  - source_file: torch/csrc/cuda/CUDAPluggableAllocator.cpp
+    associated_code:
+    - start_line: 102
+      end_line: 106
+  - source_file: c10/cuda/CUDACachingAllocator.cpp
+    associated_code:
+    - start_line: 3135
+      end_line: 3138
+  - source_file: c10/core/CPUAllocator.cpp
+
+- file: path/to/file_8.py
+  commit_id: e4352182bd29904ea35181eea1a3863cafb292d5
+  source_info:
+  - source_file: torch/_dynamo/source.py
+    associated_code:
+    - start_line: 55
+      end_line: 59
+    - start_line: 52
+      end_line: 62
+    - start_line: 52
+      end_line: 54
+    - start_line: 60
+      end_line: 62
+    - start_line: 56
+      end_line: 65
+    - start_line: 49
+      end_line: 55
+    - start_line: 51
+      end_line: 55

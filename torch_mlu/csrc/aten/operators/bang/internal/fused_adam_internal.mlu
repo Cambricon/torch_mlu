@@ -1,0 +1,517 @@
+/*************************************************************************
+ * Copyright (C) [2019-2023] by Cambricon, Inc.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+#include "bang_internal.h"
+
+namespace torch_mlu {
+namespace ops {
+
+#define NRAM_SPLIT_SIZE 5  // split nram to grad_nram,m_nram,v_nram,variable_nram and tmp_nram
+#define PING_PONG_SIZE 2
+#define ALIGN_SIZE 128
+#define PING_PONG_INDEX (0x1)
+#define PAD_DOWN(X, Y) (((X) / (Y)) * (Y))
+#define SIZE_PER_REGION MAX_NRAM_SIZE / (NRAM_SPLIT_SIZE * PING_PONG_SIZE)
+#define SIZE_PER_REGION_ADAM PAD_DOWN(SIZE_PER_REGION, ALIGN_SIZE)
+
+// Use half of the max nram size for ping-pong
+__nram__ char total_nram[SIZE_PER_REGION_ADAM * (NRAM_SPLIT_SIZE * PING_PONG_SIZE)];
+
+__mlu_func__ inline void Rsqrt(float* output,
+                               float* input,
+                               int num_align,
+                               float epsilon_correction) {
+  __bang_sqrt(output, input, num_align);
+  __bang_add_scalar(output, output, epsilon_correction, num_align);
+  __bang_recip(output, output, num_align);
+}
+
+__mlu_func__ inline void ComputeInternalStage1(
+                                 int num_align,
+                                 float* grad_nram,
+                                 float* m_nram,
+                                 float* v_nram,
+                                 float* variable_nram,
+                                 float* tmp_nram,
+                                 float beta1,
+                                 float beta2,
+                                 float beta1_minus,
+                                 float beta2_minus,
+                                 int adam_mode,
+                                 float decay) {
+  if (adam_mode == 0) {
+    // scaled_grad = scaled_grad + decay * variable
+    __bang_mul_scalar(tmp_nram, variable_nram, decay, num_align);
+    __bang_add(grad_nram, grad_nram, tmp_nram, num_align);
+  }
+  // mt = beta1 * mt-1 + (1 - beta1) * grad
+  __bang_mul_scalar(tmp_nram, grad_nram, beta1_minus, num_align);
+  __bang_fusion(FUSION_FMA, m_nram, m_nram, beta1, tmp_nram, num_align, num_align);
+
+  // vt = beta2 * vt-1 + (1 - beta2) * grad ^ 2
+  __bang_mul(grad_nram, grad_nram, grad_nram, num_align);
+  __bang_mul_scalar(grad_nram, grad_nram, beta2_minus, num_align);
+  __bang_fusion(FUSION_FMA, v_nram, v_nram, beta2, grad_nram, num_align, num_align);
+}
+
+__mlu_func__ inline void ComputeInternalStage2(
+                                 int num_align,
+                                 float* grad_nram,
+                                 float* m_nram,
+                                 float* v_nram,
+                                 float* variable_nram,
+                                 float* tmp_nram,
+				 float beta1,
+				 float beta2,
+				 float beta1_correction_recip,
+				 float beta2_correction_recip,
+                                 float learning_rate,
+                                 float learning_rate_correction,
+                                 float epsilon,
+                                 float epsilon_correction,
+                                 int adam_mode,
+                                 float decay,
+                                 float decay_correction) {
+  // mt = mt / (1 - beta1 ^ t) && vt = vt / (1 - beta2 ^ t)
+  // var = var - learning_rate * mt / (sqrt(vt) + epsilon) 
+  // use grad_nram as temp buffer
+  Rsqrt(grad_nram, v_nram, num_align, epsilon_correction);
+  __bang_mul(grad_nram, m_nram, grad_nram, num_align);
+  if (adam_mode == 1) {
+    __bang_mul_scalar(tmp_nram, variable_nram, decay_correction, num_align);
+    __bang_add(grad_nram, tmp_nram, grad_nram, num_align);
+  }
+  __bang_mul_scalar(grad_nram, grad_nram, learning_rate_correction, num_align);
+  __bang_sub(variable_nram, variable_nram, grad_nram, num_align);
+}
+
+template <typename T, typename FULL_T>
+__mlu_func__ inline void ComputeStage1(int num_align,
+                                       T* grad_nram,
+                                       FULL_T* m_nram,
+                                       FULL_T* v_nram,
+                                       T* variable_nram,
+                                       T* tmp_nram,
+                                       float beta1,
+                                       float beta2,
+                                       float beta1_minus,
+                                       float beta2_minus,
+                                       int adam_mode,
+                                       float decay,
+                                       int load_offset) {
+  ComputeInternalStage1(num_align, grad_nram, m_nram, v_nram, variable_nram,
+    tmp_nram, beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay);
+}
+
+template <>
+__mlu_func__ inline void ComputeStage1<half, float>(int num_align,
+                                                    half* grad_nram,
+                                                    float* m_nram,
+                                                    float* v_nram,
+                                                    half* variable_nram,
+                                                    half* tmp_nram,
+                                                    float beta1,
+                                                    float beta2,
+                                                    float beta1_minus,
+                                                    float beta2_minus,
+                                                    int adam_mode,
+                                                    float decay,
+                                                    int load_offset) {
+  __bang_half2float((float*)grad_nram, grad_nram + load_offset, num_align);
+  __bang_half2float((float*)variable_nram, variable_nram + load_offset, num_align);
+
+  ComputeInternalStage1(num_align, (float*)grad_nram, (float*)m_nram, (float*)v_nram, (float*)variable_nram,
+    (float*)tmp_nram, beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay);
+}
+
+template <>
+__mlu_func__ inline void ComputeStage1<bfloat16_t, float>(int num_align,
+                                                          bfloat16_t* grad_nram,
+                                                          float* m_nram,
+                                                          float* v_nram,
+                                                          bfloat16_t* variable_nram,
+                                                          bfloat16_t* tmp_nram,
+                                                          float beta1,
+                                                          float beta2,
+                                                          float beta1_minus,
+                                                          float beta2_minus,
+                                                          int adam_mode,
+                                                          float decay,
+                                                          int load_offset) {
+  __bang_bfloat162float((float*)grad_nram, grad_nram + load_offset, num_align);
+  __bang_bfloat162float((float*)variable_nram, variable_nram + load_offset, num_align);
+
+  ComputeInternalStage1(num_align, (float*)grad_nram, (float*)m_nram, (float*)v_nram, (float*)variable_nram,
+    (float*)tmp_nram, beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay);
+}
+
+template <typename T, typename FULL_T>
+__mlu_func__ inline void ComputeStage2(int num_align,
+                                       T* grad_nram,
+                                       FULL_T* m_nram,
+                                       FULL_T* v_nram,
+                                       T* variable_nram,
+                                       T* tmp_nram,
+				       float beta1,
+				       float beta2,
+				       float beta1_correction_recip,
+				       float beta2_correction_recip,
+                                       float learning_rate,
+                                       float learning_rate_correction,
+                                       float epsilon,
+                                       float epsilon_correction,
+                                       int adam_mode,
+                                       float decay,
+                                       float decay_correction) {
+  ComputeInternalStage2(num_align, grad_nram, m_nram, v_nram, variable_nram, tmp_nram, beta1, beta2,
+                        beta1_correction_recip, beta2_correction_recip, learning_rate,
+			learning_rate_correction, epsilon, epsilon_correction, adam_mode,
+			decay, decay_correction);
+}
+
+template <>
+__mlu_func__ inline void ComputeStage2<half, float>(int num_align,
+                                                     half* grad_nram,
+                                                     float* m_nram,
+                                                     float* v_nram,
+                                                     half* variable_nram,
+                                                     half* tmp_nram,
+				                     float beta1,
+				                     float beta2,
+				                     float beta1_correction_recip,
+				                     float beta2_correction_recip,
+                                                     float learning_rate,
+                                                     float learning_rate_correction,
+                                                     float epsilon,
+                                                     float epsilon_correction,
+                                                     int adam_mode,
+                                                     float decay,
+                                                     float decay_correction) {
+  ComputeInternalStage2(num_align, (float*)grad_nram, (float*)m_nram,
+                        (float*)v_nram, (float*)variable_nram, (float*)tmp_nram, beta1, beta2,
+                        beta1_correction_recip, beta2_correction_recip, learning_rate,
+			learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
+  __bang_float2half_rn(variable_nram, (float*)variable_nram, num_align);
+}
+
+template <>
+__mlu_func__ inline void ComputeStage2<bfloat16_t, float>(int num_align,
+                                                         bfloat16_t* grad_nram,
+                                                         float* m_nram,
+                                                         float* v_nram,
+                                                         bfloat16_t* variable_nram,
+                                                         bfloat16_t* tmp_nram,
+				                         float beta1,
+				                         float beta2,
+				                         float beta1_correction_recip,
+				                         float beta2_correction_recip,
+                                                         float learning_rate,
+                                                         float learning_rate_correction,
+                                                         float epsilon,
+                                                         float epsilon_correction,
+                                                         int adam_mode,
+                                                         float decay,
+                                                         float decay_correction) {
+  ComputeInternalStage2(num_align, (float*)grad_nram, (float*)m_nram,
+                        (float*)v_nram, (float*)variable_nram, (float*)tmp_nram, beta1, beta2,
+                        beta1_correction_recip, beta2_correction_recip, learning_rate,
+			learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
+  __bang_float2bfloat16_rn(variable_nram, (float*)variable_nram, num_align);
+}
+
+template <typename T>
+__mlu_func__ void ApplyAdam(AddressList& grad,
+                            AddressList& m,
+                            AddressList& v,
+                            AddressList& variable,
+                            SizeList& sizes,
+                            int tensor_num,
+                            float beta1,
+                            float beta2,
+                            float beta1_correction_recip,
+                            float beta2_correction_recip,
+                            float epsilon,
+                            float epsilon_correction,
+                            float learning_rate,
+                            float learning_rate_correction,
+                            int adam_mode,
+                            float decay,
+                            float decay_correction) {
+  float beta1_minus = 1 - beta1;
+  float beta2_minus = 1 - beta2;
+
+  // Data
+  // |                             nram                                 |
+  // |--grad_nram--|--m_nram--|--v_nram--|--variable_nram--|--tmp_nram--|
+  T* grad_nram = (T*)total_nram;
+  float* m_nram = (float*)(total_nram + SIZE_PER_REGION_ADAM * 2);
+  float* v_nram = (float*)(total_nram + SIZE_PER_REGION_ADAM * 4);
+  T* variable_nram = (T*)(total_nram + SIZE_PER_REGION_ADAM * 6);
+  T* tmp_nram = (T*)(total_nram + SIZE_PER_REGION_ADAM * 8);
+  int load_offset = sizeof(T) == sizeof(half) ? SIZE_PER_REGION_ADAM / sizeof(float) : 0;
+
+  // compute type is fixed as float
+  int num_per_region = SIZE_PER_REGION_ADAM / sizeof(float);
+  int remains_chunck_num = 0; // assign each task average chuncks as possible
+  int tensor_size, chunck_num, last_chunck_size;
+  int repeat_per_task, last_loop_chunck_num;
+  int chunck_id; // chunck_id maybe minus
+  // int element_num;
+  int count = 0;
+  int last_id        = 0; // tensor ids
+  int current_id     = 0; 
+  int next_id        = 0; 
+  int last_offset    = 0; // address offset 
+  int current_offset = 0; 
+  int next_offset    = 0; 
+  int last_num       = 0; // element number
+  int current_num    = 0; 
+  int next_num       = 0;
+  for (int tensor_id = 0; tensor_id < tensor_num; ++tensor_id) {
+    tensor_size = sizes.sizes[tensor_id];
+
+    chunck_num = ALIGN_UP_DIV(tensor_size, num_per_region);
+    last_chunck_size = (tensor_size - 1) % num_per_region + 1;
+
+    repeat_per_task = ALIGN_UP_DIV(chunck_num + remains_chunck_num, taskDim);
+    last_loop_chunck_num = chunck_num % taskDim;
+
+    for (int iter = 0; iter < repeat_per_task; ++iter) {
+      chunck_id = iter * taskDim + taskId - remains_chunck_num;
+
+      if (chunck_id > -1 && chunck_id < chunck_num) {
+        // get address id and offset
+        last_id = current_id;
+        current_id = next_id;
+        next_id = tensor_id;
+        last_offset = current_offset;
+        current_offset = next_offset;
+        next_offset = chunck_id * num_per_region; 
+        // get deal num
+        last_num = current_num;
+        current_num = next_num;
+        next_num = chunck_id == chunck_num - 1 ? last_chunck_size : num_per_region;
+        int num_align = current_num;
+
+        if (last_num > 0) {
+          ComputeStage1<T, float>(num_align,
+                        grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                        v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                        variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay, load_offset);
+
+          // Save
+          __memcpy_async((float*)m.addresses[last_id] + last_offset,
+                         m_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+			 last_num * sizeof(float), NRAM2GDRAM);
+          __memcpy_async((float*)v.addresses[last_id] + last_offset,
+                         v_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+			 last_num * sizeof(float), NRAM2GDRAM);
+          __memcpy_async((T*)variable.addresses[last_id] + last_offset,
+                        variable_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+			last_num * sizeof(T), NRAM2GDRAM);
+
+          // Load
+          __memcpy_async(grad_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
+                         (T*)grad.addresses[next_id] + next_offset,
+                         next_num * sizeof(T), GDRAM2NRAM);
+          __memcpy_async(m_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                         (float*)m.addresses[next_id] + next_offset,
+                         next_num * sizeof(float), GDRAM2NRAM);
+          __memcpy_async(v_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                         (float*)v.addresses[next_id] + next_offset,
+                         next_num * sizeof(float), GDRAM2NRAM);
+          __memcpy_async(variable_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
+                         (T*)variable.addresses[next_id] + next_offset,
+                         next_num * sizeof(T), GDRAM2NRAM);
+
+          ComputeStage2<T, float>(num_align,
+                        grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                        v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                        variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        beta1, beta2, beta1_correction_recip, beta2_correction_recip, learning_rate,
+			learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
+        } else if (current_num > 0) {
+          ComputeStage1<T, float>(num_align,
+                        grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                        v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                        variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay, load_offset);
+
+          // Load
+          __memcpy_async(grad_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
+                         (T*)grad.addresses[next_id] + next_offset,
+                         next_num * sizeof(T), GDRAM2NRAM);
+          __memcpy_async(m_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                         (float*)m.addresses[next_id] + next_offset,
+                         next_num * sizeof(float), GDRAM2NRAM);
+          __memcpy_async(v_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                         (float*)v.addresses[next_id] + next_offset,
+                         next_num * sizeof(float), GDRAM2NRAM);
+          __memcpy_async(variable_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
+                         (T*)variable.addresses[next_id] + next_offset,
+                         next_num * sizeof(T), GDRAM2NRAM);
+
+          ComputeStage2<T, float>(num_align,
+                        grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                        v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                        variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                        beta1, beta2, beta1_correction_recip, beta2_correction_recip, learning_rate,
+			learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
+        } else {
+          // Load
+          __memcpy_async(grad_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
+                         (T*)grad.addresses[next_id] + next_offset,
+                         next_num * sizeof(T), GDRAM2NRAM);
+          __memcpy_async(m_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                         (float*)m.addresses[next_id] + next_offset,
+                         next_num * sizeof(float), GDRAM2NRAM);
+          __memcpy_async(v_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                         (float*)v.addresses[next_id] + next_offset,
+                         next_num * sizeof(float), GDRAM2NRAM);
+          __memcpy_async(variable_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
+                         (T*)variable.addresses[next_id] + next_offset,
+                         next_num * sizeof(T), GDRAM2NRAM);
+        }
+        
+        __asm__ volatile("sync;");
+        count++;
+      }
+    }
+    remains_chunck_num = (remains_chunck_num + last_loop_chunck_num) % taskDim;
+  }
+
+  if (current_num > 0) {
+    // save
+    __memcpy_async((float*)m.addresses[current_id] + current_offset,
+                   m_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                   current_num * sizeof(float), NRAM2GDRAM);
+    __memcpy_async((float*)v.addresses[current_id] + current_offset,
+                   v_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                   current_num * sizeof(float), NRAM2GDRAM);
+    __memcpy_async((T*)variable.addresses[current_id] + current_offset,
+                   variable_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                   current_num * sizeof(T), NRAM2GDRAM);
+  } 
+
+  if (next_num > 0) {
+    int num_align = next_num;
+    ComputeStage1<T, float>(num_align,
+                  grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                  m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                  v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                  variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                  tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                  beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay, load_offset);
+    ComputeStage2<T, float>(num_align,
+                  grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                  m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                  v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                  variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                  tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                  beta1, beta2, beta1_correction_recip, beta2_correction_recip, learning_rate,
+		  learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
+    __asm__ volatile("sync;");
+  }
+
+  if (next_num > 0) {
+    // save
+    __memcpy_async((float*)m.addresses[next_id] + next_offset,
+                   m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                   next_num * sizeof(float), NRAM2GDRAM);
+    __memcpy_async((float*)v.addresses[next_id] + next_offset,
+                   v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
+                   next_num * sizeof(float), NRAM2GDRAM);
+    __memcpy_async((T*)variable.addresses[next_id] + next_offset,
+                   variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
+                   next_num * sizeof(T), NRAM2GDRAM);
+  } 
+} 
+
+__mlu_global__ void MLUMultiTensorAdam(AddressList grad,
+                                       AddressList m,
+                                       AddressList v,
+                                       AddressList variable,
+                                       SizeList sizes,
+                                       int tensor_num,
+                                       float beta1,
+                                       float beta2,
+                                       float beta1_correction_recip,
+                                       float beta2_correction_recip,
+                                       float epsilon,
+                                       float epsilon_correction,
+                                       float learning_rate,
+                                       float learning_rate_correction,
+                                       int adam_mode,
+                                       float decay,
+                                       float decay_correction,
+                                       cnrtDataType_V2_t cnrt_type) {
+  switch(cnrt_type) {
+    case (cnrtDataType_V2_t)cnrtFloat:
+      ApplyAdam<float>(grad, m, v, variable, sizes, tensor_num, 
+                       beta1, beta2, beta1_correction_recip, beta2_correction_recip, epsilon, epsilon_correction,
+                       learning_rate, learning_rate_correction, adam_mode, decay, decay_correction);
+      break;
+    case (cnrtDataType_V2_t)cnrtHalf:
+      ApplyAdam<half>(grad, m, v, variable, sizes, tensor_num,
+                      beta1, beta2, beta1_correction_recip, beta2_correction_recip, epsilon, epsilon_correction,
+                      learning_rate, learning_rate_correction, adam_mode, decay, decay_correction);
+      break;
+    case (cnrtDataType_V2_t)cnrtBfloat:
+      ApplyAdam<bfloat16_t>(grad, m, v, variable, sizes, tensor_num,
+                      beta1, beta2, beta1_correction_recip, beta2_correction_recip, epsilon, epsilon_correction,
+                      learning_rate, learning_rate_correction, adam_mode, decay, decay_correction);
+      break;
+    default:
+      break;
+  }
+}
+
+void bang_fused_adam_internal(AddressList grad,
+                              AddressList exp_avg,
+                              AddressList exp_avg_sq,
+                              AddressList param,
+                              SizeList sizes,
+                              int tensor_num,
+                              float beta1,
+                              float beta2,
+			      float beta1_correction_recip,
+			      float beta2_correction_recip,
+			      float epsilon,
+                              float epsilon_correction,
+			      float learning_rate,
+                              float learning_rate_correction,
+                              int adam_mode,
+                              float decay,
+                              float decay_correction,
+                              cnrtDim3_t k_dim,
+                              cnrtFunctionType_t k_type,
+                              cnrtQueue_t queue,
+                              cnrtDataType_V2_t cnrt_type) {
+  MLUMultiTensorAdam<<<k_dim, k_type, queue>>>(
+    grad, exp_avg, exp_avg_sq, param,
+    sizes, tensor_num, beta1, beta2,
+    beta1_correction_recip, beta2_correction_recip, epsilon,
+    epsilon_correction, learning_rate, learning_rate_correction,
+    adam_mode, decay, decay_correction, cnrt_type);
+}
+
+} // namespace ops
+} // namespace torch_mlu

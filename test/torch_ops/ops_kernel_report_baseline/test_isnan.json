@@ -1,0 +1,102 @@
+{
+    "test_isnan": [
+        {
+            "CaseName": "test_isnan",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_isnan_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_isnan_empty_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_isnan_int",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_isnan_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_isnan_with_cpu",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

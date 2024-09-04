@@ -1,0 +1,182 @@
+{
+    "test_floor": [
+        {
+            "CaseName": "test_floor",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_backward",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_channelslast_and_nodense",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_out",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_permute",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_floor_t",
+            "Events": [
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

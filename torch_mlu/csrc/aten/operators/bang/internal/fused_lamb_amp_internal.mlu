@@ -1,0 +1,737 @@
+#include "bang_internal.h"
+#include <type_traits>
+
+#define SIZE_PER_REGION_LAMB MAX_NRAM_SIZE / 8
+
+namespace torch_mlu {
+namespace ops {
+
+// Use half of the max nram size for ping-pong
+__nram__ float temp_nram[32];
+__nram__ char total_nram[SIZE_PER_REGION_LAMB * 8];
+
+__mlu_func__ inline void ReduceSumSquare(int num_align,
+                                         int element_num,
+                                         float* input,
+                                         float* temp_buffer,
+                                         float* global_buff) {
+  __bang_square(temp_buffer, input, num_align);
+  if (num_align != element_num) {
+    __memset_nram(temp_buffer + element_num, num_align - element_num, float(0));
+  }
+  __bang_sumpool(temp_nram, temp_buffer,
+                 /*channel*/32, /*height*/1, /*width*/num_align / 32,
+                 /*kernel_height*/1, /*kernel_width*/num_align / 32,
+                 /*stride_height*/1, /*stride_width*/1);
+  __bang_reduce_sum(temp_nram, temp_nram, 32);
+  __bang_atomic_add(temp_nram + 1, global_buff, *temp_nram);
+}
+
+__mlu_func__ inline void Rsqrt(float* output,
+                               float* input,
+                               int num_align,
+                               float epsilon_correction) {
+#if __BANG_ARCH__ > 300
+  __bang_sqrt(output, input, num_align);
+  __bang_add_scalar(output, output, epsilon_correction, num_align);
+  __bang_recip(output, output, num_align);
+#else
+  __bang_active_sqrthp(output, input, num_align);
+  __bang_add_scalar(output, output, epsilon_correction, num_align);
+  __bang_active_reciphp(output, output, num_align);
+#endif
+}
+
+// Split compute into 2 steps for better pipline efficiency
+__mlu_func__ inline void ComputeInternalStep1(
+                                 int num_align,
+                                 int element_num,
+                                 float* grad_nram,
+                                 float* param_nram,
+                                 float* m_nram,
+                                 float* v_nram,
+                                 float* global_buff,
+                                 float clipped_global_grad_norm_recip,
+                                 float beta1_correction_v2,
+                                 float beta2,
+                                 float beta1_minus,
+                                 float beta2_minus,
+                                 float decay,
+                                 int mode) {
+  // scaled_grad = grad * clipped_global_grad_norm_recip
+  __bang_mul_scalar(grad_nram, grad_nram, clipped_global_grad_norm_recip, num_align);
+  if (mode == 0 && decay != 0) {
+    // scaled_grad = scaled_grad + decay * param
+    __bang_mul_scalar(param_nram, param_nram, decay, num_align);
+    __bang_add(grad_nram, grad_nram, param_nram, num_align);
+    __bang_mul_scalar(param_nram, param_nram, 1 / decay, num_align);
+  }
+  // mt = beta1 * mt-1 + beta3 * scaled_grad where beta3 = 1 - beta1 or 1.0
+  __bang_mul_scalar(m_nram, m_nram, beta1_correction_v2, num_align);
+  __bang_add(m_nram, m_nram, grad_nram, num_align);
+  __bang_mul_scalar(m_nram, m_nram, beta1_minus, num_align);
+
+  // vt = beta2 * vt-1 + (1 - beta2) * grad ^ 2
+  __bang_mul(grad_nram, grad_nram, grad_nram, num_align);
+  __bang_mul_scalar(v_nram, v_nram, beta2, num_align);
+  __bang_mul_scalar(grad_nram, grad_nram, beta2_minus, num_align);
+  __bang_add(v_nram, v_nram, grad_nram, num_align);
+  // per tensor l2norm of param
+  ReduceSumSquare(num_align, element_num, param_nram, grad_nram, global_buff);
+}
+
+__mlu_func__ inline void ComputeInternalStep2(
+                                 int num_align,
+                                 int element_num,
+                                 float* grad_nram,
+                                 float* param_nram,
+                                 float* m_nram,
+                                 float* v_nram,
+                                 float* global_buff,
+                                 float epsilon_correction,
+                                 float decay_correction,
+                                 int mode) {
+  // mt = mt / (1 - beta1 ^ t) && vt = vt / (1 - beta2 ^ t)
+  // the step is fused in decay_correction
+  // update = mt / (sqrt(vt) + epsilon)
+  // use grad_nram as temp buffer
+  Rsqrt(grad_nram, v_nram, num_align, epsilon_correction);
+  __bang_mul(grad_nram, m_nram, grad_nram, num_align);
+  if (mode == 1 && decay_correction != 0) {
+    // update = update + decay * param
+    __bang_mul_scalar(param_nram, param_nram, decay_correction, num_align);
+    __bang_add(grad_nram, grad_nram, param_nram, num_align);
+  }
+  // per tensor l2norm of update
+  ReduceSumSquare(num_align, element_num, grad_nram, param_nram, global_buff);
+}
+
+template <typename T, typename Param_t>
+__mlu_func__ inline void ComputeStep1(
+                           int num_align,
+                           int element_num,
+                           T* grad_nram,
+                           Param_t* param_nram,
+                           Param_t* m_nram,
+                           Param_t* v_nram,
+                           float* global_buff,
+                           float clipped_global_grad_norm_recip,
+                           float beta1_correction_v2,
+                           float beta2,
+                           float beta1_minus,
+                           float beta2_minus,
+                           float decay,
+                           int mode) {
+  ComputeInternalStep1(num_align, element_num, grad_nram, param_nram, m_nram, v_nram,
+    global_buff, clipped_global_grad_norm_recip, beta1_correction_v2, beta2,
+    beta1_minus, beta2_minus, decay, mode);
+}
+
+template <>
+__mlu_func__ inline void ComputeStep1(
+                           int num_align,
+                           int element_num,
+                           half* grad_nram,
+                           half* param_nram,
+                           half* m_nram,
+                           half* v_nram,
+                           float* global_buff,
+                           float clipped_global_grad_norm_recip,
+                           float beta1_correction_v2,
+                           float beta2,
+                           float beta1_minus,
+                           float beta2_minus,
+                           float decay,
+                           int mode) {
+  __bang_half2float((float*)grad_nram, grad_nram + SIZE_PER_REGION_LAMB / 4, num_align);
+  __bang_half2float((float*)param_nram, param_nram + SIZE_PER_REGION_LAMB / 4, num_align);
+  __bang_half2float((float*)m_nram, m_nram + SIZE_PER_REGION_LAMB / 4, num_align);
+  __bang_half2float((float*)v_nram, v_nram + SIZE_PER_REGION_LAMB / 4, num_align);
+  ComputeInternalStep1(num_align, element_num, (float*)grad_nram, (float*)param_nram,
+    (float*)m_nram, (float*)v_nram, global_buff,
+    clipped_global_grad_norm_recip, beta1_correction_v2, beta2,
+    beta1_minus, beta2_minus, decay, mode);
+}
+
+template <>
+__mlu_func__ inline void ComputeStep1(
+                           int num_align,
+                           int element_num,
+                           half* grad_nram,
+                           float* param_nram,
+                           float* m_nram,
+                           float* v_nram,
+                           float* global_buff,
+                           float clipped_global_grad_norm_recip,
+                           float beta1_correction_v2,
+                           float beta2,
+                           float beta1_minus,
+                           float beta2_minus,
+                           float decay,
+                           int mode) {
+  __bang_half2float((float*)grad_nram, grad_nram + SIZE_PER_REGION_LAMB / 4, num_align);
+  ComputeInternalStep1(num_align, element_num, (float*)grad_nram, (float*)param_nram,
+    (float*)m_nram, (float*)v_nram, global_buff,
+    clipped_global_grad_norm_recip, beta1_correction_v2, beta2,
+    beta1_minus, beta2_minus, decay, mode);
+}
+
+template <typename T, typename Param_t, int N>
+__mlu_func__ inline void ComputeStep2(
+                           int num_align,
+                           int element_num,
+                           T* grad_nram,
+                           Param_t* param_nram,
+                           Param_t* m_nram,
+                           Param_t* v_nram,
+                           float* global_buff,
+                           float epsilon_correction,
+                           float decay_correction,
+                           int mode) {
+  // <float, float, 1, 1>
+  ComputeInternalStep2(num_align, element_num, grad_nram, param_nram, m_nram, v_nram,
+    global_buff, epsilon_correction, decay_correction, mode);
+}
+
+template <>
+__mlu_func__ inline void ComputeStep2<half, half, 1>(
+                           int num_align,
+                           int element_num,
+                           half* grad_nram,
+                           half* param_nram,
+                           half* m_nram,
+                           half* v_nram,
+                           float* global_buff,
+                           float epsilon_correction,
+                           float decay_correction,
+                           int mode) {
+  ComputeInternalStep2(num_align, element_num, (float*)grad_nram, (float*)param_nram,
+    (float*)m_nram, (float*)v_nram, global_buff,
+    epsilon_correction, decay_correction, mode);
+  __bang_float2half_rd(grad_nram, (float*)grad_nram, num_align);
+  __bang_float2half_rd(m_nram, (float*)m_nram, num_align);
+  __bang_float2half_rd(v_nram, (float*)v_nram, num_align);
+}
+
+template <>
+__mlu_func__ inline void ComputeStep2<half, float, 1>(
+                           int num_align,
+                           int element_num,
+                           half* grad_nram,
+                           float* param_nram,
+                           float* m_nram,
+                           float* v_nram,
+                           float* global_buff,
+                           float epsilon_correction,
+                           float decay_correction,
+                           int mode) {
+  ComputeInternalStep2(num_align, element_num, (float*)grad_nram, (float*)param_nram,
+    (float*)m_nram, (float*)v_nram, global_buff,
+    epsilon_correction, decay_correction, mode);
+  __bang_float2half_rd(grad_nram, (float*)grad_nram, num_align);
+}
+
+template <>
+__mlu_func__ inline void ComputeStep2<float, float, 2>(
+                           int num_align,
+                           int element_num,
+                           float* grad_nram,
+                           float* param_nram,
+                           float* m_nram,
+                           float* v_nram,
+                           float* global_buff,
+                           float epsilon_correction,
+                           float decay_correction,
+                           int mode) {
+  __bang_mul_scalar(grad_nram, grad_nram, epsilon_correction, num_align);
+  __bang_add(param_nram, param_nram, grad_nram, num_align);
+}
+
+template <>
+__mlu_func__ inline void ComputeStep2<half, half, 2>(
+                           int num_align,
+                           int element_num,
+                           half* grad_nram,
+                           half* param_nram,
+                           half* m_nram,
+                           half* v_nram,
+                           float* global_buff,
+                           float epsilon_correction,
+                           float decay_correction,
+                           int mode) {
+  __bang_half2float((float*)grad_nram, grad_nram + SIZE_PER_REGION_LAMB / 4, num_align);
+  __bang_half2float((float*)param_nram, param_nram + SIZE_PER_REGION_LAMB / 4, num_align);
+  __bang_mul_scalar((float*)grad_nram, (float*)grad_nram, epsilon_correction, num_align);
+  __bang_add((float*)param_nram, (float*)param_nram, (float*)grad_nram, num_align);
+  __bang_float2half_rd(param_nram, (float*)param_nram, num_align);
+}
+
+template <>
+__mlu_func__ inline void ComputeStep2<half, float, 2>(
+                           int num_align,
+                           int element_num,
+                           half* grad_nram,
+                           float* param_nram,
+                           float* m_nram,
+                           float* v_nram,
+                           float* global_buff,
+                           float epsilon_correction,
+                           float decay_correction,
+                           int mode) {
+  __bang_half2float((float*)grad_nram, grad_nram + SIZE_PER_REGION_LAMB / 4, num_align);
+  __bang_mul_scalar((float*)grad_nram, (float*)grad_nram, epsilon_correction, num_align);
+  __bang_add((float*)param_nram, (float*)param_nram, (float*)grad_nram, num_align);
+  __bang_float2half_rd(grad_nram, param_nram, num_align);
+}
+
+// N : stage witch is 1 or 2
+//     note that stage != step
+// support dtype:
+// T = half, Param_t = half
+// T = half, Param_t = float
+// T = float, Param_t = float
+template <typename T, typename Param_t, int N>
+__mlu_func__ void ApplyLAMB(
+                    AddressList grad,
+                    AddressList param,
+                    AddressList m,
+                    AddressList v,
+                    AddressList half_param,
+                    SizeList sizes,
+                    float global_grad_norm,
+                    int tensor_num,
+                    float beta1,
+                    float beta2,
+                    float epsilon_correction,
+                    float learning_rate,
+                    float decay,
+                    float correction_rate,
+                    float max_grad_norm,
+                    int mode,
+                    int grad_averaging,
+                    bool use_adaptive_lr,
+                    float* global_param_norm,
+                    float* global_update_norm,
+                    float inv_scale) {
+  float clipped_global_grad_norm, clipped_global_grad_norm_recip;
+  float beta1_minus, beta1_correction_v2, beta2_minus;
+  if (N == 1) {
+    clipped_global_grad_norm = global_grad_norm > max_grad_norm ? global_grad_norm / max_grad_norm : 1.0f;
+    clipped_global_grad_norm_recip = 1.f / clipped_global_grad_norm;
+    clipped_global_grad_norm_recip = clipped_global_grad_norm_recip * inv_scale;
+    beta1_minus = grad_averaging == 1 ? 1 - beta1 : 1.f;
+    beta1_correction_v2 = beta1 / beta1_minus;
+    beta2_minus = 1 - beta2;
+  }
+
+  // Data
+  T* grad_nram = (T*)total_nram;
+  Param_t* m_nram = (Param_t*)(total_nram + SIZE_PER_REGION_LAMB * 2);
+  Param_t* v_nram = (Param_t*)(total_nram + SIZE_PER_REGION_LAMB * 4);
+  Param_t* param_nram = (Param_t*)(total_nram + SIZE_PER_REGION_LAMB * 6);
+  int grad_load_offset = sizeof(T) == 2 ? SIZE_PER_REGION_LAMB / 4 : 0;
+  int param_load_offset = sizeof(Param_t) == 2 ? SIZE_PER_REGION_LAMB / 4 : 0;
+
+  // compute type is fixed as float
+  int num_per_region = SIZE_PER_REGION_LAMB / sizeof(float);
+  int remains_chunck_num = 0;  // assign each task average chuncks as possible
+  int tensor_size, chunck_num, last_chunck_size;
+  int repeat_per_task, last_loop_chunck_num;
+  int chunck_id;  // chunck_id maybe minus
+  // int element_num;
+  int count = 0;
+  int last_id        = 0;  // tensor ids
+  int current_id     = 0;
+  int next_id        = 0;
+  int last_offset    = 0;  // address offset
+  int current_offset = 0;
+  int next_offset    = 0;
+  int last_num       = 0;  // element number
+  int current_num    = 0;
+  int next_num       = 0;
+  for (int tensor_id = 0; tensor_id < tensor_num; ++tensor_id) {
+    tensor_size = sizes.sizes[tensor_id];
+
+    chunck_num = ALIGN_UP_DIV(tensor_size, num_per_region);
+    last_chunck_size = (tensor_size - 1) % num_per_region + 1;
+
+    repeat_per_task = ALIGN_UP_DIV(chunck_num + remains_chunck_num, taskDim);
+    last_loop_chunck_num = chunck_num % taskDim;
+
+    for (int iter = 0; iter < repeat_per_task; ++iter) {
+      chunck_id = iter * taskDim + taskId - remains_chunck_num;
+
+      if (chunck_id > -1 && chunck_id < chunck_num) {
+        // get address id and offset
+        last_id = current_id;
+        current_id = next_id;
+        next_id = tensor_id;
+        last_offset = current_offset;
+        current_offset = next_offset;
+        next_offset = chunck_id * num_per_region;
+        // get deal num
+        last_num = current_num;
+        current_num = next_num;
+        next_num = chunck_id == chunck_num - 1 ? last_chunck_size : num_per_region;
+        // bang_mul_const requires n * 128 bytes
+        // bang_half2float requires n * 64 elements
+        int num_align = ALIGN_UP(current_num, 64);
+        if (N == 2) {
+          // use epsilon_correction as ratio
+          epsilon_correction = -learning_rate / correction_rate;
+          if (use_adaptive_lr || (decay != 0.0f)) {
+            float param_norm = sqrtf(global_param_norm[current_id]);
+            float update_norm = sqrtf(global_update_norm[current_id]);
+            if (update_norm != 0.0f && param_norm != 0.0f) {
+              epsilon_correction = -learning_rate * (param_norm / update_norm);
+            }
+          }
+        }
+
+        if (last_num > 0) {
+          if (N == 2) {
+            __memcpy_async((Param_t*)param.addresses[last_id] + last_offset,
+              param_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t), last_num * sizeof(Param_t), NRAM2GDRAM);
+            if (!std::is_same<Param_t, T>::value) {
+              __memcpy_async((T*)half_param.addresses[last_id] + last_offset,
+                grad_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T), last_num * sizeof(T), NRAM2GDRAM);
+            }
+          } else {
+            ComputeStep1(num_align, current_num,
+              grad_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+              param_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+              m_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+              v_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+              global_param_norm + current_id,
+              clipped_global_grad_norm_recip, beta1_correction_v2, beta2,
+              beta1_minus, beta2_minus, decay, mode);
+
+            // Save
+            __memcpy_async((T*)grad.addresses[last_id] + last_offset,
+              grad_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T), last_num * sizeof(T), NRAM2GDRAM);
+            __memcpy_async((Param_t*)m.addresses[last_id] + last_offset,
+              m_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t), last_num * sizeof(Param_t), NRAM2GDRAM);
+            __memcpy_async((Param_t*)v.addresses[last_id] + last_offset,
+              v_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t), last_num * sizeof(Param_t), NRAM2GDRAM);
+
+            // Load
+            __memcpy_async(m_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+              (Param_t*)m.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+            __memcpy_async(v_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+              (Param_t*)v.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+          }
+          __memcpy_async(grad_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T) + grad_load_offset,
+            (T*)grad.addresses[next_id] + next_offset, next_num * sizeof(T), GDRAM2NRAM);
+          __memcpy_async(param_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+            (Param_t*)param.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+
+          ComputeStep2<T, Param_t, N>(num_align, current_num,
+            grad_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+            param_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+            m_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+            v_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+            global_update_norm + current_id,
+            epsilon_correction, decay * correction_rate, mode);
+        } else if (current_num > 0) {
+          if (N == 1) {
+            ComputeStep1(num_align, current_num,
+              grad_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+              param_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+              m_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+              v_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+              global_param_norm + current_id,
+              clipped_global_grad_norm_recip, beta1_correction_v2, beta2,
+              beta1_minus, beta2_minus, decay, mode);
+            // Load
+            __memcpy_async(m_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+              (Param_t*)m.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+            __memcpy_async(v_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+              (Param_t*)v.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+          }
+
+          __memcpy_async(grad_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T) + grad_load_offset,
+            (T*)grad.addresses[next_id] + next_offset, next_num * sizeof(T), GDRAM2NRAM);
+          __memcpy_async(param_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+            (Param_t*)param.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+
+          ComputeStep2<T, Param_t, N>(num_align, current_num,
+            grad_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+            param_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+            m_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+            v_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+            global_update_norm + current_id,
+            epsilon_correction, decay * correction_rate, mode);
+        } else {
+          // Load
+          if (N == 1) {
+            __memcpy_async(m_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+              (Param_t*)m.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+            __memcpy_async(v_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+              (Param_t*)v.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+          }
+          __memcpy_async(grad_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T) + grad_load_offset,
+            (T*)grad.addresses[next_id] + next_offset, next_num * sizeof(T), GDRAM2NRAM);
+          __memcpy_async(param_nram + ((count + 1 ) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t) + param_load_offset,
+            (Param_t*)param.addresses[next_id] + next_offset, next_num * sizeof(Param_t), GDRAM2NRAM);
+        }
+        __asm__ volatile("sync;");
+        count++;
+      }
+    }
+    remains_chunck_num = (remains_chunck_num + last_loop_chunck_num) % taskDim;
+  }
+
+  if (current_num > 0) {
+    // save
+    if (N == 1) {
+      __memcpy_async((T*)grad.addresses[current_id] + current_offset,
+        grad_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+        current_num * sizeof(T), NRAM2GDRAM);
+      __memcpy_async((Param_t*)m.addresses[current_id] + current_offset,
+        m_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        current_num * sizeof(Param_t), NRAM2GDRAM);
+      __memcpy_async((Param_t*)v.addresses[current_id] + current_offset,
+        v_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        current_num * sizeof(Param_t), NRAM2GDRAM);
+    } else {
+      __memcpy_async((Param_t*)param.addresses[current_id] + current_offset,
+        param_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        current_num * sizeof(Param_t), NRAM2GDRAM);
+      if (!std::is_same<Param_t, T>::value) {
+        __memcpy_async((T*)half_param.addresses[current_id] + current_offset,
+          grad_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+          current_num * sizeof(T), NRAM2GDRAM);
+      }
+    }
+  }
+
+  if (next_num > 0) {
+    int num_align = ALIGN_UP(next_num, 64);
+    if (N == 1) {
+      ComputeStep1(num_align, next_num,
+        grad_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+        param_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        m_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        v_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        global_param_norm + next_id,
+        clipped_global_grad_norm_recip, beta1_correction_v2, beta2,
+        beta1_minus, beta2_minus, decay, mode);
+    } else {
+      // use epsilon_correction as ratio
+      epsilon_correction = -learning_rate / correction_rate;
+      if (use_adaptive_lr || (decay != 0.0f)) {
+        float param_norm = sqrtf(global_param_norm[next_id]);
+        float update_norm = sqrtf(global_update_norm[next_id]);
+        if (update_norm != 0.0f && param_norm != 0.0f) {
+          epsilon_correction = -learning_rate * (param_norm / update_norm);
+        }
+      }
+    }
+    ComputeStep2<T, Param_t, N>(num_align, next_num,
+      grad_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+      param_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+      m_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+      v_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+      global_update_norm + next_id,
+      epsilon_correction, decay * correction_rate, mode);
+    __asm__ volatile("sync;");
+  }
+
+  if (next_num > 0) {
+    // save
+    if (N == 1) {
+      __memcpy_async((T*)grad.addresses[next_id] + next_offset,
+        grad_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+        next_num * sizeof(T), NRAM2GDRAM);
+      __memcpy_async((Param_t*)m.addresses[next_id] + next_offset,
+        m_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        next_num * sizeof(Param_t), NRAM2GDRAM);
+      __memcpy_async((Param_t*)v.addresses[next_id] + next_offset,
+        v_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        next_num * sizeof(Param_t), NRAM2GDRAM);
+    } else {
+      __memcpy_async((Param_t*)param.addresses[next_id] + next_offset,
+        param_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(Param_t),
+        next_num * sizeof(Param_t), NRAM2GDRAM);
+      if (!std::is_same<Param_t, T>::value) {
+        __memcpy_async((T*)half_param.addresses[next_id] + next_offset,
+          grad_nram + (count & 0x1) * SIZE_PER_REGION_LAMB / sizeof(T),
+          next_num * sizeof(T), NRAM2GDRAM);
+      }
+    }
+  }
+}
+
+__mlu_global__ void MLUMultiTensorLAMBStage1(
+                      AddressList grad,
+                      AddressList param,
+                      AddressList m,
+                      AddressList v,
+                      SizeList sizes,
+                      int tensor_num,
+                      int* overflow,
+                      float beta1,
+                      float beta2,
+                      int grad_averaging,
+                      int* step,
+                      int bias_correction,
+                      float epsilon,
+                      int mode,
+                      float decay,
+                      float* global_grad_norm,
+                      float* max_grad_norm,
+                      void* global_param_norm,
+                      void* global_update_norm,
+                      float* inv_scale,
+                      cnrtDataType_t grad_cnrt_type,
+                      cnrtDataType_t param_cnrt_type) {
+  if (*overflow) {
+    return;
+  }
+
+  float beta1_correction_recip = 1;
+  float beta2_correction_recip = 1;
+  if (bias_correction == 1) {
+    beta1_correction_recip = 1 / (1 - powf(beta1, *step));
+    beta2_correction_recip = 1 / (1 - powf(beta2, *step));
+  }
+  float epsilon_correction = epsilon / sqrtf(beta2_correction_recip);
+  float correction_rate = sqrtf(beta2_correction_recip) / beta1_correction_recip;
+  switch (grad_cnrt_type) {
+    case CNRT_FLOAT32:
+      ApplyLAMB<float, float, 1>(grad, param, m, v,
+        param/*just a placeholder*/, sizes, *global_grad_norm, tensor_num,
+        beta1, beta2, epsilon_correction, 1.f/*learning_rate_*/, decay, correction_rate,
+        *max_grad_norm, mode, grad_averaging, false,
+        (float*)global_param_norm, (float*)global_update_norm, *inv_scale);
+      break;
+    case CNRT_FLOAT16:
+      switch (param_cnrt_type) {
+        case CNRT_FLOAT32:
+          ApplyLAMB<half, float, 1>(grad, param, m, v,
+            param/*just a placeholder*/, sizes, *global_grad_norm, tensor_num,
+            beta1, beta2, epsilon_correction, 1.f/*learning_rate_*/, decay, correction_rate,
+            *max_grad_norm, mode, grad_averaging, false,
+            (float*)global_param_norm, (float*)global_update_norm, *inv_scale);
+          break;
+        case CNRT_FLOAT16:
+          ApplyLAMB<half, half, 1>(grad, param, m, v,
+            param/*just a placeholder*/, sizes, *global_grad_norm, tensor_num,
+            beta1, beta2, epsilon_correction, 1.f/*learning_rate_*/, decay, correction_rate,
+            *max_grad_norm, mode, grad_averaging, false,
+            (float*)global_param_norm, (float*)global_update_norm, *inv_scale);
+          break;
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+__mlu_global__ void MLUMultiTensorLAMBStage2(
+                      AddressList grad,
+                      AddressList param,
+                      AddressList half_param,
+                      SizeList sizes,
+                      int tensor_num,
+                      int* overflow,
+                      float beta1,
+                      float beta2,
+                      int* step,
+                      int bias_correction,
+                      void* global_param_norm,
+                      void* global_update_norm,
+                      float* learning_rate,
+                      float decay,
+                      bool use_adaptive_lr,
+                      cnrtDataType_t grad_cnrt_type,
+                      cnrtDataType_t param_cnrt_type) {
+  if (*overflow) {
+    return;
+  }
+  float beta1_correction_recip = 1;
+  float beta2_correction_recip = 1;
+  if (bias_correction == 1) {
+    beta1_correction_recip = 1 / (1 - powf(beta1, *step));
+    beta2_correction_recip = 1 / (1 - powf(beta2, *step));
+  }
+  float correction_rate = sqrtf(beta2_correction_recip) / beta1_correction_recip;
+  switch (grad_cnrt_type) {
+    case CNRT_FLOAT32:
+      ApplyLAMB<float, float, 2>(grad, param, grad/*just a placeholder*/, param/*just a placeholder*/,
+        half_param, sizes, 1.f/*global_grad_norm*/, tensor_num, 1.f/*beta1,*/, 1.f/*beta2,*/,
+        0.f/*epsilon_correction*/, *learning_rate, decay, correction_rate,
+        1.f/*max_grad_norm*/, 0/*mode*/, 0/*grad_averaging*/,
+        use_adaptive_lr, (float*)global_param_norm, (float*)global_update_norm, 1.f/*inv_scale*/);
+      break;
+    case CNRT_FLOAT16:
+      switch (param_cnrt_type) {
+        case CNRT_FLOAT32:
+          ApplyLAMB<half, float, 2>(grad, param, grad/*just a placeholder*/, param/*just a placeholder*/,
+            half_param, sizes, 1.f/*global_grad_norm*/, tensor_num, 1.f/*beta1,*/, 1.f/*beta2,*/,
+            0.f/*epsilon_correction*/, *learning_rate, decay, correction_rate,
+            1.f/*max_grad_norm*/, 0/*mode*/, 0/*grad_averaging*/,
+            use_adaptive_lr, (float*)global_param_norm, (float*)global_update_norm, 1.f/*inv_scale*/);
+          break;
+        case CNRT_FLOAT16:
+          ApplyLAMB<half, half, 2>(grad, param, grad/*just a placeholder*/, param/*just a placeholder*/,
+            half_param, sizes, 1.f/*global_grad_norm*/, tensor_num, 1.f/*beta1,*/, 1.f/*beta2,*/,
+            0.f/*epsilon_correction*/, *learning_rate, decay, correction_rate,
+            1.f/*max_grad_norm*/, 0/*mode*/, 0/*grad_averaging*/,
+            use_adaptive_lr, (float*)global_param_norm, (float*)global_update_norm, 1.f/*inv_scale*/);
+          break;
+        default:
+          break;
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+void bang_fused_lamb_amp_internal(
+    AddressList grad,
+    AddressList param,
+    AddressList m,
+    AddressList v,
+    AddressList half_param,
+    SizeList sizes,
+    int tensor_num,
+    int* overflow,
+    float beta1,
+    float beta2,
+    int grad_averaging,
+    int* step,
+    int bias_correction,
+    float epsilon,
+    int mode,
+    float weight_decay,
+    float* global_grad_norm,
+    float* max_grad_norm,
+    void* global_param_norm,
+    void* global_update_norm,
+    float* inv_scale,
+    float* lr,
+    bool use_adaptive_lr,
+    cnrtDim3_t k_dim,
+    cnrtFunctionType_t k_type,
+    cnrtQueue_t queue,
+    cnrtDataType_t grad_cnrt_type,
+    cnrtDataType_t param_cnrt_type) {
+  MLUMultiTensorLAMBStage1<<<k_dim, k_type, queue>>>(
+      grad, param, m, v,
+      sizes, tensor_num, overflow, beta1, beta2, grad_averaging,
+      step, bias_correction, epsilon, mode, weight_decay,
+      global_grad_norm, max_grad_norm, global_param_norm,
+      global_update_norm, inv_scale, grad_cnrt_type, param_cnrt_type);
+  MLUMultiTensorLAMBStage2<<<k_dim, k_type, queue>>>(
+      grad, param, half_param,
+      sizes, tensor_num, overflow, beta1, beta2, step,
+      bias_correction, global_param_norm, global_update_norm,
+      lr, weight_decay, use_adaptive_lr, grad_cnrt_type, param_cnrt_type);
+}
+
+}  // namespace ops
+}  // namespace torch_mlu

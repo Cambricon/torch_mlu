@@ -1,0 +1,186 @@
+{
+    "test_masked_scatter": [
+        {
+            "CaseName": "test_masked_scatter_backward",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_masked_scatter_channels_last_and_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_masked_scatter_exception",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_masked_scatter_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 45
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 45
+                }
+            ]
+        },
+        {
+            "CaseName": "test_masked_scatter_tensor_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 19
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 17
+                }
+            ]
+        },
+        {
+            "CaseName": "test_masked_scatter_with_mix_memory_format",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

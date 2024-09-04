@@ -1,0 +1,320 @@
+{
+    "test_max": [
+        {
+            "CaseName": "test_max",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 360
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 241
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 46
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 241
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 241
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_backward",
+            "Events": [
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_big_number",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_dim_and_out",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 45
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 75
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_empty_tensor",
+            "Events": []
+        },
+        {
+            "CaseName": "test_max_exception",
+            "Events": []
+        },
+        {
+            "CaseName": "test_max_no_contiguous_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_other",
+            "Events": [
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 88
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 44
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_out",
+            "Events": [
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_out_not_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 45
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 45
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_permute",
+            "Events": [
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_zero_dim_cpu_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlMaximum",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,164 @@
+{
+    "test_sort": [
+        {
+            "CaseName": "test_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sort",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 112
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sort_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sort_no_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sort_out",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 960
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 640
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sort_out_stable",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 112
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sort_stable",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 112
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sort_zero_dim",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 64
+                }
+            ]
+        }
+    ]
+}

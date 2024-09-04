@@ -1,0 +1,68 @@
+{
+    "test_full": [
+        {
+            "CaseName": "test_full",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_full_bound",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_full_out",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 27
+                }
+            ]
+        },
+        {
+            "CaseName": "test_full_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,226 @@
+{
+    "test_spectral_ops": [
+        {
+            "CaseName": "test_cnfft_plan_cache",
+            "Events": [
+                {
+                    "Name": "cnnlPad",
+                    "# of Calls": 1538
+                },
+                {
+                    "Name": "cnnlMakeFFTPlanMany",
+                    "# of Calls": 2868
+                },
+                {
+                    "Name": "cnnlExecFFT",
+                    "# of Calls": 6146
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 3072
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlReflectionPad2d",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 5760
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 34178
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3072
+                }
+            ]
+        },
+        {
+            "CaseName": "test_complex_stft_definition",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlMakeFFTPlanMany",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlExecFFT",
+                    "# of Calls": 457
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 449
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 16
+                }
+            ]
+        },
+        {
+            "CaseName": "test_fft_c2c_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_fft_round_trip",
+            "Events": [
+                {
+                    "Name": "cnnlExecFFT",
+                    "# of Calls": 720
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlMakeFFTPlanMany",
+                    "# of Calls": 43
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 900
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 360
+                }
+            ]
+        },
+        {
+            "CaseName": "test_stft",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1024
+                },
+                {
+                    "Name": "cnnlExecFFT",
+                    "# of Calls": 2048
+                },
+                {
+                    "Name": "cnnlPad",
+                    "# of Calls": 512
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 512
+                },
+                {
+                    "Name": "cnnlReflectionPad2d",
+                    "# of Calls": 512
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1920
+                },
+                {
+                    "Name": "cnnlMakeFFTPlanMany",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 11392
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1024
+                }
+            ]
+        },
+        {
+            "CaseName": "test_stft_exception",
+            "Events": [
+                {
+                    "Name": "cnnlPad",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReflectionPad2d",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                }
+            ]
+        }
+    ]
+}

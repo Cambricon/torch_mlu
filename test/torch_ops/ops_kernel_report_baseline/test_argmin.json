@@ -1,0 +1,75 @@
+{
+    "test_argmin": [
+        {
+            "CaseName": "test_argmin",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 784
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 624
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 468
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1248
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1568
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1568
+                }
+            ]
+        },
+        {
+            "CaseName": "test_argmin_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_argmin_out",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2744
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1176
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2744
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5488
+                }
+            ]
+        }
+    ]
+}

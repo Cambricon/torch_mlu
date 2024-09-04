@@ -1,0 +1,1390 @@
+# A list of schema of MLU supported ops.
+# The meaning of the namespace is as follows:
+# aten: Pytorch native ops
+# vision: torchvision ops
+# audio: torchaudio ops
+# custom: mlu custom ops
+
+# If you want to use structured kernel feature, add relative keywords.
+# You can just copy the 3 kinds of keywords from
+# pytorch/aten/src/ATen/native/native_functions.yaml
+# structured_delegate: delegate to out structured kernel
+# structured_inherits: specifies alternative of what to inherit from when defining the meta class for the structured operator.
+# structured: whether or not this out function is a "structured kernel"
+# NB: Do not add precomputed keyword, we generate precomputed value by default.
+
+# Other optional keywords can also be appended in yaml to gen special code. For example:
+# derived_type: bang, gen bang relative code when your kernel is written by BANGC.
+# custom_autograd: True, we want to use our own implementation whenever the op is
+# backend/compositeimplicitautograd/compositeexplicitautograd, this keyword tells codegen to register
+# both autograd and backend kernel.
+# override_meta: True, write your own meta func for structured kernel
+# override_impl: True, write your own impl func for structured kernel
+
+aten:
+  - func: _linalg_svd
+    structured_delegate: _linalg_svd.U
+  - func: _linalg_svd.U
+    structured: True
+    override_meta: True
+  - func: _local_scalar_dense
+  - func: empty.memory_format
+  - func: empty_strided
+  - func: constant_pad_nd
+  - func: cat
+    structured_delegate: cat.out
+  - func: cat.out
+    structured: True
+  - func: copy_
+  - func: lstm.input
+    custom_autograd: True
+  - func: lstm.data
+    custom_autograd: True
+  - func: _thnn_fused_lstm_cell
+  - func: _thnn_fused_lstm_cell_backward_impl
+  - func: _thnn_fused_gru_cell
+  - func: _thnn_fused_gru_cell_backward
+  - func: _cudnn_rnn
+  - func: _cudnn_rnn_backward
+  - func: native_batch_norm
+  - func: native_batch_norm.out
+  - func: native_batch_norm_backward
+  - func: batch_norm_stats
+  - func: batch_norm_elemt
+  - func: batch_norm_elemt.out
+  - func: batch_norm_gather_stats
+  - func: batch_norm_gather_stats_with_counts
+  - func: batch_norm_backward_reduce
+  - func: batch_norm_backward_elemt
+  - func: _batch_norm_impl_index
+    custom_autograd: True
+  - func: _prelu_kernel
+  - func: _prelu_kernel_backward
+  - func: as_strided
+  - func: isin.Tensor_Tensor
+    structured_delegate: isin.Tensor_Tensor_out
+  - func: isin.Tensor_Tensor_out
+    structured: True
+  - func: isin.Tensor_Scalar
+    structured_delegate: isin.Tensor_Scalar_out
+  - func: isin.Tensor_Scalar_out
+    structured: True
+  - func: isin.Scalar_Tensor
+    structured_delegate: isin.Scalar_Tensor_out
+  - func: isin.Scalar_Tensor_out
+    structured: True
+  - func: topk
+    structured_delegate: topk.values
+  - func: topk.values
+    structured: True
+  - func: upsample_nearest1d
+    structured_delegate: upsample_nearest1d.out
+  - func: upsample_nearest1d.out
+    structured: True
+    override_meta: True
+  - func: upsample_nearest1d_backward
+    structured_delegate: upsample_nearest1d_backward.grad_input
+  - func: upsample_nearest1d_backward.grad_input
+    structured: True
+    override_meta: True
+  - func: _upsample_nearest_exact1d
+    structured_delegate: _upsample_nearest_exact1d.out
+  - func: _upsample_nearest_exact1d.out
+    structured: True
+    override_meta: True
+  # TODO(CNNLCORE-19092): uncomment after cnnl_v1.27.0
+  #- func: _upsample_nearest_exact1d_backward
+  #  structured_delegate: _upsample_nearest_exact1d_backward.grad_input
+  #- func: _upsample_nearest_exact1d_backward.grad_input
+  #  structured: True
+  #  override_meta: True
+  - func: upsample_linear1d
+    structured_delegate: upsample_linear1d.out
+  - func: upsample_linear1d.out
+    structured: True
+    override_meta: True
+  - func: upsample_linear1d_backward
+    structured_delegate: upsample_linear1d_backward.grad_input
+  - func: upsample_linear1d_backward.grad_input
+    structured: True
+    override_meta: True
+  - func: upsample_nearest2d
+    structured_delegate: upsample_nearest2d.out
+  - func: upsample_nearest2d.out
+    structured: True
+    override_meta: True
+  - func: upsample_nearest2d_backward
+    structured_delegate: upsample_nearest2d_backward.grad_input
+  - func: upsample_nearest2d_backward.grad_input
+    structured: True
+    override_meta: True
+  - func: _upsample_nearest_exact2d
+    structured_delegate: _upsample_nearest_exact2d.out
+  - func: _upsample_nearest_exact2d.out
+    structured: True
+    override_meta: True
+  # TODO(CNNLCORE-19092): uncomment after cnnl_v1.27.0
+  #- func: _upsample_nearest_exact2d_backward
+  #  structured_delegate: _upsample_nearest_exact2d_backward.grad_input
+  #- func: _upsample_nearest_exact2d_backward.grad_input
+  #  structured: True
+  #  override_meta: True
+  - func: upsample_bilinear2d
+    structured_delegate: upsample_bilinear2d.out
+  - func: upsample_bilinear2d.out
+    structured: True
+    override_meta: True
+  - func: upsample_bilinear2d_backward
+    structured_delegate: upsample_bilinear2d_backward.grad_input
+  - func: upsample_bilinear2d_backward.grad_input
+    structured: True
+    override_meta: True
+  - func: upsample_bicubic2d
+    structured_delegate: upsample_bicubic2d.out
+  - func: upsample_bicubic2d.out
+    structured: True
+    override_meta: True
+  - func: upsample_bicubic2d_backward
+    structured_delegate: upsample_bicubic2d_backward.grad_input
+  - func: upsample_bicubic2d_backward.grad_input
+    structured: True
+    override_meta: True
+  - func: upsample_trilinear3d
+    structured_delegate: upsample_trilinear3d.out
+  - func: upsample_trilinear3d.out
+    structured: True
+    override_meta: True
+  - func: upsample_trilinear3d_backward
+    structured_delegate: upsample_trilinear3d_backward.grad_input
+  - func: upsample_trilinear3d_backward.grad_input
+    structured: True
+    override_meta: True
+  - func: scatter.src
+    structured_delegate: scatter.src_out
+  - func: scatter_.src
+    structured_delegate: scatter.src_out
+  - func: scatter.src_out
+    structured: True
+  - func: scatter.value
+    structured_delegate: scatter.value_out
+  - func: scatter_.value
+    structured_delegate: scatter.value_out
+  - func: scatter.value_out
+    structured: True
+  - func: scatter_add
+    structured_delegate: scatter_add.out
+  - func: scatter_add_
+    structured_delegate: scatter_add.out
+  - func: scatter_add.out
+    structured: True
+  - func: scatter.reduce
+    structured_delegate: scatter.reduce_out
+  - func: scatter_.reduce
+    structured_delegate: scatter.reduce_out
+  - func: scatter.reduce_out
+    structured: True
+  - func: scatter.value_reduce
+    structured_delegate: scatter.value_reduce_out
+  - func: scatter_.value_reduce
+    structured_delegate: scatter.value_reduce_out
+  - func: scatter.value_reduce_out
+    structured: True
+  - func: scatter_reduce.two
+    structured_delegate: scatter_reduce.two_out
+  - func: scatter_reduce_.two
+    structured_delegate: scatter_reduce.two_out
+  - func: scatter_reduce.two_out
+    structured: True
+  - func: dot
+  - func: mm
+    structured_delegate: mm.out
+  - func: mm.out
+    structured: True
+  - func: addmm
+    structured_delegate: addmm.out
+  - func: addmm_
+    structured_delegate: addmm.out
+  - func: addmm.out
+    structured: True
+  - func: _addmm_activation
+    structured_delegate: _addmm_activation.out
+  - func: _addmm_activation.out
+    structured: True
+  - func: baddbmm
+    structured_delegate: baddbmm.out
+  - func: baddbmm_
+    structured_delegate: baddbmm.out
+  - func: baddbmm.out
+    structured: True
+  - func: bmm
+    structured_delegate: bmm.out
+  - func: bmm.out
+    structured: True
+  - func: addbmm
+  - func: addbmm_
+  - func: addbmm.out
+  - func: addr
+  - func: addr.out
+  - func: addmv
+    structured_delegate: addmv.out
+  - func: addmv_
+    structured_delegate: addmv.out
+  - func: addmv.out
+    structured: True
+  - func: matmul
+    custom_autograd: True
+  - func: matmul.out
+    custom_autograd: True
+  - func: mse_loss
+  - func: mse_loss.out
+  - func: mse_loss_backward
+  - func: mse_loss_backward.grad_input
+  - func: smooth_l1_loss
+  - func: smooth_l1_loss.out
+  - func: smooth_l1_loss_backward
+  - func: smooth_l1_loss_backward.grad_input
+  - func: reflection_pad1d
+    structured_delegate: reflection_pad1d.out
+  - func: reflection_pad1d.out
+    structured: True
+  - func: reflection_pad1d_backward
+    structured_delegate: reflection_pad1d_backward.grad_input
+  - func: reflection_pad1d_backward.grad_input
+    structured: True
+  - func: reflection_pad2d
+  - func: reflection_pad2d.out
+  - func: reflection_pad2d_backward
+  - func: reflection_pad2d_backward.grad_input
+  - func: _copy_from_and_resize
+  - func: resize_
+  - func: neg
+    structured_delegate: neg.out
+  - func: neg_
+    structured_delegate: neg.out
+  - func: neg.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: round
+    structured_delegate: round.out
+  - func: round_
+    structured_delegate: round.out
+  - func: round.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: roll
+  - func: _fft_r2c
+  - func: _fft_c2r
+  - func: _fft_c2r.out
+  - func: _fft_c2c
+  - func: _fft_c2c.out
+  - func: set_.source_Storage
+  - func: set_.source_Tensor
+  - func: set_.source_Storage_storage_offset
+  - func: set_
+  - func: sin
+    structured_delegate: sin.out
+  - func: sin.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: sin_
+    structured_delegate: sin.out
+  - func: sinh
+    structured_delegate: sinh.out
+  - func: sinh_
+    structured_delegate: sinh.out
+  - func: sinh.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: cos
+    structured_delegate: cos.out
+  - func: cos.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: cos_
+    structured_delegate: cos.out
+  - func: cosh
+    structured_delegate: cosh.out
+  - func: cosh.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: cosh_
+    structured_delegate: cosh.out
+  - func: tan
+    structured_delegate: tan.out
+  - func: tan.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: tan_
+    structured_delegate: tan.out
+  - func: asin
+    structured_delegate: asin.out
+  - func: asin.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: asin_
+    structured_delegate: asin.out
+  - func: asinh
+    structured_delegate: asinh.out
+  - func: asinh.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: asinh_
+    structured_delegate: asinh.out
+  - func: atan
+    structured_delegate: atan.out
+  - func: atan_
+    structured_delegate: atan.out
+  - func: atan.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: atan2
+    structured_delegate: atan2.out
+  - func: atan2.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: atan2_
+    structured_delegate: atan2.out
+  - func: atanh
+    structured_delegate: atanh.out
+  - func: atanh.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: atanh_
+    structured_delegate: atanh.out
+  - func: acosh
+    structured_delegate: acosh.out
+  - func: acosh_
+    structured_delegate: acosh.out
+  - func: acosh.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: acos
+    structured_delegate: acos.out
+  - func: acos_
+    structured_delegate: acos.out
+  - func: acos.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: is_pinned
+  - func: _pin_memory
+  - func: record_stream
+  - func: add.Scalar
+  - func: add.Tensor
+    structured_delegate: add.out
+  - func: add_.Scalar
+  - func: add_.Tensor
+    structured_delegate: add.out
+  - func: add.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: addcdiv.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: addcdiv
+    structured_delegate: addcdiv.out
+  - func: addcdiv_
+    structured_delegate: addcdiv.out
+  - func: addcmul.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: addcmul
+    structured_delegate: addcmul.out
+  - func: addcmul_
+    structured_delegate: addcmul.out
+  - func: rsub.Scalar
+  - func: rsub.Tensor
+  - func: sub.Scalar
+  - func: sub.Tensor
+    structured_delegate: sub.out
+  - func: sub_.Scalar
+  - func: sub_.Tensor
+    structured_delegate: sub.out
+  - func: sub.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: mul.Scalar
+  - func: mul.Tensor
+    structured_delegate: mul.out
+  - func: mul_.Scalar
+  - func: mul_.Tensor
+    structured_delegate: mul.out
+  - func: mul.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: angle
+  - func: angle.out
+  - func: arange.start_out
+  - func: view
+  - func: view_as_real
+  - func: view_as_complex
+  - func: nan_to_num.out
+  - func: index_select
+  - func: index_select.out
+  - func: native_layer_norm
+  - func: native_layer_norm_backward
+  - func: group_norm
+    custom_autograd: True
+  - func: native_group_norm
+  - func: native_group_norm_backward
+  - func: abs.out
+  - func: random_.from
+  - func: random_.to
+  - func: random_
+  - func: randperm.generator_out
+  - func: linalg_inv_ex
+  - func: linalg_inv_ex.inverse
+
+  # NOTE [ _reshape_alias ] is meant to be used in the implementation of reshape.
+  # They are not user-facing, hence the leading underscore. Please don't use it
+  # anywhere else.
+
+  - func: _reshape_alias
+  - func: _unsafe_view
+  - func: diag.out
+  - func: unfold
+  - func: unfold_backward
+  - func: normal_
+  - func: normal.Tensor_float_out
+  - func: normal.Tensor_float
+  - func: normal.float_Tensor_out
+  - func: normal.float_Tensor
+  - func: normal.Tensor_Tensor_out
+  - func: normal.Tensor_Tensor
+  - func: fill_.Scalar
+  - func: fill_.Tensor
+  - func: zero_
+  - func: relu
+  - func: relu_
+  - func: clamp
+    structured_delegate: clamp.out
+  - func: clamp_
+    structured_delegate: clamp.out
+  - func: clamp.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: clamp_.Tensor
+    structured_delegate: clamp.Tensor_out
+  - func: clamp.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: clamp.Tensor
+    structured_delegate: clamp.Tensor_out
+  - func: clamp_min
+    structured_delegate: clamp_min.out
+  - func: clamp_min_
+    structured_delegate: clamp_min.out
+  - func: clamp_min.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: clamp_min.Tensor
+    structured_delegate: clamp_min.Tensor_out
+  - func: clamp_min_.Tensor
+    structured_delegate: clamp_min.Tensor_out
+  - func: clamp_min.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: clamp_max
+    structured_delegate: clamp_max.out
+  - func: clamp_max.Tensor
+    structured_delegate: clamp_max.Tensor_out
+  - func: clamp_max_
+    structured_delegate: clamp_max.out
+  - func: clamp_max_.Tensor
+    structured_delegate: clamp_max.Tensor_out
+  - func: clamp_max.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: clamp_max.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: clone
+  - func: minimum
+    structured_delegate: minimum.out
+  - func: minimum.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: maximum
+    structured_delegate: maximum.out
+  - func: maximum.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: softplus
+    structured_delegate: softplus.out
+  - func: softplus.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: softplus_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: softplus_backward
+    structured_delegate: softplus_backward.grad_input
+  - func: tanh
+    structured_delegate: tanh.out
+  - func: tanh_
+    structured_delegate: tanh.out
+  - func: tanh.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: tanh_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: tanh_backward
+    structured_delegate: tanh_backward.grad_input
+  - func: gelu.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: gelu_
+    structured_delegate: gelu.out
+  - func: gelu
+    structured_delegate: gelu.out
+  - func: gelu_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: gelu_backward
+    structured_delegate: gelu_backward.grad_input
+  - func: glu.out
+  - func: glu_backward.grad_input
+  - func: glu_backward
+  - func: hardswish.out
+  - func: hardswish
+  - func: hardswish_
+  - func: hardswish_backward
+  - func: hardtanh.out
+  - func: hardtanh
+  - func: hardtanh_
+  - func: hardtanh_backward.grad_input
+  - func: hardtanh_backward
+  - func: hardsigmoid.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: hardsigmoid
+    structured_delegate: hardsigmoid.out
+  - func: hardsigmoid_
+    structured_delegate: hardsigmoid.out
+  - func: hardsigmoid_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: hardsigmoid_backward
+    structured_delegate: hardsigmoid_backward.grad_input
+  - func: log_sigmoid_forward.output
+  - func: log_sigmoid_forward
+  - func: log_sigmoid_backward.grad_input
+  - func: log_sigmoid_backward
+  - func: sigmoid
+    structured_delegate: sigmoid.out
+  - func: sigmoid_
+    structured_delegate: sigmoid.out
+  - func: sigmoid.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: sigmoid_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: sigmoid_backward
+    structured_delegate: sigmoid_backward.grad_input
+  - func: elu.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: elu
+    structured_delegate: elu.out
+  - func: elu_
+    structured_delegate: elu.out
+  - func: elu_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: elu_backward
+    structured_delegate: elu_backward.grad_input
+  - func: leaky_relu.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: leaky_relu
+    structured_delegate: leaky_relu.out
+  - func: leaky_relu_
+    structured_delegate: leaky_relu.out
+  - func: leaky_relu_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: leaky_relu_backward
+    structured_delegate: leaky_relu_backward.grad_input
+  - func: silu
+    structured_delegate: silu.out
+  - func: silu_
+    structured_delegate: silu.out
+  - func: silu.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: silu_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: silu_backward
+    structured_delegate: silu_backward.grad_input
+  - func: softshrink
+    structured_delegate: softshrink.out
+  - func: softshrink.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: softshrink_backward
+    structured_delegate: softshrink_backward.grad_input
+  - func: softshrink_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: hardshrink
+    structured_delegate: hardshrink.out
+  - func: hardshrink.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: hardshrink_backward
+    structured_delegate: hardshrink_backward.grad_input
+  - func: hardshrink_backward.grad_input
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: threshold
+    structured_delegate: threshold.out
+  - func: threshold_
+    structured_delegate: threshold.out
+  - func: threshold.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: threshold_backward.grad_input
+  - func: rrelu_with_noise.out
+  - func: rrelu_with_noise
+  - func: rrelu_with_noise_
+  - func: eq.Scalar_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: eq.Scalar
+    structured_delegate: eq.Scalar_out
+  - func: eq.Tensor_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: eq.Tensor
+    structured_delegate: eq.Tensor_out
+  - func: eq_.Scalar
+    structured_delegate: eq.Scalar_out
+  - func: eq_.Tensor
+    structured_delegate: eq.Tensor_out
+  - func: equal
+  - func: ne.Scalar_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: ne.Scalar
+    structured_delegate: ne.Scalar_out
+  - func: ne.Tensor_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: ne.Tensor
+    structured_delegate: ne.Tensor_out
+  - func: ne_.Scalar
+    structured_delegate: ne.Scalar_out
+  - func: ne_.Tensor
+    structured_delegate: ne.Tensor_out
+  - func: isnan
+  - func: le.Scalar_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: le.Scalar
+    structured_delegate: le.Scalar_out
+  - func: le.Tensor_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: le.Tensor
+    structured_delegate: le.Tensor_out
+  - func: le_.Scalar
+    structured_delegate: le.Scalar_out
+  - func: le_.Tensor
+    structured_delegate: le.Tensor_out
+  - func: grid_sampler_2d
+  - func: grid_sampler_2d_backward
+  - func: gt.Scalar_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: gt.Scalar
+    structured_delegate: gt.Scalar_out
+  - func: gt.Tensor_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: gt.Tensor
+    structured_delegate: gt.Tensor_out
+  - func: gt_.Scalar
+    structured_delegate: gt.Scalar_out
+  - func: gt_.Tensor
+    structured_delegate: gt.Tensor_out
+  - func: lt.Scalar_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: lt.Scalar
+    structured_delegate: lt.Scalar_out
+  - func: lt.Tensor_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: lt.Tensor
+    structured_delegate: lt.Tensor_out
+  - func: lt_.Scalar
+    structured_delegate: lt.Scalar_out
+  - func: lt_.Tensor
+    structured_delegate: lt.Tensor_out
+  - func: ge.Scalar_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: ge.Scalar
+    structured_delegate: ge.Scalar_out
+  - func: ge.Tensor_out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: ge.Tensor
+    structured_delegate: ge.Tensor_out
+  - func: ge_.Scalar
+    structured_delegate: ge.Scalar_out
+  - func: ge_.Tensor
+    structured_delegate: ge.Tensor_out
+  - func: logical_not.out
+  - func: logical_xor.out
+  - func: logical_and.out
+  - func: logical_or.out
+  - func: erfc
+    structured_delegate: erfc.out
+  - func: erfc_
+    structured_delegate: erfc.out
+  - func: erfc.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: erfinv
+    structured_delegate: erfinv.out
+  - func: erfinv_
+    structured_delegate: erfinv.out
+  - func: erfinv.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: exp
+    structured_delegate: exp.out
+  - func: exp_
+    structured_delegate: exp.out
+  - func: exp.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: exp2
+    structured_delegate: exp2.out
+  - func: exp2_
+    structured_delegate: exp2.out
+  - func: exp2.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: expm1
+    structured_delegate: expm1.out
+  - func: expm1_
+    structured_delegate: expm1.out
+  - func: expm1.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: exponential_
+  - func: log
+    structured_delegate: log.out
+  - func: log_
+    structured_delegate: log.out
+  - func: log.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: log10
+    structured_delegate: log10.out
+  - func: log10_
+    structured_delegate: log10.out
+  - func: log10.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: log1p
+    structured_delegate: log1p.out
+  - func: log1p_
+    structured_delegate: log1p.out
+  - func: log1p.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: log2
+    structured_delegate: log2.out
+  - func: log2_
+    structured_delegate: log2.out
+  - func: log2.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: logaddexp.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: logaddexp
+    structured_delegate: logaddexp.out
+  - func: logaddexp2.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: logaddexp2
+    structured_delegate: logaddexp2.out     
+  - func: logical_or.out
+  - func: masked_fill_.Scalar
+  - func: masked_fill_.Tensor
+  - func: reciprocal
+    structured_delegate: reciprocal.out
+  - func: reciprocal_
+    structured_delegate: reciprocal.out
+  - func: reciprocal.out
+  - func: sqrt
+    structured_delegate: sqrt.out
+  - func: sqrt_
+    structured_delegate: sqrt.out
+  - func: sqrt.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: rsqrt
+    structured_delegate: rsqrt.out
+  - func: rsqrt_
+    structured_delegate: rsqrt.out
+  - func: rsqrt.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: index.Tensor
+  - func: index.Tensor_out
+  - func: masked_select.out
+  - func: masked_select
+  - func: index_add.out
+    structured: True
+  - func: index_add_
+    structured_delegate: index_add.out
+  - func: index_add
+    structured_delegate: index_add.out
+  - func: pow.Tensor_Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: pow.Tensor_Tensor
+    structured_delegate: pow.Tensor_Tensor_out
+  - func: pow.Scalar_out
+    structured: True
+  - func: pow.Scalar
+    structured_delegate: pow.Scalar_out
+  - func: pow.Tensor_Scalar_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: pow.Tensor_Scalar
+    structured_delegate: pow.Tensor_Scalar_out
+  - func: pow_.Scalar
+    structured_delegate: pow.Tensor_Scalar_out
+  - func: pow_.Tensor
+    structured_delegate: pow.Tensor_Tensor_out
+  - func: avg_pool2d.out
+    structured: true
+    override_meta: True
+  - func: avg_pool2d
+    structured_delegate: avg_pool2d.out
+  - func: avg_pool2d_backward.grad_input
+    structured: true
+    override_meta: True
+  - func: avg_pool2d_backward
+    structured_delegate: avg_pool2d_backward.grad_input
+  - func: avg_pool3d.out
+    structured: true
+    override_meta: True
+  - func: avg_pool3d
+    structured_delegate: avg_pool3d.out
+  - func: avg_pool3d_backward.grad_input
+    structured: true
+    override_meta: True
+  - func: avg_pool3d_backward
+    structured_delegate: avg_pool3d_backward.grad_input
+  - func: max_pool2d_with_indices.out
+    structured: true
+    override_meta: True
+  - func: max_pool2d_with_indices
+    structured_delegate: max_pool2d_with_indices.out
+  - func: max_pool2d_with_indices_backward.grad_input
+    structured: true
+    override_meta: True
+  - func: max_pool2d_with_indices_backward
+    structured_delegate: max_pool2d_with_indices_backward.grad_input
+  - func: max_pool3d_with_indices.out
+  - func: max_pool3d_with_indices
+  - func: max_pool3d_with_indices_backward.grad_input
+  - func: max_pool3d_with_indices_backward
+  - func: adaptive_avg_pool2d.out
+  - func: _adaptive_avg_pool2d
+  - func: _adaptive_avg_pool2d_backward
+  - func: adaptive_avg_pool3d.out
+  - func: _adaptive_avg_pool3d
+  - func: adaptive_avg_pool3d_backward.grad_input
+  - func: _adaptive_avg_pool3d_backward
+  - func: adaptive_max_pool2d.out
+  - func: adaptive_max_pool2d
+  - func: adaptive_max_pool2d_backward.grad_input
+  - func: adaptive_max_pool2d_backward
+  - func: multinomial
+  - func: multinomial.out
+  - func: where.self
+  - func: where.self_out
+  - func: nonzero
+  - func: nonzero.out
+  - func: _index_put_impl_
+  - func: _amp_update_scale_
+    derived_type: bang
+  - func: log_softmax.int
+    custom_autograd: True
+  - func: log_softmax.int_out
+  - func: _log_softmax
+    structured_delegate: _log_softmax.out
+  - func: _log_softmax.out
+    structured: True
+    override_meta: True
+  - func: _log_softmax_backward_data
+    structured_delegate: _log_softmax_backward_data.out
+  - func: _log_softmax_backward_data.out
+    structured: True
+    override_meta: True
+  - func: softmax.int
+    custom_autograd: True
+  - func: softmax.int_out
+  - func: _softmax
+    structured_delegate: _softmax.out
+  - func: _softmax.out
+    structured: True
+    override_meta: True
+  - func: _softmax_backward_data
+    structured_delegate: _softmax_backward_data.out
+  - func: _softmax_backward_data.out
+    structured: True
+    override_meta: True
+  - func: embedding
+  - func: embedding_dense_backward
+  - func: _embedding_bag_forward_only
+  - func: _embedding_bag
+  - func: _embedding_bag_dense_backward
+  - func: masked_scatter_
+  - func: ceil
+    structured_delegate: ceil.out
+  - func: ceil_
+    structured_delegate: ceil.out
+  - func: ceil.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: div.Tensor
+    structured_delegate: div.out
+  - func: div_.Tensor
+    structured_delegate: div.out
+  - func: div.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: div.Tensor_mode
+    structured_delegate: div.out_mode
+  - func: div_.Tensor_mode
+    structured_delegate: div.out_mode
+  - func: div.out_mode
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: div.Scalar
+  - func: div_.Scalar
+  - func: floor
+    structured_delegate: floor.out
+  - func: floor_
+    structured_delegate: floor.out
+  - func: floor.out
+    structured_inherits: TensorIteratorBase
+  - func: floor_divide
+  - func: floor_divide_.Tensor
+  - func: floor_divide.out
+  - func: trunc
+    structured_delegate: trunc.out
+  - func: trunc_
+    structured_delegate: trunc.out
+  - func: trunc.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: repeat
+    custom_autograd: True
+  - func: gather
+    structured_delegate: gather.out
+  - func: gather.out
+    structured: True
+  - func: uniform_
+  - func: bernoulli
+  - func: bernoulli.out
+  - func: bernoulli_.Tensor
+  - func: bernoulli_.float
+  - func: bernoulli_.p
+  - func: _convolution
+  - func: convolution_backward
+  - func: _fused_dropout
+  - func: _masked_scale
+  - func: native_dropout
+  - func: native_dropout_backward
+  - func: index_fill_.int_Scalar
+  - func: index_fill_.int_Tensor
+  - func: fmod.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: fmod.Tensor
+    structured_delegate: fmod.Tensor_out
+  - func: fmod_.Tensor
+    structured_delegate: fmod.Tensor_out
+  - func: kthvalue.values
+  - func: _unique
+  - func: unique_dim
+  - func: _unique2
+  - func: unique_consecutive
+  - func: unique_dim_consecutive
+  - func: put_
+  - func: eye.out
+  - func: eye.m_out
+  - func: erf
+    structured_delegate: erf.out
+  - func: erf_
+    structured_delegate: erf.out
+  - func: erf.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: binary_cross_entropy
+  - func: binary_cross_entropy.out
+  - func: binary_cross_entropy_backward
+  - func: binary_cross_entropy_backward.grad_input
+  - func: binary_cross_entropy_with_logits
+  - func: nll_loss_forward.output
+    structured: True
+  - func: nll_loss_forward
+    structured_delegate: nll_loss_forward.output
+  - func: nll_loss_backward.grad_input
+    structured: True
+  - func: nll_loss_backward
+    structured_delegate: nll_loss_backward.grad_input
+  - func: nll_loss2d_forward.output
+  - func: nll_loss2d_forward
+  - func: nll_loss2d_backward.grad_input
+  - func: nll_loss2d_backward
+  - func: bitwise_not
+    structured_delegate: bitwise_not.out
+  - func: bitwise_not_
+    structured_delegate: bitwise_not.out
+  - func: bitwise_not.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: bitwise_and.Tensor
+    structured_delegate: bitwise_and.Tensor_out
+  - func: bitwise_and_.Tensor
+    structured_delegate: bitwise_and.Tensor_out
+  - func: bitwise_and.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: triu.out
+    structured: True
+  - func: triu
+    structured_delegate: triu.out
+  - func: triu_
+    structured_delegate: triu.out
+  - func: tril.out
+    structured: True
+  - func: tril
+    structured_delegate: tril.out
+  - func: tril_
+    structured_delegate: tril.out
+  - func: bitwise_or.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: bitwise_or.Tensor
+    structured_delegate: bitwise_or.Tensor_out
+  - func: bitwise_or_.Tensor
+    structured_delegate: bitwise_or.Tensor_out
+  - func: bitwise_xor.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: bitwise_xor.Tensor
+    structured_delegate: bitwise_xor.Tensor_out
+  - func: bitwise_xor_.Tensor
+    structured_delegate: bitwise_xor.Tensor_out
+  - func: bitwise_left_shift.Tensor
+    structured_delegate: bitwise_left_shift.Tensor_out
+  - func: bitwise_left_shift_.Tensor
+    structured_delegate: bitwise_left_shift.Tensor_out
+  - func: bitwise_left_shift.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: __lshift__.Scalar
+  - func: __lshift__.Tensor
+  - func: __ilshift__.Scalar
+  - func: __ilshift__.Tensor
+  - func: bitwise_right_shift.Tensor
+    structured_delegate: bitwise_right_shift.Tensor_out
+  - func: bitwise_right_shift_.Tensor
+    structured_delegate: bitwise_right_shift.Tensor_out
+  - func: bitwise_right_shift.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: __rshift__.Scalar
+  - func: __rshift__.Tensor
+  - func: __irshift__.Scalar
+  - func: __irshift__.Tensor
+  - func: median
+  - func: median.dim_values
+  - func: sign.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: sign
+    structured_delegate: sign.out
+  - func: sign_
+    structured_delegate: sign.out
+  - func: sgn.out
+    structured: true
+    structured_inherits: TensorIteratorBase
+  - func: sgn
+    structured_delegate: sgn.out
+  - func: sgn_
+    structured_delegate: sgn.out
+  - func: index_copy.out
+  - func: index_copy_
+  - func: index_copy
+  - func: linalg_qr
+  - func: linalg_qr.out
+  - func: histc
+  - func: histc.out
+  - func: replication_pad1d.out
+    structured: True
+  - func: replication_pad1d
+    structured_delegate: replication_pad1d.out
+  - func: replication_pad2d.out
+    structured: True
+    override_meta: True
+  - func: replication_pad2d
+    structured_delegate: replication_pad2d.out
+  - func: replication_pad1d_backward 
+    structured_delegate: replication_pad1d_backward.grad_input
+  - func: replication_pad1d_backward.grad_input
+    structured: True
+  - func: replication_pad2d_backward
+  - func: replication_pad2d_backward.grad_input
+  - func: sum.dim_IntList
+    structured_delegate: sum.IntList_out
+  - func: sum.IntList_out
+    structured: True
+  - func: nansum
+  - func: nansum.out
+  - func: mean.dim
+    structured_delegate: mean.out
+  - func: mean.out
+    structured: True
+  - func: norm.ScalarOpt_dim_dtype
+    structured_delegate: norm.dtype_out
+  - func: norm.ScalarOpt_dim
+    structured_delegate: norm.dtype_out
+  - func: norm.dtype_out
+    structured: True
+  - func: norm.out
+    structured: True
+  - func: max.dim
+    structured_delegate: max.dim_max
+  - func: max.dim_max
+    structured: True
+  - func: max
+  - func: min
+  - func: min.dim
+    structured_delegate: min.dim_min
+  - func: min.dim_min
+    structured: True
+  - func: argmax
+    structured_delegate: argmax.out
+  - func: argmax.out
+    structured: True
+  - func: argmin
+    structured_delegate: argmin.out
+  - func: argmin.out
+    structured: True
+  - func: amax
+    structured_delegate: amax.out
+  - func: amax.out
+    structured: True
+  - func: amin
+    structured_delegate: amin.out
+  - func: amin.out
+    structured: True
+  - func: std.correction
+  - func: std.correction_out
+  - func: var.correction
+  - func: var.correction_out
+  - func: all
+    structured_delegate: all.all_out
+  - func: all.all_out
+    structured: True
+  - func: all.dim
+    structured_delegate: all.out
+  - func: all.out
+    structured: True
+  - func: any
+    structured_delegate: any.all_out
+  - func: any.all_out
+    structured: True
+  - func: any.dim
+    structured_delegate: any.out
+  - func: any.out
+    structured: True
+  - func: prod
+  - func: prod.dim_int
+    structured_delegate: prod.int_out
+  - func: prod.int_out
+    structured: True
+  - func: remainder.Tensor
+    structured_delegate: remainder.Tensor_out
+  - func: remainder.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: remainder_.Tensor
+    structured_delegate: remainder.Tensor_out
+  - func: remainder.Scalar_Tensor
+  - func: _cummin_helper
+  - func: _cummax_helper
+  - func: cumsum
+    structured_delegate: cumsum.out
+  - func: cumsum_
+    structured_delegate: cumsum.out
+  - func: cumsum.out
+    structured: True
+  - func: cumprod
+    structured_delegate: cumprod.out
+  - func: cumprod_
+    structured_delegate: cumprod.out
+  - func: cumprod.out
+    structured: True
+  - func: frac
+    structured_delegate: frac.out
+  - func: frac_
+    structured_delegate: frac.out
+  - func: frac.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: flip
+  - func: take
+  - func: take.out
+  - func: ctc_loss.IntList
+    custom_autograd: True
+  - func: ctc_loss.Tensor
+    custom_autograd: True
+  - func: lerp_.Scalar
+    structured_delegate: lerp.Scalar_out
+  - func: lerp_.Tensor
+    structured_delegate: lerp.Tensor_out
+  - func: lerp.Scalar_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: lerp.Tensor_out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: lerp.Scalar
+    structured_delegate: lerp.Scalar_out
+  - func: lerp.Tensor
+    structured_delegate: lerp.Tensor_out
+  - func: conj_physical.out
+  - func: _cdist_forward
+  - func: _cdist_backward
+  - func: repeat_interleave.Tensor
+  - func: linspace.out
+  - func: linalg_det
+    custom_autograd: True
+  - func: linalg_det.out
+  - func: linalg_slogdet
+    custom_autograd: True
+  - func: linalg_slogdet.out
+  - func: linalg_vector_norm
+    structured_delegate: linalg_vector_norm.out
+  - func: linalg_vector_norm.out
+    structured: True
+  - func: xlogy.Tensor
+    structured_delegate: xlogy.OutTensor
+  - func: xlogy.Scalar_Self
+  - func: xlogy.Scalar_Other
+  - func: xlogy_.Tensor
+    structured_delegate: xlogy.OutTensor
+  - func: xlogy_.Scalar_Other
+  - func: xlogy.OutTensor
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: count_nonzero.dim_IntList
+  - func: col2im
+  - func: col2im.out
+  - func: im2col
+  - func: im2col.out
+  - func: sort.values_stable
+    structured: True
+  - func: sort.stable
+    structured_delegate: sort.values_stable
+  - func: _efficientzerotensor
+  - func: bincount
+  - func: is_set_to
+  - func: _weight_norm_interface
+  - func: _weight_norm_interface_backward
+  - func: polar.out
+  - func: linalg_cross
+    structured_delegate: linalg_cross.out
+  - func: linalg_cross.out
+    structured: True
+    override_meta: True
+  - func: trace
+  - func: _amp_foreach_non_finite_check_and_unscale_
+    derived_type: bang
+  - func: _batch_norm_with_update
+  - func: _batch_norm_with_update.out
+  - func: batch_norm_backward
+  - func: _foreach_copy_
+  - func: _fused_sdp_choice(Tensor query, Tensor key, Tensor value, Tensor? attn_mask=None, float dropout_p=0.0, bool is_causal=False, *, float? scale=None) -> int
+  - func: scaled_dot_product_attention(Tensor query, Tensor key, Tensor value, Tensor? attn_mask=None, float dropout_p=0.0, bool is_causal=False, *, float? scale=None) -> Tensor
+  - func: _scaled_dot_product_flash_attention(Tensor query, Tensor key, Tensor value, float dropout_p=0.0, bool is_causal=False, bool return_debug_mask=False, *, float? scale=None) -> (Tensor output, Tensor logsumexp, Tensor cum_seq_q, Tensor cum_seq_k, SymInt max_q, SymInt max_k, Tensor philox_seed, Tensor philox_offset, Tensor debug_attn_mask)
+  - func: _scaled_dot_product_flash_attention_backward(Tensor grad_out, Tensor query, Tensor key, Tensor value, Tensor out, Tensor logsumexp, Tensor cum_seq_q, Tensor cum_seq_k, SymInt max_q, SymInt max_k, float dropout_p, bool is_causal, Tensor philox_seed, Tensor philox_offset, *, float? scale=None) -> (Tensor grad_query, Tensor grad_key, Tensor grad_value)
+  - func: _scaled_dot_product_efficient_attention(Tensor query, Tensor key, Tensor value, Tensor? attn_bias, bool compute_log_sumexp, float dropout_p=0.0, bool is_causal=False, *, float? scale=None) -> (Tensor output, Tensor log_sumexp, Tensor philox_seed, Tensor philox_offset)
+  - func: _scaled_dot_product_efficient_attention_backward(Tensor grad_out_, Tensor query, Tensor key, Tensor value, Tensor attn_bias, Tensor out, Tensor logsumexp, Tensor philox_seed, Tensor philox_offset, float dropout_p, bool[4] grad_input_mask, bool is_causal=False, *, float? scale=None) -> (Tensor, Tensor, Tensor, Tensor)
+  - func: _flash_attention_forward(Tensor query, Tensor key, Tensor value, Tensor? cum_seq_q, Tensor? cum_seq_k, SymInt max_q, SymInt max_k, float dropout_p, bool is_causal, bool return_debug_mask, *, float? scale=None, SymInt? window_size_left=None, SymInt? window_size_right=None, Tensor? seqused_k=None, Tensor? alibi_slopes=None) -> (Tensor output, Tensor softmax_logsumexp, Tensor philox_seed, Tensor philox_offset, Tensor debug_attn_mask)
+  - func: _flash_attention_backward(Tensor grad_out, Tensor query, Tensor key, Tensor value, Tensor out, Tensor logsumexp, Tensor cum_seq_q, Tensor cum_seq_k, SymInt max_q, SymInt max_k, float dropout_p, bool is_causal, Tensor philox_seed, Tensor philox_offset, *, float? scale=None, SymInt? window_size_left=None, SymInt? window_size_right=None) -> (Tensor, Tensor, Tensor)
+  - func: _efficient_attention_forward(Tensor query, Tensor key, Tensor value, Tensor? bias, Tensor? cu_seqlens_q, Tensor? cu_seqlens_k, SymInt? max_seqlen_q, SymInt? max_seqlen_k, float dropout_p, int custom_mask_type, bool compute_log_sumexp=False, *, float? scale=None, Tensor? seqlen_k=None, int? window_size=None) -> (Tensor output, Tensor logsumexp, Tensor philox_seed, Tensor philox_offset, SymInt max_seqlen_batch_q, SymInt max_seqlen_batch_k)
+  - func: _efficient_attention_backward(Tensor grad_out_, Tensor query, Tensor key, Tensor value, Tensor? bias, Tensor out, Tensor? cu_seqlens_q, Tensor? cu_seqlens_k, SymInt max_seqlen_q, SymInt max_seqlen_k, Tensor logsumexp, float dropout_p, Tensor philox_seed, Tensor philox_offset, int custom_mask_type, bool bias_requires_grad, *, float? scale=None, int? num_splits_key=None, int? window_size=None, bool shared_storage_dqdkdv=False) -> (Tensor, Tensor, Tensor, Tensor)
+
+vision:
+  - func: deform_conv2d(Tensor input, Tensor weight, Tensor offset, Tensor mask, Tensor bias, int stride_h, int stride_w, int pad_h, int pad_w, int dilation_h, int dilation_w, int groups, int offset_groups, bool use_mask) -> Tensor
+  - func: _deform_conv2d_backward(Tensor grad, Tensor input, Tensor weight, Tensor offset, Tensor mask, Tensor bias, int stride_h, int stride_w, int pad_h, int pad_w, int dilation_h, int dilation_w, int groups, int offset_groups, bool use_mask) -> (Tensor, Tensor, Tensor, Tensor, Tensor)
+  - func: nms(Tensor dets, Tensor scores, float iou_threshold) -> Tensor
+  - func: roi_align(Tensor input, Tensor rois, float spatial_scale, int pooled_height, int pooled_width, int sampling_ratio, bool aligned) -> Tensor
+  - func: _roi_align_backward(Tensor grad, Tensor rois, float spatial_scale, int pooled_height, int pooled_width, int batch_size, int channels, int height, int width, int sampling_ratio, bool aligned) -> Tensor
+
+audio:
+  - func: rnnt_loss(Tensor(a!) logits, Tensor targets, Tensor logit_lengths, Tensor target_lengths, int blank, float clamp, bool fused_log_softmax) -> (Tensor, Tensor?)
+
+custom:
+  - func: fused_sgd(Tensor _dummy_overflow_buf, Tensor[] grads, Tensor[] params_in, Tensor[] momentums, Tensor?[] params_out, float weight_decay, float momentum, float dampening, float learning_rate, bool nesterov, bool first_run, bool wd_after_momentum, float scale) -> bool
+    derived_type: bang
+  - func: voxel_pooling(int batch_size, int num_points, int num_channels, int num_voxel_x, int num_voxel_y, int num_voxel_z, Tensor geom_xyz, Tensor input_features, Tensor(a!) output_features, Tensor(a!) pos_memo) -> bool
+    derived_type: mluop
+  - func: dump(Tensor input) -> bool
+    derived_type: bang
+  - func: amp_unscale(Tensor[] scaled_grads, Tensor found_inf, Tensor inv_scale) -> Tensor
+    derived_type: bang
+  - func: fused_l2_norm(Tensor _dummy_overflow_buf, Tensor[] inputs, bool per_tensor) -> (Tensor, Tensor)
+    derived_type: bang
+  - func: fused_l2_norm_amp(Tensor _dummy_overflow_buf, Tensor[] inputs, bool per_tensor) -> (Tensor, Tensor)
+    derived_type: bang
+  - func: fused_adam(Tensor _dummy_overflow_buf, Tensor[] grads, Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, float learning_rate, float beta1, float beta2, float epsilon, int step, int mode, int bias_correction, float weight_decay) -> bool
+    derived_type: bang
+  - func: boxes_overlap_bev(Tensor self, Tensor other) -> Tensor
+  - func: boxes_iou_bev(Tensor boxes_a, Tensor boxes_b) -> Tensor
+  - func: nms3D(Tensor dets, float iou_threshold) -> Tensor
+  - func: fused_lamb(Tensor _dummy_overflow_buf, Tensor[] grads, Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, float learning_rate, float beta1, float beta2, float epsilon, int step, int bias_correction, float weight_decay, int grad_averaging, int mode, Tensor global_grad_norm, float max_grad_norm, bool use_nvlamb_python) -> bool
+    derived_type: bang
+  - func: fused_lamb_amp(Tensor noop_flag, Tensor[] grads, Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, Tensor learning_rate, float beta1, float beta2, float epsilon, Tensor step, int bias_correction, float weight_decay, int grad_averaging, int mode, Tensor global_grad_norm, Tensor max_grad_norm, bool use_nvlamb_python, Tensor inv_scale) -> bool
+    derived_type: bang
+  - func: fused_lamb_amp.dst_param(Tensor noop_flag, Tensor[] grads, Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, Tensor[] dst_param_fp16s, Tensor learning_rate, float beta1, float beta2, float epsilon, Tensor step, int bias_correction, float weight_decay, int grad_averaging, int mode, Tensor global_grad_norm, Tensor max_grad_norm, bool use_nvlamb_python, Tensor inv_scale) -> bool
+    derived_type: bang
+
+  # NB: if your function has rand/dropout/... in its name
+  # torchgen will check tags nondeterministic_seeded.
+  # Do not use such name if your function is not really random.
+  - func: mask_softmax_dropout_fprop(Tensor(a!) input, Tensor mask, int batch, Tensor seq_len, int heads, float dropout_prob, bool enable_stream, bool sync, bool is_training) -> (Tensor, Tensor)
+    tags: nondeterministic_seeded
+  - func: mask_softmax_dropout_bprop_(Tensor input, Tensor(a!) self, Tensor dropout_mask, int batch, Tensor seq_len, int heads, float dropout_prob, bool enable_stream, bool sync) -> Tensor(a!)
+    tags: nondeterministic_seeded
+
+  - func: warp_ctc_loss(Tensor probs, Tensor targets, Tensor input_lengths, Tensor target_lengths, int blank, int reduction, bool zero_infinity, int normalization) -> Tensor 
+    custom_autograd: True
+  - func: ctc_loss_forward(Tensor probs, Tensor targets, Tensor? input_lengths, Tensor? target_lengths, int[] il, int[] tl, int blank, int reduction, bool zero_infinity, int normalization) -> (Tensor, Tensor) 
+    custom_autograd: True
+  - func: ctc_loss_backward(Tensor grad_out, Tensor raw_grad) -> Tensor
+  - func: points_in_boxes_mlu(Tensor boxes, Tensor points) -> Tensor
+  # NB: if your backward function needs to create double backward graph node, add custom_autograd keyword for backward too.
+  - func: max_unpool2d(Tensor self, Tensor indices, int[] kernel_size, int[] stride, int[] padding, int[] output_size) -> Tensor
+    custom_autograd: True
+  - func: max_unpool2d_backward(Tensor grad_output, Tensor self, Tensor indices, int[] kernel_size, int[] stride, int[] padding, int[] output_size) -> Tensor
+  - func: linalg_det_backward(Tensor grad, Tensor self, Tensor det) -> Tensor
+  - func: linalg_slogdet_backward(Tensor grad_logabsdet, Tensor self, Tensor signdet, Tensor logabsdet) -> Tensor
+  - func: repeat_backward(Tensor self, Tensor(a!) grad, int[] repeats) -> Tensor

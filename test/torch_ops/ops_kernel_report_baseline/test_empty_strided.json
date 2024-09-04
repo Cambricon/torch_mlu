@@ -1,0 +1,8 @@
+{
+    "test_empty_strided": [
+        {
+            "CaseName": "test_empty_strided",
+            "Events": []
+        }
+    ]
+}

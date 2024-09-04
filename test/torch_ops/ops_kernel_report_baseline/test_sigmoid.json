@@ -1,0 +1,206 @@
+{
+    "test_sigmoid": [
+        {
+            "CaseName": "test_sigmoid",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_backward",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlActivationBackward",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_inplace_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_nan_inf",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlActivationBackward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sigmoid_permute",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        }
+    ]
+}

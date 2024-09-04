@@ -1,0 +1,184 @@
+{
+    "test_lerp": [
+        {
+            "CaseName": "test_lerp_inplace_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlLerp",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_lerp_inplace_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlLerp",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_lerp_out_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlLerp",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_lerp_out_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlLerp",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_lerp_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlLerp",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        },
+        {
+            "CaseName": "test_lerp_scalar_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlLerp",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_lerp_scalar_permute",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlLerp",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_lerp_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlLerp",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        }
+    ]
+}

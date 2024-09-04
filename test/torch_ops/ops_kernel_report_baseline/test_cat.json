@@ -1,0 +1,168 @@
+{
+    "test_cat": [
+        {
+            "CaseName": "test_cat_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_empty",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_out",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_out_promote",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 343
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1715
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1029
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1029
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3773
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_promote",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1407
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1029
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 91
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2401
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1029
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_type",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_zero_dim",
+            "Events": []
+        }
+    ]
+}

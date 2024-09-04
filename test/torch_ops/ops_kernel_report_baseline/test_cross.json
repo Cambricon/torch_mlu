@@ -1,0 +1,173 @@
+{
+    "test_cross": [
+        {
+            "CaseName": "test_cross",
+            "Events": [
+                {
+                    "Name": "cnnlCross",
+                    "# of Calls": 55
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 65
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 55
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cross_channelslast",
+            "Events": [
+                {
+                    "Name": "cnnlCross",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 27
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cross_empty_input",
+            "Events": []
+        },
+        {
+            "CaseName": "test_cross_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cross_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCross",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cross_out",
+            "Events": [
+                {
+                    "Name": "cnnlCross",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cross_out_non_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCross",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cross_set_dim",
+            "Events": [
+                {
+                    "Name": "cnnlCross",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_linalg_cross",
+            "Events": [
+                {
+                    "Name": "cnnlCross",
+                    "# of Calls": 35
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 35
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tensor_cross",
+            "Events": [
+                {
+                    "Name": "cnnlCross",
+                    "# of Calls": 35
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 35
+                }
+            ]
+        }
+    ]
+}
