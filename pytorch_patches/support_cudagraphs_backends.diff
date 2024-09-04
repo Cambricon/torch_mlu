@@ -1,0 +1,70 @@
+diff --git a/torch/_dynamo/backends/cudagraphs.py b/torch/_dynamo/backends/cudagraphs.py
+index d3ab13d7d6..f35328a670 100644
+--- a/torch/_dynamo/backends/cudagraphs.py
++++ b/torch/_dynamo/backends/cudagraphs.py
+@@ -42,6 +42,10 @@ def find_input_mutations(g):
+         elif n.op == "call_function":
+             if n.target is operator.getitem:
+                 continue
++            # TODO(miaochen): It may be risky to skip here
++            # [auto_functionalized, <built-in function add>] has no attribute '_schema'
++            if not hasattr(n.target, "_schema"):
++                continue
+             schema = n.target._schema
+             for i, arg in enumerate(schema.arguments):
+                 if i < len(n.args):
+@@ -86,7 +90,11 @@ def check_for_skip(aot_model: torch.fx.GraphModule, num_fixed) -> Optional[str]:
+     if mut_skip := check_for_mutation(aot_model, num_fixed):
+         return mut_skip
+ 
+-    if skip := check_multiple_devices_or_any_cpu_nodes(
++    try:
++        import torch_mlu
++    except:
++        raise RuntimeError("To use MLU backend, please install torch_mlu")
++    if skip := torch_mlu._inductor.cudagraph_utils.check_multiple_devices_or_any_cpu_nodes(
+         get_device_node_mapping(aot_model)
+     ):
+         return skip
+@@ -99,7 +107,7 @@ def check_for_skip(aot_model: torch.fx.GraphModule, num_fixed) -> Optional[str]:
+ 
+ def get_device_index(gm) -> int:
+     device = next(iter(get_device_node_mapping(gm)))
+-    assert device.type == "cuda"
++    assert device.type == "mlu"
+     return device.index
+ 
+ 
+@@ -208,19 +216,24 @@ def cudagraphs_inner(model, inputs, copy_outputs=True, copy_inputs=True):
+     else:
+         static_inputs = list(inputs)
+ 
++    try:
++        import torch_mlu
++    except:
++        raise RuntimeError("To use MLU backend, please install torch_mlu")
++
+     # warmup
+-    torch.cuda.synchronize()
+-    stream = torch.cuda.Stream()
+-    stream.wait_stream(torch.cuda.current_stream())
+-    with torch.cuda.stream(stream):
++    torch.mlu.synchronize()
++    stream = torch.mlu.Stream()
++    stream.wait_stream(torch.mlu.current_stream())
++    with torch.mlu.stream(stream):
+         model(*inputs)
+     stream.synchronize()
+-    torch.cuda.current_stream().wait_stream(stream)
+-    torch.cuda.synchronize()
++    torch.mlu.current_stream().wait_stream(stream)
++    torch.mlu.synchronize()
+ 
+     # record
+-    graph = torch.cuda.CUDAGraph()
+-    with torch.cuda.graph(graph, stream=stream):
++    graph = torch.mlu.MLUGraph()
++    with torch.mlu.graph(graph, stream=stream):
+         static_outputs = model(*static_inputs)
+     if not isinstance(static_outputs, (list, tuple)):
+         static_outputs = (static_outputs,)

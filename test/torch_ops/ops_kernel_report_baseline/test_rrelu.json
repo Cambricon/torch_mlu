@@ -1,0 +1,82 @@
+{
+    "test_rrelu": [
+        {
+            "CaseName": "test_rrelu",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 672
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 672
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 228
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 270
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1248
+                }
+            ]
+        },
+        {
+            "CaseName": "test_rrelu_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

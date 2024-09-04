@@ -1,0 +1,103 @@
+{
+    "test_logaddexp": [
+        {
+            "CaseName": "test_logaddexp",
+            "Events": [
+                {
+                    "Name": "cnnlLogAddExp",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 66
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 66
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logaddexp_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlLogAddExp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logaddexp_mixed_input",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlLogAddExp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        }
+    ]
+}

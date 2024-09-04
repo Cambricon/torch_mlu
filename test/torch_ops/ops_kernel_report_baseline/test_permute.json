@@ -1,0 +1,63 @@
+{
+    "test_permute": [
+        {
+            "CaseName": "test_permute",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 60
+                }
+            ]
+        },
+        {
+            "CaseName": "test_permute_bfloat16",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_permute_not_dense_and_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        }
+    ]
+}

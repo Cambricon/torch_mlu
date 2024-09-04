@@ -1,0 +1,206 @@
+{
+    "test_exp": [
+        {
+            "CaseName": "test_exp_backward",
+            "Events": [
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_inplace_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_inplace_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_out",
+            "Events": [
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 62
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 32
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_permute",
+            "Events": [
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_exp_type",
+            "Events": [
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        }
+    ]
+}

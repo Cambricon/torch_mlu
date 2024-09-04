@@ -1,0 +1,27 @@
+diff --git a/torch/functional.py b/torch/functional.py
+index 5fd3bfdf7cb..007bb67c992 100644
+--- a/torch/functional.py
++++ b/torch/functional.py
+@@ -28,6 +28,7 @@ __all__ = [
+     'chain_matmul',
+     'einsum',
+     'istft',
++    'is_mlu_available',
+     'lu',
+     'norm',
+     'meshgrid',
+@@ -41,6 +42,14 @@ __all__ = [
+ ]
+ 
+ 
++def is_mlu_available():
++    try:
++        import torch_mlu
++        return True
++    except ImportError:
++        return False
++
++
+ def broadcast_tensors(*tensors):
+     r"""broadcast_tensors(*tensors) -> List of Tensors
+ 

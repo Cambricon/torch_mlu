@@ -1,0 +1,81 @@
+{
+    "test_view": [
+        {
+            "CaseName": "test_view",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_view_64_bit",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 20
+                }
+            ]
+        },
+        {
+            "CaseName": "test_view_channels_last_and_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_view_channels_last_unsafe",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_view_dtype",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

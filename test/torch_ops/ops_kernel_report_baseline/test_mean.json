@@ -1,0 +1,173 @@
+{
+    "test_mean": [
+        {
+            "CaseName": "test_mean",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mean_backward",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 52
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 60
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mean_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mean_dim",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1636
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 4908
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 3112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4908
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4908
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mean_empty",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mean_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mean_opt_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mean_out",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1636
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1636
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3272
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mean_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

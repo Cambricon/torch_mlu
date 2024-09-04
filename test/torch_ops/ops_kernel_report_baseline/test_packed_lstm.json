@@ -1,0 +1,73 @@
+{
+    "test_packed_lstm": [
+        {
+            "CaseName": "test_packed_lstm_training",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 3825
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 9629
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2496
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 19440
+                },
+                {
+                    "Name": "cnnlLSTMGatesForward",
+                    "# of Calls": 3240
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 10188
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 16357
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 17587
+                },
+                {
+                    "Name": "cnnlLSTMGatesBackward",
+                    "# of Calls": 3240
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1620
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12288
+                },
+                {
+                    "Name": "cnnlRNNForwardTraining",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlRNNBackwardData",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlRNNBackwardWeights",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2448
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2352
+                }
+            ]
+        }
+    ]
+}

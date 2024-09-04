@@ -1,0 +1,65 @@
+{
+    "test_argsort": [
+        {
+            "CaseName": "test_sort",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlRandGenerateUniform",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 32816
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 16408
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 8204
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 8204
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8268
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                }
+            ]
+        }
+    ]
+}

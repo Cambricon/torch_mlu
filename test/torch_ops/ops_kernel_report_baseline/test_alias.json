@@ -1,0 +1,51 @@
+{
+    "test_alias": [
+        {
+            "CaseName": "test_alias_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_alias_contiguous",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_alias_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

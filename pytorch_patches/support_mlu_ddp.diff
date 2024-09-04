@@ -1,0 +1,15 @@
+diff --git a/torch/csrc/distributed/c10d/reducer.cpp b/torch/csrc/distributed/c10d/reducer.cpp
+index 9a3960f0fcc..7a63856a435 100644
+--- a/torch/csrc/distributed/c10d/reducer.cpp
++++ b/torch/csrc/distributed/c10d/reducer.cpp
+@@ -284,6 +284,10 @@ void Reducer::initialize_local_used_map() {
+   const auto variable_count = params_.size();
+   at::TensorOptions options;
+   options = options.dtype(at::kInt);
++  //TODO(zhiguangda): remove this when CNCL can garantee the performance of Int type
++  if (params_[0].device().is_privateuseone()) {
++    options = options.dtype(at::kFloat);
++  }
+
+   // Deliberately don't pin the memory even if local_used_map_dev_ will
+   // be cuda. See Note [local_used_map_ -> local_used_map_dev copying]

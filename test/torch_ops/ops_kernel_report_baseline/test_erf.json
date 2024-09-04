@@ -1,0 +1,163 @@
+{
+    "test_erf": [
+        {
+            "CaseName": "test_erf_backward",
+            "Events": [
+                {
+                    "Name": "cnnlErf_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlPow",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlNegTensor",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlExp_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_erf_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlErf_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_erf_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlErf_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_erf_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlErf_v2",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        },
+        {
+            "CaseName": "test_erf_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlErf_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_erf_permute",
+            "Events": [
+                {
+                    "Name": "cnnlErf_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_erf_type",
+            "Events": [
+                {
+                    "Name": "cnnlErf_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        }
+    ]
+}

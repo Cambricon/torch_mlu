@@ -1,0 +1,13 @@
+{
+    "test_empty": [
+        {
+            "CaseName": "test_empty",
+            "Events": [
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

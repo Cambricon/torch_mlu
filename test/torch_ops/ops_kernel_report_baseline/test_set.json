@@ -1,0 +1,30 @@
+{
+    "test_set": [
+        {
+            "CaseName": "test_set",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_set_bfloat16",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        }
+    ]
+}

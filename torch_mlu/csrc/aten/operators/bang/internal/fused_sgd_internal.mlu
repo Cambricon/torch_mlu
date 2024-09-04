@@ -1,0 +1,409 @@
+/*************************************************************************
+ * Copyright (C) [2019-2023] by Cambricon, Inc.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+#include "bang_internal.h"
+
+namespace torch_mlu {
+namespace ops {
+
+#define SIZE_PER_REGION_SGD MAX_NRAM_SIZE / 8
+#define SRAM_SIZE_PER_REGION_SGD MAX_SRAM_SIZE / 8
+
+// Use half of the max nram size for fake 5 stages ping-pong
+__nram__ char total_nram[SIZE_PER_REGION_SGD * 8];
+__mlu_shared__ char total_sram[SRAM_SIZE_PER_REGION_SGD * 8];
+
+__mlu_func__ inline void ComputeInternal(
+    int num_align, float* grad_nram, float* weight_in_nram, float* mom_in_nram,
+    float* temp_nram, float wd, float momentum, float dampening_correction,
+    float lr, bool nesterov, bool first_run,
+    bool wd_after_momentum, float scale) {
+  // grad = grad * scale
+  __bang_mul_scalar(grad_nram, grad_nram, scale, num_align);
+  // grad = grad + weight_in_nram * wd
+  if (wd != 0.f && !wd_after_momentum) {
+    __bang_mul_scalar(temp_nram, weight_in_nram, wd, num_align);
+    __bang_add(grad_nram, grad_nram, temp_nram, num_align);
+  }
+
+  if (!first_run) {
+    __bang_mul_scalar(temp_nram, grad_nram, dampening_correction, num_align); // grad, weight, mom
+    __bang_mul_scalar(mom_in_nram, mom_in_nram, momentum, num_align); // grad, weight, mom
+    __bang_add(mom_in_nram, mom_in_nram, temp_nram, num_align);
+  } else {
+    __bang_mul_scalar(mom_in_nram, grad_nram, 1, num_align);
+  }
+
+  if (nesterov) {
+    __bang_mul_scalar(temp_nram, mom_in_nram, momentum, num_align);
+    __bang_add(grad_nram, grad_nram, temp_nram, num_align);
+  } else {
+    __bang_mul_scalar(grad_nram, mom_in_nram, 1, num_align);
+  }
+
+  // grad = grad + weight_in_nram * wd
+  if (wd != 0.f && wd_after_momentum) {
+    __bang_mul_scalar(temp_nram, weight_in_nram, wd, num_align);
+    __bang_add(grad_nram, grad_nram, temp_nram, num_align);
+  }
+  // weight_in += -lr * grads;
+  __bang_mul_scalar(grad_nram, grad_nram, -lr, num_align);
+  __bang_add(weight_in_nram, weight_in_nram, grad_nram, num_align);
+}
+
+__mlu_func__ inline void Castfloat2float3(
+    int num_align, float* grad_nram, float* weight_in_nram, float* mom_in_nram,
+    float* temp_nram, int IO_type) {}
+
+__mlu_func__ inline void Casthalf2half3(
+    int num_align, half* grad_nram, half* weight_in_nram, half* mom_in_nram,
+    float* temp_nram, int IO_type) {
+  if (IO_type == 0) {
+    __bang_half2float((float*)grad_nram, grad_nram + SIZE_PER_REGION_SGD / (2 * sizeof(half)), num_align);
+    __bang_half2float((float*)weight_in_nram, weight_in_nram + SIZE_PER_REGION_SGD / (2 * sizeof(half)), num_align);
+    __bang_half2float((float*)mom_in_nram, mom_in_nram + SIZE_PER_REGION_SGD / (2 * sizeof(half)), num_align);
+  } else {
+    __bang_float2half_rd(weight_in_nram, (float*)weight_in_nram, num_align);
+    __bang_float2half_rd(mom_in_nram, (float*)mom_in_nram, num_align);
+  }
+}
+
+__mlu_func__ inline void Castfloat2float4(
+    int num_align, float* grad_nram, float* weight_in_nram, float* mom_in_nram,
+    float* temp_nram, int IO_type) {
+  if (IO_type == 1) {
+    __bang_float2half_rd((half*)temp_nram, weight_in_nram, num_align);
+  }
+}
+
+__mlu_func__ inline void Casthalf2float4(
+    int num_align, half* grad_nram, float* weight_in_nram, float* mom_in_nram,
+    float* temp_nram, int IO_type) {
+  if (IO_type == 0) {
+    __bang_half2float((float*)grad_nram, grad_nram + SIZE_PER_REGION_SGD / (2 * sizeof(half)), num_align);
+  } else {
+    __bang_float2half_rd((half*)temp_nram, weight_in_nram, num_align);
+  }
+}
+
+template <typename Tin, typename Tout, int N,
+          void (CastFunc)(int, Tin*, Tout*, Tout*, float*, int IO_type)>
+__mlu_func__ void ApplySGD(AddressList& grad,
+                           AddressList& weight_in,
+                           AddressList& mom_in,
+                           AddressList& weight_out,
+                           SizeList& sizes,
+                           int tensor_num,
+                           float wd,
+                           float momentum,
+                           float dampening,
+                           float lr,
+                           bool nesterov,
+                           bool first_run,
+                           bool wd_after_momentum,
+                           float scale) {
+  float dampening_correction = 1 - dampening;
+
+  // Nram Data
+  Tin* grad_nram = (Tin*)total_nram;
+  Tout* weight_in_nram = (Tout*)(total_nram + SIZE_PER_REGION_SGD * 2);
+  Tout* mom_in_nram = (Tout*)(total_nram + SIZE_PER_REGION_SGD * 4);
+  float* temp_nram = (float*)(total_nram + SIZE_PER_REGION_SGD * 6);
+
+  // Sram Data
+  Tin* grad_sram = (Tin*)total_sram;
+  Tout* weight_in_sram = (Tout*)(total_sram + SRAM_SIZE_PER_REGION_SGD * 2);
+  Tout* mom_in_sram = (Tout*)(total_sram + SRAM_SIZE_PER_REGION_SGD * 4);
+
+  // used for cast data, offset is SIZE_PER_REGION_SGD / (2 * sizeof(half))
+  int input_nram_load_offset = sizeof(Tin) == 2 ? SIZE_PER_REGION_SGD / 4 : 0;
+  int output_nram_load_offset = sizeof(Tout) == 2 ? SIZE_PER_REGION_SGD / 4 : 0;
+
+  // max data num can be prosess once by a cluster, compute type is fixed as float
+  int num_per_region = coreDim * SIZE_PER_REGION_SGD / sizeof(float);
+  int remains_chunck_num = 0; // assign each cluster average chuncks as possible
+  int tensor_size, chunck_num, last_chunck_size;
+  int repeat_per_cluster, last_loop_chunck_num;
+  int chunck_id; // every cluster prosess one chunck once, chunck_id maybe minus
+  int count = 0;
+  int last_id        = 0; // tensor ids
+  int current_id     = 0; 
+  int next_id        = 0; 
+  int last_offset    = 0; // address offset 
+  int current_offset = 0; 
+  int next_offset    = 0; 
+  int last_num       = 0; // element number
+  int current_num    = 0; 
+  int next_num       = 0;
+  int last_num_deal       = 0; // element number to dealing with per core
+  int current_num_deal    = 0;
+  int next_num_deal       = 0;
+  int last_core_offset    = 0;
+  int current_core_offset = 0;
+  int next_core_offset    = 0;
+  
+  for (int tensor_id = 0; tensor_id < tensor_num; ++tensor_id) {
+    tensor_size = sizes.sizes[tensor_id];
+
+    chunck_num = ALIGN_UP_DIV(tensor_size, num_per_region);
+    last_chunck_size = (tensor_size - 1) % num_per_region + 1;
+
+    repeat_per_cluster = ALIGN_UP_DIV(chunck_num + remains_chunck_num, taskDimY);
+    last_loop_chunck_num = chunck_num % taskDimY;
+
+    for (int iter = 0; iter < repeat_per_cluster; ++iter) {
+      chunck_id = iter * taskDimY + taskIdY - remains_chunck_num;
+      if (chunck_id > -1 && chunck_id < chunck_num) {
+        // get address id and offset
+        last_id = current_id;
+        current_id = next_id;
+        next_id = tensor_id;
+        last_offset = current_offset;
+        current_offset = next_offset;
+        next_offset = chunck_id * num_per_region; 
+        // get deal num
+        last_num = current_num;
+        current_num = next_num;
+        next_num = chunck_id == chunck_num - 1 ? last_chunck_size : num_per_region;
+        // split core
+        last_core_offset = current_core_offset;
+        last_num_deal = current_num_deal;
+        current_num_deal = ALIGN_UP_DIV(current_num - coreId, coreDim);
+        int rem = current_num % coreDim;
+        current_core_offset = current_num_deal * coreId + (rem > coreId ? 0 : rem);
+
+        // Load
+        __memcpy_async(grad_sram + ((count + 1 ) & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tin),
+                       (Tin*)grad.addresses[next_id] + next_offset,
+                       next_num * sizeof(Tin), GDRAM2SRAM);
+        __memcpy_async(weight_in_sram + ((count + 1 ) & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tout),
+                       (Tout*)weight_in.addresses[next_id] + next_offset,
+                       next_num * sizeof(Tout), GDRAM2SRAM);
+        __memcpy_async(mom_in_sram + ((count + 1 ) & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tout),
+                       (Tout*)mom_in.addresses[next_id] + next_offset,
+                       next_num * sizeof(Tout), GDRAM2SRAM);
+
+        // move
+        if (current_num_deal > 0) {
+          __memcpy_async(grad_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tin) + input_nram_load_offset,
+                         grad_sram + (count & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tin) + current_core_offset,
+                         current_num_deal * sizeof(Tin), SRAM2NRAM);
+          __memcpy_async(weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout) + output_nram_load_offset,
+                         weight_in_sram + (count & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tout) + current_core_offset,
+                         current_num_deal * sizeof(Tout), SRAM2NRAM);
+          __memcpy_async(mom_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout) + output_nram_load_offset,
+                         mom_in_sram + (count & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tout) + current_core_offset,
+                         current_num_deal * sizeof(Tout), SRAM2NRAM);
+          __asm__ volatile("sync;\n\t");
+        }
+
+        if (current_num_deal > 0) {
+          CastFunc(ALIGN_UP(current_num_deal, 64),
+                 grad_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tin),
+                 weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                 mom_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                 temp_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(float), 0);
+        }
+
+        // Save
+        if (last_num_deal > 0) {
+          __memcpy_async((Tout*)weight_in.addresses[last_id] + last_offset + last_core_offset,
+                         weight_in_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                         last_num_deal * sizeof(Tout), NRAM2GDRAM);
+          __memcpy_async((Tout*)mom_in.addresses[last_id] + last_offset + last_core_offset,
+                         mom_in_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                         last_num_deal * sizeof(Tout), NRAM2GDRAM);
+          if (N == 4) {
+            __memcpy_async((half*)weight_out.addresses[last_id] + last_offset + last_core_offset,
+                           (half*)temp_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_SGD / sizeof(half),
+                           last_num_deal * sizeof(half), NRAM2GDRAM);
+          }
+        }
+       
+        // compute
+        if (current_num_deal > 0) {
+          // __bang_mul_scalar requires n * 128 bytes
+          // __bang_half2float requires n * 64 elements
+          // take 64 as the intersection 
+          ComputeInternal(ALIGN_UP(current_num_deal, 64),
+                 (float*)(grad_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tin)),
+                 (float*)(weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout)),
+                 (float*)(mom_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout)),
+                 temp_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(float),
+                 wd, momentum, dampening_correction, lr,
+                 nesterov, first_run, wd_after_momentum, scale);
+          CastFunc(ALIGN_UP(current_num_deal, 64),
+                 grad_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tin),
+                 weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                 mom_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                 temp_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(float), 1);
+        }
+        
+        __sync_cluster();
+        count++;
+      }
+    }
+    remains_chunck_num = (remains_chunck_num + last_loop_chunck_num) % taskDimY;
+  }
+
+  next_num_deal = ALIGN_UP_DIV(next_num - coreId, coreDim);
+  int rem = next_num % coreDim;
+  next_core_offset = next_num_deal * coreId + (rem > coreId ? 0 : rem);
+  if (current_num_deal > 0) {
+    // save
+    __memcpy_async((Tout*)weight_in.addresses[current_id] + current_offset + current_core_offset,
+                   weight_in_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                   current_num_deal * sizeof(Tout), NRAM2GDRAM);
+    __memcpy_async((Tout*)mom_in.addresses[current_id] + current_offset + current_core_offset,
+                   mom_in_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                   current_num_deal * sizeof(Tout), NRAM2GDRAM);
+    if (N == 4) {
+      __memcpy_async((half*)weight_out.addresses[current_id] + current_offset + current_core_offset,
+                     (half*)temp_nram + ((count + 1) & 0x1) * SIZE_PER_REGION_SGD / sizeof(half),
+                     current_num_deal * sizeof(half), NRAM2GDRAM);
+    }
+  } 
+  
+  if (next_num_deal > 0) {
+    // move and compute
+    __memcpy_async(grad_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tin) + input_nram_load_offset,
+                   grad_sram + (count & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tin) + next_core_offset,
+                   next_num_deal * sizeof(Tin), SRAM2NRAM);
+    __memcpy_async(weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout) + output_nram_load_offset,
+                   weight_in_sram + (count & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tout) + next_core_offset,
+                   next_num_deal * sizeof(Tout), SRAM2NRAM);
+    __memcpy_async(mom_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout) + output_nram_load_offset,
+                   mom_in_sram + (count & 0x1) * SRAM_SIZE_PER_REGION_SGD / sizeof(Tout) + next_core_offset,
+                   next_num_deal * sizeof(Tout), SRAM2NRAM);
+    
+    __asm__ volatile("sync;\n\t");
+    CastFunc(ALIGN_UP(next_num_deal, 64),
+           grad_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tin),
+           weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+           mom_in_nram + (count  & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+           temp_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(float), 0);
+    ComputeInternal(ALIGN_UP(next_num_deal, 64),
+           (float*)(grad_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tin)),
+           (float*)(weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout)),
+           (float*)(mom_in_nram + (count  & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout)),
+           temp_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(float),
+           wd, momentum, dampening_correction, lr,
+           nesterov, first_run, wd_after_momentum, scale);
+    CastFunc(ALIGN_UP(next_num_deal, 64),
+           grad_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tin),
+           weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+           mom_in_nram + (count  & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+           temp_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(float), 1);
+  }
+
+  __sync_cluster();
+  if (next_num_deal > 0) {
+    // Last save
+    __memcpy_async((Tout*)weight_in.addresses[next_id] + next_offset + next_core_offset,
+                   weight_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                   next_num_deal * sizeof(Tout), NRAM2GDRAM);
+    __memcpy_async((Tout*)mom_in.addresses[next_id] + next_offset + next_core_offset,
+                   mom_in_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(Tout),
+                   next_num_deal * sizeof(Tout), NRAM2GDRAM);
+    if (N == 4) {
+      __memcpy_async((half*)weight_out.addresses[next_id] + next_offset + next_core_offset,
+                     (half*)temp_nram + (count & 0x1) * SIZE_PER_REGION_SGD / sizeof(half),
+                     next_num_deal * sizeof(half), NRAM2GDRAM);
+    }
+  }
+} 
+
+__mlu_global__ void MLUMultiTensorSGD(
+    AddressList g,
+    AddressList i,
+    AddressList m,
+    AddressList o,
+    SizeList s,
+    int tensor_num,
+    int32_t* overflow,
+    float weight_decay,
+    float momentum,
+    float dampening,
+    float learning_rate,
+    bool nesterov,
+    bool first_run,
+    bool wd_after_momentum,
+    float scale,
+    cnrtDataType_t in_type,
+    cnrtDataType_t out_type,
+    int N) {
+  if (*overflow) {
+    return;
+  }
+
+  int combined_dtype = 100 * N + 10 * static_cast<int>(in_type) + static_cast<int>(out_type);
+  switch (combined_dtype) {
+    case 498:
+      ApplySGD<half, half, 3, Casthalf2half3>(
+          g, i, m, o, s, tensor_num, weight_decay,
+          momentum, dampening, learning_rate, nesterov,
+          first_run, wd_after_momentum, scale);
+      break;
+    case 509:
+      ApplySGD<float, float, 3, Castfloat2float3>(
+          g, i, m, o, s, tensor_num, weight_decay,
+          momentum, dampening, learning_rate, nesterov,
+          first_run, wd_after_momentum, scale);
+      break;
+    case 599:
+      ApplySGD<half, float, 4, Casthalf2float4>(
+          g, i, m, o, s, tensor_num, weight_decay,
+          momentum, dampening, learning_rate, nesterov,
+          first_run, wd_after_momentum, scale);
+      break;
+    case 609:
+      ApplySGD<float, float, 4, Castfloat2float4>(
+          g, i, m, o, s, tensor_num, weight_decay,
+          momentum, dampening, learning_rate, nesterov,
+          first_run, wd_after_momentum, scale);
+      break;
+    default:
+      break;  
+  }
+}
+
+void bang_fused_sgd_internal(
+    AddressList g,
+    AddressList i,
+    AddressList m,
+    AddressList o,
+    SizeList s,
+    int tensor_num,
+    int32_t* overflow,
+    float weight_decay,
+    float momentum,
+    float dampening,
+    float learning_rate,
+    bool nesterov,
+    bool first_run,
+    bool wd_after_momentum,
+    float scale,
+    cnrtDim3_t k_dim,
+    cnrtFunctionType_t k_type,
+    cnrtQueue_t queue,
+    cnrtDataType_t in_type,
+    cnrtDataType_t out_type,
+    int N) {
+  MLUMultiTensorSGD<<<k_dim, k_type, queue>>>(
+      g, i, m, o, s, tensor_num, overflow,
+      weight_decay, momentum, dampening, learning_rate,
+      nesterov, first_run, wd_after_momentum,
+      scale, in_type, out_type, N);
+}
+
+} // namespace ops
+} // namespace torch_mlu

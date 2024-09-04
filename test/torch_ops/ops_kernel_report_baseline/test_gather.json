@@ -1,0 +1,230 @@
+{
+    "test_gather": [
+        {
+            "CaseName": "test_gather",
+            "Events": [
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_channelslast_and_nodense",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_dim",
+            "Events": [
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandGenerateUniform",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_index_zero",
+            "Events": [
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_out",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 50
+                },
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 34
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 282
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_overlap",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlScatter",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_zero",
+            "Events": [
+                {
+                    "Name": "cnnlGather",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_gather_zero_numel",
+            "Events": []
+        }
+    ]
+}

@@ -1,0 +1,15 @@
+diff --git a/torch/_inductor/triton_helpers.py b/torch/_inductor/triton_helpers.py
+index 4f7f3145542..c733f562153 100644
+--- a/torch/_inductor/triton_helpers.py
++++ b/torch/_inductor/triton_helpers.py
+@@ -3,8 +3,8 @@ import triton.language as tl
+ 
+ # In the latest triton, math functions were shuffled around into different modules:
+ # https://github.com/openai/triton/pull/3172
+-if hasattr(tl.extra.cuda, "libdevice"):
+-    libdevice = tl.extra.cuda.libdevice
++if hasattr(tl.extra.mlu, "libdevice"):
++    libdevice = tl.extra.mlu.libdevice
+     math = tl.math
+ else:
+     libdevice = tl.math

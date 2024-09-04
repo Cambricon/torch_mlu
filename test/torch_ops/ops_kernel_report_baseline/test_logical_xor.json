@@ -1,0 +1,131 @@
+{
+    "test_logical_xor": [
+        {
+            "CaseName": "test_logical_xor",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_xor_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_xor_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_xor_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 98
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 49
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_xor_mixed_type",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_xor_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_xor_out",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 63
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 189
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 63
+                }
+            ]
+        }
+    ]
+}

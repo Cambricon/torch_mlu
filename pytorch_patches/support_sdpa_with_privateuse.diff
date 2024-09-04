@@ -1,0 +1,34 @@
+diff --git a/aten/src/ATen/native/transformers/attention.cpp b/aten/src/ATen/native/transformers/attention.cpp
+index e338cd15fb9..d3867648ad3 100644
+--- a/aten/src/ATen/native/transformers/attention.cpp
++++ b/aten/src/ATen/native/transformers/attention.cpp
+@@ -640,7 +640,8 @@ Tensor scaled_dot_product_attention(
+   int64_t choice_int = static_cast<int64_t>(sdp::SDPBackend::math);
+   if (query_.device().type() == DeviceType::CUDA
+       || query_.device().type() == DeviceType::CPU
+-      || query_.device().type() == DeviceType::HIP){
++      || query_.device().type() == DeviceType::HIP
++      || query_.device().type() == DeviceType::PrivateUse1){
+     choice_int = _fused_sdp_choice_stub(query_.device().type(),
+       query_, key, value, attn_mask_, dropout_p, is_causal, scale);
+   }
+@@ -666,10 +667,16 @@ Tensor scaled_dot_product_attention(
+         auto out_lse_softmax = at::_scaled_dot_product_flash_attention(
+             query_padded, key_padded, value_padded, dropout_p, is_causal, false /*return_debug_mask*/, og_scale.as_float_unchecked());
+         return post_process_flash_output(std::get<0>(out_lse_softmax), og_size);
++      } else if (query_.device().type() == DeviceType::PrivateUse1) {
++        auto out_lse_softmax = at::_scaled_dot_product_flash_attention(
++            query_, key, value, dropout_p, is_causal, false /*return_debug_mask*/, scale);
++        return std::get<0>(out_lse_softmax);
++      }
++      else {
++        // For the CPU case we do not need to pad the last dim
++        return std::get<0>(at::_scaled_dot_product_flash_attention_for_cpu(
++            query_, key, value, dropout_p, is_causal, attn_mask, scale));
+       }
+-      // For the CPU case we do not need to pad the last dim
+-      return std::get<0>(at::_scaled_dot_product_flash_attention_for_cpu(
+-          query_, key, value, dropout_p, is_causal, attn_mask, scale));
+     }
+     case sdp::SDPBackend::efficient_attention: {
+       bool compute_logsumexp =

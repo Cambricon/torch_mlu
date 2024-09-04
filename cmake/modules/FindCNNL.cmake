@@ -1,0 +1,33 @@
+# - Try to find CNNL
+#
+# The following are set after configuration is done:
+#  CNNL_FOUND
+#  CNNL_INCLUDE_DIRS
+#  CNNL_LIBRARIES
+
+include(FindPackageHandleStandardArgs)
+
+SET(CNNL_INCLUDE_SEARCH_PATHS $ENV{NEUWARE_HOME}/include)
+SET(CNNL_LIB_SEARCH_PATHS $ENV{NEUWARE_HOME}/lib64)
+
+find_path(CNNL_INCLUDE_DIR NAMES cnnl.h
+          PATHS ${CNNL_INCLUDE_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_path(CNNL_INCLUDE_DIR NAMES cnnl.h
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_library(CNNL_LIBRARY NAMES cnnl
+          PATHS ${CNNL_LIB_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_library(CNNL_LIBRARY NAMES cnnl
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_package_handle_standard_args(CNNL DEFAULT_MSG CNNL_INCLUDE_DIR CNNL_LIBRARY)
+
+if(CNNL_FOUND)
+  set(CNNL_INCLUDE_DIRS ${CNNL_INCLUDE_DIR})
+  set(CNNL_LIBRARIES ${CNNL_LIBRARY})
+
+  mark_as_advanced(CNNL_ROOT_DIR CNNL_LIBRARY_RELEASE CNNL_LIBRARY_DEBUG
+      CNNL_LIBRARY CNNL_INCLUDE_DIR )
+endif()

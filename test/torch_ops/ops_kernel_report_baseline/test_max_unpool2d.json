@@ -1,0 +1,111 @@
+{
+    "test_max_unpool2d": [
+        {
+            "CaseName": "test_max_unpool2d_backward",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 92
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 110
+                },
+                {
+                    "Name": "cnnlUnpoolForward",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlUnpoolBackward",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 54
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_unpool2d_exception",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_max_unpool2d_forward",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlUnpoolForward",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        }
+    ]
+}

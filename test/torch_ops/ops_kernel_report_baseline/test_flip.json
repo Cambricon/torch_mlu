@@ -1,0 +1,129 @@
+{
+    "test_flip": [
+        {
+            "CaseName": "test_flip_backward",
+            "Events": [
+                {
+                    "Name": "cnnlFlip",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_flip_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlFlip",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_flip_is_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlFlip",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_flip_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlFlip",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 134
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 216
+                }
+            ]
+        },
+        {
+            "CaseName": "test_flip_torch",
+            "Events": [
+                {
+                    "Name": "cnnlFlip",
+                    "# of Calls": 81
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 87
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 162
+                }
+            ]
+        }
+    ]
+}

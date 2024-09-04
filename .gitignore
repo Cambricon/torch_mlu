@@ -1,0 +1,31 @@
+# ignore these files
+
+*.pyc
+*.swp
+build/
+dist/
+torch_mlu.egg-info/
+torch_mlu/csrc/lib/
+*/**/__pycache__
+*/__pycache__
+
+# docs
+docs/build/
+.idea/
+# code
+.vscode/
+
+# test
+test/cpp/build/
+
+# codegen
+torch_mlu/csrc/aten/generated/
+torch_mlu/share/cmake/TorchMLU/modules
+torch_mlu/csrc/aten/operators/cnnl/cnnl_kernel.h
+torch_mlu/csrc/aten/operators/bang/bang_kernel.h
+torch_mlu/csrc/aten/operators/mluop/mluop_kernel.h
+torch_mlu/csrc/utils/version.cpp
+
+# examples/cpp
+examples/cpp/build
+
