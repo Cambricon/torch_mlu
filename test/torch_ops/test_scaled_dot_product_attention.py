@@ -167,8 +167,6 @@ def attention_ref(
     return output.to(dtype=dtype_og).transpose(1, 2), attention.to(dtype=dtype_og)
 
 
-window_size = (-1, -1)
-
 default_atol = {torch.float16: 1e-3, torch.bfloat16: 1e-3, torch.float32: 1e-5}
 default_rtol = {torch.float16: 1e-3, torch.bfloat16: 1.6e-2, torch.float32: 1.3e-6}
 
@@ -404,7 +402,7 @@ class TestSDPAThrowException(TestCase):
 
     # 9.test check_fused_kernel_mlu_support exception in sdp_utils
     @testinfo()
-    @unittest.skipUnless((not read_card_info()), "Dont test MLU500 series")
+    @unittest.skipUnless((not read_card_info()), "Dont test on selected MLU series")
     def test_mlu_arch_exception(self):
         dtype = torch.float16
         size = (2, 2, 3, 256)
@@ -414,7 +412,8 @@ class TestSDPAThrowException(TestCase):
         for kernel in backend_list:
             with sdpa_kernel(backends=[kernel]):
                 with self.assertWarnsRegex(
-                    UserWarning, "Both fused kernels only supports 500 series."
+                    UserWarning,
+                    "Both fused kernels only supports specified MLU series.",
                 ):
                     self.assertRaises(
                         RuntimeError,
@@ -425,7 +424,7 @@ class TestSDPAThrowException(TestCase):
 
     # 10.test check_fused_kernel_mlu_support exception in sdp_utils
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_split_cond_exception(self):
         dtype = torch.float16
         size = (2, 2, 3, 256)
@@ -447,7 +446,7 @@ class TestSDPAThrowException(TestCase):
 
     # 11.test check_fused_kernel_mlu_support exception in sdp_utils
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_valid_data_ratio_cond_exception(self):
         dtype = torch.float16
         size = (4, 16, 3, 256)
@@ -483,7 +482,7 @@ class TestSDPA(TestCase):
         return query_ref, key_ref, value_ref
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_can_use_flash_attention(self):
         batch_size, num_heads, seq_len, head_dim = 2, 8, 512, 128
         shape = (batch_size, seq_len, num_heads, head_dim)
@@ -503,7 +502,7 @@ class TestSDPA(TestCase):
         assert can_use_flash_attention(params) == True
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_can_use_efficient_attention(self):
         batch_size, num_heads, seq_len, head_dim = 2, 8, 512, 128
         shape = (batch_size, seq_len, num_heads, head_dim)
@@ -541,7 +540,7 @@ class TestSDPA(TestCase):
         self.assertEqual(ref_result, sdp_math)
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_fused_sdp_choice(self):
         batch_size, num_heads, seq_len, head_dim = 2, 8, 512, 128
         shape = (batch_size, seq_len, num_heads, head_dim)
@@ -573,7 +572,7 @@ class TestSDPA(TestCase):
                 )
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_flash_autocast_fp32(self):
         dtype = torch.float
         shape = (16, 16, 512, 128)
@@ -599,7 +598,7 @@ class TestSDPA(TestCase):
                 )
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_scaled_dot_product_attention_fused_kernels(self):
         is_contiguous_list = [True, False]
         is_packed_list = [True, False]
@@ -733,7 +732,7 @@ class TestSDPA(TestCase):
             self.assertEqual(actual_memory, out_ref, atol=output_atol, rtol=output_rtol)
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_scaled_dot_product_attention_fused_kernels_backward(self):
         batch_size, seq_len, num_heads, head_dim = 4, 512, 2, 128
         make_tensor = partial(
@@ -932,7 +931,7 @@ class TestSDPA(TestCase):
             )
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_scaled_dot_product_flast_attention_backward(self):
         batch_size_list = [4, 8]
         seq_len_q_list = [512, 1024, 2048]
@@ -1259,7 +1258,7 @@ class TestSDPA(TestCase):
             )
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_mem_efficient_attetntion_mask_variants(self):
         dtype = torch.float16
         make_tensor = partial(
@@ -1292,7 +1291,7 @@ class TestSDPA(TestCase):
             out.sum().backward()
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_mem_eff_attention_non_contiguous_mask(self):
         dtype = torch.float16
         make_tensor = partial(
@@ -1316,7 +1315,7 @@ class TestSDPA(TestCase):
         out.sum().backward()
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_mem_eff_attention_long_sequence_mask(self):
         dtype = torch.float16
         make_tensor = partial(
@@ -1336,8 +1335,324 @@ class TestSDPA(TestCase):
         out.sum().backward()
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
-    def test_scaled_dot_product_memory_efficient_attention_backward(self):
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
+    def test_mem_efficient_attention_vs_math_ref_grads(self):
+        batch_size_list = [4, 8]
+        seq_len_q_list = [512, 1024, 2048]
+        seq_len_k_list = [512, 1024, 2048]
+        head_dim_list = [128, 256]
+        scale_list = [None, "l1"]
+        is_causal_list = [False, True]
+        dropout_p_list = [0.0, 0.22, 0.48]
+        dtype_list = [torch.float16]
+
+        seed = 42
+        for (
+            batch_size,
+            seq_len_q,
+            seq_len_k,
+            head_dim,
+            scale,
+            is_causal,
+            dropout_p,
+            dtype,
+        ) in product(
+            batch_size_list,
+            seq_len_q_list,
+            seq_len_k_list,
+            head_dim_list,
+            scale_list,
+            is_causal_list,
+            dropout_p_list,
+            dtype_list,
+        ):
+            n_heads = 4
+            scale = scale if scale is None else (1 / head_dim)
+
+            query = torch.rand(
+                batch_size,
+                n_heads,
+                seq_len_q,
+                head_dim,
+                device=device,
+                dtype=dtype,
+                requires_grad=True,
+            )
+            key = torch.rand(
+                batch_size,
+                n_heads,
+                seq_len_k,
+                head_dim,
+                device=device,
+                dtype=dtype,
+                requires_grad=True,
+            )
+            value = torch.rand(
+                batch_size,
+                n_heads,
+                seq_len_k,
+                head_dim,
+                device=device,
+                dtype=dtype,
+                requires_grad=True,
+            )
+
+            query_lp_ref, key_lp_ref, value_lp_ref = self.query_key_value_clones(
+                query, key, value, dtype=dtype
+            )
+
+            higher_precision_dtype = torch.float32
+            query_ref, key_ref, value_ref = self.query_key_value_clones(
+                query, key, value, dtype=higher_precision_dtype
+            )
+
+            # Create real output
+            with sdpa_kernel([SDPBackend.EFFICIENT_ATTENTION]):
+                torch.manual_seed(seed)
+                out = F.scaled_dot_product_attention(
+                    query,
+                    key,
+                    value,
+                    dropout_p=dropout_p,
+                    is_causal=is_causal,
+                    scale=scale,
+                )
+
+            if dropout_p == 0.0:
+                with sdpa_kernel([SDPBackend.MATH]):
+                    out_lp_ref = torch.nn.functional.scaled_dot_product_attention(
+                        query_lp_ref,
+                        key_lp_ref,
+                        value_lp_ref,
+                        is_causal=is_causal,
+                        scale=scale,
+                    )
+                    out_ref = torch.nn.functional.scaled_dot_product_attention(
+                        query_ref,
+                        key_ref,
+                        value_ref,
+                        is_causal=is_causal,
+                        scale=scale,
+                    )
+            else:
+                with sdpa_kernel([SDPBackend.MATH]):
+                    torch.manual_seed(seed)
+                    out_lp_ref = torch.nn.functional.scaled_dot_product_attention(
+                        query_lp_ref,
+                        key_lp_ref,
+                        value_lp_ref,
+                        is_causal=is_causal,
+                        scale=scale,
+                        dropout_p=dropout_p,
+                    )
+                    out_ref = torch.nn.functional.scaled_dot_product_attention(
+                        query_ref,
+                        key_ref,
+                        value_ref,
+                        is_causal=is_causal,
+                        scale=scale,
+                        dropout_p=dropout_p,
+                    )
+
+            upstream_grad = torch.rand_like(out, requires_grad=False)
+            out.backward(upstream_grad)
+            out_ref.backward(upstream_grad.to(out_ref.dtype))
+            out_lp_ref.backward(upstream_grad)
+            output_ref_atol, output_ref_rtol = get_tolerances(out_ref, out_lp_ref)
+            query_fudge_factor = 4
+            grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
+                query_ref.grad, query_lp_ref.grad, query_fudge_factor
+            )
+            grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
+                key_ref.grad, key_lp_ref.grad
+            )
+            grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
+                value_ref.grad, value_lp_ref.grad
+            )
+
+            self.assertEqual(
+                out, out_ref.to(out.dtype), atol=output_ref_atol, rtol=output_ref_rtol
+            )
+            self.assertEqual(
+                query.grad,
+                query_ref.grad.to(query.grad.dtype),
+                atol=grad_q_ref_atol,
+                rtol=grad_q_ref_rtol,
+            )
+            self.assertEqual(
+                key.grad,
+                key_ref.grad.to(key.grad.dtype),
+                atol=grad_k_ref_atol,
+                rtol=grad_k_ref_rtol,
+            )
+            self.assertEqual(
+                value.grad,
+                value_ref.grad.to(value.grad.dtype),
+                atol=grad_v_ref_atol,
+                rtol=grad_v_ref_rtol,
+            )
+
+    @testinfo()
+    @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
+    def test_mem_efficient_attention_vs_math_ref_grads_bfloat16(self):
+        batch_size_list = [4, 8]
+        seq_len_q_list = [512, 1024, 2048]
+        seq_len_k_list = [512, 1024, 2048]
+        head_dim_list = [128, 256]
+        scale_list = [None, "l1"]
+        is_causal_list = [False, True]
+        dropout_p_list = [0.0, 0.22, 0.48]
+        dtype_list = [torch.bfloat16]
+
+        seed = 42
+        for (
+            batch_size,
+            seq_len_q,
+            seq_len_k,
+            head_dim,
+            scale,
+            is_causal,
+            dropout_p,
+            dtype,
+        ) in product(
+            batch_size_list,
+            seq_len_q_list,
+            seq_len_k_list,
+            head_dim_list,
+            scale_list,
+            is_causal_list,
+            dropout_p_list,
+            dtype_list,
+        ):
+            n_heads = 4
+            scale = scale if scale is None else (1 / head_dim)
+
+            query = torch.rand(
+                batch_size,
+                n_heads,
+                seq_len_q,
+                head_dim,
+                device=device,
+                dtype=dtype,
+                requires_grad=True,
+            )
+            key = torch.rand(
+                batch_size,
+                n_heads,
+                seq_len_k,
+                head_dim,
+                device=device,
+                dtype=dtype,
+                requires_grad=True,
+            )
+            value = torch.rand(
+                batch_size,
+                n_heads,
+                seq_len_k,
+                head_dim,
+                device=device,
+                dtype=dtype,
+                requires_grad=True,
+            )
+
+            query_lp_ref, key_lp_ref, value_lp_ref = self.query_key_value_clones(
+                query, key, value, dtype=dtype
+            )
+
+            higher_precision_dtype = torch.float32
+            query_ref, key_ref, value_ref = self.query_key_value_clones(
+                query, key, value, dtype=higher_precision_dtype
+            )
+
+            # Create real output
+            with sdpa_kernel([SDPBackend.EFFICIENT_ATTENTION]):
+                torch.manual_seed(seed)
+                out = F.scaled_dot_product_attention(
+                    query,
+                    key,
+                    value,
+                    dropout_p=dropout_p,
+                    is_causal=is_causal,
+                    scale=scale,
+                )
+
+            if dropout_p == 0.0:
+                with sdpa_kernel([SDPBackend.MATH]):
+                    out_lp_ref = torch.nn.functional.scaled_dot_product_attention(
+                        query_lp_ref,
+                        key_lp_ref,
+                        value_lp_ref,
+                        is_causal=is_causal,
+                        scale=scale,
+                    )
+                    out_ref = torch.nn.functional.scaled_dot_product_attention(
+                        query_ref,
+                        key_ref,
+                        value_ref,
+                        is_causal=is_causal,
+                        scale=scale,
+                    )
+            else:
+                with sdpa_kernel([SDPBackend.MATH]):
+                    torch.manual_seed(seed)
+                    out_lp_ref = torch.nn.functional.scaled_dot_product_attention(
+                        query_lp_ref,
+                        key_lp_ref,
+                        value_lp_ref,
+                        is_causal=is_causal,
+                        scale=scale,
+                        dropout_p=dropout_p,
+                    )
+                    out_ref = torch.nn.functional.scaled_dot_product_attention(
+                        query_ref,
+                        key_ref,
+                        value_ref,
+                        is_causal=is_causal,
+                        scale=scale,
+                        dropout_p=dropout_p,
+                    )
+
+            upstream_grad = torch.rand_like(out, requires_grad=False)
+            out.backward(upstream_grad)
+            out_ref.backward(upstream_grad.to(out_ref.dtype))
+            out_lp_ref.backward(upstream_grad)
+            output_ref_atol, output_ref_rtol = get_tolerances(out_ref, out_lp_ref)
+            query_fudge_factor = 4
+            grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
+                query_ref.grad, query_lp_ref.grad, query_fudge_factor
+            )
+            grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
+                key_ref.grad, key_lp_ref.grad
+            )
+            grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
+                value_ref.grad, value_lp_ref.grad
+            )
+
+            self.assertEqual(
+                out, out_ref.to(out.dtype), atol=output_ref_atol, rtol=output_ref_rtol
+            )
+            self.assertEqual(
+                query.grad,
+                query_ref.grad.to(query.grad.dtype),
+                atol=grad_q_ref_atol,
+                rtol=grad_q_ref_rtol,
+            )
+            self.assertEqual(
+                key.grad,
+                key_ref.grad.to(key.grad.dtype),
+                atol=grad_k_ref_atol,
+                rtol=grad_k_ref_rtol,
+            )
+            self.assertEqual(
+                value.grad,
+                value_ref.grad.to(value.grad.dtype),
+                atol=grad_v_ref_atol,
+                rtol=grad_v_ref_rtol,
+            )
+
+    @testinfo()
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
+    def test_mem_efficient_attention_attn_mask_vs_math_ref_grads(self):
         batch_size_list = [4, 8]
         seq_len_q_list = [512, 1024, 2048]
         seq_len_k_list = [512, 1024, 2048]
@@ -1510,7 +1825,7 @@ class TestSDPA(TestCase):
 
     @testinfo()
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
-    def test_scaled_dot_product_memory_efficient_attention_backward_bfloat16(self):
+    def test_mem_efficient_attention_attn_mask_vs_math_ref_grads_bfloat16(self):
         batch_size_list = [4, 8]
         seq_len_q_list = [512, 1024, 2048]
         seq_len_k_list = [512, 1024, 2048]
@@ -1675,14 +1990,14 @@ class TestSDPA(TestCase):
             )
 
     @testinfo()
-    @unittest.skipUnless(read_card_info(), "Only test MLU500 series")
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_memory_efficient_attention(self):
         batch_size_list = [4, 8]
         seq_len_q_list = [512, 1024, 2048]
         seq_len_k_list = [512, 1024, 2048]
         head_dim_list = [128, 256]
         scale_list = [None]
-        is_causal_list = [False]
+        is_causal_list = [False, True]
         dropout_p_list = [0.0, 0.22, 0.48]
         dtype_list = [torch.float16]
 
@@ -1744,10 +2059,17 @@ class TestSDPA(TestCase):
                 query, key, value, dtype=higher_precision_dtype
             )
 
-            attn_mask_lp = torch.rand(
-                seq_len_q, seq_len_k, device=device, dtype=dtype, requires_grad=True
-            )
-            att_mask = attn_mask_lp.detach().clone().to(torch.float32)
+            attn_mask_lp = None
+            att_mask = None
+            attn_mask_expand = None
+            if not is_causal:
+                attn_mask_lp = torch.rand(
+                    seq_len_q, seq_len_k, device=device, dtype=dtype, requires_grad=True
+                )
+                att_mask = attn_mask_lp.detach().clone().to(torch.float32)
+                attn_mask_expand = attn_mask_lp.expand(
+                    query.size(0), query.size(1), query.size(2), key.size(2)
+                )
 
             cu_seqlens_q = torch.arange(
                 0,
@@ -1766,32 +2088,28 @@ class TestSDPA(TestCase):
             query_t = query.transpose(1, 2)
             key_t = key.transpose(1, 2)
             value_t = value.transpose(1, 2)
-            attn_mask_expand = attn_mask_lp.expand(
-                query.size(0), query.size(1), query.size(2), key.size(2)
-            )
 
-            with sdpa_kernel(backends=[SDPBackend.EFFICIENT_ATTENTION]):
-                torch.manual_seed(seed)
-                (
-                    out,
-                    logsumexp,
-                    seed,
-                    offset,
-                    _,
-                    _,
-                ) = torch.ops.aten._efficient_attention_forward(
-                    query_t,
-                    key_t,
-                    value_t,
-                    attn_mask_expand,
-                    cu_seqlens_q,
-                    cu_seqlens_k,
-                    max_seqlen_q=seq_len_q,
-                    max_seqlen_k=seq_len_k,
-                    dropout_p=dropout_p,
-                    custom_mask_type=0,
-                    compute_log_sumexp=True,
-                )
+            torch.manual_seed(seed)
+            (
+                out,
+                logsumexp,
+                seed,
+                offset,
+                _,
+                _,
+            ) = torch.ops.aten._efficient_attention_forward(
+                query_t,
+                key_t,
+                value_t,
+                attn_mask_expand,
+                cu_seqlens_q,
+                cu_seqlens_k,
+                max_seqlen_q=seq_len_q,
+                max_seqlen_k=seq_len_k,
+                dropout_p=dropout_p,
+                custom_mask_type=1 if is_causal else 0,
+                compute_log_sumexp=True,
+            )
 
             if dropout_p == 0.0:
                 with sdpa_kernel(backends=[SDPBackend.MATH]):
@@ -1852,7 +2170,7 @@ class TestSDPA(TestCase):
                 dropout_p=dropout_p,
                 philox_seed=seed,
                 philox_offset=offset,
-                custom_mask_type=0,
+                custom_mask_type=1 if is_causal else 0,
                 bias_requires_grad=False,
             )
             grad_q_t = grad_q.transpose(1, 2)

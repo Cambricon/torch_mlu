@@ -558,7 +558,7 @@ inline bool check_fused_kernel_mlu_support(
   if ((*prop).major != 5) {
     if (debug) {
       TORCH_WARN(
-          "Both fused kernels only supports 500 series.",
+          "Both fused kernels only supports specified MLU series.",
           "Attempting to run on ",
           (*prop).name,
           ".");

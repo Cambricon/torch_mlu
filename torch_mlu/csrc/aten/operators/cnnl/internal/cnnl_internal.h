@@ -1463,8 +1463,7 @@ void cnnl_logaddexp_internal(
     const at::Tensor& other,
     LogaddexpType base);
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor>
-mha_varlen_fwd_internal(
+std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_fwd_internal(
     const at::Tensor& q,
     const at::Tensor& k,
     const at::Tensor& v,
@@ -1479,8 +1478,7 @@ mha_varlen_fwd_internal(
     const bool is_causal,
     const bool return_softmax);
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor>
-mha_varlen_bwd_internal(
+std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_bwd_internal(
     const at::Tensor& dout,
     const at::Tensor& q,
     const at::Tensor& k,
@@ -1501,7 +1499,7 @@ mha_varlen_bwd_internal(
     const at::Tensor& philox_seed,
     const at::Tensor& philox_offset);
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor> mem_eff_fwd_internal(
+std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_fwd_internal(
     const at::Tensor& query,
     const at::Tensor& key,
     const at::Tensor& value,
@@ -1516,7 +1514,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> mem_eff_fwd_internal(
     const bool compute_log_sumexp,
     const float scale);
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor> mem_eff_bwd_internal(
+std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_bwd_internal(
     const at::Tensor& dout,
     const at::Tensor& q,
     const at::Tensor& k,
