@@ -1,0 +1,54 @@
+{
+    "test_nn_fold": [
+        {
+            "CaseName": "test_fold_invalid_arg",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nn_fold",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 2816
+                },
+                {
+                    "Name": "cnnlCol2Im",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1024
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1024
+                },
+                {
+                    "Name": "cnnlIm2Col",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3072
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3072
+                }
+            ]
+        }
+    ]
+}

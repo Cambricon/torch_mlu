@@ -1,0 +1,102 @@
+diff --git a/torch/optim/adam.py b/torch/optim/adam.py
+index 386bbc2705a..f363446afad 100644
+--- a/torch/optim/adam.py
++++ b/torch/optim/adam.py
+@@ -372,8 +372,10 @@ def _single_tensor_adam(params: List[Tensor],
+         # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
+         if not torch._utils.is_compiling() and capturable:
+             assert (
+-                (param.is_cuda and step_t.is_cuda) or (param.is_xla and step_t.is_xla)
+-            ), "If capturable=True, params and state_steps must be CUDA or XLA tensors."
++                (param.is_cuda and step_t.is_cuda) or
++                (param.is_xla and step_t.is_xla) or
++                (param.device.type == 'mlu' and step_t.device.type == 'mlu')
++            ), "If capturable=True, params and state_steps must be CUDA, MLU or XLA tensors."
+ 
+         # update step
+         step_t += 1
+diff --git a/torch/optim/adamax.py b/torch/optim/adamax.py
+index a5406ce8e91..53457d603b6 100644
+--- a/torch/optim/adamax.py
++++ b/torch/optim/adamax.py
+@@ -275,9 +275,11 @@ def _single_tensor_adamax(
+ 
+         # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
+         if not torch._utils.is_compiling() and capturable:
+-            assert (param.is_cuda and step_t.is_cuda) or (
+-                param.is_xla and step_t.is_xla
+-            ), "If capturable=True, params and state_steps must be CUDA or XLA tensors."
++            assert (
++                (param.is_cuda and step_t.is_cuda) or
++                (param.is_xla and step_t.is_xla) or
++                (param.device.type == 'mlu' and step_t.device.type == 'mlu')
++            ), "If capturable=True, params and state_steps must be CUDA, MLU or XLA tensors."
+ 
+         # update step
+         step_t += 1
+diff --git a/torch/optim/adamw.py b/torch/optim/adamw.py
+index f97e66e6f32..ce7c27f29c5 100644
+--- a/torch/optim/adamw.py
++++ b/torch/optim/adamw.py
+@@ -398,8 +398,10 @@ def _single_tensor_adamw(
+         # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
+         if not torch._utils.is_compiling() and capturable:
+             assert (
+-                (param.is_cuda and step_t.is_cuda) or (param.is_xla and step_t.is_xla)
+-            ), "If capturable=True, params and state_steps must be CUDA or XLA tensors."
++                (param.is_cuda and step_t.is_cuda) or
++                (param.is_xla and step_t.is_xla) or
++                (param.device.type == 'mlu' and step_t.device.type == 'mlu')
++            ), "If capturable=True, params and state_steps must be CUDA, MLU or XLA tensors."
+ 
+         if torch.is_complex(param):
+             grad = torch.view_as_real(grad)
+diff --git a/torch/optim/asgd.py b/torch/optim/asgd.py
+index 247c8388e93..f3bcbce2a72 100644
+--- a/torch/optim/asgd.py
++++ b/torch/optim/asgd.py
+@@ -246,8 +246,9 @@ def _single_tensor_asgd(
+         # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
+         if not torch._utils.is_compiling() and capturable:
+             assert (param.is_cuda and mu.is_cuda and eta.is_cuda and step_t.is_cuda) or (
+-                param.is_xla and mu.is_xla and eta.is_xla and step_t.is_xla
+-            ), "If capturable=True, params, mus, etas, and state_steps must be CUDA or XLA tensors."
++                param.is_xla and mu.is_xla and eta.is_xla and step_t.is_xla) or (
++                param.device.type == 'mlu' and mu.device.type == 'mlu' and eta.device.type == 'mlu' and step_t.device.type == 'mlu'
++                ), "If capturable=True, params, mus, etas, and state_steps must be CUDA, MLU or XLA tensors."
+ 
+         if torch.is_complex(param):
+             grad = torch.view_as_real(grad)
+diff --git a/torch/optim/nadam.py b/torch/optim/nadam.py
+index f05b6b0ae7c..890ac3893ee 100644
+--- a/torch/optim/nadam.py
++++ b/torch/optim/nadam.py
+@@ -286,8 +286,10 @@ def _single_tensor_nadam(params: List[Tensor],
+         # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
+         if not torch._utils.is_compiling() and capturable:
+             assert (
+-                (param.is_cuda and mu_product.is_cuda and step_t.is_cuda) or (param.is_xla and mu_product.is_xla and step_t.is_xla)
+-            ), "If capturable=True, params, mu_products, and state_steps must be CUDA or XLA tensors."
++                (param.is_cuda and mu_product.is_cuda and step_t.is_cuda) or
++                (param.is_xla and mu_product.is_xla and step_t.is_xla) or
++                (param.device.type == 'mlu' and mu_product.device.type == 'mlu' and step_t.device.type == 'mlu')
++            ), "If capturable=True, params, mu_products, and state_steps must be CUDA, MLU or XLA tensors."
+ 
+         # update step
+         step_t += 1
+diff --git a/torch/optim/radam.py b/torch/optim/radam.py
+index cfae6a58ab9..0c6d3344ab4 100644
+--- a/torch/optim/radam.py
++++ b/torch/optim/radam.py
+@@ -307,8 +307,9 @@ def _single_tensor_radam(
+         # If compiling, the compiler will handle cudagraph checks, see note [torch.compile x capturable]
+         if not torch._utils.is_compiling() and capturable:
+             assert (param.is_cuda and step_t.is_cuda) or (
+-                param.is_xla and step_t.is_xla
+-            ), "If capturable=True, params and state_steps must be CUDA or XLA tensors."
++                param.is_xla and step_t.is_xla) or (
++                param.device.type == 'mlu' and step_t.device.type == 'mlu'
++                ), "If capturable=True, params and state_steps must be CUDA, MLU or XLA tensors."
+ 
+         if torch.is_complex(param):
+             param = torch.view_as_real(param)

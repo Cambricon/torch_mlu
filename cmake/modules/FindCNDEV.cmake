@@ -1,0 +1,33 @@
+# - Try to find CNDEV
+#
+# The following are set after configuration is done:
+#  CNDEV_FOUND
+#  CNDEV_INCLUDE_DIRS
+#  CNDEV_LIBRARIES
+
+include(FindPackageHandleStandardArgs)
+
+SET(CNDEV_INCLUDE_SEARCH_PATHS $ENV{NEUWARE_HOME}/include)
+SET(CNDEV_LIB_SEARCH_PATHS $ENV{NEUWARE_HOME}/lib64)
+
+find_path(CNDEV_INCLUDE_DIR NAMES cndev.h
+          PATHS ${CNDEV_INCLUDE_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_path(CNDEV_INCLUDE_DIR NAMES cndev.h
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_library(CNDEV_LIBRARY NAMES cndev
+          PATHS ${CNDEV_LIB_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_library(CNDEV_LIBRARY NAMES cndev
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_package_handle_standard_args(CNDEV DEFAULT_MSG CNDEV_INCLUDE_DIR CNDEV_LIBRARY)
+
+if(CNDEV_FOUND)
+  set(CNDEV_INCLUDE_DIRS ${CNDEV_INCLUDE_DIR})
+  set(CNDEV_LIBRARIES ${CNDEV_LIBRARY})
+
+  mark_as_advanced(CNDEV_ROOT_DIR CNDEV_LIBRARY_RELEASE CNDEV_LIBRARY_DEBUG
+      CNDEV_LIBRARY CNDEV_INCLUDE_DIR )
+endif()

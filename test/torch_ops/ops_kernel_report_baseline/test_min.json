@@ -1,0 +1,289 @@
+{
+    "test_min": [
+        {
+            "CaseName": "test_min",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 64
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_backward",
+            "Events": [
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_big_number",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_dim",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_exception",
+            "Events": []
+        },
+        {
+            "CaseName": "test_min_other",
+            "Events": [
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 22
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_out",
+            "Events": [
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_out_not_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 45
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 45
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_permute",
+            "Events": [
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_min_zero_dim_cpu_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlMinimum",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

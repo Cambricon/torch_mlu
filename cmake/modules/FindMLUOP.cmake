@@ -1,0 +1,33 @@
+# - Try to find MLUOP
+#
+# The following are set after configuration is done:
+#  MLUOP_FOUND
+#  MLUOP_INCLUDE_DIRS
+#  MLUOP_LIBRARIES
+
+include(FindPackageHandleStandardArgs)
+
+SET(MLUOP_INCLUDE_SEARCH_PATHS $ENV{NEUWARE_HOME}/include)
+SET(MLUOP_LIB_SEARCH_PATHS $ENV{NEUWARE_HOME}/lib64)
+
+find_path(MLUOP_INCLUDE_DIR NAMES mlu_op.h
+          PATHS ${MLUOP_INCLUDE_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_path(MLUOP_INCLUDE_DIR NAMES mlu_op.h
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_library(MLUOP_LIBRARY NAMES mluops
+          PATHS ${MLUOP_LIB_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_library(MLUOP_LIBRARY NAMES mluops
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_package_handle_standard_args(MLUOP DEFAULT_MSG MLUOP_INCLUDE_DIR MLUOP_LIBRARY)
+
+if(MLUOP_FOUND)
+  set(MLUOP_INCLUDE_DIRS ${MLUOP_INCLUDE_DIR})
+  set(MLUOP_LIBRARIES ${MLUOP_LIBRARY})
+
+  mark_as_advanced(MLUOP_ROOT_DIR MLUOP_LIBRARY_RELEASE MLUOP_LIBRARY_DEBUG
+      MLUOP_LIBRARY MLUOP_INCLUDE_DIR )
+endif()

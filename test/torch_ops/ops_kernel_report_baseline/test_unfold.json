@@ -1,0 +1,108 @@
+{
+    "test_unfold": [
+        {
+            "CaseName": "test_unflod_bfloat16",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unfold",
+            "Events": [
+                {
+                    "Name": "cnnlUnfold",
+                    "# of Calls": 454
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 169
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 756
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 756
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unfold_backward",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 29
+                },
+                {
+                    "Name": "cnnlAsStridedBackward",
+                    "# of Calls": 29
+                },
+                {
+                    "Name": "cnnlUnfold",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 58
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 58
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unfold_backward_combination",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "cnnlAsStridedBackward",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlUnfold",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        }
+    ]
+}

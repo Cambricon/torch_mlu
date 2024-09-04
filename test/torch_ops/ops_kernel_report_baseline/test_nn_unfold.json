@@ -1,0 +1,91 @@
+{
+    "test_nn_unfold": [
+        {
+            "CaseName": "test_nn_unfold",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "cnnlIm2Col",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlCol2Im",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1024
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1024
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 1920
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3072
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3072
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nn_unfold_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlIm2Col",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 768
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nn_unfold_invalid_arg",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+## Step1: check size limit of staged files  
+hard_limit=$(git config hooks.filesizehardlimit)
+soft_limit=$(git config hooks.filesizesoftlimit)
+# 根据torch_mlu与pytorch仓库文件大小分布(最大文件为300KB左右)，设置hard_limit和soft_limit默认值如下。
+# 超过soft_limit提示WARNING，超过hard_limit提示ERROR并终止commit。
+: ${hard_limit:=3000000} # 3M
+: ${soft_limit:=500000} # 500KB
+
+function list_new_or_modified_files()
+{
+    git diff --staged --name-status|sed -e '/^D/ d; /^D/! s/.\s\+//'
+}
+
+function unmunge()
+{
+    local result="${1#\"}"
+    result="${result%\"}"
+    env echo -e "$result"
+}
+
+function check_file_size()
+{
+    hardlimit_cnt=0
+    while read -r munged_filename
+    do
+        f="$(unmunge "$munged_filename")"
+        h=$(git ls-files -s "$f"|cut -d' ' -f 2)
+        s=$(git cat-file -s "$h")
+        if [ "$s" -gt $hard_limit ]
+        then
+            env echo -E 1>&2 "[ERROR]: Staged file $munged_filename ($s Bytes) exceed hard size limit ($hard_limit Bytes), please resolve it and re-commit."
+            hardlimit_cnt=$((hardlimit_cnt+1))
+        elif [ "$s" -gt $soft_limit ]
+        then
+            env echo -E 1>&2 "[WARNING]: Staged file $munged_filename ($s Bytes) exceed soft size limit ($soft_limit Bytes), please check it."
+        fi
+    done
+    return $hardlimit_cnt
+}
+
+list_new_or_modified_files | check_file_size
+err_cnt=$?
+if [ $err_cnt -eq 0 ]; then
+    echo "Size limit check pass"
+else
+    exit 1
+fi
+
+
+## Step2: use pylint to check format  
+pushd "$(dirname "$0")" >& /dev/null
+HERE="$(pwd)"
+popd >& /dev/null
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+    against=HEAD
+else
+    #Initial commit: diff against an empty tree object
+    against=4b825dc
+fi
+
+# Redirect output to stderr
+exec 1>&2
+
+# create log file
+log_path=$HERE/../../lint_error_log
+if [ ! -d $log_path ]; then
+    mkdir $log_path
+    touch $log_path/cpp.log
+    touch $log_path/py.log
+else
+    rm $log_path/cpp.log
+    rm $log_path/py.log
+    touch $log_path/cpp.log
+    touch $log_path/py.log
+fi
+cp $log_path/../scripts/hooks/README $log_path/
+
+# error count
+sum=0
+
+#for cpp
+for file in $(git diff-index --name-status $against -- | grep -E '\.[ch](pp)?$' | awk '{if($1!="D")print $2}'); do
+    echo "check $file"
+    echo $(readlink -f $file)>>$log_path/cpp.log
+    cpplint $file >>$log_path/cpp.log 2>&1
+    sum=$(expr ${sum} + $?)
+done
+
+#for py
+for file in $(git diff-index --name-status $against -- | grep -E '\.(py)?$' | awk '{if($1!="D")print $2}'); do
+    echo "check $file"
+    echo $(readlink -f $file)>>$log_path/py.log 
+    pylint --rcfile=$HERE/../../PYLINT.cfg $file >>$log_path/py.log 2>&1
+    sum=$(expr ${sum} + $?)
+done
+
+if [ ${sum} -eq 0 ]; then
+    echo "No lint_error find: continue to commit"
+    rm $log_path -rf
+    exit 0
+else
+    echo "Please check $(readlink -f $log_path) for more info"
+    # Return 0 so the check won't block commit and cherry-pick
+    exit 0
+fi
+

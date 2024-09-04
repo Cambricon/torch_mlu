@@ -1,0 +1,93 @@
+/*************************************************************************
+ * Copyright (C) [2019-2022] by Cambricon, Inc.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+#include<stdio.h>
+#include<cmath>
+#include"bang_internal.h"
+
+namespace torch_mlu {
+namespace ops {
+
+#if __BANG_ARCH__ == 372
+#define SIZE_NRAM_BUF 640 * 1024
+#else
+#define SIZE_NRAM_BUF 384 * 1024
+#endif
+
+__nram__ char nram_buffer[SIZE_NRAM_BUF];
+
+__mlu_entry__ void amp_update_scale(float *new_scale,
+                                    int *growth_tracker_output,
+                                    int *growth_tracker,
+                                    float *current_scale,
+                                    float *found_inf,
+                                    const float growth_factor,
+                                    const float backoff_factor,
+                                    const int64_t growth_interval) {
+  const size_t growth_tracker_size = 4;
+  const size_t current_scale_size = 4;
+  const size_t found_inf_size = 4;
+  const size_t new_scale_size = 4;
+  const size_t growth_tracker_output_size = 4;
+
+  void *nram_growth_tracker = nram_buffer;
+  void *nram_current_scale = nram_buffer + growth_tracker_size;
+  void *nram_new_scale = nram_buffer + growth_tracker_size + current_scale_size + found_inf_size;
+  void *nram_growth_tracker_output = nram_buffer + growth_tracker_size + current_scale_size +
+                                     found_inf_size + growth_tracker_output_size;
+
+  __memcpy((int *)nram_growth_tracker, growth_tracker, growth_tracker_size, GDRAM2NRAM);
+  __memcpy((float *)nram_current_scale, current_scale, current_scale_size, GDRAM2NRAM);
+
+  if (*found_inf) {
+    *(float *)nram_new_scale = *(float *)nram_current_scale * backoff_factor;
+    *(int *)nram_growth_tracker_output = 0;
+  } else {
+    if ((int64_t)(*(int *)growth_tracker + 1) == growth_interval) {
+      *(float *)nram_new_scale = *(float *)nram_current_scale * growth_factor;
+      *(int *)nram_growth_tracker_output = 0;
+      if (std::isinf(*(float *)nram_new_scale) || std::isnan(*(float *)nram_new_scale)) {
+        *(float *)nram_new_scale = *(float *)nram_current_scale;
+      }
+    } else {
+      *(float *)nram_new_scale = *(float *)nram_current_scale;
+      *(int *)nram_growth_tracker_output = *(int *)nram_growth_tracker + 1;
+    }
+  }
+  __memcpy((void *)new_scale, nram_new_scale, new_scale_size, NRAM2GDRAM);
+  __memcpy((void *)growth_tracker_output, nram_growth_tracker_output, growth_tracker_output_size,
+           NRAM2GDRAM);
+}
+
+void amp_update_scale_internal(void *new_scale,
+                               void *growth_tracker_output,
+                               void *growth_tracker,
+                               void *current_scale,
+                               void *found_inf,
+                               const float growth_factor,
+                               const float backoff_factor,
+                               const int64_t growth_interval,
+                               cnrtDim3_t& dim,
+                               cnrtFunctionType_t ktype,
+                               cnrtQueue_t queue) {
+    amp_update_scale<<<dim, ktype, queue>>>((float *)new_scale,
+                                            (int *)growth_tracker_output,
+                                            (int *)growth_tracker,
+                                            (float *)current_scale,
+                                            (float *)found_inf,
+                                            growth_factor,
+                                            backoff_factor,
+                                            growth_interval);
+}
+
+}  // namespace ops
+}  // namespace torch_mlu

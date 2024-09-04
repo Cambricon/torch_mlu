@@ -1,0 +1,307 @@
+{
+    "test_mse_loss": [
+        {
+            "CaseName": "test_mse_loss_PYTORCH_11131",
+            "Events": [
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mse_loss_special",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mse_memory_format_combination",
+            "Events": [
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 104
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 162
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 108
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mseloss",
+            "Events": [
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mseloss_broadcast",
+            "Events": [
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mseloss_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mseloss_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mseloss_dtype_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mseloss_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mseloss_permute",
+            "Events": [
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nn_scalars_reductions",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlMSELoss_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlMSELossBackward",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                }
+            ]
+        }
+    ]
+}

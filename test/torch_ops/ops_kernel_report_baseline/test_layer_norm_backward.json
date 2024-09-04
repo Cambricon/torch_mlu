@@ -1,0 +1,149 @@
+{
+    "test_layer_norm_backward": [
+        {
+            "CaseName": "test_layer_norm_backward",
+            "Events": [
+                {
+                    "Name": "cnnlLayerNormForward",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlLayerNormBackward_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_layer_norm_backward_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlLayerNormForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlLayerNormBackward_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_layer_norm_backward_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlLayerNormForward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlLayerNormBackward_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_layer_norm_backward_module",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "cnnlLayerNormForward",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 34
+                },
+                {
+                    "Name": "cnnlLayerNormBackward_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 82
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_layer_norm_backward_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlLayerNormForward",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlLayerNormBackward_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        }
+    ]
+}

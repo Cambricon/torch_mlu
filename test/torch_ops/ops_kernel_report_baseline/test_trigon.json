@@ -1,0 +1,132 @@
+{
+    "test_trigon": [
+        {
+            "CaseName": "test_trigon",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 180
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trigon_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 180
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trigon_permute",
+            "Events": [
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trigon_special_case",
+            "Events": [
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 240
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 150
+                }
+            ]
+        }
+    ]
+}

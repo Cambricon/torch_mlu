@@ -1,0 +1,257 @@
+{
+    "test_le": [
+        {
+            "CaseName": "test_le",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 128
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_and_le_out_after_permute",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 64
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_inplace_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 16
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_inplace_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_mixed_type",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 32
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_out",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_out_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_le_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 112
+                }
+            ]
+        }
+    ]
+}

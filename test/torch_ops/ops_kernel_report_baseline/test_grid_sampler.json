@@ -1,0 +1,50 @@
+{
+    "test_grid_sampler": [
+        {
+            "CaseName": "test_grid_sampler_2d",
+            "Events": [
+                {
+                    "Name": "cnnlGridSampleForward",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 168
+                },
+                {
+                    "Name": "cnnlGridSampleBackward",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 330
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 180
+                }
+            ]
+        },
+        {
+            "CaseName": "test_grid_sampler_2d_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

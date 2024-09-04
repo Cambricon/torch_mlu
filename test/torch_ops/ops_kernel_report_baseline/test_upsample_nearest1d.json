@@ -1,0 +1,58 @@
+{
+    "test_upsample_nearest1d": [
+        {
+            "CaseName": "test_upsample_nearest1d",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlInterp_v3",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_upsample_nearest1d_exception",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

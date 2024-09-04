@@ -1,0 +1,122 @@
+/*************************************************************************
+ * Copyright (C) [2019-2022] by Cambricon, Inc.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+#include <stdio.h>
+#include "bang_internal.h"
+#include "amp_non_finite_and_unscale.h"
+#include "amp_non_finite_and_unscale.mlu"
+
+namespace torch_mlu {
+namespace ops {
+
+#define LAUNCH_KERNEL_AMP_UNSCALE(num)    \
+  launch_amp_unscale<AmpUnscaleChunk##num, num>(inputs_addr, inputs_elem_num, found_inf, \
+                                                inv_scale, found_inf_out, tensors_num, \
+                                                k_type, k_dim, queue, cnrt_type);
+
+template <typename C, uint32_t chunk_size>
+void launch_amp_unscale(void **inputs_addr,
+                        uint64_t *inputs_elem_num,
+                        void *found_inf,
+                        void *inv_scale,
+                        void *found_inf_out,
+                        int32_t tensors_num,
+                        cnrtFunctionType_t k_type,
+                        cnrtDim3_t k_dim,
+                        cnrtQueue_t queue,
+                        cnrtDataType_t cnrt_type) {
+  C chunk;
+  int32_t count = 0;
+  for (int32_t i = 0; i < tensors_num; ++i) {
+    chunk.input[i % chunk_size] = (char*)inputs_addr[i];
+    chunk.input_numel[i % chunk_size] = inputs_elem_num[i];
+    count++;
+    if ((count == chunk_size) || (i == (tensors_num - 1))) {
+      if (CNRT_FLOAT32 == cnrt_type) {
+        MLUUnion1KernelAmpNonFiniteCheckAndUnscaleList<float, C><<<k_dim, k_type, queue>>>(chunk,
+              (const float *)found_inf, (const float *)inv_scale, (float *)found_inf_out, count);
+      } else if (CNRT_FLOAT16 == cnrt_type) {
+        MLUUnion1KernelAmpNonFiniteCheckAndUnscaleList<half, C><<<k_dim, k_type, queue>>>(chunk,
+              (const float *)found_inf, (const float *)inv_scale, (float *)found_inf_out, count);
+      }
+      count = 0;
+    }
+  }
+}
+
+bool amp_unscale_internal(void *scaled_grad,
+                          void *found_inf,
+                          void *inv_scale,
+                          void *found_inf_out,
+                          int32_t elem_num,
+                          cnrtFunctionType_t k_type,
+                          cnrtDim3_t k_dim,
+                          cnrtQueue_t queue,
+                          cnrtDataType_t cnrt_type) {
+  bool ret = true;
+  switch(cnrt_type) {
+    case CNRT_FLOAT32:
+      MLUUnion1KernelAmpNonFiniteCheckAndUnscale<float><<<k_dim, k_type, queue>>>((float *)scaled_grad,
+        (const float *)found_inf, (const float *)inv_scale, (float *)found_inf_out, elem_num);
+      break;
+    case CNRT_FLOAT16:
+      MLUUnion1KernelAmpNonFiniteCheckAndUnscale<half><<<k_dim, k_type, queue>>>((half *)scaled_grad,
+        (const float *)found_inf, (const float *)inv_scale, (float *)found_inf_out, elem_num);
+      break;
+    default:
+      ret = false;
+      break;
+  }
+  return ret;
+}
+
+bool amp_unscale_internal(const void *const * scaled_grads,
+                          const uint64_t* const scaled_grads_numel,
+                          void *found_inf,
+                          void *inv_scale,
+                          void *found_inf_out,
+                          int32_t tensors_num,
+                          cnrtFunctionType_t k_type,
+                          cnrtDim3_t k_dim,
+                          cnrtQueue_t queue,
+                          cnrtDataType_t cnrt_type) {
+  if (tensors_num <= 0) {
+    return false;
+  }
+
+  void **inputs_addr = (void **)malloc(sizeof(MLUaddr) * tensors_num);
+  uint64_t *inputs_elem_num = (uint64_t *)malloc(sizeof(uint64_t) * tensors_num);
+  if (inputs_addr == nullptr || inputs_elem_num == nullptr) {
+    return false;
+  }
+
+  for (int32_t i = 0; i < tensors_num; ++i) {
+    inputs_addr[i] = const_cast<void*>(scaled_grads[i]);
+    inputs_elem_num[i] = (uint64_t)(scaled_grads_numel[i]);
+  }
+
+  // todo benchmark test, for the best allocated.
+  if (tensors_num <= 256) {
+    LAUNCH_KERNEL_AMP_UNSCALE(256)
+  } else if (tensors_num <= 512) {
+    LAUNCH_KERNEL_AMP_UNSCALE(512);
+  } else {
+    LAUNCH_KERNEL_AMP_UNSCALE(1024)
+  }
+
+  free(inputs_addr);
+  free(inputs_elem_num);
+  return true;
+}
+
+}  // namespace ops
+}  // namespace torch_mlu

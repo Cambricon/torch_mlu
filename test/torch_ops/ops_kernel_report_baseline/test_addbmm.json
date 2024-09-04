@@ -1,0 +1,91 @@
+{
+    "test_addbmm": [
+        {
+            "CaseName": "test_addbmm",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 433
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 1233
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1242
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1242
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 452
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 208
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 1020
+                },
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 276
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2236
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addbmm_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addbmm_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        }
+    ]
+}

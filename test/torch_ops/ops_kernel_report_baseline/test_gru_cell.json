@@ -1,0 +1,90 @@
+{
+    "test_gru_cell": [
+        {
+            "CaseName": "test_grucell_training",
+            "Events": [
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 176
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 208
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 240
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 400
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 256
+                }
+            ]
+        },
+        {
+            "CaseName": "test_grucell_training_not_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 176
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 368
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 304
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 240
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 400
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 256
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,88 @@
+diff --git a/aten/src/ATen/TensorIterator.h b/aten/src/ATen/TensorIterator.h
+index 59f52d9dbd..07e4bea559 100644
+--- a/aten/src/ATen/TensorIterator.h
++++ b/aten/src/ATen/TensorIterator.h
+@@ -503,6 +503,13 @@ struct TORCH_API TensorIteratorBase : public impl::MetaBase {
+     return true;
+   }
+ 
++  const OperandInfo& operand(int arg = 0) const { return operands_[arg]; }
++  OperandInfo& operand(int arg = 0) { return operands_[arg]; }
++  NameVector& get_dim_names() {return names_;}
++  const NameVector& get_dim_names() const {return names_;}
++  c10::optional<ScalarType>& get_static_dtype() { return static_dtype_; }
++  const c10::optional<ScalarType>& get_static_dtype() const { return static_dtype_; }
++
+   void set_output_raw_strided(
+       int64_t output_idx,
+       IntArrayRef sizes,
+@@ -701,6 +708,10 @@ struct TORCH_API TensorIteratorBase : public impl::MetaBase {
+ 
+   /// Set by populate_operands(), says if we're handling meta tensors
+   bool is_meta_ = false;
++
++  // Copy from TensorIteratorConfig, and TORCH_MLU need to get the fix dtype
++  // of output.
++  c10::optional<ScalarType> static_dtype_ = c10::nullopt;
+ };
+ 
+ struct TORCH_API TensorIterator final : public TensorIteratorBase {
+diff --git a/aten/src/ATen/TensorIterator.cpp b/aten/src/ATen/TensorIterator.cpp
+index 7b1442db75..1385877fd3 100644
+--- a/aten/src/ATen/TensorIterator.cpp
++++ b/aten/src/ATen/TensorIterator.cpp
+@@ -810,6 +810,15 @@ bool TensorIteratorBase::is_cpu_scalar(int arg) const {
+ 
+ void TensorIteratorBase::cast_outputs() {
+   for (auto& op : operands_) {
++    // MLU side cast or copy internal tensor to pytorch
++    // original tensor.
++    if (op.is_output && op.original_tensor_base().defined() &&
++        this->common_device_.type() == at::kPrivateUse1 &&
++        !op.original_tensor().is_same(op.tensor())) {
++      op.original_tensor().copy_(op.tensor());
++      op.restore_original_tensor();
++      return;
++    }
+     if (op.is_output && op.original_tensor_base().defined() &&
+         op.original_tensor_base().scalar_type() != op.current_dtype) {
+       // TODO: Now that set_output resizes both the original_tensor
+@@ -893,7 +902,7 @@ static void set_up_comparison_op_config(TensorIteratorConfig& config, const Tens
+   // When 'out' isn't defined (e.g. for the functional operator 'a == b'), we
+   // want the output to be bool. Otherwise (e.g. 'torch.eq(a, b, out=c)') we
+   // don't coerce the output.
+-  if (!out.defined()) {
++  if (!out.defined() || (out.defined() && out.scalar_type() == kBool)) {
+     config.declare_static_dtype(kBool);
+   }
+ 
+@@ -1466,6 +1475,9 @@ void TensorIteratorBase::build(TensorIteratorConfig& config) {
+   is_reduction_ = config.is_reduction_;
+   enforce_linear_iteration_ = config.enforce_linear_iteration_;
+ 
++  if (config.static_dtype_.has_value()) {
++    this->static_dtype_ = config.static_dtype_.value();
++  }
+   // fill in operands_ based on configuration
+   populate_operands(config);
+   // set is_output and is_read_write flags on appropriate tensors
+@@ -1541,6 +1553,9 @@ void TensorIteratorBase::set_output_raw_strided(int64_t output_idx, IntArrayRef
+   TORCH_INTERNAL_ASSERT(t.defined());
+   if (!op.tensor_base().defined()) {
+     op.tensor(c10::MaybeOwned<TensorBase>::borrowed(t));
++    if (common_device_.type() == at::kPrivateUse1) {
++      op.will_resize = true;
++    }
+     TORCH_INTERNAL_ASSERT_DEBUG_ONLY(op.target_dtype == t.scalar_type());
+   } else if (op.will_resize) {
+     if (op.original_tensor_base().defined()) {
+@@ -1611,6 +1626,9 @@ void TensorIterator::set_output_raw_strided(int64_t output_idx, IntArrayRef size
+       } else {
+         op.tensor(c10::MaybeOwned<TensorBase>::owned(at::empty_strided(sizes, strides, options)));
+       }
++      if (common_device_.type() == at::kPrivateUse1) {
++        op.will_resize = true;
++      }
+       op.current_dtype = op.target_dtype;
+   } else if (op.will_resize) {
+       at::native::resize_output(op.tensor(), sizes);

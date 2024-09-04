@@ -1,0 +1,320 @@
+{
+    "test_addcdiv": [
+        {
+            "CaseName": "test_addcdiv_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_channel_last_expand",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_contiguous_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlNegTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 13
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_inplace_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_inplace_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_out_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_out_channel_last_expand",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_out_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_out_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_out_shape_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_out_shape_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addcdiv_out_shape_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlAddcdiv",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        }
+    ]
+}

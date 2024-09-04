@@ -1,0 +1,328 @@
+diff --git a/torch/csrc/autograd/profiler_kineto.cpp b/torch/csrc/autograd/profiler_kineto.cpp
+index a043709646..5621498ccf 100644
+--- a/torch/csrc/autograd/profiler_kineto.cpp
++++ b/torch/csrc/autograd/profiler_kineto.cpp
+@@ -19,6 +19,7 @@
+ #include <torch/csrc/profiler/perf.h>
+ #include <torch/csrc/profiler/standalone/itt_observer.h>
+ #include <torch/csrc/profiler/standalone/nvtx_observer.h>
++#include <torch/csrc/profiler/standalone/cnpx_observer.h>
+ #include <torch/csrc/profiler/util.h>
+ 
+ #include <ATen/Context.h>
+@@ -597,8 +598,12 @@ void enableProfiler(
+   } else if (config.state == ProfilerState::ITT) {
+     torch::profiler::impl::pushITTCallbacks(config, scopes);
+     return;
++  } else if (config.state == ProfilerState::CNPX) {
++    torch::profiler::impl::pushCNPXCallbacks(config, scopes);
++    return;
+   }
+ 
++
+   TORCH_CHECK(
+       config.state == ProfilerState::KINETO ||
+       config.state == ProfilerState::KINETO_GPU_FALLBACK ||
+@@ -632,6 +637,7 @@ std::unique_ptr<ProfilerResult> disableProfiler() {
+            config.state == ProfilerState::KINETO_PRIVATEUSE1_FALLBACK ||
+            config.state == ProfilerState::KINETO_ONDEMAND ||
+            config.state == ProfilerState::NVTX ||
++           config.state == ProfilerState::CNPX ||
+            config.state == ProfilerState::ITT),
+       "Can't disable Kineto profiler when it's not running");
+ 
+@@ -644,9 +650,10 @@ std::unique_ptr<ProfilerResult> disableProfiler() {
+     return std::make_unique<ProfilerResult>();
+   }
+ 
+-  // Shared among NVTX, KINETO, KINETO_GPU_FALLBACK, KINETO_PRIVATEUSE1_FALLBACK
++  // Shared among NVTX, CNPX, KINETO, KINETO_GPU_FALLBACK
+   std::unique_ptr<ProfilerResult> result;
+-  if (state_ptr->config().state == ProfilerState::NVTX) {
++  if (state_ptr->config().state == ProfilerState::NVTX || 
++      state_ptr->config().state == ProfilerState::CNPX) {
+     result = std::make_unique<ProfilerResult>();
+   }
+
+diff --git a/torch/csrc/profiler/python/init.cpp b/torch/csrc/profiler/python/init.cpp
+index 63cf600028..6411bf9334 100644
+--- a/torch/csrc/profiler/python/init.cpp
++++ b/torch/csrc/profiler/python/init.cpp
+@@ -236,6 +236,7 @@ void initPythonBindings(PyObject* module) {
+       .value("CPU", ProfilerState::CPU)
+       .value("CUDA", ProfilerState::CUDA)
+       .value("NVTX", ProfilerState::NVTX)
++      .value("CNPX", ProfilerState::CNPX)
+       .value("ITT", ProfilerState::ITT)
+       .value("KINETO", ProfilerState::KINETO)
+       .value("KINETO_GPU_FALLBACK", ProfilerState::KINETO_GPU_FALLBACK)
+@@ -248,6 +249,7 @@ void initPythonBindings(PyObject* module) {
+       .value("LEGACY", ActiveProfilerType::LEGACY)
+       .value("KINETO", ActiveProfilerType::KINETO)
+       .value("NVTX", ActiveProfilerType::NVTX)
++      .value("CNPX", ActiveProfilerType::CNPX)
+       .value("ITT", ActiveProfilerType::ITT);
+ 
+   py::enum_<ActivityType>(m, "ProfilerActivity")diff --git a/build_variables.bzl b/build_variables.bzl
+index bf9cf2b46e..76c9c5fa0a 100644
+--- a/build_variables.bzl
++++ b/build_variables.bzl
+@@ -142,6 +142,7 @@ libtorch_profiler_sources = [
+     "torch/csrc/profiler/standalone/execution_trace_observer.cpp",
+     "torch/csrc/profiler/standalone/itt_observer.cpp",
+     "torch/csrc/profiler/standalone/nvtx_observer.cpp",
++    "torch/csrc/profiler/standalone/cnpx_observer.cpp",
+     "torch/csrc/profiler/stubs/base.cpp",
+     "torch/csrc/profiler/orchestration/vulkan.cpp",
+     "torch/csrc/profiler/perf.cpp",
+diff --git a/torch/csrc/profiler/standalone/cnpx_observer.h b/torch/csrc/profiler/standalone/cnpx_observer.h
+new file mode 100644
+index 0000000000..44d0dbf106
+--- /dev/null
++++ b/torch/csrc/profiler/standalone/cnpx_observer.h
+@@ -0,0 +1,14 @@
++#pragma once
++#include <torch/csrc/profiler/api.h>
++
++namespace torch {
++namespace profiler {
++namespace impl {
++
++void pushCNPXCallbacks(
++    const ProfilerConfig& config,
++    const std::unordered_set<at::RecordScope>& scopes);
++
++} // namespace impl
++} // namespace profiler
++} // namespace torch
+\ No newline at end of file
+diff --git a/torch/csrc/profiler/orchestration/observer.h b/torch/csrc/profiler/orchestration/observer.h
+index 5d42f9234c..af7fe5866f 100644
+--- a/torch/csrc/profiler/orchestration/observer.h
++++ b/torch/csrc/profiler/orchestration/observer.h
+@@ -25,6 +26,7 @@ enum class C10_API_ENUM ProfilerState {
+   CPU, // CPU-only profiling
+   CUDA, // CPU + CUDA events
+   NVTX, // only emit NVTX markers
++  CNPX, // only emit CNPX markers
+   ITT, // only emit ITT markers
+   KINETO, // use libkineto
+   KINETO_GPU_FALLBACK, // use CUDA events when CUPTI is not available
+@@ -38,6 +40,7 @@ enum class C10_API_ENUM ActiveProfilerType {
+   LEGACY,
+   KINETO,
+   NVTX,
++  CNPX,
+   ITT
+ };
+ diff --git a/torch/csrc/profiler/stubs/base.h b/torch/csrc/profiler/stubs/base.h
+index bac3f5ed37..86bc8c46d0 100644
+--- a/torch/csrc/profiler/stubs/base.h
++++ b/torch/csrc/profiler/stubs/base.h
+@@ -39,6 +39,8 @@ struct TORCH_API ProfilerStubs {
+ 
+ TORCH_API void registerCUDAMethods(ProfilerStubs* stubs);
+ TORCH_API const ProfilerStubs* cudaStubs();
++TORCH_API void registerMLUMethods(ProfilerStubs* stubs);
++TORCH_API const ProfilerStubs* mluStubs();
+ TORCH_API void registerITTMethods(ProfilerStubs* stubs);
+ TORCH_API const ProfilerStubs* ittStubs();
+ TORCH_API void registerPrivateUse1Methods(ProfilerStubs* stubs);
+diff --git a/torch/csrc/profiler/stubs/base.cpp b/torch/csrc/profiler/stubs/base.cpp
+index a7b928b44a..6be9f1930a 100644
+--- a/torch/csrc/profiler/stubs/base.cpp
++++ b/torch/csrc/profiler/stubs/base.cpp
+@@ -73,6 +73,7 @@ struct DefaultStubs : public ProfilerStubs {
+   }
+ 
+ REGISTER_DEFAULT(cuda, CUDA)
++REGISTER_DEFAULT(mlu, MLU)
+ REGISTER_DEFAULT(itt, ITT)
+ REGISTER_DEFAULT(privateuse1, PrivateUse1)
+ #undef REGISTER_DEFAULT
+diff --git a/torch/csrc/profiler/standalone/cnpx_observer.cpp b/torch/csrc/profiler/standalone/cnpx_observer.cpp
+new file mode 100644
+index 00000000000..da8be5bc9bb
+--- /dev/null
++++ b/torch/csrc/profiler/standalone/cnpx_observer.cpp
+@@ -0,0 +1,180 @@
++#include <torch/csrc/profiler/standalone/cnpx_observer.h>
++#include <torch/csrc/profiler/stubs/base.h>
++#include <torch/csrc/profiler/util.h>
++
++namespace torch {
++namespace profiler {
++namespace impl {
++
++struct CNPXThreadLocalState : ProfilerStateBase {
++  explicit CNPXThreadLocalState(const ProfilerConfig& config)
++      : ProfilerStateBase(config) {
++    // Only `report_input_shapes` makes sense in this context.
++    TORCH_CHECK(!config.profile_memory);
++    TORCH_CHECK(!config.with_stack);
++    TORCH_CHECK(!config.with_flops);
++    TORCH_CHECK(!config.with_modules);
++  }
++  ~CNPXThreadLocalState() override = default;
++
++  ActiveProfilerType profilerType() override {
++    return ActiveProfilerType::CNPX;
++  }
++
++  void reportMemoryUsage(void*, int64_t, size_t, size_t, c10::Device) override {
++  }
++
++  static CNPXThreadLocalState* getTLS() {
++    auto tls = ProfilerStateBase::get(/*global=*/false);
++    TORCH_INTERNAL_ASSERT_DEBUG_ONLY(
++        tls == nullptr || tls->profilerType() == ActiveProfilerType::CNPX);
++    return static_cast<CNPXThreadLocalState*>(tls);
++  }
++  std::pair<at::RecordFunctionHandle, int> getOpIdFromInput(
++      const at::Tensor& tensor);
++
++  void setProducerTensorMap(
++      at::TensorImpl* tensor,
++      at::RecordFunctionHandle op_id,
++      int output_nr) {
++    producer_tensor_map_[(void*)tensor] =
++        std::pair<at::RecordFunctionHandle, int>{op_id, output_nr};
++  }
++
++ protected:
++  // Maps the address of an output Tensor to a unique op id and output
++  // index of the tensor.
++  // at::TensorImpl* is the actual type of the key, but using void*
++  // to indicate the pointer is just being used as a key
++  // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
++  std::unordered_map<void*, std::pair<at::RecordFunctionHandle, int>>
++      producer_tensor_map_;
++};
++
++std::pair<at::RecordFunctionHandle, int> CNPXThreadLocalState::getOpIdFromInput(
++    const at::Tensor& tensor) {
++  std::pair<at::RecordFunctionHandle, int> producer_op_pair(0, -1);
++  if (tensor.defined()) {
++    at::TensorImpl* ten_addr = tensor.unsafeGetTensorImpl();
++    // See if Address is in the map already
++    if (producer_tensor_map_.count((void*)ten_addr) > 0) {
++      producer_op_pair = producer_tensor_map_[(void*)ten_addr];
++    }
++  }
++  return producer_op_pair;
++}
++
++namespace {
++std::list<std::pair<at::RecordFunctionHandle, int>> flattenOpIdList(
++    const c10::List<c10::IValue>& list) {
++  std::list<std::pair<at::RecordFunctionHandle, int>> input_op_id_list;
++  auto state_ptr = CNPXThreadLocalState::getTLS();
++  TORCH_INTERNAL_ASSERT(state_ptr, "Expected profiler state set");
++  for (const c10::IValue& input : list) {
++    if (input.isTensor()) {
++      const at::Tensor& tensor = input.toTensor();
++      auto producer_op_pair = state_ptr->getOpIdFromInput(tensor);
++      input_op_id_list.push_back(producer_op_pair);
++    }
++  }
++  return input_op_id_list;
++}
++
++std::list<std::pair<at::RecordFunctionHandle, int>> getInputTensorOpIds(
++    const at::RecordFunction& fn) {
++  std::pair<at::RecordFunctionHandle, int> undefined_op_pair(0, -1);
++  std::list<std::pair<at::RecordFunctionHandle, int>> input_producer_ops_;
++  auto state_ptr = CNPXThreadLocalState::getTLS();
++  TORCH_INTERNAL_ASSERT(state_ptr, "Expected profiler state set");
++  for (const c10::IValue& input_item : fn.inputs()) {
++    if (input_item.isTensor()) {
++      const at::Tensor& tensor = input_item.toTensor();
++      auto producer_pair = state_ptr->getOpIdFromInput(tensor);
++      input_producer_ops_.push_back(producer_pair);
++    } else {
++      if (input_item.isList()) {
++        std::list<std::pair<at::RecordFunctionHandle, int>> tmp_op_ids =
++            flattenOpIdList(input_item.toList());
++        // Extend the current sizes array by the array returned from input sizes
++        if (!tmp_op_ids.empty()) {
++          input_producer_ops_.splice(input_producer_ops_.end(), tmp_op_ids);
++        } else {
++          input_producer_ops_.emplace_back(undefined_op_pair);
++        }
++      } else {
++        input_producer_ops_.emplace_back(undefined_op_pair);
++      }
++    }
++  }
++  return input_producer_ops_;
++}
++
++void updateOutputTensorTracker(const at::RecordFunction& fn) {
++  int output_nr = 0;
++  auto state_ptr = CNPXThreadLocalState::getTLS();
++  TORCH_INTERNAL_ASSERT(state_ptr, "Expected profiler state set");
++  for (const c10::IValue& s_tensor : fn.outputs()) {
++    if (s_tensor.isTensor()) {
++      const at::Tensor& tensor = s_tensor.toTensor();
++      if (tensor.defined()) {
++        auto ten_addr = tensor.unsafeGetTensorImpl();
++        state_ptr->setProducerTensorMap(ten_addr, fn.handle(), output_nr);
++      }
++    }
++    output_nr++;
++  }
++}
++}// namespace
++
++template <bool report_input_shapes>
++std::unique_ptr<at::ObserverContext> enterCNPX(const at::RecordFunction& fn) {
++  if (CNPXThreadLocalState::getTLS() != nullptr) {
++    auto input_op_ids = getInputTensorOpIds(fn);
++    torch::profiler::impl::mluStubs()->rangePush(
++        torch::profiler::impl::getNvtxStr(
++            fn.name(),
++            fn.seqNr(),
++            report_input_shapes ? torch::profiler::impl::inputSizes(fn, true)
++                                : std::vector<std::vector<int64_t>>(),
++            fn.handle(),
++            report_input_shapes
++                ? input_op_ids
++                : std::list<std::pair<at::RecordFunctionHandle, int>>())
++            .c_str());
++  }
++  return nullptr;
++}
++
++void pushCNPXCallbacks(
++    const ProfilerConfig& config,
++    const std::unordered_set<at::RecordScope>& scopes) {
++  TORCH_CHECK(
++      torch::profiler::impl::mluStubs()->enabled(),
++      "Can't use CNPX profiler - TORCH_MLU was not compiled");
++
++  c10::ThreadLocalDebugInfo::_push(
++      c10::DebugInfoKind::PROFILER_STATE,
++      std::make_shared<CNPXThreadLocalState>(config));
++
++  auto state_ptr = CNPXThreadLocalState::getTLS();
++  TORCH_INTERNAL_ASSERT(state_ptr, "Expected profiler state set");
++
++  auto handle = at::addThreadLocalCallback(
++      at::RecordFunctionCallback(
++          state_ptr->config().report_input_shapes
++              ? &enterCNPX</*report_input_shapes=*/true>
++              : &enterCNPX</*report_input_shapes=*/false>,
++          [](const at::RecordFunction& fn, at::ObserverContext* ctx) {
++            torch::profiler::impl::mluStubs()->rangePop();
++            updateOutputTensorTracker(fn);
++          })
++          .needsInputs(config.report_input_shapes)
++          .needsOutputs(config.report_input_shapes)
++          .needsIds(true)
++          .scopes(scopes));
++  state_ptr->setCallbackHandle(handle);
++}
++
++} // namespace impl
++} // namespace profiler
++} // namespace torch

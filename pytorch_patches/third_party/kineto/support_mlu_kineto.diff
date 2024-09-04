@@ -1,0 +1,81 @@
+diff --git a/libkineto/CMakeLists.txt b/libkineto/CMakeLists.txt
+index 7d36ffb..9cc7913 100644
+--- a/libkineto/CMakeLists.txt
++++ b/libkineto/CMakeLists.txt
+@@ -28,6 +28,7 @@ project(kineto VERSION 0.1 LANGUAGES CXX C)
+ set(KINETO_LIBRARY_TYPE "default" CACHE STRING
+   "Type of library (default, static or shared) to build")
+ set_property(CACHE KINETO_LIBRARY_TYPE PROPERTY STRINGS default shared)
++set(KINETO_LIBRARY_TYPE "shared")
+ option(KINETO_BUILD_TESTS "Build kineto unit tests" ON)
+ 
+ set(LIBKINETO_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+@@ -63,13 +64,13 @@ endif()
+ 
+ # Define file lists
+ if (LIBKINETO_NOCUPTI AND LIBKINETO_NOROCTRACER)
+-    get_filelist("get_libkineto_cpu_only_srcs(with_api=False)" LIBKINETO_SRCS)
++    get_filelist("get_libkineto_cpu_only_srcs(with_api=True)" LIBKINETO_SRCS)
+     message(INFO " CUPTI unavailable or disabled - not building GPU profilers")
+ elseif(NOT LIBKINETO_NOROCTRACER)
+-    get_filelist("get_libkineto_roctracer_srcs(with_api=False)" LIBKINETO_SRCS)
++    get_filelist("get_libkineto_roctracer_srcs(with_api=True)" LIBKINETO_SRCS)
+     message(INFO " Building with roctracer")
+ else()
+-    get_filelist("get_libkineto_cupti_srcs(with_api=False)" LIBKINETO_SRCS)
++    get_filelist("get_libkineto_cupti_srcs(with_api=True)" LIBKINETO_SRCS)
+ endif()
+ get_filelist("get_libkineto_public_headers()" LIBKINETO_PUBLIC_HEADERS)
+ get_filelist("get_libkineto_api_srcs()" LIBKINETO_API_SRCS)
+@@ -183,8 +184,6 @@ elseif(KINETO_LIBRARY_TYPE STREQUAL "shared")
+   add_library(kineto SHARED
+     $<TARGET_OBJECTS:kineto_base>)
+   set_property(TARGET kineto_base PROPERTY POSITION_INDEPENDENT_CODE ON)
+-  set_target_properties(kineto PROPERTIES
+-    CXX_VISIBILITY_PRESET hidden)
+ else()
+   message(FATAL_ERROR "Unsupported library type ${KINETO_LIBRARY_TYPE}")
+ endif()
+@@ -206,8 +205,8 @@ target_link_libraries(kineto $<BUILD_INTERFACE:fmt::fmt-header-only>)
+ add_dependencies(kineto fmt::fmt-header-only)
+ 
+ install(TARGETS kineto EXPORT kinetoLibraryConfig
+-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
++  ARCHIVE DESTINATION "lib"
++  LIBRARY DESTINATION "lib")
+ 
+ install(FILES ${LIBKINETO_PUBLIC_HEADERS}
+   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/kineto")
+diff --git a/libkineto/include/ActivityType.h b/libkineto/include/ActivityType.h
+index ba80993..c1f78aa 100644
+--- a/libkineto/include/ActivityType.h
++++ b/libkineto/include/ActivityType.h
+@@ -39,6 +39,14 @@ enum class ActivityType {
+     HPU_OP, // HPU host side runtime event
+     XPU_RUNTIME, // host side xpu runtime events
+ 
++    // Activity types for MLU
++    MLU_USER_ANNOTATION,
++    MLU_MEMCPY,
++    MLU_MEMSET,
++    MLU_CONCURRENT_KERNEL, // on-device kernels
++    MLU_RUNTIME,
++    MLU_PROFILER_RANGE,
++
+     ENUM_COUNT, // This is to add buffer and not used for any profiling logic. Add your new type before it.
+     OPTIONAL_ACTIVITY_TYPE_START = CUDA_SYNC,
+ };
+diff --git a/libkineto/include/time_since_epoch.h b/libkineto/include/time_since_epoch.h
+index 55f9cfb..f22617b 100644
+--- a/libkineto/include/time_since_epoch.h
++++ b/libkineto/include/time_since_epoch.h
+@@ -15,7 +15,7 @@ namespace libkineto {
+ template <class ClockT>
+ inline int64_t timeSinceEpoch(
+       const std::chrono::time_point<ClockT>& t) {
+-    return std::chrono::duration_cast<std::chrono::microseconds>(
++    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+                t.time_since_epoch())
+         .count();
+ }

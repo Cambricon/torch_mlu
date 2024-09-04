@@ -1,0 +1,23 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ba7c20e434f..92cf910d473 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -40,6 +40,10 @@ endif()
+ set(CMAKE_CXX_STANDARD 17 CACHE STRING "The C++ standard whose features are requested to build this target.")
+ set(CMAKE_C_STANDARD   11 CACHE STRING "The C standard whose features are requested to build this target.")
+
++if(NOT DEFINED GLIBCXX_USE_CXX11_ABI)
++  set(GLIBCXX_USE_CXX11_ABI 0)
++endif()
++
+ # ---[ Utils
+ include(cmake/public/utils.cmake)
+ 
+@@ -51,6 +55,7 @@ endif()
+ if(LINUX)
+   include(cmake/CheckAbi.cmake)
+   string(APPEND CMAKE_CXX_FLAGS " -D_GLIBCXX_USE_CXX11_ABI=${GLIBCXX_USE_CXX11_ABI}")
++  message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+   string(APPEND CMAKE_CUDA_FLAGS " -D_GLIBCXX_USE_CXX11_ABI=${GLIBCXX_USE_CXX11_ABI}")
+   if(${GLIBCXX_USE_CXX11_ABI} EQUAL 1)
+     set(CXX_STANDARD_REQUIRED ON)
