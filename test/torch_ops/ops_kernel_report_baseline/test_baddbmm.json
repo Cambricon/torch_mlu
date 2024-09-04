@@ -1,0 +1,176 @@
+{
+    "device_count": 8,
+    "test_baddbmm": [
+        {
+            "CaseName": "test_baddbmm",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 594
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 954
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 540
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1782
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 594
+                }
+            ]
+        },
+        {
+            "CaseName": "test_baddbmm_beta_not_zero",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_baddbmm_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_baddbmm_exceptions",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_baddbmm_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 162
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 234
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 486
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 162
+                }
+            ]
+        },
+        {
+            "CaseName": "test_baddbmm_out",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 594
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 954
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 540
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2376
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 594
+                }
+            ]
+        },
+        {
+            "CaseName": "test_baddbmm_permute",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

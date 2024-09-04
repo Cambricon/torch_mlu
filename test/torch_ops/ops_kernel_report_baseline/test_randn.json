@@ -1,0 +1,71 @@
+{
+    "device_count": 8,
+    "test_randn": [
+        {
+            "CaseName": "test_randn",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 33
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_randn_device",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_randn_exception",
+            "Events": []
+        }
+    ]
+}

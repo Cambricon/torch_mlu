@@ -1,0 +1,255 @@
+{
+    "device_count": 8,
+    "test_bce": [
+        {
+            "CaseName": "test_bce",
+            "Events": [
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bce_PYTORCH_11152",
+            "Events": [
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlBceLossBackward",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bce_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlBceLossBackward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bce_bp",
+            "Events": [
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlBceLossBackward",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bce_bp_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 66
+                },
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlBceLossBackward",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bce_bp_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlBceLossBackward",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 63
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bce_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bce_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bce_permute",
+            "Events": [
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlBceLossBackward",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bceloss_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlBceLoss",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlBceLossBackward",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 63
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        }
+    ]
+}

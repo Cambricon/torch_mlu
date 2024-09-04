@@ -1,0 +1,33 @@
+# - Try to find CNDRV
+#
+# The following are set after configuration is done:
+#  CNDRV_FOUND
+#  CNDRV_INCLUDE_DIRS
+#  CNDRV_LIBRARIES
+
+include(FindPackageHandleStandardArgs)
+
+SET(CNDRV_INCLUDE_SEARCH_PATHS $ENV{NEUWARE_HOME}/include)
+SET(CNDRV_LIB_SEARCH_PATHS $ENV{NEUWARE_HOME}/lib64)
+
+find_path(CNDRV_INCLUDE_DIR NAMES cndrv_api.h
+          PATHS ${CNDRV_INCLUDE_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_path(CNDRV_INCLUDE_DIR NAMES cndrv_api.h
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_library(CNDRV_LIBRARY NAMES cndrv
+          PATHS ${CNDRV_LIB_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_library(CNDRV_LIBRARY NAMES cndrv
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_package_handle_standard_args(CNDRV DEFAULT_MSG CNDRV_INCLUDE_DIR CNDRV_LIBRARY)
+
+if(CNDRV_FOUND)
+  set(CNDRV_INCLUDE_DIRS ${CNDRV_INCLUDE_DIR})
+  set(CNDRV_LIBRARIES ${CNDRV_LIBRARY})
+
+  mark_as_advanced(CNDRV_ROOT_DIR CNDRV_LIBRARY_RELEASE CNDRV_LIBRARY_DEBUG
+      CNDRV_LIBRARY CNDRV_INCLUDE_DIR )
+endif()

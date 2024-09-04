@@ -1,0 +1,9 @@
+{
+    "device_count": 8,
+    "test_skip_init": [
+        {
+            "CaseName": "test_skip_init",
+            "Events": []
+        }
+    ]
+}

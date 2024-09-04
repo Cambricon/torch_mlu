@@ -1,0 +1,77 @@
+{
+    "device_count": 8,
+    "test_normal": [
+        {
+            "CaseName": "test_normal_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1000
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 1000
+                }
+            ]
+        },
+        {
+            "CaseName": "test_normal_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 189
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 162
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 162
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 162
+                }
+            ]
+        },
+        {
+            "CaseName": "test_normal_orig",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1000
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 1000
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1000
+                }
+            ]
+        },
+        {
+            "CaseName": "test_normal_out_and_tensor_input",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1458
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 1458
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5346
+                }
+            ]
+        }
+    ]
+}

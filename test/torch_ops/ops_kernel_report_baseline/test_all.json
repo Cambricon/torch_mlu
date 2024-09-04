@@ -1,0 +1,105 @@
+{
+    "device_count": 8,
+    "test_all": [
+        {
+            "CaseName": "test_all",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 63
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_all_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_all_dim",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 126
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 168
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_all_out",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 212
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 126
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 62
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        }
+    ]
+}

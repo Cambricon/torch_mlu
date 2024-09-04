@@ -1,0 +1,165 @@
+{
+    "device_count": 8,
+    "test_det": [
+        {
+            "CaseName": "test_det_backward",
+            "Events": [
+                {
+                    "Name": "cnnlDet_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlInverse",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlSvd",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 419
+                }
+            ]
+        },
+        {
+            "CaseName": "test_det_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "cnnlDet_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlInverse",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 111
+                }
+            ]
+        },
+        {
+            "CaseName": "test_det_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_linalg_det_out",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlDet_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 17
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 102
+                }
+            ]
+        }
+    ]
+}

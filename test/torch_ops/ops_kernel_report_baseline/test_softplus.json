@@ -1,0 +1,145 @@
+{
+    "device_count": 8,
+    "test_softplus": [
+        {
+            "CaseName": "test_softplus",
+            "Events": [
+                {
+                    "Name": "cnnlSoftplusForward",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_softplus_backward",
+            "Events": [
+                {
+                    "Name": "cnnlSoftplusForward",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlSoftplusBackward",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_softplus_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlSoftplusForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_softplus_boundary_value",
+            "Events": [
+                {
+                    "Name": "cnnlSoftplusForward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_softplus_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlSoftplusForward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_softplus_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlSoftplusForward",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_softplus_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlSoftplusForward",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_softplus_permute",
+            "Events": [
+                {
+                    "Name": "cnnlSoftplusForward",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        }
+    ]
+}

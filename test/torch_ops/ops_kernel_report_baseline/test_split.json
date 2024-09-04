@@ -1,0 +1,47 @@
+{
+    "device_count": 8,
+    "test_split": [
+        {
+            "CaseName": "test_split_and_tensor_split",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 92
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 94
+                }
+            ]
+        },
+        {
+            "CaseName": "test_split_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 33
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 41
+                }
+            ]
+        }
+    ]
+}

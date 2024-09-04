@@ -1,0 +1,358 @@
+{
+    "device_count": 8,
+    "test_cat": [
+        {
+            "CaseName": "test_cat_all_contiguous_false_1",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_all_contiguous_false_2",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_empty",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_many",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 46080
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_mix_dtype_and_memory_format",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_mix_zero_dim",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_mix_zero_element",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_out",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_out_mix_and_demote_type_double",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_out_mix_and_demote_type_int64",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_out_promote",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 343
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1029
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1715
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3430
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1029
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_promote",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1029
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1407
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 91
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2401
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1029
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_single_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 16
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_type",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cat_zero_dim",
+            "Events": []
+        }
+    ]
+}

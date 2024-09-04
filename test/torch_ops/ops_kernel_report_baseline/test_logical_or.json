@@ -1,0 +1,156 @@
+{
+    "device_count": 8,
+    "test_logical_or": [
+        {
+            "CaseName": "test_logical_or",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_or_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_or_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_or_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 98
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 49
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_or_mixed_type",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_or_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_or_out",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 63
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 189
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 63
+                }
+            ]
+        }
+    ]
+}

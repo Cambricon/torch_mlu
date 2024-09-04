@@ -1,0 +1,147 @@
+{
+    "device_count": 8,
+    "test_any": [
+        {
+            "CaseName": "test_all_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_any",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_any_dim",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 15
+                }
+            ]
+        },
+        {
+            "CaseName": "test_any_not_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_any_out",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 140
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_any_out_not_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 54
+                }
+            ]
+        }
+    ]
+}

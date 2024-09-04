@@ -1,0 +1,129 @@
+{
+    "device_count": 8,
+    "test_conv3d": [
+        {
+            "CaseName": "test_conv3d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 486
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 73
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 73
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 73
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 37
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 256
+                }
+            ]
+        },
+        {
+            "CaseName": "test_conv3d_exceptions",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_conv3d_with_detach_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_convtrans3d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 486
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 73
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 73
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 73
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 37
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 256
+                }
+            ]
+        }
+    ]
+}

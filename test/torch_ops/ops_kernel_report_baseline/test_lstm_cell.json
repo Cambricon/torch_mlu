@@ -1,0 +1,95 @@
+{
+    "device_count": 8,
+    "test_lstm_cell": [
+        {
+            "CaseName": "test_lstmcell_training",
+            "Events": [
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlLSTMGatesForward",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlLSTMGatesBackward",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 208
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 256
+                }
+            ]
+        },
+        {
+            "CaseName": "test_lstmcell_training_not_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 512
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlLSTMGatesForward",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlLSTMGatesBackward",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 208
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 256
+                }
+            ]
+        }
+    ]
+}

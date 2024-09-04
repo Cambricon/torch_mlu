@@ -1,0 +1,110 @@
+{
+    "device_count": 8,
+    "test_index_copy": [
+        {
+            "CaseName": "test_index_copy",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlIndexCopy",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_copy_",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlIndexCopy",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 75
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 40
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_copy_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlIndexCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_copy_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlGenerateRandDiscreteUniform",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_copy_neg_dim",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlIndexCopy",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        }
+    ]
+}

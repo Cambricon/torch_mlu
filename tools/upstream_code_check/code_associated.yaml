@@ -1,0 +1,169 @@
+- file: torch_mlu/csrc/python/Module.cpp
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/csrc/cuda/Module.cpp
+    associated_code:
+    - start_line: 454
+      end_line: 459
+    - start_line: 629
+      end_line: 637
+    - start_line: 522
+      end_line: 541
+    - start_line: 543
+      end_line: 548
+    - start_line: 550
+      end_line: 604
+    - start_line: 606
+      end_line: 617
+    - start_line: 639
+      end_line: 833
+    - start_line: 951
+      end_line: 954
+    - start_line: 956
+      end_line: 962
+    - start_line: 964
+      end_line: 966
+
+- file: torch_mlu/csrc/python/MluIPCTypes.cpp
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/csrc/CudaIPCTypes.cpp
+
+- file: torch_mlu/csrc/python/MluIPCTypes.h
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/csrc/CudaIPCTypes.h
+
+- file: torch_mlu/csrc/python/StorageSharing.cpp
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/csrc/StorageSharing.cpp
+    associated_code:
+    - start_line: 380
+      end_line: 420
+    - start_line: 286
+      end_line: 378
+    - start_line: 422
+      end_line: 434
+    - start_line: 436
+      end_line: 577
+    - start_line: 641
+      end_line: 652
+
+- file: torch_mlu/mlu/reductions.py
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/multiprocessing/reductions.py
+    associated_code:
+    - start_line: 549
+      end_line: 575
+    - start_line: 190
+      end_line: 354
+    - start_line: 122
+      end_line: 187
+
+- file: torch_mlu/mlu/storage.py
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/storage.py
+  - source_file: torch/serialization.py
+    associated_code:
+    - start_line: 779
+      end_line: 862
+    - start_line: 635
+      end_line: 776
+    - start_line: 1337
+      end_line: 1451
+    - start_line: 1059
+      end_line: 1288
+  - source_file: torch/package/package_exporter.py
+    associated_code:
+    - start_line: 914
+      end_line: 966
+
+- file: torch_mlu/csrc/framework/core/caching_allocator.cpp
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: c10/cuda/CUDACachingAllocator.cpp
+
+- file: torch_mlu/csrc/framework/core/caching_allocator.h
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: c10/cuda/CUDACachingAllocator.h
+
+- file: torch_mlu/csrc/framework/core/caching_allocator_config.cpp
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: c10/cuda/CUDAAllocatorConfig.cpp
+
+- file: torch_mlu/csrc/framework/core/caching_allocator_config.h
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: c10/cuda/CUDAAllocatorConfig.h
+
+- file: torch_mlu/csrc/framework/core/guard_impl.h
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: c10/cuda/impl/CUDAGuardImpl.h
+
+- file: torch_mlu/csrc/framework/core/memory_snapshot.cpp
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/csrc/cuda/memory_snapshot.cpp
+
+- file: torch_mlu/csrc/framework/core/memory_snapshot.h
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/csrc/cuda/memory_snapshot.h
+
+- file: torch_mlu/csrc/framework/distributed/cncl_utils.cpp
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: c10/cuda/CUDAMiscFunctions.cpp
+    associated_code:
+    - start_line: 18
+      end_line: 21
+
+- file: torch_mlu/csrc/framework/distributed/cncl_utils.h
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: c10/cuda/CUDAMiscFunctions.h
+    associated_code:
+    - start_line: 11
+      end_line: 11
+
+- file: torch_mlu/csrc/python/combined_traceback.cpp
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/csrc/profiler/python/combined_traceback.cpp
+    associated_code:
+    - start_line: 118
+      end_line: 160
+
+- file: torch_mlu/csrc/python/combined_traceback.h
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/csrc/profiler/python/combined_traceback.h
+    associated_code:
+    - start_line: 8
+      end_line: 15
+
+- file: torch_mlu/mlu/memory.py
+  commit_id: 24944f6717c087416b7f4a8bef4adee087624336
+  source_info:
+  - source_file: torch/cuda/memory.py
+    associated_code:
+
+- file: torch_mlu/csrc/aten/operators/cnnl/addmm.cpp
+  commit_id: 8f27c7f181f05ecac5f1948dc070d7781d3da137
+  source_info:
+  - source_file: aten/src/ATen/native/cuda/Blas.cpp
+    associated_code:
+    - start_line: 218
+      end_line: 433
+    - start_line: 519
+      end_line: 521
+    - start_line: 523
+      end_line: 525
+    - start_line: 527
+      end_line: 529

@@ -1,0 +1,189 @@
+{
+    "device_count": 8,
+    "test_nll_loss": [
+        {
+            "CaseName": "test_nll_loss1d_batch",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlNlllossForward_v2",
+                    "# of Calls": 648
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 324
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 648
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nll_loss1d_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlNlllossForward_v2",
+                    "# of Calls": 162
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 486
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 162
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nll_loss1d_non_batch_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlNlllossForward_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 162
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 54
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nll_loss_2d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlNlllossForward_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlNlllossBackward_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nll_loss_2d_empty",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 37
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "cnnlNlllossForward_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlNlllossBackward_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 37
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 23
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nll_loss_backward",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlNlllossForward_v2",
+                    "# of Calls": 648
+                },
+                {
+                    "Name": "cnnlNlllossBackward_v2",
+                    "# of Calls": 648
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 972
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2592
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1296
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nll_loss_backward_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlNlllossForward_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlNlllossBackward_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 324
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 432
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nll_loss_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,123 @@
+{
+    "device_count": 8,
+    "test_bmm": [
+        {
+            "CaseName": "test_bmm",
+            "Events": [
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bmm_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bmm_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bmm_out",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bmm_permute",
+            "Events": [
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bmm_trans",
+            "Events": [
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        }
+    ]
+}

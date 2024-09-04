@@ -1,0 +1,181 @@
+{
+    "device_count": 8,
+    "test_addmm": [
+        {
+            "CaseName": "test_addmm_activation",
+            "Events": [
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlMatMulEx",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 76
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addmm_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addmm_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 196
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 161
+                },
+                {
+                    "Name": "cnnlMatMulEx",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 653
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 207
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addmm_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addmm_inplace_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 104
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 346
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 104
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addmm_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addmm_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_addmm_out",
+            "Events": [
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 590
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 480
+                },
+                {
+                    "Name": "cnnlMatMulEx",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2682
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 620
+                }
+            ]
+        }
+    ]
+}

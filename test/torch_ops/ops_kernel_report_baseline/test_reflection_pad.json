@@ -1,0 +1,203 @@
+{
+    "device_count": 8,
+    "test_reflection_pad": [
+        {
+            "CaseName": "test_reflection_pad1d",
+            "Events": [
+                {
+                    "Name": "cnnlReflectionPad2d",
+                    "# of Calls": 109
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlReflectionPadBackward",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 217
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 217
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reflection_pad1d_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlReflectionPad2d",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlReflectionPadBackward",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reflection_pad1d_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlReflectionPad2d",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reflection_pad2d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 153
+                },
+                {
+                    "Name": "cnnlReflectionPad2d",
+                    "# of Calls": 82
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlReflectionPadBackward",
+                    "# of Calls": 81
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 163
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 163
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reflection_pad2d_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlReflectionPad2d",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlReflectionPadBackward",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reflection_pad2d_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                }
+            ]
+        }
+    ]
+}

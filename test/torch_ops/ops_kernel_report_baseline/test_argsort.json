@@ -1,0 +1,58 @@
+{
+    "device_count": 8,
+    "test_argsort": [
+        {
+            "CaseName": "test_sort",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 32838
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 16436
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 8212
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 8224
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFloor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8248
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                }
+            ]
+        }
+    ]
+}

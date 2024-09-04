@@ -1,0 +1,26 @@
+{
+    "device_count": 8,
+    "test_shift": [
+        {
+            "CaseName": "test_left_and_right_shift",
+            "Events": [
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 900
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 900
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1350
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 900
+                }
+            ]
+        }
+    ]
+}

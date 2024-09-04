@@ -1,0 +1,457 @@
+{
+    "device_count": 8,
+    "test_abs": [
+        {
+            "CaseName": "test_abs_PYTORCH_11152",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSign",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_backward",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlSign",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_complex",
+            "Events": [
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_inplace_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_inplace_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_int_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 16
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_permute",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_t_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 16
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_t_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 16
+                }
+            ]
+        },
+        {
+            "CaseName": "test_abs_t_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 16
+                }
+            ]
+        },
+        {
+            "CaseName": "test_absout_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_absout_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_absout_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 32
+                }
+            ]
+        },
+        {
+            "CaseName": "test_absout_shape_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlComplexAbs",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

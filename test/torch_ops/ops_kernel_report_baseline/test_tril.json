@@ -1,0 +1,124 @@
+{
+    "device_count": 8,
+    "test_tril": [
+        {
+            "CaseName": "test_tensor_tril_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlTri_v2",
+                    "# of Calls": 68
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 68
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 68
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tensor_tril_not_contiguous_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlTri_v2",
+                    "# of Calls": 68
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 66
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 68
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 68
+                }
+            ]
+        },
+        {
+            "CaseName": "test_torch_tril",
+            "Events": [
+                {
+                    "Name": "cnnlTri_v2",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 80
+                }
+            ]
+        },
+        {
+            "CaseName": "test_torch_tril_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlTri_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 54
+                }
+            ]
+        },
+        {
+            "CaseName": "test_torch_tril_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlTri_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tril_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tril_out",
+            "Events": [
+                {
+                    "Name": "cnnlTri_v2",
+                    "# of Calls": 68
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 136
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 68
+                }
+            ]
+        }
+    ]
+}

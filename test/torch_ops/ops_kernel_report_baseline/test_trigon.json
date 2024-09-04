@@ -1,0 +1,154 @@
+{
+    "device_count": 8,
+    "test_trigon": [
+        {
+            "CaseName": "test_trigon",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 180
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trigon_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 60
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trigon_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 210
+                },
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 180
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trigon_permute",
+            "Events": [
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trigon_special_case",
+            "Events": [
+                {
+                    "Name": "cnnlSin_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlTrigonForward",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlCos_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 240
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 150
+                }
+            ]
+        }
+    ]
+}

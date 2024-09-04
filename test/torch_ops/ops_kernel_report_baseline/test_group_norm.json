@@ -1,0 +1,168 @@
+{
+    "device_count": 8,
+    "test_group_norm": [
+        {
+            "CaseName": "test_group_norm_backward",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 672
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 336
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 812
+                },
+                {
+                    "Name": "cnnlGroupNormForward_v3",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "cnnlGroupNormBackward",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1176
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 840
+                }
+            ]
+        },
+        {
+            "CaseName": "test_group_norm_bfloat16_backward",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_group_norm_bfloat16_forward",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "cnnlGroupNormForward_v3",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 42
+                }
+            ]
+        },
+        {
+            "CaseName": "test_group_norm_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlGroupNormForward_v3",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 336
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 588
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 252
+                }
+            ]
+        },
+        {
+            "CaseName": "test_group_norm_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlGroupNormForward_v3",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 336
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 588
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 252
+                }
+            ]
+        },
+        {
+            "CaseName": "test_group_norm_exceptions",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_group_norm_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlGroupNormForward_v3",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 336
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 588
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 252
+                }
+            ]
+        }
+    ]
+}

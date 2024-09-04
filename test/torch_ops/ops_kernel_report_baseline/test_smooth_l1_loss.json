@@ -1,0 +1,234 @@
+{
+    "device_count": 8,
+    "test_smooth_l1_loss": [
+        {
+            "CaseName": "test_smooth_l1_loss_PYTORCH_11152",
+            "Events": [
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlSmoothL1LossBackward_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_smooth_l1_loss_backward",
+            "Events": [
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 33
+                },
+                {
+                    "Name": "cnnlSmoothL1LossBackward_v2",
+                    "# of Calls": 33
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 85
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 58
+                }
+            ]
+        },
+        {
+            "CaseName": "test_smooth_l1_loss_backward_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlSmoothL1LossBackward_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_smooth_l1_loss_beta",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 66
+                },
+                {
+                    "Name": "cnnlSign",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 45
+                },
+                {
+                    "Name": "cnnlSmoothL1LossBackward_v2",
+                    "# of Calls": 45
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 104
+                }
+            ]
+        },
+        {
+            "CaseName": "test_smooth_l1_loss_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlSmoothL1LossBackward_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_smooth_l1_loss_forward",
+            "Events": [
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_smooth_l1_loss_forward_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_smooth_l1_loss_forward_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_smooth_l1_loss_permute",
+            "Events": [
+                {
+                    "Name": "cnnlSmoothL1LossForward_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlSmoothL1LossBackward_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,117 @@
+{
+    "device_count": 8,
+    "test_linspace": [
+        {
+            "CaseName": "test_linspace",
+            "Events": [
+                {
+                    "Name": "cnnlLinspace",
+                    "# of Calls": 980
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 196
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 245
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1176
+                }
+            ]
+        },
+        {
+            "CaseName": "test_linspace_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlLinspace",
+                    "# of Calls": 245
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 294
+                }
+            ]
+        },
+        {
+            "CaseName": "test_linspace_exception",
+            "Events": []
+        },
+        {
+            "CaseName": "test_linspace_out",
+            "Events": [
+                {
+                    "Name": "cnnlLinspace",
+                    "# of Calls": 1764
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1176
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3528
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5880
+                }
+            ]
+        },
+        {
+            "CaseName": "test_linspace_permute",
+            "Events": [
+                {
+                    "Name": "cnnlLinspace",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

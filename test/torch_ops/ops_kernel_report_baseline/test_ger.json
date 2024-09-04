@@ -1,0 +1,94 @@
+{
+    "device_count": 8,
+    "test_ger": [
+        {
+            "CaseName": "test_ger",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_ger_invalid_shape",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_ger_order",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_ger_out",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_ger_out_not_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 32
+                }
+            ]
+        }
+    ]
+}

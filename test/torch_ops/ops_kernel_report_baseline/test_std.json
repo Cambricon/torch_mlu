@@ -1,0 +1,202 @@
+{
+    "device_count": 8,
+    "test_std": [
+        {
+            "CaseName": "test_empty_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_std",
+            "Events": [
+                {
+                    "Name": "cnnlStdVarMean",
+                    "# of Calls": 290
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 290
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 290
+                }
+            ]
+        },
+        {
+            "CaseName": "test_std_backward",
+            "Events": [
+                {
+                    "Name": "cnnlStdVarMean",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 60
+                }
+            ]
+        },
+        {
+            "CaseName": "test_std_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlStdVarMean",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 60
+                }
+            ]
+        },
+        {
+            "CaseName": "test_std_exceptions",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_std_multidims",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 236
+                },
+                {
+                    "Name": "cnnlStdVarMean",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 320
+                }
+            ]
+        },
+        {
+            "CaseName": "test_std_out",
+            "Events": [
+                {
+                    "Name": "cnnlStdVarMean",
+                    "# of Calls": 50
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 100
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 50
+                }
+            ]
+        },
+        {
+            "CaseName": "test_std_out_exceptions",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlStdVarMean",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGenerateRandDiscreteUniform",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_std_out_nan",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        }
+    ]
+}
