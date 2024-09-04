@@ -1,0 +1,201 @@
+{
+    "device_count": 8,
+    "test_index": [
+        {
+            "CaseName": "test_bool_indices",
+            "Events": [
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlAdvancedIndex_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_combile_bool_int_indices",
+            "Events": [
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlAdvancedIndex_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlAdvancedIndex_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 13
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_bool",
+            "Events": [
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "cnnlAdvancedIndex_v2",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 91
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 88
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlAdvancedIndex_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_index_long",
+            "Events": [
+                {
+                    "Name": "cnnlAdvancedIndex_v2",
+                    "# of Calls": 98
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlIndexPut",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 273
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 91
+                }
+            ]
+        },
+        {
+            "CaseName": "test_multiple_bool_indices",
+            "Events": [
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlAdvancedIndex_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,92 @@
+{
+    "device_count": 8,
+    "test_histc": [
+        {
+            "CaseName": "test_histc",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 25
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 37
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 74
+                },
+                {
+                    "Name": "cnnlHistc",
+                    "# of Calls": 37
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 38
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 111
+                }
+            ]
+        },
+        {
+            "CaseName": "test_histc_exception",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_histc_orig",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 17
+                },
+                {
+                    "Name": "cnnlHistc",
+                    "# of Calls": 11
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 17
+                }
+            ]
+        }
+    ]
+}

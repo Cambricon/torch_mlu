@@ -1,0 +1,89 @@
+{
+    "device_count": 8,
+    "test_unique_consecutive": [
+        {
+            "CaseName": "test_unique_consecutive",
+            "Events": [
+                {
+                    "Name": "cnnlUniqueConsecutive",
+                    "# of Calls": 480
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 720
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 480
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1800
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unique_consecutive_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "cnnlUniqueConsecutive",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 140
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unique_consecutive_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unique_consecutive_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlUniqueConsecutive",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 240
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 540
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unique_consecutive_spec",
+            "Events": []
+        },
+        {
+            "CaseName": "test_unique_consecutive_zero_element",
+            "Events": []
+        }
+    ]
+}

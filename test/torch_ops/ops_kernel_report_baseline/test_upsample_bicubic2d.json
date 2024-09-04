@@ -1,0 +1,55 @@
+{
+    "device_count": 8,
+    "test_upsample_bicubic2d": [
+        {
+            "CaseName": "test_upsample_bicubic2d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlInterp_v3",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlInterpBackward_v3",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_upsample_bicubic2d_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,228 @@
+{
+    "device_count": 8,
+    "test_syncbn": [
+        {
+            "CaseName": "test_batch_norm_backward_elemt",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 80088
+                },
+                {
+                    "Name": "cnnlSyncBatchNormBackwardElemtV2",
+                    "# of Calls": 20760
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 72576
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 20760
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_backward_elemt_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_backward_reduce",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1992
+                },
+                {
+                    "Name": "cnnlSyncBatchnormBackwardReduce_v2",
+                    "# of Calls": 888
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1440
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3552
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_backward_reduce_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_elemt",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5324
+                },
+                {
+                    "Name": "cnnlSyncBatchNormElemt",
+                    "# of Calls": 2328
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2688
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1272
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2328
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_elemt_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_gather_stats",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSyncBatchNormGatherStatsWithCounts",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_gather_stats_with_counts",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 6152
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1584
+                },
+                {
+                    "Name": "cnnlSyncBatchNormGatherStatsWithCounts",
+                    "# of Calls": 792
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2304
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4752
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_gather_stats_with_counts_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_stats",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 52
+                },
+                {
+                    "Name": "cnnlSyncBatchNormStats_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 216
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_stats_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

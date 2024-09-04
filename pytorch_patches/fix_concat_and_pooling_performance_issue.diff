@@ -1,0 +1,65 @@
+diff --git a/aten/src/ATen/native/DilatedMaxPool2d.cpp b/aten/src/ATen/native/DilatedMaxPool2d.cpp
+index c9e980e4..060f1575 100644
+--- a/aten/src/ATen/native/DilatedMaxPool2d.cpp
++++ b/aten/src/ATen/native/DilatedMaxPool2d.cpp
+@@ -65,16 +65,19 @@ bool ceil_mode) {
+     inputHeight, inputWidth,
+     outputHeight, outputWidth, memory_format);
+ 
++  // TODO(CNNLCORE-11573): change this when cnnl deprecates int16 index.
++  auto indice_type = input.device().is_privateuseone() && (input.scalar_type() == at::kHalf || input.scalar_type() == at::kBFloat16) ? kShort : kLong;
++
+   /* resize output and indices */
+   DimnameList maybe_names = input.has_names() ? input.names() : DimnameList{};
+   if (input.ndimension() == 3) {
+     set_output_raw_strided(0, {nInputPlane, outputHeight, outputWidth}, {}, input.options().memory_format(memory_format), maybe_names);
+     /* indices will contain the locations for each output point */
+-    set_output_raw_strided(1, {nInputPlane, outputHeight, outputWidth}, {}, input.options().memory_format(memory_format).dtype(kLong), maybe_names);
++    set_output_raw_strided(1, {nInputPlane, outputHeight, outputWidth}, {}, input.options().memory_format(memory_format).dtype(indice_type), maybe_names);
+   } else {
+     set_output_raw_strided(0, {nbatch, nInputPlane, outputHeight, outputWidth}, {}, input.options().memory_format(memory_format), maybe_names);
+     /* indices will contain the locations for each output point */
+-    set_output_raw_strided(1, {nbatch, nInputPlane, outputHeight, outputWidth}, {}, input.options().memory_format(memory_format).dtype(kLong), maybe_names);
++    set_output_raw_strided(1, {nbatch, nInputPlane, outputHeight, outputWidth}, {}, input.options().memory_format(memory_format).dtype(indice_type), maybe_names);
+   }
+ }
+ 
+diff --git a/aten/src/ATen/native/TensorShape.cpp b/aten/src/ATen/native/TensorShape.cpp
+index 06efa093..37c84045 100644
+--- a/aten/src/ATen/native/TensorShape.cpp
++++ b/aten/src/ATen/native/TensorShape.cpp
+@@ -43,6 +43,34 @@ inline void cat_check_no_zero_dim(const MaterializedITensorListRef& tensors) {
+ }
+ 
+ inline c10::MemoryFormat cat_compute_output_memory_format(const MaterializedITensorListRef& inputs) {
++  bool has_mlu_input = false;
++  for (const Tensor& t : inputs) {
++    if (t.device().is_privateuseone()) {
++      has_mlu_input = true;
++      break;
++    }
++  }
++  // TODO(kongweiguang): temporarily keep memory-format strategy as pytorch 1.9 for MLU network performance.
++  if (has_mlu_input) {
++    const int tensor_size = inputs.size();
++    TORCH_CHECK(tensor_size > 0, "Input tensor num need be greater than 0.");
++    bool channels_first = false;
++    c10::MemoryFormat memory_format = c10::MemoryFormat::Contiguous;
++    for (int i = 0; i < tensor_size; ++i) {
++      const int64_t dim = inputs[i].get().dim();
++      if (dim > 5 || dim < 4) {
++        channels_first = true;
++        break;
++      }
++    }
++    if (channels_first == false) {
++      // (TODO) shangang: Not best way to contiguous all tensors
++      // when different memory_format.
++      memory_format = inputs[0].get().suggest_memory_format();
++    }
++    return memory_format;
++  }
++
+   c10::optional<c10::MemoryFormat> format = c10::nullopt;
+   for (const Tensor& t : inputs) {
+     auto f = t.suggest_memory_format();

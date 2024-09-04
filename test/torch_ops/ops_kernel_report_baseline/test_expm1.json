@@ -1,0 +1,105 @@
+{
+    "device_count": 8,
+    "test_expm1": [
+        {
+            "CaseName": "test_expm1",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 58
+                },
+                {
+                    "Name": "cnnlExpm1",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 54
+                }
+            ]
+        },
+        {
+            "CaseName": "test_expm1_backward",
+            "Events": [
+                {
+                    "Name": "cnnlExpm1",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_expm1_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlExpm1",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_expm1_permute",
+            "Events": [
+                {
+                    "Name": "cnnlExpm1",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,56 @@
+{
+    "device_count": 8,
+    "test_chunk": [
+        {
+            "CaseName": "test_chunk",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 262
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 378
+                }
+            ]
+        },
+        {
+            "CaseName": "test_chunk_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 149
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 131
+                }
+            ]
+        },
+        {
+            "CaseName": "test_chunk_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 224
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 224
+                }
+            ]
+        }
+    ]
+}

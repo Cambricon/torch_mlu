@@ -1,0 +1,68 @@
+{
+    "device_count": 8,
+    "test_stack": [
+        {
+            "CaseName": "test_stack",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 96
+                }
+            ]
+        },
+        {
+            "CaseName": "test_stack_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_stack_out",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 96
+                }
+            ]
+        }
+    ]
+}

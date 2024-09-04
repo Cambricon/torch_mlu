@@ -1,0 +1,169 @@
+{
+    "device_count": 8,
+    "test_logical_and": [
+        {
+            "CaseName": "test_logical_and",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_and_PYTORCH_11152",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_and_and_logical_and_out_after_permute",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_and_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_and_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_and_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 98
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 49
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_and_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_and_out",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 63
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 189
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 63
+                }
+            ]
+        }
+    ]
+}

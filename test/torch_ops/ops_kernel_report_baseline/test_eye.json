@@ -1,0 +1,56 @@
+{
+    "device_count": 8,
+    "test_eye": [
+        {
+            "CaseName": "test_eye",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 972
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 567
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 81
+                }
+            ]
+        },
+        {
+            "CaseName": "test_eye_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_eye_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_tensor_empty",
+            "Events": []
+        }
+    ]
+}

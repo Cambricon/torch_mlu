@@ -1,0 +1,35 @@
+{
+    "device_count": 8,
+    "test_randn_like": [
+        {
+            "CaseName": "test_randn",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_randn_like_device",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 16
+                }
+            ]
+        }
+    ]
+}

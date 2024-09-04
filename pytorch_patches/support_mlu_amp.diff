@@ -1,0 +1,40 @@
+diff --git a/torch/overrides.py b/torch/overrides.py
+index 8d291e255a..e41848cda3 100644
+--- a/torch/overrides.py
++++ b/torch/overrides.py
+@@ -1221,6 +1221,7 @@ def get_testing_overrides() -> Dict[Callable, Callable]:
+         Tensor.dtype.__get__: lambda self: -1,
+         Tensor.is_cuda.__get__: lambda self: -1,
+         Tensor.is_cpu.__get__: lambda self: -1,
++        Tensor.is_mlu.__get__: lambda self: -1,
+         Tensor.is_xla.__get__: lambda self: -1,
+         Tensor.is_xpu.__get__: lambda self: -1,
+         Tensor.is_ipu.__get__: lambda self: -1,
+@@ -1278,6 +1279,7 @@ def get_testing_overrides() -> Dict[Callable, Callable]:
+         Tensor.copy_: lambda self, src, non_blocking=False: -1,
+         Tensor.cpu: lambda self, memory_format=torch.preserve_format: -1,
+         Tensor.cuda: lambda self, memory_format=torch.preserve_format: -1,
++        Tensor.mlu: lambda self, memory_format=torch.preserve_format: -1,
+         Tensor.xpu: lambda self, memory_format=torch.preserve_format: -1,
+         Tensor.ipu: lambda self, memory_format=torch.preserve_format: -1,
+         Tensor.data_ptr: lambda self: -1,
+diff --git a/torch/utils/_foreach_utils.py b/torch/utils/_foreach_utils.py
+index 534e9ff24e..dc65b6d622 100644
+--- a/torch/utils/_foreach_utils.py
++++ b/torch/utils/_foreach_utils.py
+@@ -9,13 +9,13 @@ def _get_foreach_kernels_supported_devices() -> List[str]:
+     r"""
+     Return the device type list that supports foreach kernels.
+     """
+-    return ["cuda", "xpu", torch._C._get_privateuse1_backend_name()]
++    return ["cuda", "xpu"]
+ 
+ def _get_fused_kernels_supported_devices() -> List[str]:
+     r"""
+     Return the device type list that supports fused kernels in optimizer.
+     """
+-    return ["cuda", "xpu", torch._C._get_privateuse1_backend_name()]
++    return ["cuda", "xpu"]
+ 
+ TensorListList: TypeAlias = List[List[Optional[Tensor]]]
+ Indices: TypeAlias = List[int]

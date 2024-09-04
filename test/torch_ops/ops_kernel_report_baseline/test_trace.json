@@ -1,0 +1,125 @@
+{
+    "device_count": 8,
+    "test_trace": [
+        {
+            "CaseName": "test_tensor_trace",
+            "Events": [
+                {
+                    "Name": "cnnlTrace",
+                    "# of Calls": 25
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlIndexFill_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 79
+                }
+            ]
+        },
+        {
+            "CaseName": "test_torch_trace",
+            "Events": [
+                {
+                    "Name": "cnnlTrace",
+                    "# of Calls": 25
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlIndexFill_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 79
+                }
+            ]
+        },
+        {
+            "CaseName": "test_torch_trace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlTrace",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlIndexFill_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 41
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trace_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlTrace",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

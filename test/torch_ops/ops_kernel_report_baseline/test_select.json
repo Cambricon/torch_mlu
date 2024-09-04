@@ -1,0 +1,26 @@
+{
+    "device_count": 8,
+    "test_select": [
+        {
+            "CaseName": "test_select",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        }
+    ]
+}

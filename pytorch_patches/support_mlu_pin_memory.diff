@@ -1,0 +1,20 @@
+diff --git a/aten/src/ATen/templates/RegisterBackendSelect.cpp b/aten/src/ATen/templates/RegisterBackendSelect.cpp
+index 6463701a49..1165c031ab 100644
+--- a/aten/src/ATen/templates/RegisterBackendSelect.cpp
++++ b/aten/src/ATen/templates/RegisterBackendSelect.cpp
+@@ -29,13 +29,13 @@ bool is_pinned(const Tensor& self, c10::optional<at::Device> device) {
+     return false;
+   }
+   // TODO: fetch scalar type from Tensor? But it doesn't really matter...
+-  DispatchKeySet _dk = c10::DispatchKeySet(c10::computeDispatchKey(c10::nullopt, self.layout(), device.value_or(at::kCUDA)));
++  DispatchKeySet _dk = c10::DispatchKeySet(c10::computeDispatchKey(c10::nullopt, self.layout(), device.value_or(at::kPrivateUse1)));
+   return at::_ops::is_pinned::redispatch(_dk, self, device);
+ }
+ 
+ at::Tensor _pin_memory(const Tensor& self, c10::optional<at::Device> device) {
+   TORCH_CHECK(self.device().is_cpu(), "cannot pin '", self.toString(), "' only dense CPU tensors can be pinned");
+-  DispatchKeySet _dk = c10::DispatchKeySet(c10::computeDispatchKey(c10::nullopt, self.layout(), device.value_or(at::kCUDA)));
++  DispatchKeySet _dk = c10::DispatchKeySet(c10::computeDispatchKey(c10::nullopt, self.layout(), device.value_or(at::kPrivateUse1)));
+   return at::_ops::_pin_memory::redispatch(_dk, self, device);
+ }
+ 

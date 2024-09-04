@@ -1,0 +1,98 @@
+{
+    "device_count": 8,
+    "test_topk": [
+        {
+            "CaseName": "test_topk",
+            "Events": [
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 100
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 120
+                }
+            ]
+        },
+        {
+            "CaseName": "test_topk_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 20
+                }
+            ]
+        },
+        {
+            "CaseName": "test_topk_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_topk_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_topk_out",
+            "Events": [
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 240
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        }
+    ]
+}

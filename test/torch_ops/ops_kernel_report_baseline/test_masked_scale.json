@@ -1,0 +1,93 @@
+{
+    "device_count": 8,
+    "test_masked_scale": [
+        {
+            "CaseName": "test_masked_scale",
+            "Events": [
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 270
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 342
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 540
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 270
+                }
+            ]
+        },
+        {
+            "CaseName": "test_masked_scale_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_masked_scale_broadcast",
+            "Events": [
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 324
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 216
+                }
+            ]
+        },
+        {
+            "CaseName": "test_masked_scale_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

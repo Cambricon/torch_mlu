@@ -1,0 +1,19 @@
+diff --git a/aten/src/ATen/detail/CUDAHooksInterface.cpp b/aten/src/ATen/detail/CUDAHooksInterface.cpp
+index 6f1198ea25..1b4be5d957 100644
+--- a/aten/src/ATen/detail/CUDAHooksInterface.cpp
++++ b/aten/src/ATen/detail/CUDAHooksInterface.cpp
+@@ -38,9 +38,12 @@ const CUDAHooksInterface& getCUDAHooks() {
+ #if !defined C10_MOBILE
+   static c10::once_flag once;
+   c10::call_once(once, [] {
+-    cuda_hooks = CUDAHooksRegistry()->Create("CUDAHooks", CUDAHooksArgs{}).release();
++    cuda_hooks = CUDAHooksRegistry()->Create("MLUHooks", CUDAHooksArgs{}).release();
+     if (!cuda_hooks) {
+-      cuda_hooks = new CUDAHooksInterface();
++      cuda_hooks = CUDAHooksRegistry()->Create("CUDAHooks", CUDAHooksArgs{}).release();
++      if (!cuda_hooks) {
++        cuda_hooks = new CUDAHooksInterface();
++      }
+     }
+   });
+ #else

@@ -1,0 +1,119 @@
+{
+    "device_count": 8,
+    "test_logdet": [
+        {
+            "CaseName": "test_logdet_basic",
+            "Events": [
+                {
+                    "Name": "cnnlSlogDet",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlInverse",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 31
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logdet_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlSlogDet",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlInverse",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 785
+                }
+            ]
+        }
+    ]
+}

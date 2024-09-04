@@ -1,0 +1,13 @@
+diff --git a/aten/src/ATen/native/Normalization.cpp b/aten/src/ATen/native/Normalization.cpp
+index 6911d780c1..9bc4879904 100644
+--- a/aten/src/ATen/native/Normalization.cpp
++++ b/aten/src/ATen/native/Normalization.cpp
+@@ -448,7 +448,7 @@ std::tuple<Tensor, Tensor, Tensor, Tensor, int64_t> _batch_norm_impl_index(
+   if (input.sym_numel() == 0) {
+     Tensor reserve = at::empty({0}, input.options().dtype(kByte));
+     auto options = input.options().dtype(
+-        at::toAccumulateType(input.scalar_type(), /*is_cuda=*/input.is_cuda()));
++        at::toAccumulateType(input.scalar_type(), /*is_cuda=*/input.is_cuda() || input.device().is_privateuseone()));
+     auto save_mean = at::empty_symint(c10::SymIntArrayRef({num_features}), options);
+     auto save_invstd = at::empty_symint(c10::SymIntArrayRef({num_features}), options);
+ 

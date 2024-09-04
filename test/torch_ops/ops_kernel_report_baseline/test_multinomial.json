@@ -1,0 +1,193 @@
+{
+    "device_count": 8,
+    "test_multinomial": [
+        {
+            "CaseName": "test_multinomial1D",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlGenerateRandMultinomial",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlGenerateRandExponential",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_multinomial1D_out",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlGenerateRandMultinomial",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 28
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlGenerateRandExponential",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlTopKTensor_v3",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_multinomial2D",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlGenerateRandMultinomial",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlGenerateRandExponential",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_multinomial2D_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlGenerateRandMultinomial",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlGenerateRandExponential",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_multinomial_constraints",
+            "Events": []
+        }
+    ]
+}

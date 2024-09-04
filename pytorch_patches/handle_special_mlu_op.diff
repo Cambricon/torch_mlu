@@ -1,0 +1,50 @@
+diff --git a/torch/nn/functional.py b/torch/nn/functional.py
+index d105a1a8..9a61e634 100644
+--- a/torch/nn/functional.py
++++ b/torch/nn/functional.py
+@@ -740,6 +740,10 @@ def max_pool2d_with_indices(
+         return_indices: If ``True``, will return the argmax along with the max values.
+                         Useful for :class:`torch.nn.functional.max_unpool2d` later
+     """
++    if input.is_mlu and return_indices:
++        warnings.warn("Different with the origin CPU or GPU ops, the max indices returned by "
++                      "MLU max_pool2d_with_indices are local max indices inside the kernel. ")
++
+     if has_torch_function_unary(input):
+         return handle_torch_function(
+             max_pool2d_with_indices,
+@@ -826,6 +830,10 @@ def max_pool3d_with_indices(
+         return_indices: If ``True``, will return the argmax along with the max values.
+                         Useful for :class:`torch.nn.functional.max_unpool3d` later
+     """
++    if input.is_mlu and return_indices:
++        warnings.warn("Different with the origin CPU or GPU ops, the max indices returned by "
++                      "MLU max_pool3d_with_indices are local max indices inside the kernel. ")
++
+     if has_torch_function_unary(input):
+         return handle_torch_function(
+             max_pool3d_with_indices,
+@@ -977,7 +985,11 @@ def max_unpool2d(
+         _stride = kernel_size
+     padding = _pair(padding)
+     output_size = _unpool_output_size(input, kernel_size, _stride, padding, output_size)
+-    return torch._C._nn.max_unpool2d(input, indices, output_size)
++    # TODO(PYTORCH-10053): revert this change once cnnl supported same implementation as cuda
++    if input.device.type == 'mlu':
++        return torch.ops.torch_mlu.max_unpool2d(input, indices, kernel_size, _stride, padding, output_size)
++    else:
++        return torch._C._nn.max_unpool2d(input, indices, output_size)
+ 
+ 
+ def max_unpool3d(
+@@ -1113,6 +1125,10 @@ def adaptive_max_pool2d_with_indices(
+             double-integer tuple)
+         return_indices: whether to return pooling indices. Default: ``False``
+     """
++    if input.is_mlu and return_indices:
++        warnings.warn("Different with the origin CPU or GPU ops, the max indices returned by "
++                      "MLU adaptive_max_pool2d_with_indices are local max indices inside the kernel. ")
++
+     if has_torch_function_unary(input):
+         return handle_torch_function(
+             adaptive_max_pool2d_with_indices, (input,), input, output_size, return_indices=return_indices

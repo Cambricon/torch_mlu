@@ -1,0 +1,34 @@
+{
+    "device_count": 8,
+    "test_linear": [
+        {
+            "CaseName": "test_linear_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlMatMulEx",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+diff --git a/c10/core/impl/DeviceGuardImplInterface.h b/c10/core/impl/DeviceGuardImplInterface.h
+index 2cfc8c443d..bde9937aff 100644
+--- a/c10/core/impl/DeviceGuardImplInterface.h
++++ b/c10/core/impl/DeviceGuardImplInterface.h
+@@ -38,6 +38,9 @@ enum class EventFlag {
+   // HIP flags
+   HIP_EVENT_DEFAULT,
+   HIP_EVENT_DISABLE_TIMING, // PyTorch-default for HIP
++  // MLU flags
++  MLU_EVENT_DEFAULT,
++  MLU_EVENT_DISABLE_TIMING,
+   // FOR TESTING ONLY
+   INVALID
+ };

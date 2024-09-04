@@ -1,0 +1,93 @@
+{
+    "device_count": 8,
+    "test_matmul": [
+        {
+            "CaseName": "test_matmul",
+            "Events": [
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 240
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 50
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 50
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 370
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 234
+                }
+            ]
+        },
+        {
+            "CaseName": "test_matmul_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 25
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 37
+                }
+            ]
+        },
+        {
+            "CaseName": "test_matmul_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_matmul_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 100
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 25
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 101
+                }
+            ]
+        }
+    ]
+}

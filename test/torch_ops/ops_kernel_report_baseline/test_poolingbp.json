@@ -1,0 +1,305 @@
+{
+    "device_count": 8,
+    "test_poolingbp": [
+        {
+            "CaseName": "test_avgpool1d_backward_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4284
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3024
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2592
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool1d_backward_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 9144
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 2304
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4032
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3456
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool2d_backward_batch",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5148
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6048
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5184
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool2d_backward_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 9144
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 2304
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4032
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3456
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool3d_backward_batch",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool3d_backward_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool1d_backward_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool1d_backward_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 108
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool2d_backward_batch",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool2d_backward_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool3d_backward_batch",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool3d_backward_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlPoolingBackward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        }
+    ]
+}

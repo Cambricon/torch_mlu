@@ -1,0 +1,199 @@
+{
+    "device_count": 8,
+    "test_sqrt": [
+        {
+            "CaseName": "test_sqrt",
+            "Events": [
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_",
+            "Events": [
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_backward",
+            "Events": [
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 15
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_floating_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_inplace_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_integral_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sqrt_permute",
+            "Events": [
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

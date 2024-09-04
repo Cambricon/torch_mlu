@@ -1,0 +1,135 @@
+{
+    "device_count": 8,
+    "test_polar": [
+        {
+            "CaseName": "test_poalr_backward",
+            "Events": [
+                {
+                    "Name": "cnnlPolar",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlSign",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlConj",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_polar",
+            "Events": [
+                {
+                    "Name": "cnnlPolar",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_polar_PYTORCH_11152",
+            "Events": [
+                {
+                    "Name": "cnnlPolar",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_polar_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlPolar",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_polar_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_polar_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlPolar",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 32
+                }
+            ]
+        }
+    ]
+}

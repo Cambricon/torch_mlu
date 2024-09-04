@@ -1,0 +1,699 @@
+diff --git a/torch/_tensor.py b/torch/_tensor.py
+index d529fcef639..ada24b8d2cb 100644
+--- a/torch/_tensor.py
++++ b/torch/_tensor.py
+@@ -383,20 +383,23 @@ class Tensor(torch._C._TensorBase):
+             )
+             return (torch._utils._rebuild_wrapper_subclass, arg_wrapper_subclass)
+         else:
+-            # TODO: Once we decide to break serialization FC, no longer
+-            # need to wrap with TypedStorage
+-            args = (
+-                torch.storage.TypedStorage(
+-                    wrap_storage=self._typed_storage()._untyped_storage,
+-                    dtype=self.dtype,
+-                    _internal=True,
+-                ),
+-                self.storage_offset(),
+-                tuple(self.size()),
+-                self.stride(),
+-                self.requires_grad,
+-                backward_hooks,
+-            )  # previously was self._backward_hooks
++            with warnings.catch_warnings():
++                warnings.filterwarnings("ignore",
++                    "Because 64 bit data were casted to 32 bit data on MLU memory, ")
++                # TODO: Once we decide to break serialization FC, no longer
++                # need to wrap with TypedStorage
++                args = (
++                    torch.storage.TypedStorage(
++                        wrap_storage=self._typed_storage()._untyped_storage,
++                        dtype=self.dtype,
++                        _internal=True,
++                    ),
++                    self.storage_offset(),
++                    tuple(self.size()),
++                    self.stride(),
++                    self.requires_grad,
++                    backward_hooks,
++                )  # previously was self._backward_hooks
+ 
+             metadata = torch._utils.get_tensor_metadata(self)
+             if metadata:
+diff --git a/torch/_utils.py b/torch/_utils.py
+index 048b987cb8b..2f23fe9115e 100644
+--- a/torch/_utils.py
++++ b/torch/_utils.py
+@@ -176,9 +176,12 @@ def _get_async_or_non_blocking(function_name, non_blocking, kwargs):
+ # TODO: Once we decide to break serialization FC, `storage` no longer needs to
+ # be a TypedStorage
+ def _rebuild_tensor(storage, storage_offset, size, stride):
+-    # first construct a tensor with the correct dtype/device
+-    t = torch.tensor([], dtype=storage.dtype, device=storage._untyped_storage.device)
+-    return t.set_(storage._untyped_storage, storage_offset, size, stride)
++    with warnings.catch_warnings():
++        warnings.filterwarnings("ignore",
++            "Because 64 bit data were casted to 32 bit data on MLU memory, ")
++        # first construct a tensor with the correct dtype/device
++        t = torch.tensor([], dtype=storage.dtype, device=storage._untyped_storage.device)
++        return t.set_(storage._untyped_storage, storage_offset, size, stride)
+ 
+ 
+ def get_tensor_metadata(tensor):
+diff --git a/torch/csrc/DynamicTypes.cpp b/torch/csrc/DynamicTypes.cpp
+index c6086c7afea..037fafb0b81 100644
+--- a/torch/csrc/DynamicTypes.cpp
++++ b/torch/csrc/DynamicTypes.cpp
+@@ -79,6 +79,20 @@ THPLayout* getTHPLayout(at::Layout layout) {
+   return thp_layout;
+ }
+ 
++PyTypeObject* MLU_loadUntypedStorageTypeObject() {
++  PyObject* MLU_module = PyImport_ImportModule("torch.mlu");
++  TORCH_INTERNAL_ASSERT(MLU_module && PyModule_Check(MLU_module));
++  PyObject* untyped_storage_obj =
++      PyObject_GetAttrString(MLU_module, "UntypedStorage");
++  TORCH_INTERNAL_ASSERT(untyped_storage_obj && PyType_Check(untyped_storage_obj));
++  return reinterpret_cast<PyTypeObject*>(untyped_storage_obj);
++}
++
++PyTypeObject* MLU_getUntypedStorageTypeObject() {
++  static PyTypeObject* untyped_storage_type_obj = MLU_loadUntypedStorageTypeObject();
++  return untyped_storage_type_obj;
++}
++
+ PyObject* createPyObject(const at::Storage& storage) {
+   // Note [Invalid Python Storages]
+   // When a user creates a python tensor wrapper subclass, the subclass
+@@ -88,7 +102,8 @@ PyObject* createPyObject(const at::Storage& storage) {
+   // information about storages from python). However, any accesses to the
+   // data_ptr is not allowed, through methods like
+   // x.untyped_storage().data_ptr()
+-  PyTypeObject* type = reinterpret_cast<PyTypeObject*>(THPStorageClass);
++  PyTypeObject* type = (storage.device_type() == at::DeviceType::PrivateUse1) ?
++      MLU_getUntypedStorageTypeObject() : reinterpret_cast<PyTypeObject*>(THPStorageClass);
+   auto obj = THPObjectPtr(type->tp_alloc(type, 0));
+   if (!obj)
+     throw python_error();
+@@ -118,6 +133,13 @@ bool isStorage(PyObject* obj) {
+   if (PyObject_TypeCheck(obj, getTypedStorageTypeObject())) {
+     return true;
+   }
++
++  if (PyObject_HasAttrString(PyImport_ImportModule("torch"), "mlu")
++      && PyObject_HasAttrString(PyImport_ImportModule("torch.mlu"), "UntypedStorage")
++      && PyObject_TypeCheck(obj, MLU_getUntypedStorageTypeObject())) {
++    return true;
++  }
++
+   auto obj_type = Py_TYPE(obj);
+ 
+   return obj_type == reinterpret_cast<PyTypeObject*>(THPStorageClass);
+@@ -151,7 +173,10 @@ at::Storage createStorageGetType(
+   }
+ 
+   if (Py_TYPE(untyped_storage_obj) !=
+-      reinterpret_cast<PyTypeObject*>(THPStorageClass)) {
++      reinterpret_cast<PyTypeObject*>(THPStorageClass) &&
++      (PyObject_HasAttrString(PyImport_ImportModule("torch"), "mlu") &&
++       PyObject_HasAttrString(PyImport_ImportModule("torch.mlu"), "UntypedStorage") &&
++          PyObject_TypeCheck(untyped_storage_obj, MLU_getUntypedStorageTypeObject()) == 0)) {
+     throw TypeError("not a storage '%s'", Py_TYPE(obj)->tp_name);
+   }
+ 
+diff --git a/torch/package/package_exporter.py b/torch/package/package_exporter.py
+index 684b9f4fcbf..17d1afd52c4 100644
+--- a/torch/package/package_exporter.py
++++ b/torch/package/package_exporter.py
+@@ -914,6 +914,10 @@ class PackageExporter:
+     def _persistent_id(self, obj):
+         if torch.is_storage(obj) or isinstance(obj, torch.storage.TypedStorage):
+             storage: Storage
++            untyped_tuple = (torch.UntypedStorage)
++            if type(obj).__module__.split(".")[0] == 'torch_mlu':
++                import torch_mlu
++                untyped_tuple = (torch.UntypedStorage, torch.mlu.UntypedStorage)
+             if isinstance(obj, torch.storage.TypedStorage):
+                 # TODO: Once we decide to break serialization FC, we can
+                 # remove this case
+@@ -923,7 +927,7 @@ class PackageExporter:
+                 storage = cast(Storage, untyped_storage)
+                 storage_numel = obj.size()
+ 
+-            elif isinstance(obj, torch.UntypedStorage):
++            elif isinstance(obj, untyped_tuple):
+                 untyped_storage = obj
+                 storage = cast(Storage, untyped_storage)
+                 storage_type = normalize_storage_type(type(storage))
+@@ -937,6 +941,11 @@ class PackageExporter:
+             storage_present = self.storage_context.has_storage(storage)
+             storage_id = self.storage_context.get_or_add_storage(storage)
+             if not storage_present:
++                # Here we need to carefully handle the 64-bit scenario and make
++                # a copy of of MLU D2H according to the dtype in advance.
++                if storage.device.type == "mlu" and isinstance(obj, torch.storage.TypedStorage) \
++                    and obj.dtype in [torch.double, torch.cdouble]:
++                    storage = obj.cpu().untyped()
+                 if storage.device.type != "cpu":
+                     storage = storage.cpu()
+                 num_bytes = storage.nbytes()
+diff --git a/torch/package/package_importer.py b/torch/package/package_importer.py
+index 13b96f13d87..028f7d09819 100644
+--- a/torch/package/package_importer.py
++++ b/torch/package/package_importer.py
+@@ -27,6 +27,7 @@ from ._package_unpickler import PackageUnpickler
+ from .file_structure_representation import _create_directory_from_file_list, Directory
+ from .glob_group import GlobPattern
+ from .importer import Importer
++import warnings
+ 
+ __all__ = ["PackageImporter"]
+ 
+@@ -243,9 +244,12 @@ class PackageImporter(Importer):
+                 storage = loaded_storages[key]
+                 # TODO: Once we decide to break serialization FC, we can
+                 # stop wrapping with TypedStorage
+-                return torch.storage.TypedStorage(
+-                    wrap_storage=storage._untyped_storage, dtype=dtype, _internal=True
+-                )
++                with warnings.catch_warnings():
++                    warnings.filterwarnings("ignore",
++                    "Because 64 bit data were casted to 32 bit data on MLU memory, ")
++                    return torch.storage.TypedStorage(
++                        wrap_storage=storage._untyped_storage, dtype=dtype, _internal=True
++                    )
+             elif typename == "reduce_package":
+                 # to fix BC breaking change, objects on this load path
+                 # will be loaded multiple times erroneously
+diff --git a/torch/serialization.py b/torch/serialization.py
+index b1399eebbf9..de32f6aca21 100644
+--- a/torch/serialization.py
++++ b/torch/serialization.py
+@@ -322,14 +322,17 @@ def _meta_deserialize(obj, location):
+ 
+ 
+ def _validate_privateuse1_device(location, backend_name):
+-    device = torch.device(location)
+-    device_index = device.index if device.index else 0
+     if not hasattr(torch, backend_name):
+         raise RuntimeError(f'The {backend_name.upper()} device module is not registered. '
+                            'If you are running on a CPU-only machine, '
+                            'please use torch.load with map_location=torch.device(\'cpu\') '
+                            'to map your storages to the CPU.')
+     device_module = getattr(torch, backend_name)
++    if hasattr(device_module, '_utils') and hasattr(device_module._utils, '_get_device_index'):
++        device_index = device_module._utils._get_device_index(location, True)
++    else:
++        device = torch.device(location)
++        device_index = device.index if device.index else 0
+     if hasattr(device_module, 'is_available') and not device_module.is_available():
+         raise RuntimeError(f'Attempting to deserialize object on a {backend_name.upper()} '
+                            f'device but torch.{backend_name}.is_available() is False. '
+@@ -387,7 +390,11 @@ def default_restore_location(storage, location):
+ 
+ 
+ def normalize_storage_type(storage_type):
+-    return getattr(torch, storage_type.__name__)
++    if storage_type.__module__.split(".")[0] == 'torch_mlu':
++        import torch_mlu
++        return getattr(torch.mlu, storage_type.__name__)
++    else:
++        return getattr(torch, storage_type.__name__)
+ 
+ 
+ def storage_to_tensor_type(storage):
+@@ -656,6 +663,10 @@ def _legacy_save(obj, f, pickle_module, pickle_protocol) -> None:
+ 
+         if isinstance(obj, torch.storage.TypedStorage) or torch.is_storage(obj):
+             storage: torch.UntypedStorage
++            untyped_tuple = (torch.UntypedStorage)
++            if type(obj).__module__.split(".")[0] == 'torch_mlu':
++                import torch_mlu
++                untyped_tuple = (torch.UntypedStorage, torch.mlu.UntypedStorage)
+ 
+             if isinstance(obj, torch.storage.TypedStorage):
+                 # TODO: Once we decide to break serialization FC, this case
+@@ -667,7 +678,7 @@ def _legacy_save(obj, f, pickle_module, pickle_protocol) -> None:
+                 dtype = obj.dtype
+                 storage_numel = obj._size()
+ 
+-            elif isinstance(obj, torch.UntypedStorage):
++            elif isinstance(obj, untyped_tuple):
+                 storage = obj
+                 storage_dtype = torch.uint8
+                 storage_type = normalize_storage_type(type(obj))
+@@ -764,6 +775,10 @@ def _legacy_save(obj, f, pickle_module, pickle_protocol) -> None:
+     f.flush()
+     for key in serialized_storage_keys:
+         storage, dtype = serialized_storages[key]
++        # Here we need to carefully handle the 64-bit scenario and make
++        # a copy of MLU D2H according to the dtype in advance.
++        if storage.device.type == 'mlu' and dtype in [torch.double, torch.cdouble]:
++            storage = torch.storage.TypedStorage(wrap_storage=storage, dtype=dtype).cpu()._untyped_storage
+         storage._write_file(f, _should_read_directly(f), True, torch._utils._element_size(dtype))
+ 
+ 
+@@ -814,6 +829,12 @@ def _save(obj, zip_file, pickle_module, pickle_protocol, _disable_byteorder_reco
+ 
+             storage_key = id_map.setdefault(storage._cdata, str(len(id_map)))
+             location = location_tag(storage)
++            # Here we need to carefully handle the 64-bit scenario and make
++            # a copy of MLU D2H in advance, because after passing this point,
++            # you will not be able to get the dtype information.
++            if isinstance(obj, torch.storage.TypedStorage) and obj.device.type == 'mlu' \
++                and storage_dtype in [torch.double, torch.cdouble]:
++                storage = obj.cpu()._untyped_storage
+             serialized_storages[storage_key] = storage
+ 
+             return ('storage',
+@@ -1122,19 +1143,43 @@ def _legacy_load(f, map_location, pickle_module, **pickle_load_args):
+                     key, location, storage_type = args
+                     dtype = storage_type._dtype
+                     obj = cast(Storage, torch.UntypedStorage)._new_with_file(f, torch._utils._element_size(dtype))
+-                    obj = restore_location(obj, location)
+-                    # TODO: Once we decide to break serialization FC, we can
+-                    # stop wrapping with TypedStorage
+-                    deserialized_objects[key] = torch.storage.TypedStorage(
+-                        wrap_storage=obj,
+-                        dtype=dtype,
+-                        _internal=True)
++
++                    # Here we need to carefully handle the 64-bit scenario.
++                    # Currently we deliberately delay MLU H2D copy, because
++                    # after passing this point, we can get the dtype information.
++                    res, mapped_location = _get_mapped_location(obj, map_location, location)
++                    if res == None:
++                        if mapped_location.startswith('mlu') and \
++                            dtype in [torch.double, torch.cdouble]:
++                            obj_real = obj
++                            obj = cast(Storage, torch.UntypedStorage(obj.nbytes()))
++                            obj._torch_load_uninitialized = True
++                        # TODO: Once we decide to break serialization FC, we can
++                        # stop wrapping with TypedStorage
++                        deserialized_objects[key] = torch.storage.TypedStorage(
++                            wrap_storage=restore_location(obj, location),
++                            dtype=dtype)
++                        # MLU 64-bit H2D
++                        if getattr(obj, "_torch_load_uninitialized", False):
++                            deserialized_objects[key].copy_(torch.storage.TypedStorage(
++                                wrap_storage=obj_real, dtype=dtype))
++                    else:
++                        # TODO: Once we decide to break serialization FC, we can
++                        # stop wrapping with TypedStorage
++                        deserialized_objects[key] = torch.storage.TypedStorage(
++                            wrap_storage=res,
++                            dtype=dtype)
+ 
+                 storage_views = pickle_module.load(f, **pickle_load_args)
+                 for target_cdata, root_cdata, offset, numel in storage_views:
+                     root = deserialized_objects[root_cdata]
+                     element_size = torch._utils._element_size(root.dtype)
+                     offset_bytes = offset * element_size
++                    # Here we need to carefully handle the 64-bit scenario.
++                    # Only half of the mlu untyped storage is effective.
++                    if root.device.type == 'mlu' \
++                        and root.dtype in [torch.double, torch.cdouble]:
++                        offset_bytes = offset_bytes / 2
+                     # TODO: Once we decide to break serialization FC, we can
+                     # stop wrapping with TypedStorage
+                     deserialized_objects[target_cdata] = torch.storage.TypedStorage(
+@@ -1205,6 +1250,11 @@ def _legacy_load(f, map_location, pickle_module, **pickle_load_args):
+             if view_metadata is not None:
+                 view_key, offset, view_size = view_metadata
+                 offset_bytes = offset * torch._utils._element_size(dtype)
++                # Here we need to carefully handle the 64-bit scenario.
++                # Only half of the mlu untyped storage is effective.
++                if typed_storage.device.type == 'mlu' \
++                    and dtype in [torch.double, torch.cdouble]:
++                    offset_bytes = offset_bytes / 2
+                 view_size_bytes = view_size * torch._utils._element_size(dtype)
+                 if view_key not in deserialized_objects:
+                     # TODO: Once we decide to break serialization FC, we can
+@@ -1261,9 +1311,19 @@ def _legacy_load(f, map_location, pickle_module, **pickle_load_args):
+     for key in deserialized_storage_keys:
+         assert key in deserialized_objects
+         typed_storage = deserialized_objects[key]
+-        typed_storage._untyped_storage._set_from_file(
+-            f, offset, f_should_read_directly,
+-            torch._utils._element_size(typed_storage.dtype))
++        # MLU 64-bit H2D
++        if typed_storage.device.type == 'mlu' \
++            and typed_storage.dtype in [torch.double, torch.cdouble]:
++            tmp_storage = torch.UntypedStorage(typed_storage.nbytes())
++            tmp_storage._set_from_file(
++                f, offset, f_should_read_directly,
++                torch._utils._element_size(typed_storage.dtype))
++            typed_storage.copy_(torch.storage.TypedStorage(
++                wrap_storage=tmp_storage, dtype=typed_storage.dtype))
++        else:
++            typed_storage._untyped_storage._set_from_file(
++                f, offset, f_should_read_directly,
++                torch._utils._element_size(typed_storage.dtype))
+         if offset is not None:
+             offset = f.tell()
+ 
+@@ -1305,6 +1365,18 @@ def _get_restore_location(map_location):
+             return result
+     return restore_location
+ 
++def _get_mapped_location(storage, map_location, location):
++    if map_location is None:
++        return None, location
++    elif isinstance(map_location, dict):
++        return None, map_location.get(location, location)
++    elif isinstance(map_location, (str, bytes)):
++        return None, map_location
++    elif isinstance(map_location, torch.device):
++        return None, str(map_location)
++    else:
++        result = map_location(storage, location)
++        return result, location
+ 
+ class StorageType:
+     def __init__(self, name):
+@@ -1360,12 +1432,31 @@ def _load(zip_file, map_location, pickle_module, pickle_file='data.pkl', overall
+             if byteorderdata.decode() != sys.byteorder:
+                 storage.byteswap(dtype)
+ 
+-        # TODO: Once we decide to break serialization FC, we can
+-        # stop wrapping with TypedStorage
+-        typed_storage = torch.storage.TypedStorage(
+-            wrap_storage=restore_location(storage, location),
+-            dtype=dtype,
+-            _internal=True)
++        # Here we need to carefully handle the 64-bit scenario.
++        # Currently we deliberately delay MLU H2D copy, because
++        # after passing this point, we can get the dtype information.
++        res, mapped_location = _get_mapped_location(storage, map_location, location)
++        if res == None:
++            if mapped_location.startswith('mlu') and \
++                dtype in [torch.double, torch.cdouble]:
++                storage_real = storage
++                storage = cast(Storage, torch.UntypedStorage(numel))
++                storage._torch_load_uninitialized = True
++            # TODO: Once we decide to break serialization FC, we can
++            # stop wrapping with TypedStorage
++            typed_storage = torch.storage.TypedStorage(
++                wrap_storage=restore_location(storage, location),
++                dtype=dtype)
++            # MLU 64-bit H2D
++            if getattr(storage, "_torch_load_uninitialized", False):
++                typed_storage.copy_(torch.storage.TypedStorage(
++                    wrap_storage=storage_real, dtype=dtype))
++        else:
++            # TODO: Once we decide to break serialization FC, we can
++            # stop wrapping with TypedStorage
++            typed_storage = torch.storage.TypedStorage(
++                wrap_storage=res,
++                dtype=dtype)
+ 
+         if typed_storage._data_ptr() != 0:
+             loaded_storages[key] = typed_storage
+@@ -1380,7 +1471,11 @@ def _load(zip_file, map_location, pickle_module, pickle_file='data.pkl', overall
+         assert typename == 'storage', \
+             f"Unknown typename for persistent_load, expected 'storage' but got '{typename}'"
+         storage_type, key, location, numel = data
+-        if storage_type is torch.UntypedStorage:
++        untyped_list = [torch.UntypedStorage]
++        if 'mlu' in location:
++            import torch_mlu
++            untyped_list.append(torch.mlu.UntypedStorage)
++        if storage_type in untyped_list:
+             dtype = torch.uint8
+         else:
+             dtype = storage_type.dtype
+diff --git a/torch/storage.py b/torch/storage.py
+index 5c9dd90f5bd..b874eb209c6 100644
+--- a/torch/storage.py
++++ b/torch/storage.py
+@@ -39,6 +39,8 @@ class _StorageBase:
+ 
+     def type(self, dtype: _Optional[str] = None, non_blocking: bool = False) -> T: ...  # type: ignore[empty-body, misc, type-var] # noqa: E704
+     def cuda(self, device=None, non_blocking=False, **kwargs) -> T: ...  # type: ignore[empty-body, misc, type-var] # noqa: E704
++    # Implemented in torch_mlu/torch_mlu/storage.py
++    def mlu(self, device=None, non_blocking=False, **kwargs) -> T: ...  # type: ignore[empty-body, misc, type-var] # noqa: E704
+     def hpu(self, device=None, non_blocking=False, **kwargs) -> T: ...  # type: ignore[empty-body, misc, type-var] # noqa: E704
+     def element_size(self) -> int: ...  # type: ignore[empty-body, type-var] # noqa: E704
+ 
+@@ -78,6 +80,8 @@ class _StorageBase:
+     @property
+     def is_cuda(self): ...  # noqa: E704
+     @property
++    def is_mlu(self): ...  # noqa: E704
++    @property
+     def is_hpu(self): ...  # noqa: E704
+     @classmethod
+     def from_file(cls, filename, shared, nbytes) -> T: ...  # type: ignore[empty-body, misc, type-var] # noqa: E704
+@@ -198,7 +202,7 @@ class _StorageBase:
+         """Casts this storage to complex float type"""
+         return self._to(torch.cfloat)
+ 
+-    def is_pinned(self, device: Union[str, torch.device] = 'cuda'):
++    def is_pinned(self, device: Union[str, torch.device] = 'mlu'):
+         r"""Determine whether the CPU storage is already pinned on device.
+ 
+         Args:
+@@ -210,7 +214,7 @@ class _StorageBase:
+         return torch.tensor([], dtype=torch.uint8, device=self.device).set_(
+             cast(Storage, self)).is_pinned(device)
+ 
+-    def pin_memory(self, device: Union[str, torch.device] = 'cuda'):
++    def pin_memory(self, device: Union[str, torch.device] = 'mlu'):
+         r"""Copies the CPU storage to pinned memory, if it's not already pinned.
+ 
+         Args:
+@@ -317,6 +321,10 @@ class UntypedStorage(torch._C.StorageBase, _StorageBase):
+     def is_cuda(self):
+         return self.device.type == 'cuda'
+ 
++    @property
++    def is_mlu(self):
++        return self.device.type == 'mlu'
++
+     @property
+     def is_hpu(self):
+         return self.device.type == 'hpu'
+@@ -394,6 +402,9 @@ def _get_storage_from_sequence(sequence, dtype, device):
+             sequence,
+             dtype=dtype,
+             device=device)
++    with warnings.catch_warnings():
++        warnings.filterwarnings("ignore",
++            "Because 64 bit data were casted to 32 bit data on MLU memory, ")
+ 
+     return tmp_tensor._typed_storage()._untyped_storage
+ 
+@@ -438,6 +449,8 @@ def _reset_warn_typed_storage_removal():
+ def _get_device_from_module(module: str):
+     if module.split(".")[-1] in ["cuda", torch._C._get_privateuse1_backend_name()]:
+         return module.split(".")[-1]
++    elif module == "torch_mlu":
++        return "mlu"
+     else:
+         return "cpu"
+ 
+@@ -507,8 +520,8 @@ class TypedStorage:
+                         arg_error_msg +
+                         "\nNo positional arguments should be given when using "
+                         "'wrap_storage'")
+-
+-                if not isinstance(wrap_storage, torch.UntypedStorage):
++                module_untyped = (torch.UntypedStorage, torch.mlu.UntypedStorage) if hasattr(torch, 'mlu') else (torch.UntypedStorage)
++                if not isinstance(wrap_storage, module_untyped):
+                     raise TypeError(
+                         arg_error_msg +
+                         f"\nArgument 'wrap_storage' must be UntypedStorage, but got {type(wrap_storage)}")
+@@ -561,8 +574,8 @@ class TypedStorage:
+                     "\nArgument 'device' should not be specified when 'wrap_storage' is given")
+ 
+             self.dtype = dtype
+-
+-            if not isinstance(wrap_storage, torch.UntypedStorage):
++            module_untyped = (torch.UntypedStorage, torch.mlu.UntypedStorage) if hasattr(torch, 'mlu') else (torch.UntypedStorage)
++            if not isinstance(wrap_storage, module_untyped):
+                 raise TypeError(
+                     arg_error_msg +
+                     f"\nArgument 'wrap_storage' must be UntypedStorage, but got {type(wrap_storage)}")
+@@ -576,13 +589,20 @@ class TypedStorage:
+             if self.dtype in [torch.quint8, torch.quint4x2, torch.quint2x4, torch.qint32, torch.qint8]:
+                 if device.type == 'cuda':
+                     raise RuntimeError("Cannot create CUDA storage with quantized dtype")
++                if device.type == 'mlu':
++                    raise RuntimeError("Cannot create MLU storage with quantized dtype")
+ 
+             if len(args) == 0:
+-                self._untyped_storage = torch.UntypedStorage(device=device)
++                self._untyped_storage = torch.UntypedStorage(
++                    device=device) if device.type != 'mlu' else torch.mlu.UntypedStorage(
++                        device=device)
+ 
+             elif len(args) == 1:
+                 if _isint(args[0]):
+-                    self._untyped_storage = torch.UntypedStorage(int(args[0]) * self._element_size(), device=device)
++                    self._untyped_storage = torch.UntypedStorage(
++                        int(args[0]) * self._element_size(),
++                        device=device) if device.type != 'mlu' else torch.mlu.UntypedStorage(
++                            int(args[0]) * self._element_size(), device=device)
+                 elif isinstance(args[0], collections.abc.Sequence):
+                     self._untyped_storage = _get_storage_from_sequence(args[0], self.dtype, device)
+                 else:
+@@ -600,6 +620,11 @@ class TypedStorage:
+         _warn_typed_storage_removal()
+         return self._untyped_storage.device.type == 'cuda'
+ 
++    @property
++    def is_mlu(self):
++        _warn_typed_storage_removal()
++        return self._untyped_storage.device.type == 'mlu'
++
+     @property
+     def is_hpu(self):
+         _warn_typed_storage_removal()
+@@ -608,10 +633,14 @@ class TypedStorage:
+     def untyped(self):
+         """Returns the internal :class:`torch.UntypedStorage`"""
+         _warn_typed_storage_removal()
++        if self.device.type == 'mlu' and self.dtype in [torch.float64, torch.complex128]:
++            warnings.warn("Because 64 bit data were casted to 32 bit data on MLU memory, "
++                "the behavior of getting a untyped storage from a 64-bit typed storage is dangerous.")
+         return self._untyped_storage
+ 
+     def _new_wrapped_storage(self, untyped_storage):
+-        assert type(untyped_storage) == torch.UntypedStorage
++        assert (type(untyped_storage) == torch.UntypedStorage
++                or (hasattr(torch, 'mlu') and type(untyped_storage) == torch.mlu.UntypedStorage))
+ 
+         if type(self) == TypedStorage:
+             return TypedStorage(
+@@ -714,10 +743,16 @@ class TypedStorage:
+ 
+     def copy_(self, source: T, non_blocking: _Optional[bool] = None):
+         _warn_typed_storage_removal()
++
+         if isinstance(source, TypedStorage):
+-            self._untyped_storage.copy_(source._untyped_storage, non_blocking)  # type: ignore[arg-type]
++            if self.device.type == 'mlu' or source.device.type == 'mlu':
++                tmp_tensor_1 = torch.tensor([], dtype=self.dtype, device=self.device).set_(self)
++                tmp_tensor_2 = torch.tensor([], dtype=source.dtype, device=source.device).set_(source)
++                tmp_tensor_1.copy_(tmp_tensor_2)
++            else:
++                self._untyped_storage.copy_(source._untyped_storage, non_blocking)  # type: ignore[arg-type]
+         else:
+-            self._untyped_storage.copy_(source, non_blocking)  # type: ignore[arg-type]
++                self._untyped_storage.copy_(source, non_blocking)  # type: ignore[arg-type]
+         return self
+ 
+     def nbytes(self):
+@@ -748,6 +783,19 @@ class TypedStorage:
+         cuda_storage: torch.UntypedStorage = self._untyped_storage.cuda(device, non_blocking, **kwargs)
+         return self._new_wrapped_storage(cuda_storage)
+ 
++    def mlu(self, device=None, non_blocking=False, **kwargs) -> T:  # type: ignore[misc, type-var]
++        _warn_typed_storage_removal()
++        if self.dtype in [torch.quint8, torch.quint4x2, torch.quint2x4, torch.qint32, torch.qint8]:
++            raise RuntimeError("Cannot create MLU storage with quantized dtype")
++        elif self.dtype in [torch.float64, torch.complex128]:
++            if device is None:
++                device = torch.mlu.current_device()
++            mlu_untyped = _get_storage_from_sequence(self.tolist(), self.dtype, device)
++            return self._new_wrapped_storage(mlu_untyped)
++        else:
++            mlu_untyped = torch.mlu.UntypedStorage.mlu(self, device, non_blocking, **kwargs)
++            return self._new_wrapped_storage(mlu_untyped)
++
+     def hpu(self, device=None, non_blocking=False, **kwargs) -> T:  # type: ignore[misc, type-var]
+         _warn_typed_storage_removal()
+         if self.dtype in [torch.quint8, torch.quint4x2, torch.quint2x4, torch.qint32, torch.qint8]:
+@@ -815,6 +863,8 @@ class TypedStorage:
+     def cpu(self):
+         """Returns a CPU copy of this storage if it's not already on the CPU"""
+         _warn_typed_storage_removal()
++        if self.device.type == 'mlu':
++            return torch.tensor([], dtype=self.dtype, device=self.device).set_(self).cpu().storage()
+         return self._new_wrapped_storage(self._untyped_storage.cpu())
+ 
+     def is_pinned(self, device: Union[str, torch.device] = 'cuda'):
+@@ -839,6 +889,8 @@ class TypedStorage:
+             A pinned CPU storage.
+         """
+         _warn_typed_storage_removal()
++        if device == "mlu":
++            self._untyped_storage = torch.mlu.UntypedStorage(self._untyped_storage.size()).copy_(self._untyped_storage, False)
+         return self._new_wrapped_storage(self._untyped_storage.pin_memory(device=device))
+ 
+     def share_memory_(self):
+@@ -863,7 +915,10 @@ class TypedStorage:
+         if device is None:
+             device = 'cpu'
+         device = torch.device(device)
+-        untyped_storage = torch.UntypedStorage._new_shared(size * self._element_size(), device=device)
++        if device.type == 'mlu':
++            untyped_storage = torch.mlu.UntypedStorage._new_shared(size * self._element_size(), device=device)
++        else:
++            untyped_storage = torch.UntypedStorage._new_shared(size * self._element_size(), device=device)
+         return TypedStorage(
+             wrap_storage=untyped_storage,
+             dtype=self.dtype,
+@@ -1049,10 +1104,15 @@ class TypedStorage:
+         _warn_typed_storage_removal()
+         if cls == TypedStorage:
+             raise RuntimeError('from_file can only be called on derived classes')
+-        untyped_storage: UntypedStorage = UntypedStorage.from_file(
+-            filename,
+-            shared,
+-            size * torch._utils._element_size(cls.dtype))
++        device=_get_device_from_module(cls.__module__)
++        untyped_storage: UntypedStorage = None
++        if device == "mlu":
++            UntypedStorage = torch.mlu.UntypedStorage.from_file(
++                filename, shared, size * torch._utils._element_size(cls.dtype))
++        else:
++            UntypedStorage = UntypedStorage.from_file(
++                filename, shared, size * torch._utils._element_size(cls.dtype))
++
+         storage = cls(wrap_storage=untyped_storage)
+         return storage
+ 
+@@ -1072,6 +1132,9 @@ class TypedStorage:
+     def _share_cuda_(self, *args, **kwargs):
+         return self._untyped_storage._share_cuda_(*args, **kwargs)
+ 
++    def _share_mlu_(self, *args, **kwargs):
++        return self._untyped_storage._share_mlu_(*args, **kwargs)
++
+     def is_shared(self):
+         _warn_typed_storage_removal()
+         return self._is_shared()
+@@ -1084,6 +1147,10 @@ class TypedStorage:
+     def _new_shared_cuda(cls, *args, **kwargs):
+         return torch.UntypedStorage._new_shared_cuda(*args, **kwargs)
+ 
++    @classmethod
++    def _new_shared_mlu(cls, *args, **kwargs):
++        return torch.mlu.UntypedStorage._new_shared_mlu(*args, **kwargs)
++
+     def _share_filename_cpu_(self, *args, **kwargs):
+         manager_handle, storage_handle, size = self._untyped_storage._share_filename_cpu_(*args, **kwargs)
+         return manager_handle, storage_handle, size // self._element_size()
+@@ -1096,6 +1163,10 @@ class TypedStorage:
+     def _release_ipc_counter(cls, *args, device=None, **kwargs):
+         return torch.UntypedStorage._release_ipc_counter_cuda(*args, **kwargs)
+ 
++    @classmethod
++    def _release_ipc_counter_mlu(cls, *args, device=None, **kwargs):
++        return torch.mlu.UntypedStorage._release_ipc_counter_mlu(*args, **kwargs)
++
+     def _shared_incref(self, *args, **kwargs):
+         return self._untyped_storage._shared_incref(*args, **kwargs)
+ 
+@@ -1143,6 +1214,10 @@ class _LegacyStorage(TypedStorage, metaclass=_LegacyStorageMeta):
+     def _release_ipc_counter(cls, *args, **kwargs):
+         return torch.UntypedStorage._release_ipc_counter_cuda(*args, **kwargs)
+ 
++    @classmethod
++    def _release_ipc_counter_mlu(cls, *args, **kwargs):
++        return torch.mlu.UntypedStorage._release_ipc_counter_mlu(*args, **kwargs)
++
+     @classmethod
+     def _new_shared_filename(cls, manager, obj, size):
+         bytes_size = size * torch._utils._element_size(cls.dtype)

@@ -1,0 +1,13 @@
+diff --git a/torchgen/api/cpp.py b/torchgen/api/cpp.py
+index c3b12d0336..ac9b6a3232 100644
+--- a/torchgen/api/cpp.py
++++ b/torchgen/api/cpp.py
+@@ -252,6 +252,8 @@ def returntype_type(t: Type, *, mutable: bool, symint: bool = False) -> CType:
+         elem = returntype_type(t.elem, mutable=False, symint=symint)
+         assert t.size is None, f"fixed size list returns not supported: {t}"
+         return VectorCType(elem)
++    elif isinstance(t, OptionalType):
++        return OptionalCType(BaseCType(tensorT))
+ 
+     raise AssertionError(f"unrecognized return type {t}")
+ 

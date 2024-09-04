@@ -1,0 +1,80 @@
+{
+    "device_count": 8,
+    "test_nn_fold": [
+        {
+            "CaseName": "test_fold_invalid_arg",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nn_fold",
+            "Events": [
+                {
+                    "Name": "cnnlCol2Im",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 3712
+                },
+                {
+                    "Name": "cnnlIm2Col",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1024
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3072
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3072
+                }
+            ]
+        },
+        {
+            "CaseName": "test_nn_fold_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlCol2Im",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1856
+                },
+                {
+                    "Name": "cnnlIm2Col",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 512
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1536
+                }
+            ]
+        }
+    ]
+}

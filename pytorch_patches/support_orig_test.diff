@@ -1,0 +1,370 @@
+diff --git a/torch/testing/_comparison.py b/torch/testing/_comparison.py
+index 4bb6cf6c5a..ceed5f4050 100644
+--- a/torch/testing/_comparison.py
++++ b/torch/testing/_comparison.py
+@@ -1007,8 +1007,11 @@ class TensorLikePair(Pair):
+         identifier: Optional[Union[str, Callable[[str], str]]] = None,
+     ) -> None:
+         """Checks if the values of two tensors are close up to a desired tolerance."""
++        # TODO(PYTORCH-9163): isclose failed, fallback to cpu.
+         matches = torch.isclose(
+-            actual, expected, rtol=rtol, atol=atol, equal_nan=equal_nan
++            actual.cpu(), expected.cpu(), rtol=rtol, atol=atol, equal_nan=equal_nan
++        # matches = torch.isclose(
++        #     actual, expected, rtol=rtol, atol=atol, equal_nan=equal_nan
+         )
+         if torch.all(matches):
+             return
+@@ -1022,9 +1025,13 @@ class TensorLikePair(Pair):
+                 identifier=identifier,
+             )
+         else:
++            # TODO(PYTORCH-9163): isclose failed, fallback to cpu.
+             msg = make_tensor_mismatch_msg(
+-                actual, expected, matches, rtol=rtol, atol=atol, identifier=identifier
++                actual.cpu(), expected.cpu(), matches, rtol=rtol, atol=atol, identifier=identifier
+             )
++            # msg = make_tensor_mismatch_msg(
++            #     actual, expected, matches, rtol=rtol, atol=atol, identifier=identifier
++            # )
+         self._fail(AssertionError, msg)
+ 
+     def extra_repr(self) -> Sequence[str]:
+diff --git a/torch/testing/_creation.py b/torch/testing/_creation.py
+index 6ded7ff578..4d8d9b2d8e 100644
+--- a/torch/testing/_creation.py
++++ b/torch/testing/_creation.py
+@@ -156,6 +156,20 @@ def make_tensor(
+             return math.ceil(low), math.ceil(high)
+ 
+         return low, high
++    # TODO(PYTORCH-8723):
++    # Currently, use cpu make_tensor and copy result to mlu if device is mlu.
++    # In order not to block the ut test.
++    # device: Union[str, torch.device]
++    org_device = device
++    mlu_convert_to_cpu = False
++    if isinstance(device, str) and "mlu" in device:
++        device = 'cpu'
++        mlu_convert_to_cpu = True
++    if isinstance(device, torch.device) and device.type == "mlu":
++        device = 'cpu'
++        mlu_convert_to_cpu = True
++
++
+ 
+     if len(shape) == 1 and isinstance(shape[0], collections.abc.Sequence):
+         shape = shape[0]  # type: ignore[assignment]
+@@ -234,6 +248,8 @@ def make_tensor(
+             1 if dtype in _BOOLEAN_OR_INTEGRAL_TYPES else torch.finfo(dtype).tiny
+         )
+ 
++    # TODO(PYTORCH-8723): Copy CPU Tensor to MLU
++    result = result.to(org_device) if mlu_convert_to_cpu else result
+     if dtype in _FLOATING_OR_COMPLEX_TYPES:
+         result.requires_grad = requires_grad
+ 
+diff --git a/torch/testing/_internal/common_device_type.py b/torch/testing/_internal/common_device_type.py
+index dc984e7b4a..5bea75ba39 100644
+--- a/torch/testing/_internal/common_device_type.py
++++ b/torch/testing/_internal/common_device_type.py
+@@ -525,6 +525,32 @@ class CUDATestBase(DeviceTypeTestBase):
+         # Acquires the current device as the primary (test) device
+         cls.primary_device = f'cuda:{torch.cuda.current_device()}'
+ 
++if torch.is_mlu_available():
++    class MLUTestBase(DeviceTypeTestBase):
++        device_type = 'mlu'
++        def has_cudnn(self):
++            return True
++
++        @classmethod
++        def get_primary_device(cls):
++            if hasattr(cls, "primary_device"):
++                return cls.primary_device
++            else:
++                cls.primary_device = 'mlu:{0}'.format(torch.mlu.current_device())
++                return cls.primary_device
++
++        @classmethod
++        def get_all_devices(cls):
++            primary_device_idx = int(cls.get_primary_device().split(':')[1])                                                            
++            num_devices = torch.mlu.device_count()
++
++            prim_device = cls.get_primary_device()
++            mlu_str = 'mlu:{0}'
++            non_primary_devices = [mlu_str.format(idx) for idx in range(num_devices) if idx != primary_device_idx]
++            return [prim_device] + non_primary_devices
++
++
++
+ # See Note [Lazy Tensor tests in device agnostic testing]
+ lazy_ts_backend_init = False
+ class LazyTestBase(DeviceTypeTestBase):
+@@ -616,6 +642,9 @@ def get_device_type_test_bases():
+         # ramping up support.
+         # elif torch.backends.mps.is_available():
+         #   test_bases.append(MPSTestBase)
++        if torch.is_mlu_available():
++            test_bases.append(MLUTestBase)
++
+ 
+     return test_bases
+ 
+@@ -886,7 +915,10 @@ class ops(_TestParametrizer):
+             else:
+                 raise RuntimeError(f"Unknown OpDType: {self.opinfo_dtypes}")
+ 
+-            if self.allowed_dtypes is not None:
++            # When self.opinfo_dtypes == OpDTypes.any_one, dtypes may be empty.
++            # But self.allowed_dtypes may be set with some value to exclude 64bit dtype in mlu.
++            # So it's necessary to check dtypes to avoid error raised for empty {} calling intersection.
++            if dtypes and self.allowed_dtypes is not None:
+                 dtypes = dtypes.intersection(self.allowed_dtypes)
+ 
+             # Construct the test name; device / dtype parts are handled outside.
+@@ -1000,6 +1032,28 @@ def _has_sufficient_memory(device, size):
+             device = 'cuda:0'
+         return torch.cuda.memory.mem_get_info(device)[0] >= size
+ 
++    import torch_mlu
++    if torch.device(device).type == 'mlu':
++        if not torch.mlu.is_available():
++            return False
++        gc.collect()
++        torch.mlu.empty_cache()
++        # torch.mlu.mem_get_info, aka cnrtMemGetInfo, returns a tuple of (free memory, total memory) of a MLU
++        if device == 'mlu':
++            device = 'mlu:0'
++        return torch.mlu.mem_get_info(device)[0] >= size
++
++    import torch_mlu
++    if torch.device(device).type == 'mlu':
++        if not torch.mlu.is_available():
++            return False
++        gc.collect()
++        torch.mlu.empty_cache()
++        # torch.mlu.mem_get_info, aka cnrtMemGetInfo, returns a tuple of (free memory, total memory) of a MLU
++        if device == 'mlu':
++            device = 'mlu:0'
++        return torch.mlu.mem_get_info(device)[0] >= size
++
+     if device == 'xla':
+         raise unittest.SkipTest('TODO: Memory availability checks for XLA?')
+ 
+diff --git a/torch/testing/_internal/common_utils.py b/torch/testing/_internal/common_utils.py
+index 1e18ca2afe..ba503f232b 100644
+--- a/torch/testing/_internal/common_utils.py
++++ b/torch/testing/_internal/common_utils.py
+@@ -1598,6 +1599,26 @@ def to_gpu(obj, type_map=None):
+     else:
+         return deepcopy(obj)
+ 
++def to_mlu(obj, type_map=None):
++    if type_map is None:
++        type_map = {}
++    if isinstance(obj, torch.Tensor):
++        assert obj.is_leaf
++        t = type_map.get(obj.dtype, obj.dtype)
++        with torch.no_grad():
++            res = obj.clone().to(dtype=t, device="mlu")
++            res.requires_grad = obj.requires_grad
++        return res
++    elif torch.is_storage(obj):
++        return obj.new().resize_(obj.size()).copy_(obj)
++    elif isinstance(obj, list):
++        return [to_mlu(o, type_map) for o in obj]
++    elif isinstance(obj, tuple):
++        return tuple(to_mlu(o, type_map) for o in obj)
++    else:
++        return deepcopy(obj)
++
++
+ 
+ def get_function_arglist(func):
+     return inspect.getfullargspec(func).args
+@@ -1619,10 +1640,17 @@ def freeze_rng_state():
+     # Some OpInfos use freeze_rng_state for rng determinism, but
+     # test_composite_compliance overrides dispatch for all torch functions
+     # which we need to disable to get and set rng state
++    if torch.is_mlu_available():
++        import torch_mlu
++
++
+     with no_dispatch(), disable_functorch():
+         rng_state = torch.get_rng_state()
+         if torch.cuda.is_available():
+             cuda_rng_state = torch.cuda.get_rng_state()
++        if torch.mlu.is_available():
++            mlu_rng_state = torch.mlu.get_rng_state()
++
+     try:
+         yield
+     finally:
+@@ -1637,6 +1665,9 @@ def freeze_rng_state():
+         with no_dispatch(), disable_functorch():
+             if torch.cuda.is_available():
+                 torch.cuda.set_rng_state(cuda_rng_state)
++            if torch.mlu.is_available():
++                torch.mlu.set_rng_state(mlu_rng_state)
++
+             torch.set_rng_state(rng_state)
+ 
+ @contextlib.contextmanager
+@@ -3760,11 +3791,21 @@ def noncontiguous_like(t):
+     else:
+         value = 12
+ 
++    device = str(t.device)
++    requires_grad = t.requires_grad
++    # TODO():fill not implement complex64
++    if 'mlu' in device and t.dtype == torch.complex64:
++        t=t.cpu()
++
++
+     result = t.new_empty(t.shape + (2,))
+     result[..., 0] = value
+     result[..., 1] = t.detach()
+     result = result[..., 1]
+-    result.requires_grad_(t.requires_grad)
++    result.requires_grad_(requires_grad)
++    if 'mlu' in device and t.dtype == torch.complex64:
++        result = to_mlu(result)
++
+     return result
+ 
+ # TODO: remove this (prefer make_symmetric_matrices below)
+diff --git a/torch/testing/_internal/opinfo/core.py b/torch/testing/_internal/opinfo/core.py
+index 06e33f5045..61ba24d1c4 100644
+--- a/torch/testing/_internal/opinfo/core.py
++++ b/torch/testing/_internal/opinfo/core.py
+@@ -714,6 +714,9 @@ class OpInfo:
+     # dtypes this function is expected to work with on CUDA
+     dtypesIfCUDA: _dispatch_dtypes = None
+ 
++    # dtypes this function is expected to work with on MLU
++    dtypesIfMLU: _dispatch_dtypes = None
++
+     # dtypes this function is expected to work with on ROCM
+     dtypesIfROCM: _dispatch_dtypes = None
+ 
+@@ -723,6 +726,9 @@ class OpInfo:
+     # backward dtypes this function is expected to work with on CUDA
+     backward_dtypesIfCUDA: _dispatch_dtypes = None
+ 
++    # backward dtypes this function is expected to work with on MLU
++    backward_dtypesIfMLU: _dispatch_dtypes = None
++
+     # backward dtypes this function is expected to work with on ROCM
+     backward_dtypesIfROCM: _dispatch_dtypes = None
+ 
+@@ -861,7 +867,7 @@ class OpInfo:
+ 
+         assert self.dtypes is not None, f"OpInfo for {self.name} has no dtypes!"
+ 
+-        dtypes_args = (self.dtypes, self.dtypesIfCUDA, self.dtypesIfROCM)
++        dtypes_args = (self.dtypes, self.dtypesIfCUDA, self.dtypesIfROCM, self.dtypesIfMLU)
+ 
+         # Validates the dtypes are generated from the dispatch-related functions
+         for dtype_list in dtypes_args:
+@@ -916,6 +922,19 @@ class OpInfo:
+                 else self.dtypes
+             )
+         )
++        self.backward_dtypesIfMLU = (
++            set(self.backward_dtypesIfMLU)
++            if self.backward_dtypesIfMLU is not None
++            else (
++                self.dtypesIfMLU
++                if self.dtypesIfMLU is not None
++                else self.backward_dtypesIfCUDA
++                if self.backward_dtypesIfCUDA is not None
++                else self.dtypesIfCUDA
++                if self.dtypesIfCUDA is not None
++                else self.dtypes
++            )
++        )
+         self.backward_dtypes = (
+             set(self.backward_dtypes)
+             if self.backward_dtypes is not None
+@@ -925,6 +944,14 @@ class OpInfo:
+         self.dtypesIfCUDA = (
+             set(self.dtypesIfCUDA) if self.dtypesIfCUDA is not None else self.dtypes
+         )
++        self.dtypesIfMLU = (
++            set(self.dtypesIfMLU) if self.dtypesIfMLU is not None
++            else (
++                self.dtypesIfCUDA
++                if self.dtypesIfCUDA is not None
++                else self.dtypes
++            )
++        )
+         self.dtypesIfROCM = (
+             set(self.dtypesIfROCM)
+             if self.dtypesIfROCM is not None
+@@ -1306,6 +1333,8 @@ class OpInfo:
+             return self.dtypes
+         if device_type == "cuda":
+             return self.dtypesIfROCM if TEST_WITH_ROCM else self.dtypesIfCUDA
++        elif device_type.find("mlu") == 0:
++            return self.dtypesIfMLU
+         else:
+             return self.dtypes
+ 
+@@ -1322,6 +1351,8 @@ class OpInfo:
+                 if TEST_WITH_ROCM
+                 else self.backward_dtypesIfCUDA
+             )
++        elif device_type == "mlu":
++            backward_dtypes = self.backward_dtypesIfMLU
+         else:
+             backward_dtypes = self.backward_dtypes
+ 
+@@ -1822,7 +1853,14 @@ def generate_elementwise_binary_extremal_value_tensors(
+     lhs = make_tensor(
+         (128, 128), device=device, dtype=dtype, requires_grad=requires_grad
+     )
+-    lhs.view(-1)[::3] = nan
++    # TODO(PYTORCH-9119): flatten() + slice fallback failed, using cpu tensor.
++    if isinstance(rhs, torch.Tensor) and rhs.device.type == "mlu":
++        rhs_cpu = rhs.cpu().flatten()
++        rhs_cpu[::3] = nan
++        rhs.copy_(rhs_cpu.reshape_as(rhs))
++    else:
++        rhs.flatten()[::3] = nan
++
+     rhs = make_tensor(
+         (128, 128), device=device, dtype=dtype, requires_grad=requires_grad
+     )
+@@ -2593,6 +2631,7 @@ class ShapeFuncInfo(OpInfo):
+         ref,  # a reference function
+         dtypes=floating_types(),
+         dtypesIfCUDA=None,
++        dtypesIfMLU=None,
+         dtypesIfROCM=None,
+         sample_inputs_func=None,
+         **kwargs,
+@@ -2601,6 +2640,7 @@ class ShapeFuncInfo(OpInfo):
+             name,
+             dtypes=dtypes,
+             dtypesIfCUDA=dtypesIfCUDA,
++            dtypesIfMLU=dtypesIfMLU,
+             dtypesIfROCM=dtypesIfROCM,
+             sample_inputs_func=sample_inputs_func,
+             **kwargs,
+@@ -2672,6 +2712,7 @@ class ForeachFuncInfo(OpInfo):
+         name,
+         dtypes=floating_and_complex_types(),
+         dtypesIfCUDA=floating_and_complex_types_and(torch.half),
++        dtypesIfMLU=floating_and_complex_types_and(torch.half),
+         dtypesIfROCM=None,
+         supports_alpha_param=False,
+         sample_inputs_func=sample_inputs_foreach,
+@@ -2703,6 +2744,7 @@ class ForeachFuncInfo(OpInfo):
+             inplace_variant=foreach_method_inplace,
+             dtypes=dtypes,
+             dtypesIfCUDA=dtypesIfCUDA,
++            dtypesIfMLU=dtypesIfMLU,
+             dtypesIfROCM=dtypesIfROCM,
+             sample_inputs_func=sample_inputs_func,
+             supports_autograd=supports_autograd,

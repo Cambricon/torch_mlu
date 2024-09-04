@@ -1,0 +1,22 @@
+{
+    "device_count": 8,
+    "test_view_as_real": [
+        {
+            "CaseName": "test_view_as_real",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        }
+    ]
+}

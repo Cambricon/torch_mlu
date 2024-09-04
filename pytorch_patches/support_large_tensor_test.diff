@@ -1,0 +1,22 @@
+diff --git a/torch/testing/_internal/common_device_type.py b/torch/testing/_internal/common_device_type.py
+index 855740583ed..cf0ff9652d7 100644
+--- a/torch/testing/_internal/common_device_type.py
++++ b/torch/testing/_internal/common_device_type.py
+@@ -891,6 +891,17 @@ def _has_sufficient_memory(device, size):
+             device = 'cuda:0'
+         return torch.cuda.memory.mem_get_info(device)[0] >= size
+ 
++    import torch_mlu
++    if torch.device(device).type == 'mlu':
++        if not torch.mlu.is_available():
++            return False
++        gc.collect()
++        torch.mlu.empty_cache()
++        # torch.mlu.mem_get_info, aka cnrtMemGetInfo, returns a tuple of (free memory, total memory) of a MLU
++        if device == 'mlu':
++            device = 'mlu:0'
++        return torch.mlu.mem_get_info(device)[0] >= size
++
+     if device == 'xla':
+         raise unittest.SkipTest('TODO: Memory availability checks for XLA?')
+ 

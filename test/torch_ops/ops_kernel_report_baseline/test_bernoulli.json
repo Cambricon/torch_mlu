@@ -1,0 +1,283 @@
+{
+    "device_count": 8,
+    "test_bernoulli": [
+        {
+            "CaseName": "test_bernolli_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernolli_generator_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernoulli",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernoulli_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernoulli_edge_cases",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernoulli_p",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernoulli_p_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 11
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernoulli_p_broadcast",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernoulli_self",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 58
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bernoulli_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        }
+    ]
+}

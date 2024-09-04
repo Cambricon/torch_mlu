@@ -1,0 +1,74 @@
+diff --git a/torch/csrc/distributed/c10d/reducer.cpp b/torch/csrc/distributed/c10d/reducer.cpp
+index 221eb21bd1..202bea54f5 100644
+--- a/torch/csrc/distributed/c10d/reducer.cpp
++++ b/torch/csrc/distributed/c10d/reducer.cpp
+@@ -285,6 +285,10 @@ void Reducer::initialize_local_used_map() {
+   const auto variable_count = params_.size();
+   at::TensorOptions options;
+   options = options.dtype(at::kInt);
++  //TODO(zhiguangda): remove this when CNCL can garantee the performance of Int type
++  if (params_[0].device().is_privateuseone()) {
++    options = options.dtype(at::kFloat);
++  }
+ 
+   // Deliberately don't pin the memory even if local_used_map_dev_ will
+   // be cuda. See Note [local_used_map_ -> local_used_map_dev copying]
+@@ -722,7 +726,8 @@ void Reducer::autograd_hook(size_t index) {
+ void Reducer::all_reduce_local_used_map() {
+   // See Note [Skip allreducing local_used_map_dev]
+   // H2D from local_used_map_ to local_used_map_dev_
+-  if (local_used_map_dev_.is_cuda()) {
++  if (local_used_map_dev_.is_cuda() || 
++      local_used_map_dev_.device().is_privateuseone()) {
+     // Note [local_used_map_ -> local_used_map_dev copying]
+     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     // We do async H2D to avoid the blocking overhead. The async copy and
+
+diff --git a/torch/csrc/distributed/c10d/ProcessGroup.hpp b/torch/csrc/distributed/c10d/ProcessGroup.hpp
+index 3799bb56df..d57c2b3ef2 100644
+--- a/torch/csrc/distributed/c10d/ProcessGroup.hpp
++++ b/torch/csrc/distributed/c10d/ProcessGroup.hpp
+@@ -477,41 +477,14 @@ class TORCH_API ProcessGroup : public torch::CustomClassHolder {
+   // create it and broadcast it to other ranks using the store. Only implemented
+   // for GLOO and NCCL backends currently.
+   virtual void setSequenceNumberForGroup() {
+-    auto backendType = getBackendType();
+-    // TODO: HACK for backend name to get sequence number for that backend.
+-    if (backendType == ProcessGroup::BackendType::GLOO ||
+-        backendType == ProcessGroup::BackendType::NCCL ||
+-        backendType == ProcessGroup::BackendType::UCC) {
+-      getDefaultBackend()->setSequenceNumberForGroup();
+-    } else {
+-      TORCH_CHECK(
+-          false,
+-          c10::str(
+-              "ProcessGroup ",
+-              getBackendName(),
+-              " does not yet support sequence numbers."));
+-    }
++    getDefaultBackend()->setSequenceNumberForGroup();
+   }
+
+   // Retrieves the current sequence number for the whole group, which should be
+   // in sync. If the returned number is not consistent across the group, it
+   // may indicate that there is some sort of collective desynchronization.
+   virtual uint64_t getSequenceNumberForGroup() {
+-    auto backendType = getBackendType();
+-
+-    // TODO: HACK for backend name to get sequence number for that backend.
+-    if (backendType == ProcessGroup::BackendType::GLOO ||
+-        backendType == ProcessGroup::BackendType::NCCL ||
+-        backendType == ProcessGroup::BackendType::UCC) {
+-      return getDefaultBackend()->getSequenceNumberForGroup();
+-    } else {
+-      TORCH_CHECK(
+-          false,
+-          c10::str(
+-              "ProcessGroup ",
+-              getBackendName(),
+-              " does not yet support sequence numbers."));
+-    }
++    return getDefaultBackend()->getSequenceNumberForGroup();
+   }
+
+   virtual c10::intrusive_ptr<Work> send(

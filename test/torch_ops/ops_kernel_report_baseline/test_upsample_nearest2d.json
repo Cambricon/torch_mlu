@@ -1,0 +1,117 @@
+{
+    "device_count": 8,
+    "test_upsample_nearest2d": [
+        {
+            "CaseName": "test_upsample_nearest2d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlInterp_v3",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 432
+                }
+            ]
+        },
+        {
+            "CaseName": "test_upsample_nearest2d_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlInterp_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlInterpBackward_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_upsample_nearest2d_bp",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 552
+                },
+                {
+                    "Name": "cnnlInterp_v3",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlInterpBackward_v3",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 432
+                }
+            ]
+        },
+        {
+            "CaseName": "test_upsample_nearest2d_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

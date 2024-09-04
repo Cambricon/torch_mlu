@@ -1,0 +1,72 @@
+{
+    "device_count": 8,
+    "test_silu": [
+        {
+            "CaseName": "test_silu",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 44
+                }
+            ]
+        },
+        {
+            "CaseName": "test_silu_backward",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "cnnlActivationBackward",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 11
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 22
+                }
+            ]
+        },
+        {
+            "CaseName": "test_silu_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlActivationForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlActivationBackward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

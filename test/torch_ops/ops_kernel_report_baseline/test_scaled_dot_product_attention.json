@@ -1,0 +1,1506 @@
+{
+    "device_count": 8,
+    "test_scaled_dot_product_attention": [
+        {
+            "CaseName": "test_flash_autocast_fp32",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_flash_autocast_fp32_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_fused_sdp_choice",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mem_eff_attention_long_sequence_mask",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 11
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward_v2",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mem_eff_attention_non_contiguous_mask",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 13
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward_v2",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mem_efficient_attetntion_mask_variants",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 11
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 50
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_memory_efficient_attention",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 792
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 540
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 2160
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 972
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1080
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlSoftmaxBackward",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 972
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlNanToNum",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlFusedDropout_v3",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1728
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_attention_fused_kernels",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 50
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlNanToNum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_attention_fused_kernels_backward",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 13
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 159
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlSoftmaxBackward",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlNanToNum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_attention_fused_kernels_backward_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 13
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 159
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 37
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlSoftmaxBackward",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlNanToNum",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_attention_fused_kernels_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 28
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_attention_math_with_negative_scale",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_flast_attention_backward",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 2160
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 14400
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 4752
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 5184
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 720
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 2880
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 3888
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlSoftmaxBackward",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 720
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlNanToNum",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 576
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6912
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_flast_attention_backward_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 2160
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 14400
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 4752
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 5184
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 720
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 2880
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 3888
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlSoftmaxBackward",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 720
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlNanToNum",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 576
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6912
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_memory_efficient_attention_backward",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1584
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 1080
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4536
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1944
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 2592
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2376
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlSoftmaxBackward",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlNanToNum",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlFusedDropout_v3",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3456
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scaled_dot_product_memory_efficient_attention_backward_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1584
+                },
+                {
+                    "Name": "cnnlGenerateRandUniform",
+                    "# of Calls": 1080
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 4968
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1944
+                },
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlCreateFlashAttentionDescriptor",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionSlidingWindowSize",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionDescriptor",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionGeneratedRandomNumbers",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionForwardWorkspaceSize_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlFlashAttentionForward_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlDestroyFlashAttentionDescriptor",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlBatchMatMulBCast_v2",
+                    "# of Calls": 2592
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2376
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlSetFlashAttentionBackwardDescriptor",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlGetFlashAttentionBackwardWorkspaceSize_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlFlashAttentionBackward_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2160
+                },
+                {
+                    "Name": "cnnlSoftmaxBackward",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlNanToNum",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlFusedDropout_v3",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3456
+                }
+            ]
+        },
+        {
+            "CaseName": "test_dispatch_no_backend_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_invalid_fused_inputs_attn_mask_present",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_invalid_fused_inputs_dtype_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_invalid_fused_inputs_head_dim_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_invalid_inputs_broadcast_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_invalid_inputs_dim_3_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_invalid_last_dim_stride_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_invalid_sequence_lengths_exception",
+            "Events": []
+        },
+        {
+            "CaseName": "test_split_cond_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_valid_data_ratio_cond_exception",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 3
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,116 @@
+{
+    "device_count": 8,
+    "test_dot": [
+        {
+            "CaseName": "test_dot",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 17
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 35
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 17
+                }
+            ]
+        },
+        {
+            "CaseName": "test_dot_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_dot_ori",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 60
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 46
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlPow",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlSqrt_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlGenerateRandNormal",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 77
+                }
+            ]
+        }
+    ]
+}

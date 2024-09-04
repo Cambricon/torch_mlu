@@ -1,0 +1,49 @@
+diff --git a/torch/functional.py b/torch/functional.py
+index 5fd3bfdf7cb..007bb67c992 100644
+--- a/torch/functional.py
++++ b/torch/functional.py
+@@ -28,6 +28,7 @@ __all__ = [
+     'chain_matmul',
+     'einsum',
+     'istft',
++    'is_mlu_available',
+     'lu',
+     'norm',
+     'meshgrid',
+@@ -41,6 +42,14 @@ __all__ = [
+ ]
+ 
+ 
++def is_mlu_available():
++    try:
++        import torch_mlu
++        return True
++    except ImportError:
++        return False
++
++
+ def broadcast_tensors(*tensors):
+     r"""broadcast_tensors(*tensors) -> List of Tensors
+ 
+diff --git a/torch/utils/data/dataloader.py b/torch/utils/data/dataloader.py
+index 60f8c7dc6f6..88b42bbadfe 100644
+--- a/torch/utils/data/dataloader.py
++++ b/torch/utils/data/dataloader.py
+@@ -585,7 +585,7 @@ class _BaseDataLoaderIter:
+         # default behaviour is CUDA device. if pin_memory_device is selected
+         # and pin_memory is not set, the default behaviour false.
+         if (len(loader.pin_memory_device) == 0):
+-            self._pin_memory = loader.pin_memory and torch.cuda.is_available()
++            self._pin_memory = loader.pin_memory and (torch.cuda.is_available() or torch.mlu.is_available())
+             self._pin_memory_device = None
+         else:
+             if not loader.pin_memory:
+@@ -1051,7 +1051,7 @@ class _MultiProcessingDataLoaderIter(_BaseDataLoaderIter):
+                 custom_device_mod = getattr(torch, torch._C._get_privateuse1_backend_name())
+                 current_device = custom_device_mod.current_device()
+             else:
+-                current_device = torch.cuda.current_device()  # choose cuda for default
++                current_device = torch.mlu.current_device() if torch.is_mlu_available() else torch.cuda.current_device()  # choose cuda for default
+             pin_memory_thread = threading.Thread(
+                 target=_utils.pin_memory._pin_memory_loop,
+                 args=(self._worker_result_queue, self._data_queue,

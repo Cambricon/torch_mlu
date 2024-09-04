@@ -1,0 +1,390 @@
+{
+    "device_count": 8,
+    "test_pooling": [
+        {
+            "CaseName": "test_avgpool1d_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1944
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1296
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool1d_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5100
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 2592
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3888
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2592
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool2d_batch",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 2592
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3888
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2592
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool2d_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 864
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool2d_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool2d_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5112
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 2592
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3888
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2592
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool3d_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool3d_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_avgpool3d_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlPoolingForward",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool1d_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 432
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool1d_index",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool1d_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 864
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool2d_batch",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 864
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool2d_batch_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool2d_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool2d_index",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool2d_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1728
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 864
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool3d_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool3d_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool3d_index",
+            "Events": [
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_maxpool3d_non_batch",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlPoolingForwardWithIndex",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        }
+    ]
+}

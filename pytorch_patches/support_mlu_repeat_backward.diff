@@ -1,0 +1,41 @@
+diff --git a/torch/csrc/autograd/FunctionsManual.cpp b/torch/csrc/autograd/FunctionsManual.cpp
+index 10aa2d1786..a226388fd5 100644
+--- a/torch/csrc/autograd/FunctionsManual.cpp
++++ b/torch/csrc/autograd/FunctionsManual.cpp
+@@ -1409,6 +1409,36 @@ Tensor repeat_backward(
+     grad = grad.sum(0, false);
+   }
+ 
++  // Origin algorithm will increase grad's dimensions by grad = grad.reshape(grad_size),
++  // then do add operation on specific dimensions. Reshape in this process is easily surpass
++  // MLU dimension limits. Currently MLU uses an old algorithm from Pytorch1.6.
++  // Two algorithms have the same functions but different implementation methods,
++  // and the performance of the old algorithm is poor. For details:
++  // https://github.com/pytorch/pytorch/issues/43192
++  // https://github.com/pytorch/pytorch/pull/46726
++  if (grad.device().type() == c10::DeviceType::PrivateUse1) {
++    for (size_t j = num_unsqueezed; j < repeats.size(); ++j) {
++      auto repeat = repeats[j].as_int_unchecked();
++      if (repeat == 1) {
++        continue;
++      }
++      int64_t dim = j - num_unsqueezed;
++      auto sum_tensorlist = [](at::TensorList tl) {
++        if (tl.size() == 0) {
++          throw std::runtime_error("Can't sum tensorlist of size 0");
++        }
++        at::Tensor sum = tl[0];
++        for (size_t i = 1; i < tl.size(); ++i) {
++          sum = sum + tl[i];
++        }
++        return sum;
++      };
++
++      grad = sum_tensorlist(grad.chunk(repeat, dim));
++    }
++    return grad;
++  }
++
+   at::SymDimVector grad_size;
+   at::DimVector sum_dims;
+   for (const auto dim : c10::irange(input_dims)) {

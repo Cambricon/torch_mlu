@@ -1,0 +1,522 @@
+{
+    "device_count": 8,
+    "test_add": [
+        {
+            "CaseName": "test_add",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 243
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 162
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 324
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 486
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 243
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 11
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 11
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_empty",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_high_diemension_after_permute",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_high_diemension_after_permute_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 243
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 162
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 422
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 324
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 486
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 243
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_inplace_boolscalar",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_inplace_floatscalar",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_inplace_intscalar",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_inter_type",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_multiply_add",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_out",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 486
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 243
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 593
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 648
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 486
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 486
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_scalar_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_scalar_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 27
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_scale",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_scale_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_scale_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 606
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 609
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_add_value",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 78
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 66
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batchnorm_add",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_scalar_add_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 27
+                }
+            ]
+        }
+    ]
+}

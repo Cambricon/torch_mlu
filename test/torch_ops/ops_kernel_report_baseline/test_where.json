@@ -1,0 +1,237 @@
+{
+    "device_count": 8,
+    "test_where": [
+        {
+            "CaseName": "test_where",
+            "Events": [
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 84
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 84
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_PYTORCH_11152",
+            "Events": [
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_anomalistic_stride",
+            "Events": [
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_backward",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_condition_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlNumTrue_v3",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlWhere_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 22
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 33
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_dtype_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_not_dense_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_one_dim_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_where_scalar_channels_last_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSelectV2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

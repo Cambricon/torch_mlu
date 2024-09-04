@@ -1,0 +1,112 @@
+{
+    "device_count": 8,
+    "test_transpose": [
+        {
+            "CaseName": "test_T",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_t",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_t_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_t_inplace",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        },
+        {
+            "CaseName": "test_transpose",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 216
+                }
+            ]
+        },
+        {
+            "CaseName": "test_transpose_",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 216
+                }
+            ]
+        },
+        {
+            "CaseName": "test_transpose_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCopy_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

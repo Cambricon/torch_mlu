@@ -1,0 +1,12 @@
+diff --git a/aten/src/ATen/native/LinearAlgebraUtils.h b/aten/src/ATen/native/LinearAlgebraUtils.h
+index 351bc33f65..1f11d33dbf 100644
+--- a/aten/src/ATen/native/LinearAlgebraUtils.h
++++ b/aten/src/ATen/native/LinearAlgebraUtils.h
+@@ -410,6 +410,7 @@ static inline std::tuple<DimVector, DimVector, int64_t> _compute_geometry_for_Q(
+ 
+ static inline bool svd_uses_cusolver(const Tensor& A) {
+   // if cusolver is available, it is used unconditionally
++  if (A.device().is_privateuseone()) return true; 
+   return A.is_cuda()
+          && at::globalContext().hasCuSOLVER()
+          && at::globalContext().linalgPreferredBackend() != at::LinalgBackend::Magma;

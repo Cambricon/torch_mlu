@@ -1,0 +1,90 @@
+{
+    "device_count": 8,
+    "test_bitwise_not": [
+        {
+            "CaseName": "test_bitwise_not",
+            "Events": [
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bitwise_not_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bitwise_not_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 30
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bitwise_not_out",
+            "Events": [
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_bitwise_not_permute",
+            "Events": [
+                {
+                    "Name": "cnnlBitCompute_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

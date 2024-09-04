@@ -1,0 +1,263 @@
+diff --git a/aten/src/ATen/Context.h b/aten/src/ATen/Context.h
+index 285c6f7f1f..bd56e21136 100644
+--- a/aten/src/ATen/Context.h
++++ b/aten/src/ATen/Context.h
+@@ -54,9 +54,10 @@ class TORCH_API Context {
+   Device getDeviceFromPtr(void* data, c10::DeviceType device_type) {
+     initCUDAIfNeeded(device_type);
+     initHIPIfNeeded(device_type);
++    initMLUIfNeeded(device_type);
+     if (device_type == at::kCPU) {
+       return c10::DeviceType::CPU;
+-    } else if (device_type == at::kCUDA) {
++    } else if (device_type == at::kCUDA || device_type == at::kPrivateUse1) {
+       return at::detail::getCUDAHooks().getDeviceFromPtr(data);
+     } else if (device_type == at::kPrivateUse1) {
+       return at::GetPrivateUse1HooksInterface()->getDeviceFromPtr(data);
+@@ -121,6 +122,9 @@ class TORCH_API Context {
+   void lazyInitCUDA() {
+     c10::call_once(thc_init, [&] { detail::getCUDAHooks().initCUDA(); });
+   }
++  void lazyInitMLU() {
++    c10::call_once(thm_init, [&] { detail::getCUDAHooks().initCUDA(); });
++  }
+   void lazyInitHIP() {
+     c10::call_once(thh_init, [&] { detail::getHIPHooks().initHIP(); });
+   }
+@@ -253,6 +257,8 @@ class TORCH_API Context {
+   bool allowTF32CuDNN() const;
+   void setAllowTF32CuDNN(bool);
+   bool allowTF32CuBLAS() const;
++  void setAllowTF32CnMatMul(bool b);
++  bool allowTF32CnMatMul() const;
+   void setAllowTF32CuBLAS(bool);
+   Float32MatmulPrecision float32MatmulPrecision() const;
+   void setFloat32MatmulPrecision(Float32MatmulPrecision p);
+@@ -289,8 +295,14 @@ class TORCH_API Context {
+       lazyInitHIP();
+     }
+   }
++  void initMLUIfNeeded(DeviceType p) {
++    if (p == DeviceType::PrivateUse1) {
++      lazyInitMLU();
++    }
++  }
+   static bool checkCuBLASConfigDeterministic();
+   c10::once_flag thc_init;
++  c10::once_flag thm_init;
+   c10::once_flag thh_init;
+   bool enabled_cudnn = true;
+   bool deterministic_cudnn = false;
+diff --git a/build_variables.bzl b/build_variables.bzl
+index bf9cf2b46e..6f5b046475 100644
+--- a/build_variables.bzl
++++ b/build_variables.bzl
+@@ -889,6 +889,7 @@ libtorch_python_core_sources = [
+     "torch/csrc/utils/throughput_benchmark.cpp",
+     "torch/csrc/utils.cpp",
+     "torch/csrc/utils/cuda_lazy_init.cpp",
++    "torch/csrc/utils/mlu_lazy_init.cpp",
+     "torch/csrc/utils/invalid_arguments.cpp",
+     "torch/csrc/utils/nested.cpp",
+     "torch/csrc/utils/object_ptr.cpp",
+diff --git a/tools/autograd/templates/python_fft_functions.cpp b/tools/autograd/templates/python_fft_functions.cpp
+index 3cae9e2117..58253548db 100644
+--- a/tools/autograd/templates/python_fft_functions.cpp
++++ b/tools/autograd/templates/python_fft_functions.cpp
+@@ -15,6 +15,7 @@
+ #include "torch/csrc/utils/python_arg_parser.h"
+ #include "torch/csrc/utils/structseq.h"
+ #include "torch/csrc/utils/cuda_lazy_init.h"
++#include "torch/csrc/utils/mlu_lazy_init.h"
+
+ #include <ATen/core/Tensor.h>
+
+diff --git a/tools/autograd/templates/python_torch_functions.cpp b/tools/autograd/templates/python_torch_functions.cpp
+index 12d15902dd..a8d0a2db3f 100644
+--- a/tools/autograd/templates/python_torch_functions.cpp
++++ b/tools/autograd/templates/python_torch_functions.cpp
+@@ -32,6 +32,7 @@
+ #include "torch/csrc/autograd/generated/variable_factories.h"
+ #include "torch/csrc/utils/structseq.h"
+ #include "torch/csrc/utils/cuda_lazy_init.h"
++#include "torch/csrc/utils/mlu_lazy_init.h"
+ #include "torch/csrc/autograd/python_return_types.h"
+
+ #include <ATen/core/Tensor.h>
+diff --git a/tools/autograd/templates/python_variable_methods.cpp b/tools/autograd/templates/python_variable_methods.cpp
+index b1dd6beaea..e836f91fdf 100644
+--- a/tools/autograd/templates/python_variable_methods.cpp
++++ b/tools/autograd/templates/python_variable_methods.cpp
+@@ -22,6 +22,7 @@
+ #include "torch/csrc/cuda/Event.h"
+ #endif
+ #include "torch/csrc/utils/cuda_lazy_init.h"
++#include "torch/csrc/utils/mlu_lazy_init.h"
+ #include "torch/csrc/utils/object_ptr.h"
+ #include "torch/csrc/utils/pycfunction_helpers.h"
+ #include "torch/csrc/utils/python_arg_parser.h"
+@@ -997,6 +998,9 @@ static PyObject * THPVariable_to(PyObject* self, PyObject* args, PyObject* kwarg
+   if (device && device->is_cuda()) {
+     torch::utils::cuda_lazy_init();
+   }
++  if (device && device->is_privateuseone()) {
++    torch::utils::mlu_lazy_init();
++  }
+   if (!device && !scalarType && !copy && !opt_memory_format.has_value()) {
+     Py_INCREF(self);
+     return self;
+@@ -1078,6 +1082,9 @@ static PyObject * THPVariable_type(PyObject* self, PyObject* args, PyObject* kwa
+   if (device.is_cuda()) {
+     torch::utils::cuda_lazy_init();
+   }
++  if(device.is_privateuseone()) {
++    torch::utils::mlu_lazy_init();
++  }
+   return THPVariable_Wrap(dispatch_to(self_, device, scalar_type, /*non_blocking=*/ r.toBool(1), /*copy=*/ false, opt_memory_format));
+   END_HANDLE_TH_ERRORS
+ }
+diff --git a/torch/csrc/utils/mlu_lazy_init.cpp b/torch/csrc/utils/mlu_lazy_init.cpp
+new file mode 100644
+index 0000000000..897173cf7a
+--- /dev/null
++++ b/torch/csrc/utils/mlu_lazy_init.cpp
+@@ -0,0 +1,36 @@
++#include <torch/csrc/utils/mlu_lazy_init.h>
++#include <torch/csrc/Exceptions.h>
++#include <torch/csrc/python_headers.h>
++#include <torch/csrc/utils/object_ptr.h>
++
++namespace torch{
++namespace utils{
++namespace {
++    bool is_initialized = false;
++}
++
++void mlu_lazy_init(){
++    pybind11::gil_scoped_acquire g;
++    if (is_initialized){
++        return;
++    }
++
++    auto module = THPObjectPtr(PyImport_ImportModule("torch.mlu"));
++    if(!module){
++        throw python_error();
++    }
++
++    auto res = THPObjectPtr(PyObject_CallMethod(module.get(),"_lazy_init",""));
++    if(!res){
++        throw python_error();
++    }
++
++    is_initialized = true;
++}
++
++void set_requires_mlu_init(bool value){
++    is_initialized = !value;
++}
++
++}
++}
+\ No newline at end of file
+diff --git a/torch/csrc/utils/mlu_lazy_init.h b/torch/csrc/utils/mlu_lazy_init.h
+new file mode 100644
+index 0000000000..1cdc50870a
+--- /dev/null
++++ b/torch/csrc/utils/mlu_lazy_init.h
+@@ -0,0 +1,18 @@
++#pragma once
++
++#include <c10/core/TensorOptions.h>
++
++namespace torch{
++namespace utils{
++
++void mlu_lazy_init();
++void set_requires_mlu_init(bool value);
++
++static void maybe_initialize_mlu(const at::TensorOptions& options){
++    if(options.device().is_privateuseone()){
++        mlu_lazy_init();
++    }
++}
++
++} // namespace utils
++} // namespace torch
+\ No newline at end of file
+diff --git a/torch/csrc/utils/tensor_new.cpp b/torch/csrc/utils/tensor_new.cpp
+index 820212459b..868853363d 100644
+--- a/torch/csrc/utils/tensor_new.cpp
++++ b/torch/csrc/utils/tensor_new.cpp
+@@ -8,6 +8,7 @@
+ #include <torch/csrc/autograd/generated/variable_factories.h>
+ #include <torch/csrc/autograd/variable.h>
+ #include <torch/csrc/utils/cuda_lazy_init.h>
++#include <torch/csrc/utils/mlu_lazy_init.h>
+ #include <torch/csrc/utils/numpy_stub.h>
+ #include <torch/csrc/utils/pybind.h>
+ #include <torch/csrc/utils/python_arg_parser.h>
+@@ -65,6 +66,12 @@ void maybe_initialize_cuda(const Device& device) {
+   }
+ }
+
++void maybe_initialize_mlu(const Device device) {
++  if (device.is_privateuseone()) {
++    torch::utils::mlu_lazy_init();
++  }
++}
++
+ // NB: It appears there is some consistency invariant between options and
+ // device, where if device is non-empty, its type must be consistent with the
+ // device type in options.
+@@ -76,6 +83,7 @@ Tensor new_with_sizes(
+     const optional<Device>& device,
+     c10::SymIntArrayRef sizes) {
+   maybe_initialize_cuda(options.device());
++  maybe_initialize_mlu(options.device());
+   pybind11::gil_scoped_release no_gil;
+   return at::empty_symint(sizes, build_options(options, scalar_type, device));
+ }
+@@ -298,6 +306,7 @@ Tensor internal_new_from_data(
+     auto device = device_opt.has_value() ? *device_opt : var.device();
+     pybind11::gil_scoped_release no_gil;
+     maybe_initialize_cuda(device);
++    maybe_initialize_mlu(device);
+     return var.to(
+         device,
+         inferred_scalar_type,
+@@ -316,6 +325,7 @@ Tensor internal_new_from_data(
+     auto device = device_opt.has_value() ? *device_opt : options.device();
+     pybind11::gil_scoped_release no_gil;
+     maybe_initialize_cuda(device);
++    maybe_initialize_mlu(device);
+     return tensor.to(
+         device,
+         inferred_scalar_type,
+@@ -332,6 +342,7 @@ Tensor internal_new_from_data(
+     auto device = device_opt.has_value() ? *device_opt : options.device();
+     pybind11::gil_scoped_release no_gil;
+     maybe_initialize_cuda(device);
++    maybe_initialize_mlu(device);
+     return tensor.to(
+         device,
+         inferred_scalar_type,
+@@ -429,6 +440,7 @@ Tensor internal_new_from_data(
+     }
+     pybind11::gil_scoped_release no_gil;
+     maybe_initialize_cuda(device);
++    maybe_initialize_mlu(device);
+     // However, it is VERY important that we trace the to() call here (even
+     // though the reason this is important is a hack).  Without *some* factory
+     // function call that is traced at construction time, we will consider
+diff --git a/torchgen/api/python.py b/torchgen/api/python.py
+index ce7d3a2ea3..575403685d 100644
+--- a/torchgen/api/python.py
++++ b/torchgen/api/python.py
+@@ -1444,6 +1444,7 @@ const auto options = TensorOptions()
+     .requires_grad({arg_parser_outputs['requires_grad'].expr})
+     .pinned_memory({arg_parser_outputs['pin_memory'].expr});
+ torch::utils::maybe_initialize_cuda(options);
++torch::utils::maybe_initialize_mlu(options);
+ """
+         )
+         lambda_args_exprs["options"] = "options"
