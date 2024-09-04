@@ -37,7 +37,7 @@ class TestSiluOp(TestCase):
 
             self.assertTensorsEqual(
                 out_cpu,
-                out_mlu.cpu().float() if dtype == torch.half else out_mlu.cpu(),
+                out_mlu.cpu(),
                 0.003,
                 use_MSE=True,
             )
@@ -54,7 +54,7 @@ class TestSiluOp(TestCase):
         # inplace
         if_inplace_list = [True, False]
         for shape, typeId, if_inplace in product(in_shape, type_list, if_inplace_list):
-            x_0 = torch.randn(shape, dtype=torch.float, requires_grad=False)
+            x_0 = torch.randn(shape, dtype=typeId, requires_grad=False)
             run_test(x_0, typeId, if_inplace)
 
             # channels_last input
@@ -86,9 +86,7 @@ class TestSiluOp(TestCase):
 
             self.assertTensorsEqual(
                 out_grad_cpu,
-                out_grad_mlu.cpu().float()
-                if dtype == torch.half
-                else out_grad_mlu.cpu(),
+                out_grad_mlu.cpu(),
                 0.003,
                 use_MSE=True,
             )
@@ -103,7 +101,7 @@ class TestSiluOp(TestCase):
         ]
         type_list = [torch.float, torch.half]
         for shape, typeId in product(in_shape, type_list):
-            x_0 = torch.randn(shape, dtype=torch.float, requires_grad=False)
+            x_0 = torch.randn(shape, dtype=typeId, requires_grad=False)
             run_test(x_0.detach(), typeId)
 
             # channels_last input
