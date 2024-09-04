@@ -1458,7 +1458,7 @@ void cnnl_cross_internal(
 
 void cnnl_trace_internal(const at::Tensor& self, at::Tensor& result);
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> mha_varlen_fwd(
+std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_fwd_internal(
     const at::Tensor& q,
     const at::Tensor& k,
     const at::Tensor& v,
@@ -1473,7 +1473,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> mha_varlen_fwd(
     const bool is_causal,
     const bool return_softmax);
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> mha_varlen_bwd(
+std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_bwd_internal(
     const at::Tensor& dout,
     const at::Tensor& q,
     const at::Tensor& k,
@@ -1494,7 +1494,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> mha_varlen_bwd(
     const at::Tensor& philox_seed,
     const at::Tensor& philox_offset);
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor> mem_eff_fwd(
+std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_fwd_internal(
     const at::Tensor& query,
     const at::Tensor& key,
     const at::Tensor& value,
@@ -1509,7 +1509,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> mem_eff_fwd(
     const bool compute_log_sumexp,
     const float scale);
 
-std::tuple<at::Tensor, at::Tensor, at::Tensor> mem_eff_bwd(
+std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_bwd_internal(
     const at::Tensor& dout,
     const at::Tensor& q,
     const at::Tensor& k,

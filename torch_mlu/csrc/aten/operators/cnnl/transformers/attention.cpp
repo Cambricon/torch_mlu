@@ -179,7 +179,7 @@ cnnl__flash_attention_forward(
   bool return_debug_mask_ = return_debug_mask && is_dropout;
 
   auto [logsumexp, philox_seed, philox_offset, debug_attn_mask] =
-      mha_varlen_fwd(
+      cnnl_fa_fwd_internal(
           query,
           key,
           value,
@@ -324,7 +324,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl__flash_attention_backward(
   // The kernel computes irregadless we will drop for this functions return
   Tensor grad_softmax;
 
-  std::tie(dq, dk, dv, grad_softmax) = mha_varlen_bwd(
+  std::tie(dq, dk, dv, grad_softmax) = cnnl_fa_bwd_internal(
       contiguous_grad_out,
       query,
       key,
@@ -486,7 +486,7 @@ cnnl__efficient_attention_forward(
       {batch_size * max_seqlen_batch_q, num_heads, embedding_value},
       query.options());
 
-  auto [log_sumexp, seed, offset] = mem_eff_fwd(
+  auto [log_sumexp, seed, offset] = cnnl_mem_eff_fwd_internal(
       query_reshaped,
       key_reshaped,
       value_reshaped,
@@ -695,7 +695,7 @@ cnnl__efficient_attention_backward(
   const auto softmax_scale =
       sdp::calculate_scale(query_reshaped, scale).as_float_unchecked();
 
-  std::tie(grad_q, grad_k, grad_v) = mem_eff_bwd(
+  std::tie(grad_q, grad_k, grad_v) = cnnl_mem_eff_bwd_internal(
       grad_out_reshaped,
       query_reshaped,
       key_reshaped,
