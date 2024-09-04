@@ -1,0 +1,54 @@
+{
+    "test_randn": [
+        {
+            "CaseName": "test_randn",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_randn_device",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_randn_exception",
+            "Events": []
+        }
+    ]
+}

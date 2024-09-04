@@ -1,0 +1,31 @@
+#include <stdio.h>
+#include "bang_internal.h"
+
+namespace torch_mlu {
+namespace ops {
+
+template <typename T>
+__mlu_func__ void dump_template(const char* format, T *input, int32_t size) {
+    for(int i = 0; i < size; i++) {
+      // TODO(*) just for debug
+      // __bang_printf(format,*(input+i));
+    }
+}
+
+__mlu_entry__ void dump_kernel(void *input, int32_t size, cnrtDataType_t cnrt_type) {
+    if (cnrt_type == CNRT_FLOAT32) {
+        dump_template<float>("%f\n", (float*)input, size);
+    } else if (cnrt_type == CNRT_FLOAT16) {
+        dump_template<half>("%hf\n", (half*)input, size);
+    } else {
+      // TODO(*) just for debug
+      //  __bang_printf("Invalid Data Type!!!");
+    }
+}
+
+void dump(void *input, int32_t size, cnrtDim3_t dim, cnrtFunctionType_t ktype, cnrtQueue_t queue, cnrtDataType_t cnrt_type) {
+    dump_kernel<<<dim, ktype, queue>>>(input, size, cnrt_type);
+}
+
+}  // namespace ops
+}  // namespace torch_mlu

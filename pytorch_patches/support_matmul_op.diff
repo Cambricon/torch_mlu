@@ -1,0 +1,16 @@
+diff --git a/aten/src/ATen/native/LinearAlgebra.cpp b/aten/src/ATen/native/LinearAlgebra.cpp
+index f9c20feb48..d9615dd785 100644
+--- a/aten/src/ATen/native/LinearAlgebra.cpp
++++ b/aten/src/ATen/native/LinearAlgebra.cpp
+@@ -1919,6 +1919,11 @@ static bool should_fold(const Tensor& tensor1, const Tensor& tensor2) {
+     return false;
+   }
+ 
++  // TODO(DPF-3540): MLU just use mm instead of bmm for performance
++  if (tensor1.device().is_privateuseone() || tensor2.device().is_privateuseone()) {
++    return true;
++  }
++
+   // Can always fold if the tensor is empty
+   // This serves as a precondition for the code below
+   if (t1->numel() == 0) {

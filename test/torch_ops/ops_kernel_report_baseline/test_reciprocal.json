@@ -1,0 +1,206 @@
+{
+    "test_reciprocal": [
+        {
+            "CaseName": "test_reciprocal",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_backward",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlNegTensor",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_floating_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_integral_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_out",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_permute",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_reciprocal_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlReciprocal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlNegTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+diff --git a/torch/utils/data/dataloader.py b/torch/utils/data/dataloader.py
+index eac52ba2..e7041e87 100644
+--- a/torch/utils/data/dataloader.py
++++ b/torch/utils/data/dataloader.py
+@@ -621,6 +621,13 @@ class _BaseDataLoaderIter(object):
+         raise NotImplementedError
+ 
+     def __next__(self) -> Any:
++
++        if torch.is_mlu_available():
++            import torch_mlu
++            from torch_mlu.utils.counter import _GENCASE_ENABLED, _update_and_check_for_gencase
++            if _GENCASE_ENABLED:
++                _update_and_check_for_gencase()
++
+         with torch.autograd.profiler.record_function(self._profile_name):
+             if self._sampler_iter is None:
+                 # TODO(https://github.com/pytorch/pytorch/issues/76750)

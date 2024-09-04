@@ -1,0 +1,128 @@
+{
+    "test_ctc_loss": [
+        {
+            "CaseName": "test_ctc_loss",
+            "Events": [
+                {
+                    "Name": "cnnlCTCLoss",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 96
+                }
+            ]
+        },
+        {
+            "CaseName": "test_ctc_loss_exceptions",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandGenerateDescreteUniform",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSoftmaxForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_ctc_loss_zero_infinity",
+            "Events": [
+                {
+                    "Name": "cnnlCTCLoss",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlExpand",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_warp_ctc_loss",
+            "Events": [
+                {
+                    "Name": "cnnlCTCLoss",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        }
+    ]
+}

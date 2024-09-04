@@ -1,0 +1,59 @@
+{
+    "test_unbind": [
+        {
+            "CaseName": "test_unbind",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1800
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 180
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3408
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unbind_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 744
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 444
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 924
+                }
+            ]
+        },
+        {
+            "CaseName": "test_unbind_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1800
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 168
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2028
+                }
+            ]
+        }
+    ]
+}

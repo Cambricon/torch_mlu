@@ -1,0 +1,182 @@
+{
+    "test_zeros": [
+        {
+            "CaseName": "test_new_zeros",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 54
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zero_",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zeros",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zeros_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zeros_grad",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zeros_like",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zeros_like_bound",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zeros_like_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 26
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zeros_like_grad",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_zeros_out",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        }
+    ]
+}

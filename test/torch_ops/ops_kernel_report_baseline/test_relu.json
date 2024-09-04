@@ -1,0 +1,193 @@
+{
+    "test_relu": [
+        {
+            "CaseName": "test_relu",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        },
+        {
+            "CaseName": "test_relu_backward",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlThresholdBackward",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_relu_backwark_permute",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlThresholdBackward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_relu_boundary_value",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_relu_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_relu_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 108
+                }
+            ]
+        },
+        {
+            "CaseName": "test_relu_inf_nan_backward",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlThresholdBackward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_relu_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 15
+                }
+            ]
+        },
+        {
+            "CaseName": "test_relu_permute",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        }
+    ]
+}

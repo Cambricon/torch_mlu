@@ -1,0 +1,142 @@
+{
+    "test_embedding_bag": [
+        {
+            "CaseName": "test_EmbeddingBag",
+            "Events": []
+        },
+        {
+            "CaseName": "test_embedding_bag_1D",
+            "Events": [
+                {
+                    "Name": "cnnlEmbeddingBag_v2",
+                    "# of Calls": 100
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 300
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 100
+                }
+            ]
+        },
+        {
+            "CaseName": "test_embedding_bag_2D",
+            "Events": [
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlEmbeddingBag_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_embedding_bag_backward",
+            "Events": [
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlEmbeddingBag_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlEmbeddingBagBackward",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 96
+                }
+            ]
+        },
+        {
+            "CaseName": "test_embedding_bag_empty",
+            "Events": [
+                {
+                    "Name": "cnnlEmbeddingBag_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_embedding_bag_exception",
+            "Events": [
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_embedding_bag_mode",
+            "Events": [
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlEmbeddingBag_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 13
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 18
+                }
+            ]
+        }
+    ]
+}

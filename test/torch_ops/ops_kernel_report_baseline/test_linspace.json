@@ -1,0 +1,84 @@
+{
+    "test_linspace": [
+        {
+            "CaseName": "test_linspace",
+            "Events": [
+                {
+                    "Name": "cnnlLinspace",
+                    "# of Calls": 490
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 98
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 588
+                }
+            ]
+        },
+        {
+            "CaseName": "test_linspace_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlLinspace",
+                    "# of Calls": 245
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 49
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 294
+                }
+            ]
+        },
+        {
+            "CaseName": "test_linspace_exception",
+            "Events": []
+        },
+        {
+            "CaseName": "test_linspace_out",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1176
+                },
+                {
+                    "Name": "cnnlLinspace",
+                    "# of Calls": 1764
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5880
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3528
+                }
+            ]
+        },
+        {
+            "CaseName": "test_linspace_permute",
+            "Events": [
+                {
+                    "Name": "cnnlLinspace",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,122 @@
+{
+    "test_fill": [
+        {
+            "CaseName": "test_fill_",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 165
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 63
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 297
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 183
+                }
+            ]
+        },
+        {
+            "CaseName": "test_fill_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 15
+                }
+            ]
+        },
+        {
+            "CaseName": "test_fill_bound",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_fill_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_fill_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_fill_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

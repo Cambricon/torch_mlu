@@ -1,0 +1,146 @@
+{
+    "test_trunc": [
+        {
+            "CaseName": "test_trunc",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlTrunc",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trunc_backward",
+            "Events": [
+                {
+                    "Name": "cnnlTrunc",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 7
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trunc_dtype",
+            "Events": [
+                {
+                    "Name": "cnnlTrunc",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trunc_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlTrunc",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trunc_out",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlTrunc",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trunc_permute",
+            "Events": [
+                {
+                    "Name": "cnnlTrunc",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        }
+    ]
+}

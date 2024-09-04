@@ -1,0 +1,93 @@
+{
+    "test_logical_not": [
+        {
+            "CaseName": "test_logical_not",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_not_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_not_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 14
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_not_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        },
+        {
+            "CaseName": "test_logical_not_out",
+            "Events": [
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 56
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 56
+                }
+            ]
+        }
+    ]
+}

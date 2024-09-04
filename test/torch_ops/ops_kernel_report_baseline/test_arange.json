@@ -1,0 +1,59 @@
+{
+    "test_arange": [
+        {
+            "CaseName": "test_arange",
+            "Events": [
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 135
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 360
+                }
+            ]
+        },
+        {
+            "CaseName": "test_arange_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_arange_out",
+            "Events": [
+                {
+                    "Name": "cnnlArange_v2",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 270
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 272
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 720
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 720
+                }
+            ]
+        }
+    ]
+}

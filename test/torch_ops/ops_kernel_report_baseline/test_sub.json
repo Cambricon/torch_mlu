@@ -1,0 +1,426 @@
+{
+    "test_sub": [
+        {
+            "CaseName": "test_batchnorm_sub",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_rsub",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_rsub_zero_dim",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 384
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_empty",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_high_diemension_after_permute",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_high_diemension_after_permute_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 10
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_inplace",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 240
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 576
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 384
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_inplace_floatscalar",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_inplace_intscalar",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_inter_type",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_out",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 688
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 176
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 576
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_scalar",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_scale",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 404
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 404
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_sub_value",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 50
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 44
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 10
+                }
+            ]
+        }
+    ]
+}

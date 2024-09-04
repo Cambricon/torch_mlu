@@ -1,0 +1,86 @@
+diff --git a/c10/core/TensorImpl.cpp b/c10/core/TensorImpl.cpp
+index fdb287cd18..84d4707488 100644
+--- a/c10/core/TensorImpl.cpp
++++ b/c10/core/TensorImpl.cpp
+@@ -864,6 +864,14 @@ void TensorImpl::copy_generic_tensor_metadata(
+   if (src_impl->extra_meta_ != nullptr) {
+     dest_impl->extra_meta_ = src_impl->extra_meta_->clone();
+   }
++  if (src_impl->external_ != nullptr) {
++    dest_impl->external_ = src_impl->external_->clone();
++  } else if (dest_impl->external_ != nullptr) {
++    // Clean dest_impl extra meta data, cause shallow_copy_from dest impl is a
++    // real tensor impl, which maybe take extra meta data. This info will
++    // contaminate the new dest_impl metadata info.
++    dest_impl->external_.reset(nullptr);
++  }
+ 
+   // NB: symbolic sizes and strides are copied as is custom policy, but python
+   // policy is NOT (you have no Python object to dispatch to!)
+diff --git a/c10/core/TensorImpl.h b/c10/core/TensorImpl.h
+index 65e7bdbe1f5..ff0296ecf84 100644
+--- a/c10/core/TensorImpl.h
++++ b/c10/core/TensorImpl.h
+@@ -271,6 +271,21 @@ struct C10_API ExtraMeta {
+   }
+ };
+ 
++class C10_API External {
++ public:
++  virtual ~External() {};
++  virtual std::unique_ptr<External> clone() const {
++    TORCH_INTERNAL_ASSERT(
++      false,
++      "Not implemented: External::clone");
++  }
++  virtual void* data_ptr(void* data, int64_t offset) const {
++    TORCH_INTERNAL_ASSERT(
++      false,
++      "Not implemented: External::data_ptr");
++  }
++};
++
+ // NOTE [ Version Counter Sharing ]
+ //
+ // Every Tensor has a version counter. Version counters are incremented whenever
+@@ -2006,6 +2021,7 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
+            BackendComponent::MPSBit,
+            BackendComponent::HIPBit,
+            BackendComponent::XPUBit,
++           BackendComponent::PrivateUse1Bit,
+            BackendComponent::HPUBit});
+       constexpr auto dense_k = DispatchKeySet(DispatchKey::Dense);
+       return ts.has_any(dense_k) && ts.has_any(dense_backends);
+@@ -3044,6 +3060,23 @@ struct C10_API TensorImpl : public c10::intrusive_ptr_target {
+   // key_set_.has(DispatchKey::Named)
+   DispatchKeySet key_set_;
+ 
++  // following members only for MLU
++ public:
++  std::unique_ptr<c10::External> external_ = nullptr;
++
++  inline void* cnnlMalloc() {
++    return mlu_data_ptr();
++  }
++
++  inline void* mlu_data_ptr() {
++    TORCH_CHECK(external_, "MLU impls are not initialized.");
++    return external_->data_ptr(const_cast<void*>(storage_.data()), storage_offset_);
++  }
++
++  inline void set_external(std::unique_ptr<c10::External> external) {
++    external_ = std::move(external);
++  }
++
+  private:
+   // C10_TensorImpl_Size_Check_Dummy_Class needs to be friends with
+   // TensorImpl so it can inspect the size of private fields
+@@ -3241,7 +3274,7 @@ class C10_TensorImpl_Size_Check_Dummy_Class : private TensorImpl {
+ #else
+   // This is a 64-bit system
+   static constexpr bool check_sizes() {
+-    constexpr size_t tsize = 26 * sizeof(int64_t);
++    constexpr size_t tsize = 27 * sizeof(int64_t);
+ 
+     // clang-format off
+     are_equal<sizeof(storage_),            8,  FieldNameEnum::storage_>();

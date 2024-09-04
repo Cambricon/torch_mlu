@@ -1,0 +1,124 @@
+{
+    "test_all": [
+        {
+            "CaseName": "test_all",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 63
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 76
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_all_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_all_dim",
+            "Events": [
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 126
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 152
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_all_out",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 196
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 126
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        }
+    ]
+}

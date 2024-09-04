@@ -1,0 +1,110 @@
+{
+    "test_weight_norm": [
+        {
+            "CaseName": "test_remove_weight_norm",
+            "Events": [
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 730
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 730
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 730
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 730
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1460
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 3140
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4380
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2920
+                }
+            ]
+        },
+        {
+            "CaseName": "test_weight_norm",
+            "Events": [
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 5190
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 702
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 702
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 702
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 702
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1028
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 2570
+                },
+                {
+                    "Name": "cnnlNegTensor",
+                    "# of Calls": 514
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 514
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 514
+                },
+                {
+                    "Name": "cnnlMasked_v4",
+                    "# of Calls": 514
+                },
+                {
+                    "Name": "cnnlWeightNorm",
+                    "# of Calls": 188
+                },
+                {
+                    "Name": "cnnlWeightNormBackward",
+                    "# of Calls": 188
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 4364
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5616
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4212
+                }
+            ]
+        }
+    ]
+}

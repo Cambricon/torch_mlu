@@ -1,0 +1,29 @@
+{
+    "test_select": [
+        {
+            "CaseName": "test_select",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 21
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 24
+                }
+            ]
+        }
+    ]
+}

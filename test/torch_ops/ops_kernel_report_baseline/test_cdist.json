@@ -1,0 +1,255 @@
+{
+    "test_cdist": [
+        {
+            "CaseName": "test_cdist",
+            "Events": [
+                {
+                    "Name": "cnnlCdistForward",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlCdistBackward",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cdist_empty",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cdist_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cdist_mlu_backward",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlCdistForward",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 9
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cdist_norm",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlCdistForward",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 128
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cdist_norm_batch",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlCdistForward",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 128
+                }
+            ]
+        },
+        {
+            "CaseName": "test_cdist_same_inputs",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCdistForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlCdistBackward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlAbs",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlLogicOp",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,172 @@
+diff --git a/torch/csrc/autograd/engine.cpp b/torch/csrc/autograd/engine.cpp
+index 9e6a04dec6..ab33f2647f 100644
+--- a/torch/csrc/autograd/engine.cpp
++++ b/torch/csrc/autograd/engine.cpp
+@@ -698,6 +698,7 @@ void GraphTask::exec_post_processing() {
+   // Syncs caller_current_stream with leaf streams, so final_callbacks may use
+   // any grad on its device's current stream.
+   if (!leaf_streams.empty()) {
++    const auto dev_type = c10::impl::hasDeviceGuardImpl(c10::DeviceType::PrivateUse1) ? c10::DeviceType::PrivateUse1 : c10::DeviceType::CUDA;
+     for (const auto& leaf_stream : leaf_streams) {
+       // stash_current_streams() stashed streams for all device IDs that already
+       // had a CUDA context before the GraphTask executed. For inactive devices,
+@@ -709,7 +710,7 @@ void GraphTask::exec_post_processing() {
+           *caller_current_streams_[leaf_stream.device_index()];
+ 
+       if (caller_current_stream != leaf_stream) {
+-        auto event = c10::Event{c10::DeviceType::CUDA};
++        auto event = c10::Event{dev_type};
+         event.record(leaf_stream);
+         caller_current_stream.wait(event);
+       }
+@@ -965,7 +966,11 @@ void Engine::evaluate_function(
+   // ensure they're safe to consume in the context of the present
+   // func's stream (if applicable). So we guard onto that stream
+   // before working with the grads in any capacity.
+-  const auto opt_parent_stream = (*func).stream(c10::DeviceType::CUDA);
++  auto opt_parent_stream = (*func).stream(c10::DeviceType::PrivateUse1);
++  if (!opt_parent_stream.has_value()) {
++    opt_parent_stream = (*func).stream(c10::DeviceType::CUDA);
++  }
++
+   c10::OptionalStreamGuard parent_stream_guard{opt_parent_stream};
+ 
+   // If exec_info_ is not empty, we have to instrument the execution
+@@ -1075,7 +1080,11 @@ void Engine::evaluate_function(
+       InputBuffer input_buffer(next.function->num_inputs());
+ 
+       // Accumulates into buffer
+-      const auto opt_next_stream = next.function->stream(c10::DeviceType::CUDA);
++      auto opt_next_stream = next.function->stream(c10::DeviceType::PrivateUse1);
++      if (!opt_next_stream.has_value()) {
++        opt_next_stream = next.function->stream(c10::DeviceType::CUDA);
++      }
++
+       input_buffer.add(
+           next.input_nr, std::move(output), opt_parent_stream, opt_next_stream);
+ 
+@@ -1091,7 +1100,11 @@ void Engine::evaluate_function(
+       auto& input_buffer = not_ready_it->second;
+ 
+       // Accumulates into buffer
+-      const auto opt_next_stream = next.function->stream(c10::DeviceType::CUDA);
++      auto opt_next_stream = next.function->stream(c10::DeviceType::PrivateUse1);
++      if (!opt_next_stream.has_value()) {
++        opt_next_stream = next.function->stream(c10::DeviceType::CUDA);
++      }
++
+       input_buffer.add(
+           next.input_nr, std::move(output), opt_parent_stream, opt_next_stream);
+       if (is_ready) {
+@@ -1125,6 +1137,7 @@ auto Engine::compute_dependencies(
+   std::vector<Node*> queue{root};
+   bool might_use_cuda = at::globalContext().hasCUDA();
+   bool will_use_cuda = false;
++  bool will_use_mlu = false;
+ 
+   // Queue contains all nodes that will start propagating gradients.
+   // We no longer have to expand functions that don't require grad.
+@@ -1137,6 +1150,8 @@ auto Engine::compute_dependencies(
+     }
+     if (might_use_cuda && !will_use_cuda) {
+       will_use_cuda = fn->stream(c10::DeviceType::CUDA).has_value();
++    } else if (!will_use_mlu) {
++      will_use_mlu = fn->stream(c10::DeviceType::PrivateUse1).has_value();
+     }
+     for (const auto& edge : fn->next_edges()) {
+       if (auto next_ptr = edge.function.get()) {
+@@ -1148,7 +1163,7 @@ auto Engine::compute_dependencies(
+     }
+   }
+ 
+-  if (will_use_cuda) {
++  if (will_use_cuda || will_use_mlu) {
+     // Collects current streams for devices where this process has a context,
+     // so GraphTask::exec_post_processing can sync them with leaf_streams.
+     task.stash_current_streams();
+@@ -1242,8 +1257,12 @@ auto Engine::execute(
+     auto input = inputs.at(0);
+ 
+     const auto input_stream = InputMetadata(input).stream();
+-    const auto opt_next_stream =
+-        root_edges.at(0).function->stream(c10::DeviceType::CUDA);
++    auto opt_next_stream =
++        root_edges.at(0).function->stream(c10::DeviceType::PrivateUse1);
++    if (!opt_next_stream.has_value()) {
++      opt_next_stream =
++          root_edges.at(0).function->stream(c10::DeviceType::CUDA);
++    }
+     input_buffer.add(
+         root_edges.at(0).input_nr,
+         std::move(input),
+@@ -1515,7 +1534,8 @@ void Engine::add_thread_pool_task(const std::weak_ptr<GraphTask>& graph_task) {
+ // Only called if Engine::execute detects at least one node runs on a cuda
+ // stream.
+ void GraphTask::stash_current_streams() {
+-  const auto guard = c10::impl::VirtualGuardImpl{c10::DeviceType::CUDA};
++  const auto dev_type = c10::impl::hasDeviceGuardImpl(c10::DeviceType::PrivateUse1) ? c10::DeviceType::PrivateUse1 : c10::DeviceType::CUDA;
++  const auto guard = c10::impl::VirtualGuardImpl{dev_type};
+   auto num_gpus = guard.deviceCount();
+   caller_current_streams_.resize(num_gpus);
+   if (num_gpus > 0) {
+@@ -1531,7 +1551,7 @@ void GraphTask::stash_current_streams() {
+       if (at::detail::getCUDAHooks().hasPrimaryContext(idx)) {
+ #endif
+         caller_current_streams_[idx] =
+-            guard.getStream({c10::DeviceType::CUDA, idx});
++            guard.getStream({dev_type, idx});
+       } else {
+         caller_current_streams_[idx] = c10::nullopt;
+       }
+diff --git a/torch/csrc/autograd/input_buffer.cpp b/torch/csrc/autograd/input_buffer.cpp
+index a422e6f57d..b13427f206 100644
+--- a/torch/csrc/autograd/input_buffer.cpp
++++ b/torch/csrc/autograd/input_buffer.cpp
+@@ -28,7 +28,7 @@ namespace {
+ // TODO: clean this up when https://github.com/pytorch/pytorch/issues/60306 is
+ // improved
+ void record_stream_any_impl(Variable& var, c10::Stream& stream) {
+-  const auto guard = c10::impl::VirtualGuardImpl(c10::DeviceType::CUDA);
++  const auto guard = c10::impl::VirtualGuardImpl(device_of(var).value().type());
+ 
+   if (C10_UNLIKELY(at::isBatchedTensor(var))) {
+     auto* impl = at::maybeGetBatchedImpl(var);
+@@ -159,7 +159,7 @@ void InputBuffer::add(
+ 
+   TORCH_INTERNAL_ASSERT(device_of(var));
+   c10::optional<c10::Stream> opt_accumulate_stream = c10::nullopt;
+-  if (device_of(var)->is_cuda()) {
++  if (device_of(var)->is_cuda() || device_of(var)->is_privateuseone()) {
+     const auto on_producer =
+         opt_producer_stream && device_of(var) == opt_producer_stream->device();
+     const auto on_consumer =
+@@ -170,14 +170,14 @@ void InputBuffer::add(
+       opt_accumulate_stream = opt_consumer_stream;
+       if (opt_accumulate_stream != opt_producer_stream) {
+         // (2b)
+-        auto event = c10::Event{c10::DeviceType::CUDA};
++        auto event = c10::Event{device_of(var).value().type()};
+         event.record(*opt_producer_stream);
+         opt_accumulate_stream->wait(event);
+         record_stream_any_impl(var, *opt_accumulate_stream);
+       }
+     } else {
+       c10::optional<c10::Stream> opt_sync_stream = c10::nullopt;
+-      const auto guard = c10::impl::VirtualGuardImpl{c10::DeviceType::CUDA};
++      const auto guard = c10::impl::VirtualGuardImpl{device_of(var).value().type()};
+       if (on_consumer && !on_producer) {
+         // (3a)
+         opt_accumulate_stream = opt_consumer_stream;
+@@ -194,10 +194,10 @@ void InputBuffer::add(
+       if (opt_sync_stream && (opt_accumulate_stream != opt_sync_stream)) {
+         // (3b), (4b)
+         c10::OptionalDeviceGuard device_guard{opt_sync_stream->device()};
+-        auto event = c10::Event{c10::DeviceType::CUDA};
++        auto event = c10::Event{device_of(var).value().type()};
+         event.record(*opt_sync_stream);
+         opt_accumulate_stream->wait(event);
+-        const auto guard = c10::impl::VirtualGuardImpl(c10::DeviceType::CUDA);
++        const auto guard = c10::impl::VirtualGuardImpl(device_of(var).value().type());
+         record_stream_any_impl(var, *opt_accumulate_stream);
+       }
+     }

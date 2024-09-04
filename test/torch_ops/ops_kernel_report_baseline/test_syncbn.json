@@ -1,0 +1,283 @@
+{
+    "test_syncbn": [
+        {
+            "CaseName": "test_batch_norm_backward_elemt",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 17298
+                },
+                {
+                    "Name": "cnnlReduce",
+                    "# of Calls": 15570
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 31140
+                },
+                {
+                    "Name": "cnnlDiv_v2",
+                    "# of Calls": 31140
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 15570
+                },
+                {
+                    "Name": "cnnlSyncBatchNormBackwardElemt",
+                    "# of Calls": 15570
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 54432
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 47952
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 15570
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_backward_elemt_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 8
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_backward_reduce",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1080
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 666
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 972
+                },
+                {
+                    "Name": "cnnlSyncBatchnormBackwardReduce_v2",
+                    "# of Calls": 666
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2664
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_backward_reduce_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_elemt",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 3456
+                },
+                {
+                    "Name": "cnnlSyncBatchNormElemt",
+                    "# of Calls": 1746
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 777
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2016
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1746
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 954
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_elemt_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_gather_stats",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlSyncBatchNormGatherStatsWithCounts",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_gather_stats_with_counts",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1668
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 1408
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 792
+                },
+                {
+                    "Name": "cnnlSyncBatchNormGatherStatsWithCounts",
+                    "# of Calls": 396
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2376
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 90
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_gather_stats_with_counts_exception",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 7
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_stats",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 27
+                },
+                {
+                    "Name": "cnnlSyncBatchNormStats_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 18
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 162
+                }
+            ]
+        },
+        {
+            "CaseName": "test_batch_norm_stats_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                }
+            ]
+        }
+    ]
+}

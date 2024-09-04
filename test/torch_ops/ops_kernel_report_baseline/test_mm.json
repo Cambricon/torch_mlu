@@ -1,0 +1,149 @@
+{
+    "test_mm": [
+        {
+            "CaseName": "test_mm",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 324
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 324
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 432
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mm_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 3
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mm_exception",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 4
+                }
+            ]
+        },
+        {
+            "CaseName": "test_mm_out",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 1088
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1632
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 648
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 648
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1088
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3264
+                }
+            ]
+        },
+        {
+            "CaseName": "test_trans_mm",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 324
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "cnnlMatMul_v2",
+                    "# of Calls": 972
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 972
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 648
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 864
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1296
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2592
+                }
+            ]
+        }
+    ]
+}

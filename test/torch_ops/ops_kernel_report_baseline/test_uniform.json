@@ -1,0 +1,141 @@
+{
+    "test_uniform": [
+        {
+            "CaseName": "test_uniform_channels_last",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "cnnlRandGenerateUniform",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 40
+                }
+            ]
+        },
+        {
+            "CaseName": "test_uniform_exceptions",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1
+                }
+            ]
+        },
+        {
+            "CaseName": "test_uniform_int",
+            "Events": []
+        },
+        {
+            "CaseName": "test_uniform_int_empty",
+            "Events": []
+        },
+        {
+            "CaseName": "test_uniform_orig",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlRandGenerateUniform",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 15
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        },
+        {
+            "CaseName": "test_uniform_range",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlRandGenerateUniform",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 32
+                }
+            ]
+        },
+        {
+            "CaseName": "test_uniform_stats",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "cnnlRandGenerateUniform",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 80
+                }
+            ]
+        },
+        {
+            "CaseName": "test_uniform_zero_elements",
+            "Events": []
+        }
+    ]
+}

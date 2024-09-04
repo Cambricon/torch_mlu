@@ -1,0 +1,54 @@
+{
+    "test_split": [
+        {
+            "CaseName": "test_split_and_tensor_split",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 89
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 94
+                }
+            ]
+        },
+        {
+            "CaseName": "test_split_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 38
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 8
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 41
+                }
+            ]
+        }
+    ]
+}

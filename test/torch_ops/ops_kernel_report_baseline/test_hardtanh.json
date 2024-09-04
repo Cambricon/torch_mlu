@@ -1,0 +1,202 @@
+{
+    "test_hardtanh": [
+        {
+            "CaseName": "test_hardtanh_backward",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlHardtanhBackward",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 36
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_backwark_permute",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlHardtanhBackward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_bfloat16",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_inplace_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_inplace_contiguous",
+            "Events": [
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 144
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_inplace_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_hardtanh_permute",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlClip_v2",
+                    "# of Calls": 40
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 40
+                }
+            ]
+        }
+    ]
+}

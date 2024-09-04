@@ -1,0 +1,161 @@
+{
+    "test_deform_conv2d": [
+        {
+            "CaseName": "test_deform_conv2d",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 39
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 189
+                },
+                {
+                    "Name": "cnnlDCNForward",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlDCNBackwardData",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "cnnlDCNBackwardWeight",
+                    "# of Calls": 24
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 118
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 118
+                }
+            ]
+        },
+        {
+            "CaseName": "test_deform_conv2d_channels_last_and_no_dense",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 26
+                },
+                {
+                    "Name": "cnnlDCNForward",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlDCNBackwardData",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlDCNBackwardWeight",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 20
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 12
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 12
+                }
+            ]
+        },
+        {
+            "CaseName": "test_deform_conv2d_spec",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_deform_conv2d_type",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlDCNForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlDCNBackwardData",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlDCNBackwardWeight",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_deform_conv2d_with_amp",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlDCNForward",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1
+                }
+            ]
+        }
+    ]
+}

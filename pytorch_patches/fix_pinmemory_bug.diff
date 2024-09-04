@@ -1,0 +1,13 @@
+diff --git a/torch/utils/data/_utils/pin_memory.py b/torch/utils/data/_utils/pin_memory.py
+index cdd53c2d9e..115ca493be 100644
+--- a/torch/utils/data/_utils/pin_memory.py
++++ b/torch/utils/data/_utils/pin_memory.py
+@@ -22,7 +22,7 @@ def _pin_memory_loop(in_queue, out_queue, device_id, done_event, device):
+         torch.cuda.set_device(device_id)
+     elif device == "xpu":
+         torch.xpu.set_device(device_id)  # type: ignore[attr-defined]
+-    elif device == torch._C._get_privateuse1_backend_name():
++    elif device == torch._C._get_privateuse1_backend_name() or device == None:
+         custom_device_mod = getattr(torch, torch._C._get_privateuse1_backend_name())
+         custom_device_mod.set_device(device_id)
+ 

@@ -1,0 +1,6 @@
+{
+  "cnnl_blacklist": ["cnnlCopy_v2", "cnnlConvolutionForward"],
+  "cnnl_whitelist": ["cnnlGetCopyWorkspaceSize", "cnnlCreateTensorDescriptor", "cnnlSetQueue"],
+  "cnrt_blacklist": ["cnrtSyncDevice"],
+  "cndrv_blacklist": ["all"]
+}

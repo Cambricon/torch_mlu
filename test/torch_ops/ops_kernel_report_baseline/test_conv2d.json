@@ -1,0 +1,235 @@
+{
+    "test_conv2d": [
+        {
+            "CaseName": "test_conv2d_exceptions",
+            "Events": [
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                }
+            ]
+        },
+        {
+            "CaseName": "test_conv2d_with_detach_tensor",
+            "Events": [
+                {
+                    "Name": "cnnlRandGetSimulateThreadNum",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlRandCreateGenerator_v2",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlRandGenerateNormal",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlRandDestroyGenerator",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 48
+                }
+            ]
+        },
+        {
+            "CaseName": "test_depthwise_online_conv",
+            "Events": [
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1536
+                }
+            ]
+        },
+        {
+            "CaseName": "test_online_conv2d",
+            "Events": [
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 4608
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 2688
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2688
+                }
+            ]
+        },
+        {
+            "CaseName": "test_online_conv_groups",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 54
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 9
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 3
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 42
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 30
+                }
+            ]
+        },
+        {
+            "CaseName": "test_online_convtrans2d",
+            "Events": [
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 1344
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2880
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 6400
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 960
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 576
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 512
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 4032
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5760
+                }
+            ]
+        },
+        {
+            "CaseName": "test_online_depthwise_convtrans2d",
+            "Events": [
+                {
+                    "Name": "cnnlConvolutionBackwardData",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 80
+                },
+                {
+                    "Name": "cnnlConvolutionForward",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlConvolutionBackwardFilter",
+                    "# of Calls": 32
+                },
+                {
+                    "Name": "cnnlOpTensor",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "cnnlBiasAddBackward_v2",
+                    "# of Calls": 16
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 112
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 112
+                }
+            ]
+        }
+    ]
+}

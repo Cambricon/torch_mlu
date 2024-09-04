@@ -1,0 +1,648 @@
+{
+    "test_batchnorm": [
+        {
+            "CaseName": "test_batchnorm_exception",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 6
+                }
+            ]
+        },
+        {
+            "CaseName": "test_inference_batchnorm1d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_inference_batchnorm1d_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 120
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 252
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 72
+                }
+            ]
+        },
+        {
+            "CaseName": "test_inference_batchnorm2d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 336
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 96
+                }
+            ]
+        },
+        {
+            "CaseName": "test_inference_batchnorm2d_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 336
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 96
+                }
+            ]
+        },
+        {
+            "CaseName": "test_inference_batchnorm2d_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 64
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 160
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 336
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 96
+                }
+            ]
+        },
+        {
+            "CaseName": "test_inference_batchnorm3d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 672
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 192
+                }
+            ]
+        },
+        {
+            "CaseName": "test_inference_batchnorm3d_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 128
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 320
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 672
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 192
+                }
+            ]
+        },
+        {
+            "CaseName": "test_training_batchnorm1d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlFrozenBatchNormBackward_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlBatchNormBackward_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 600
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 468
+                }
+            ]
+        },
+        {
+            "CaseName": "test_training_batchnorm1d_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 336
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 72
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 216
+                },
+                {
+                    "Name": "cnnlFrozenBatchNormBackward_v2",
+                    "# of Calls": 36
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 432
+                },
+                {
+                    "Name": "cnnlBatchNormBackward_v2",
+                    "# of Calls": 108
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 600
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 480
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1152
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 468
+                }
+            ]
+        },
+        {
+            "CaseName": "test_training_batchnorm2d",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 256
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlFrozenBatchNormBackward_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlBatchNormBackward_v2",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 800
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 624
+                }
+            ]
+        },
+        {
+            "CaseName": "test_training_batchnorm2d_channel_last",
+            "Events": [
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 448
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 384
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlFrozenBatchNormBackward_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 576
+                },
+                {
+                    "Name": "cnnlBatchNormBackward_v2",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 800
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 624
+                }
+            ]
+        },
+        {
+            "CaseName": "test_training_batchnorm2d_not_dense",
+            "Events": [
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 576
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 576
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 960
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlBatchNormBackward_v2",
+                    "# of Calls": 144
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 448
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlFrozenBatchNormBackward_v2",
+                    "# of Calls": 48
+                },
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 800
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 624
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 1536
+                }
+            ]
+        },
+        {
+            "CaseName": "test_training_batchnorm3d",
+            "Events": [
+                {
+                    "Name": "cnnlCastDataType",
+                    "# of Calls": 1600
+                },
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 1536
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 768
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 576
+                },
+                {
+                    "Name": "cnnlBatchNormForwardInference",
+                    "# of Calls": 192
+                },
+                {
+                    "Name": "cnnlFrozenBatchNormBackward_v2",
+                    "# of Calls": 96
+                },
+                {
+                    "Name": "cnnlBatchNormBackward_v2",
+                    "# of Calls": 288
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 512
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 1248
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 3072
+                }
+            ]
+        },
+        {
+            "CaseName": "test_training_batchnorm_empty_input",
+            "Events": [
+                {
+                    "Name": "cnnlTransform_v2",
+                    "# of Calls": 1
+                },
+                {
+                    "Name": "cnnlFill_v3",
+                    "# of Calls": 4
+                },
+                {
+                    "Name": "cnnlCopy",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 5
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 2
+                }
+            ]
+        },
+        {
+            "CaseName": "test_training_torch_batchnorm",
+            "Events": [
+                {
+                    "Name": "cnnlTranspose_v2",
+                    "# of Calls": 6
+                },
+                {
+                    "Name": "cnnlBatchNormForwardTraining_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlConcat",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlStridedSlice_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "cnnlBatchNormBackward_v2",
+                    "# of Calls": 2
+                },
+                {
+                    "Name": "Memcpy HtoD",
+                    "# of Calls": 14
+                },
+                {
+                    "Name": "Memcpy DtoH",
+                    "# of Calls": 8
+                }
+            ]
+        }
+    ]
+}

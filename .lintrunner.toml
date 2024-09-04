@@ -1,0 +1,64 @@
+[[linter]]
+code = 'BLACK'
+include_patterns = [
+    '**/*.py',
+    '**/*.pyi',
+]
+exclude_patterns = [
+    '**/__init__.py',
+    'third_party/**',
+    'codegen/**',
+    'third_party/googletest/**',
+    'third_party/kineto_mlu/tb_plugin/**',
+    'third_party/kineto_mlu/libkineto/third_party/**',
+    'third_party/kineto_mlu/libkineto/sample_programs/**',
+    'test/torch_native_ci/mlu_fixed_exclude_uts.py',
+    'test/torch_native_ci/mlu_exclude_caseid_list.py',
+    'tools/linter/**',
+]
+command = [
+    'python3',
+    'tools/linter/adapters/black_linter.py',
+    '--',
+    '@{{PATHSFILE}}'
+]
+init_command = [
+    'python3',
+    'tools/linter/adapters/pip_init.py',
+    '--dry-run={{DRYRUN}}',
+    'black==23.12.1',
+]
+is_formatter = true
+
+[[linter]]
+code = 'CLANGFORMAT'
+include_patterns = [
+    '**/*.cpp',
+    '**/*.h',
+    '**/*.hpp',
+]
+exclude_patterns = [
+    'third_party/**',
+    'codegen/**',
+    'third_party/googletest/**',
+    'third_party/kineto_mlu/tb_plugin/**',
+    'third_party/kineto_mlu/libkineto/third_party/**',
+    'third_party/kineto_mlu/libkineto/sample_programs/**',
+]
+init_command = [
+    'python3',
+    'tools/linter/adapters/s3_init.py',
+    '--config-json=tools/linter/adapters/s3_init_config.json',
+    '--linter=clang-format',
+    '--dry-run={{DRYRUN}}',
+    '--output-dir=.lintbin',
+    '--output-name=clang-format',
+]
+command = [
+    'python3',
+    'tools/linter/adapters/clangformat_linter.py',
+    '--binary=.lintbin/clang-format',
+    '--',
+    '@{{PATHSFILE}}'
+]
+is_formatter = true
