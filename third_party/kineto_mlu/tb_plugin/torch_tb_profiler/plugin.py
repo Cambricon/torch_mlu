@@ -48,7 +48,13 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
           context: A base_plugin.TBContext instance.
         """
         super(TorchProfilerPlugin, self).__init__(context)
-        self.logdir = io.abspath(context.logdir.rstrip('/'))
+        if not context.logdir and context.flags.logdir_spec:
+            dirs = context.flags.logdir_spec.split(',')
+            if len(dirs) > 1:
+                logger.warning(f"Multiple directories are specified by --logdir_spec flag. TorchProfilerPlugin will load the first one: \n {dirs[0]}")
+            self.logdir = io.abspath(dirs[0].rstrip('/'))
+        else:
+            self.logdir = io.abspath(context.logdir.rstrip('/'))
 
         self._load_lock = threading.Lock()
         self._load_threads = []
@@ -59,7 +65,7 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         self._temp_dir = tempfile.mkdtemp()
         self._cache = io.Cache(self._temp_dir)
         self._queue = Queue()
-        self._mlu_metrics_file_dict = {}
+        self._gpu_metrics_file_dict = {}
         monitor_runs = threading.Thread(target=self._monitor_runs, name='monitor_runs', daemon=True)
         monitor_runs.start()
 
@@ -105,7 +111,7 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             '/kernel/table': self.kernel_table_route,
             '/kernel/tc_pie': self.kernel_tc_route,
             '/trace': self.trace_route,
-            '/distributed/mluinfo': self.dist_mlu_info_route,
+            '/distributed/gpuinfo': self.dist_gpu_info_route,
             '/distributed/overlap': self.comm_overlap_route,
             '/distributed/waittime': self.comm_wait_route,
             '/distributed/commops': self.comm_ops_route,
@@ -162,14 +168,14 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
         name = request.args.get('run')
         run = self._get_run(name)
         data = profile.overview
-        is_mlu_used = profile.has_runtime or profile.has_kernel or profile.has_memcpy_or_memset
+        is_gpu_used = profile.has_runtime or profile.has_kernel or profile.has_memcpy_or_memset
         normal_workers = [worker for worker in run.workers if worker != 'All']
         data['environments'] = [{'title': 'Number of Worker(s)', 'value': str(len(normal_workers))},
-                                {'title': 'Device Type', 'value': 'MLU' if is_mlu_used else 'CPU'}]
-        if profile.mlu_summary and profile.mlu_tooltip:
-            data['mlu_metrics'] = {'title': 'MLU Summary',
-                                   'data': profile.mlu_summary,
-                                   'tooltip': profile.mlu_tooltip}
+                                {'title': 'Device Type', 'value': profile.device_type.upper() if is_gpu_used and profile.device_type else 'CPU'}]
+        if profile.gpu_summary and profile.gpu_tooltip:
+            data['gpu_metrics'] = {'title': '{} Summary'.format(profile.device_type.upper()),
+                                   'data': profile.gpu_summary,
+                                   'tooltip': profile.gpu_tooltip}
 
         return self.respond_as_json(data)
 
@@ -237,14 +243,14 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             if not profile.trace_file_path.endswith('.gz'):
                 raw_data = gzip.compress(raw_data, 1)
         else:
-            file_with_mlu_metrics = self._mlu_metrics_file_dict.get(profile.trace_file_path)
-            if file_with_mlu_metrics:
-                raw_data = io.read(file_with_mlu_metrics)
+            file_with_gpu_metrics = self._gpu_metrics_file_dict.get(profile.trace_file_path)
+            if file_with_gpu_metrics:
+                raw_data = io.read(file_with_gpu_metrics)
             else:
                 raw_data = self._cache.read(profile.trace_file_path)
                 if profile.trace_file_path.endswith('.gz'):
                     raw_data = gzip.decompress(raw_data)
-                raw_data = profile.append_mlu_metrics(raw_data)
+                raw_data = profile.append_gpu_metrics(raw_data)
 
                 # write the data to temp file
                 fp = tempfile.NamedTemporaryFile('w+b', suffix='.json.gz', dir=self._temp_dir, delete=False)
@@ -252,16 +258,16 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
                 # Already compressed, no need to gzip.open
                 with open(fp.name, mode='wb') as file:
                     file.write(raw_data)
-                self._mlu_metrics_file_dict[profile.trace_file_path] = fp.name
+                self._gpu_metrics_file_dict[profile.trace_file_path] = fp.name
 
         headers = [('Content-Encoding', 'gzip')]
         headers.extend(TorchProfilerPlugin.headers)
         return werkzeug.Response(raw_data, content_type=TorchProfilerPlugin.CONTENT_TYPE, headers=headers)
 
     @wrappers.Request.application
-    def dist_mlu_info_route(self, request: werkzeug.Request):
+    def dist_gpu_info_route(self, request: werkzeug.Request):
         profile = self._get_distributed_profile_for_request(request)
-        return self.respond_as_json(profile.mlu_info)
+        return self.respond_as_json(profile.gpu_info)
 
     @wrappers.Request.application
     def comm_overlap_route(self, request: werkzeug.Request):
@@ -481,6 +487,8 @@ class TorchProfilerPlugin(base_plugin.TBPlugin):
             /run2
                 /[worker1].pt.trace.json
         """
+        if not io.isdir(self.logdir):
+            return
         for root, _, files in io.walk(self.logdir):
             for file in files:
                 if utils.is_chrome_trace_file(file):

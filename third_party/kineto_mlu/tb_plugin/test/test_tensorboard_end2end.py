@@ -25,7 +25,7 @@ class TestEnd2End(unittest.TestCase):
 
     def test_tensorboard_end2end(self):
         test_folder = get_samples_dir()
-        expected_runs = b'["resnet50_num_workers_0", "resnet50_num_workers_4"]'
+        expected_runs = b'["resnet50_gpu", "resnet50_mlu"]'
 
         print('starting spawn mode testing...')
         self._test_tensorboard_with_arguments(test_folder, expected_runs, {'TORCH_PROFILER_START_METHOD': 'spawn'})
@@ -33,14 +33,14 @@ class TestEnd2End(unittest.TestCase):
     @unittest.skip('fork is not use anymore')
     def test_tensorboard_fork(self):
         test_folder = get_samples_dir()
-        expected_runs = b'["resnet50_num_workers_0", "resnet50_num_workers_4"]'
+        expected_runs = b'["resnet50_gpu", "resnet50_mlu"]'
 
         print('starting fork mode testing')
         self._test_tensorboard_with_arguments(test_folder, expected_runs)
 
     def test_tensorboard_with_path_prefix(self):
         test_folder = get_samples_dir()
-        expected_runs = b'["resnet50_num_workers_0", "resnet50_num_workers_4"]'
+        expected_runs = b'["resnet50_gpu", "resnet50_mlu"]'
         self._test_tensorboard_with_arguments(test_folder, expected_runs, path_prefix='/tensorboard/viewer/')
 
     def test_tensorboard_with_symlinks(self):
@@ -52,8 +52,8 @@ class TestEnd2End(unittest.TestCase):
         # logdir/
         #     run_concrete/
         #     run_symlink/ --> path/to/samples/resnet50_num_workers_4/
-        shutil.copytree(os.path.join(samples_dir, 'resnet50_num_workers_0'), os.path.join(logdir, 'run_concrete'))
-        os.symlink(os.path.join(samples_dir, 'resnet50_num_workers_4'), os.path.join(logdir, 'run_symlink'))
+        shutil.copytree(os.path.join(samples_dir, 'resnet50_gpu'), os.path.join(logdir, 'run_concrete'))
+        os.symlink(os.path.join(samples_dir, 'resnet50_mlu'), os.path.join(logdir, 'run_symlink'))
 
         expected_runs = b'["run_concrete", "run_symlink"]'
         self._test_tensorboard_with_arguments(logdir, expected_runs)

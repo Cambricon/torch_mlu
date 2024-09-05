@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 from .. import utils
 from .tensor_core import TC_Allowlist, TC_OP_Allowlist
 from .trace import (DurationEvent, EventTypes, KernelEvent, ModuleEvent,
-                    OperatorEvent, PLProfileEvent, CnclOpNameSet, GlooOpNameSet)
+                    OperatorEvent, PLProfileEvent, CnclOpNameSet, NcclOpNameSet, GlooOpNameSet)
 
 logger = utils.get_logger()
 
@@ -68,7 +68,7 @@ class CommunicationNode(BaseNode):
 class HostNode(BaseNode):
     def __init__(self, device_duration: int = 0, **kwargs):
         super().__init__(**kwargs)
-        self.device_duration = device_duration  # Total time of Kernel, MLU Memcpy, MLU Memset. TODO: parallel multi-stream? # noqa: E501
+        self.device_duration = device_duration  # Total time of Kernel, GPU Memcpy, GPU Memset. TODO: parallel multi-stream? # noqa: E501
 
 
 class OperatorNode(HostNode):
@@ -97,6 +97,8 @@ class OperatorNode(HostNode):
     def _merge_runtimes(self):
         merged_runtimes = []
         for rt in self.runtimes:
+            if rt.name == "dummy":
+                continue
             if not merged_runtimes:
                 merged_runtimes.append(rt)
             else:
@@ -128,8 +130,6 @@ class OperatorNode(HostNode):
             if self.type == EventTypes.OPERATOR and not self.tc_eligible and child.tc_eligible:
                 self.tc_eligible = True
         for rt in self.runtimes:
-            # From PyTorch 1.8 RC1, cpu_self_time does not include runtime's time.
-            # So here we keep consistent with it.
             self.device_duration += rt.device_duration
             self.self_device_duration += rt.device_duration
             self.tc_self_duration += rt.tc_duration
@@ -138,6 +138,8 @@ class OperatorNode(HostNode):
                 logger.warning("New Tensor Cores eligible operator found: '{}'!".format(self.name))
                 self.tc_eligible = True
         for rt in self._merge_runtimes():
+            # From PyTorch 1.8 RC1, cpu_self_time does not include runtime's time.
+            # So here we keep consistent with it.
             if rt.end_time is not None and rt.start_time is not None:
                 self.self_host_duration -= (rt.end_time - rt.start_time)
 
@@ -289,6 +291,7 @@ class DeviceNode(BaseNode):
                  dim: Optional[List[int]] = None,
                  tasktopo: int = None,
                  tasktopo_node: int = None, **kwargs):
+
         super().__init__(**kwargs)
         self.op_tc_eligible = False
         self.op_name = None
@@ -300,6 +303,7 @@ class DeviceNode(BaseNode):
         self.shared_memory = shared_memory
         self.tc_used = self.name in TC_Allowlist
         self.device_id = device_id
+        # for mlu
         self.kernel_type = kernel_type
         self.dim = dim
         self.tasktopo = tasktopo
@@ -316,6 +320,7 @@ class DeviceNode(BaseNode):
             kwargs['regs_per_thread'] = event.regs_per_thread
             kwargs['shared_memory'] = event.shared_memory
             kwargs['device_id'] = event.device_id
+            # for mlu
             kwargs['kernel_type'] = event.kernel_type
             kwargs['dim'] = event.dim
             kwargs['tasktopo'] = event.tasktopo
@@ -330,7 +335,7 @@ def create_operator_node(event: OperatorEvent):
     elif event.name.startswith('Optimizer.step'):
         return OptimizerNode.create(event)
     elif event.type == EventTypes.USER_ANNOTATION:
-        if event.name in GlooOpNameSet or event.name in CnclOpNameSet:
+        if event.name in GlooOpNameSet or event.name in NcclOpNameSet or event.name in CnclOpNameSet:
             return OperatorNode.create(event)
         else:
             return None

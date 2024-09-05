@@ -43,6 +43,8 @@ class MemoryRecord:
     def device_name(self):
         if self.device_type == DeviceType.CPU:
             return 'CPU'
+        elif self.device_type == DeviceType.CUDA:
+            return 'GPU{}'.format(self.device_id)
         elif self.device_type == DeviceType.PrivateUse1:
             return 'MLU{}'.format(self.device_id)
         else:
@@ -95,7 +97,7 @@ class MemorySnapshot:
         # traverse outputs
         op_list: List[OperatorNode] = []
         # two level keys dictionary
-        # first keyed by node, then keyed by device (CPU/MLU0/MLU1/etc.)
+        # first keyed by node, then keyed by device (CPU/GPU0/GPU1/etc.)
         memory_metrics_keyed_by_node: Dict[OperatorNode, Dict[str, List[int]]] = defaultdict(dict_factory)
 
         def traverse_node_memory(node: OperatorNode):
@@ -115,7 +117,7 @@ class MemorySnapshot:
             elif is_op:
                 node_memory_metrics = self.get_memory_metrics(node, start_ts, end_ts)
                 for device, metrics in node_memory_metrics.items():
-                    # device is name of device like: CPU/MLU0
+                    # device is name of device like: CPU/GPU0
                     # metrics is an arrary [SelfIncreaseSize, SelfAllocationSize, SelfAllocationCount]
                     for i, value in enumerate(metrics):
                         memory_metrics_keyed_by_node[node][device][i] = value
@@ -136,10 +138,10 @@ class MemorySnapshot:
             for child in root.children:
                 traverse_node_memory(child)
 
-        # keyed first by device name like CPU/MLU0 etc, then keyed by operator name.
+        # keyed first by device name like CPU/GPU0 etc, then keyed by operator name.
         # the value is array [items indexed by MemoryMetrics]
         memory_metrics_keyed_by_nodename: Dict[str, Dict[str, List[int]]] = defaultdict(dict_factory)
-        # node: the instance, device_keyed_metrics: dictionary keyed by device name like CPU/MLU0
+        # node: the instance, device_keyed_metrics: dictionary keyed by device name like CPU/GPU0
         for node, device_keyed_metrics in memory_metrics_keyed_by_node.items():
             if not is_operator_node(node):
                 # skip the node like Optimizer.step, DataLoader, ProfilerStep#1 etc.

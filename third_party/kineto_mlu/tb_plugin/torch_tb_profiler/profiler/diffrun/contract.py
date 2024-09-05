@@ -7,6 +7,9 @@ from typing import Dict, List
 OpAgg = namedtuple('OpAgg', [
     'name',
     'calls',
+    'kernel_calls',
+    'kernel_name_list_str',
+    'kernel_calls_list_str',
     'host_duration',
     'device_duration',
     'self_host_duration',

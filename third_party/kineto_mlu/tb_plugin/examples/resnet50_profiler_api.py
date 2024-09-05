@@ -5,29 +5,38 @@ import torch.optim
 import torch.utils.data
 import torchvision
 import torchvision.transforms as T
-import torchvision.models as models
 
 import torch.profiler
+from torchvision import models
 
-model = models.resnet50(pretrained=True)
-model.cuda()
-cudnn.benchmark = True
+try:
+    import torch_mlu
+    device = "mlu"
+    device_activitity = torch.profiler.ProfilerActivity.MLU
+except:
+    device = "cuda"
+    device_activitity = torch.profiler.ProfilerActivity.CUDA
+    cudnn.benchmark = True
+
+model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+model.to(device=device)
 
 transform = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor()])
 trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
                                         download=True, transform=transform)
+# There is a known bug where with_stack=True, setting num_workers=0 or repeat=1 are workarounds.
+# See https://github.com/pytorch/pytorch/issues/109969
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=32,
-                                          shuffle=True, num_workers=4)
+                                          shuffle=True, num_workers=0)
 
-criterion = nn.CrossEntropyLoss().cuda()
+criterion = nn.CrossEntropyLoss().to(device=device)
 optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-device = torch.device("cuda:0")
 model.train()
 
 with torch.profiler.profile(
     activities=[
         torch.profiler.ProfilerActivity.CPU,
-        torch.profiler.ProfilerActivity.CUDA],
+        device_activitity],
     schedule=torch.profiler.schedule(
         wait=1,
         warmup=1,
@@ -47,6 +56,6 @@ with torch.profiler.profile(
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        if step + 1 >= 4:
+        if step + 1 >= 8:
             break
         p.step()

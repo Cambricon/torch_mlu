@@ -35,6 +35,9 @@ class Operator(metaclass=ABCMeta):
             yield OpAgg(
                 agg.name,
                 agg.calls,
+                agg.kernel_calls,
+                ';'.join(list(agg.kernel_dict.keys())),
+                ';'.join([str(elem) for elem in agg.kernel_dict.values()]),
                 agg.host_duration,
                 agg.device_duration,
                 agg.self_host_duration,

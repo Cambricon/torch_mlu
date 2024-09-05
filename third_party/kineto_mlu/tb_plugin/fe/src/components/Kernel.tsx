@@ -28,7 +28,7 @@ import { PieChart } from './charts/PieChart'
 import { DataLoading } from './DataLoading'
 import { makeChartHeaderRenderer, useTooltipCommonStyles } from './helpers'
 import {
-  MLUKernelTotalTimeTooltip,
+  GPUKernelTotalTimeTooltip,
   TensorCoresPieChartTooltip
 } from './TooltipDescriptions'
 
@@ -146,8 +146,8 @@ export const Kernel: React.FC<IProps> = (props) => {
     min: 1
   }
 
-  const MLUKernelTotalTimeTitle = React.useMemo(
-    () => chartHeaderRenderer('Total Time (us)', MLUKernelTotalTimeTooltip),
+  const GPUKernelTotalTimeTitle = React.useMemo(
+    () => chartHeaderRenderer('Total Time (us)', GPUKernelTotalTimeTooltip),
     [chartHeaderRenderer]
   )
 
@@ -198,7 +198,7 @@ export const Kernel: React.FC<IProps> = (props) => {
               <DataLoading value={kernelGraph}>
                 {(graph) => (
                   <Card elevation={0}>
-                    <CardHeader title={MLUKernelTotalTimeTitle} />
+                    <CardHeader title={GPUKernelTotalTimeTitle} />
                     <PieChart
                       title={graph.title}
                       graph={graph}

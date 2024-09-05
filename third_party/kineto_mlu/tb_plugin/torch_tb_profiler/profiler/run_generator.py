@@ -14,7 +14,7 @@ from .overall_parser import ProfileRole
 logger = utils.get_logger()
 
 
-class RunGenerator(object):
+class RunGenerator:
     def __init__(self, worker, span, profile_data: RunProfileData):
         self.worker = worker
         self.span = span
@@ -50,15 +50,17 @@ class RunGenerator(object):
         profile_run.views.append(consts.TRACE_VIEW)
         profile_run.trace_file_path = self.profile_data.trace_file_path
 
-        profile_run.mlu_metrics = self.profile_data.mlu_metrics_parser.get_mlu_metrics()
+        profile_run.device_type = self.profile_data.device_type
 
-        mlu_infos = {mlu_id: RunGenerator._get_mlu_info(self.profile_data.device_props, mlu_id)
-                     for mlu_id in self.profile_data.mlu_metrics_parser.mlu_ids}
-        mlu_infos = {mlu_id: mlu_info for mlu_id, mlu_info in mlu_infos.items() if mlu_info is not None}
+        profile_run.gpu_metrics = self.profile_data.gpu_metrics_parser.get_gpu_metrics(profile_run.device_type)
 
-        profile_run.mlu_summary, profile_run.mlu_tooltip = \
-            self.profile_data.mlu_metrics_parser.get_mlu_metrics_data_tooltip(
-                mlu_infos, self.profile_data.tc_ratio)
+        gpu_infos = {gpu_id: RunGenerator._get_gpu_info(self.profile_data.device_props, gpu_id)
+                     for gpu_id in self.profile_data.gpu_metrics_parser.gpu_ids}
+        gpu_infos = {gpu_id: gpu_info for gpu_id, gpu_info in gpu_infos.items() if gpu_info is not None}
+
+        profile_run.gpu_summary, profile_run.gpu_tooltip = \
+            self.profile_data.gpu_metrics_parser.get_gpu_metrics_data_tooltip(
+                gpu_infos, self.profile_data.tc_ratio, profile_run.device_type)
 
         profile_run.tid2tree = self.profile_data.tid2tree
         profile_run.pl_tid2tree = self.profile_data.pl_tid2tree
@@ -84,8 +86,12 @@ class RunGenerator(object):
                           '<b>{}: {}us</b><br>'
                           'Percentage: {}%'
                           '</div>')
-            percentage = round(100 * part_cost / costs.costs[ProfileRole.Total], 2)
-            return format_str.format(step_name, costs.costs[ProfileRole.Total], part_name, part_cost, percentage)
+
+            if (total_cost := costs.costs[ProfileRole.Total]) == 0:
+                percentage = 0.0
+            else:
+                percentage = round(100 * part_cost / total_cost, 2)
+            return format_str.format(step_name, total_cost, part_name, part_cost, percentage)
 
         def build_avg_cost_dict(part_name: str, part_cost: float):
             cost_dict = {'name': part_name,
@@ -94,14 +100,14 @@ class RunGenerator(object):
                          'extra': round(100 * part_cost / self.profile_data.avg_costs.costs[ProfileRole.Total], 2)}
             return cost_dict
 
-        show_mlu = (self.profile_data.has_runtime
+        show_gpu = (self.profile_data.has_runtime
                     or self.profile_data.has_kernel or self.profile_data.has_memcpy_or_memset)
 
         column_tootip = {'type': 'string', 'role': 'tooltip', 'p': {'html': 'true'}}
         data = {}
         data['steps'] = {}
         data['steps']['columns'] = [{'type': 'string', 'name': 'Step'}]
-        if show_mlu:
+        if show_gpu:
             data['steps']['columns'].extend([{'type': 'number', 'name': 'Kernel'},
                                              column_tootip,
                                              {'type': 'number', 'name': 'Memcpy'},
@@ -111,7 +117,7 @@ class RunGenerator(object):
         if self.profile_data.has_communication:
             data['steps']['columns'].extend([{'type': 'number', 'name': 'Communication'},
                                              column_tootip])
-        if show_mlu:
+        if show_gpu:
             data['steps']['columns'].extend([{'type': 'number', 'name': 'Runtime'},
                                              column_tootip])
         data['steps']['columns'].extend([{'type': 'number', 'name': 'DataLoader'},
@@ -126,7 +132,7 @@ class RunGenerator(object):
             costs = self.profile_data.steps_costs[i]
             step_name = self.profile_data.steps_names[i]
             row = [step_name]
-            if show_mlu:
+            if show_gpu:
                 row.extend([costs.costs[ProfileRole.Kernel],
                             build_part_time_str(costs.costs[ProfileRole.Kernel], 'Kernel'),
                             costs.costs[ProfileRole.Memcpy],
@@ -136,7 +142,7 @@ class RunGenerator(object):
             if self.profile_data.has_communication:
                 row.extend([costs.costs[ProfileRole.Communication],
                             build_part_time_str(costs.costs[ProfileRole.Communication], 'Communication')])
-            if show_mlu:
+            if show_gpu:
                 row.extend([costs.costs[ProfileRole.Runtime],
                             build_part_time_str(costs.costs[ProfileRole.Runtime], 'Runtime')])
             row.extend([costs.costs[ProfileRole.DataLoader],
@@ -148,7 +154,7 @@ class RunGenerator(object):
             data['steps']['rows'].append(row)
 
         avg_costs = []
-        if show_mlu:
+        if show_gpu:
             avg_costs.extend([
                 build_avg_cost_dict('Kernel', self.profile_data.avg_costs.costs[ProfileRole.Kernel]),
                 build_avg_cost_dict('Memcpy', self.profile_data.avg_costs.costs[ProfileRole.Memcpy]),
@@ -158,7 +164,7 @@ class RunGenerator(object):
             avg_costs.extend([
                 build_avg_cost_dict('Communication', self.profile_data.avg_costs.costs[ProfileRole.Communication])
             ])
-        if show_mlu:
+        if show_gpu:
             avg_costs.extend([
                 build_avg_cost_dict('Runtime', self.profile_data.avg_costs.costs[ProfileRole.Runtime])
             ])
@@ -251,7 +257,7 @@ class RunGenerator(object):
         return data
 
     def _generate_op_table(self, op_list: Iterable[OperatorAgg], group_by_input_shape=False, call_stack=False):
-        show_mlu = self.profile_data.has_kernel or self.profile_data.has_memcpy_or_memset
+        show_gpu = self.profile_data.has_kernel or self.profile_data.has_memcpy_or_memset
 
         if group_by_input_shape:
             stack_list_dict = self.profile_data.stack_lists_group_by_name_input
@@ -259,13 +265,13 @@ class RunGenerator(object):
             stack_list_dict = self.profile_data.stack_lists_group_by_name
 
         op_list = sorted(op_list,
-                         key=lambda x: x.self_device_duration if show_mlu else x.self_host_duration,
+                         key=lambda x: x.self_device_duration if show_gpu else x.self_host_duration,
                          reverse=True)
 
         data = list()
         result = {
             'metadata': {
-                'sort': 'device_self_duration' if show_mlu else 'host_self_duration',
+                'sort': 'device_self_duration' if show_gpu else 'host_self_duration',
                 'tooltips': {
                     'tc_eligible': consts.TOOLTIP_OP_TC_ELIGIBLE,
                     'tc_self_ratio': consts.TOOLTIP_OP_TC_SELF,
@@ -281,7 +287,7 @@ class RunGenerator(object):
             if group_by_input_shape:
                 row['input_shape'] = op.input_shape
             row['calls'] = op.calls
-            if show_mlu:
+            if show_gpu:
                 row['device_self_duration'] = round(op.self_device_duration)
                 row['device_total_duration'] = round(op.device_duration)
             row['host_self_duration'] = round(op.self_host_duration)
@@ -313,6 +319,8 @@ class RunGenerator(object):
         return result
 
     def _generate_kernel_op_table(self):
+        dev = self.profile_data.device_type
+
         table = {}
         result = {
             'metadata': {
@@ -320,31 +328,53 @@ class RunGenerator(object):
             },
             'data': table
         }
+        dev_columns = [{'type': 'string', 'name': 'Kernel Type'},
+                       {'type': 'string', 'name': 'Dim'},
+                       {'type': 'number', 'name': 'Tasktopo'},
+                       {'type': 'number', 'name': 'Tasktopo_node'}] if dev == 'mlu' else \
+                      [{'type': 'string', 'name': 'Grid'},
+                       {'type': 'string', 'name': 'Block'},
+                       {'type': 'number', 'name': 'Register Per Thread'},
+                       {'type': 'number', 'name': 'Shared Memory'}]
+
         table['columns'] = [{'type': 'string', 'name': 'Name'},
                             {'type': 'string', 'name': 'Operator'},
-                            {'type': 'string', 'name': 'DimXYZ'},
-                            {'type': 'string', 'name': 'Kernel Type'},
+                            dev_columns[0],
+                            dev_columns[1],
+                            dev_columns[2],
+                            dev_columns[3],
                             {'type': 'string', 'name': 'Kernel Uses Tensor Cores',
-                             'tooltip': consts.TOOLTIP_KERNEL_USES_TC}]
+                             'tooltip': consts.TOOLTIP_KERNEL_USES_TC},
+                            {'type': 'string', 'name': 'Op is Tensor Cores eligible',
+                             'tooltip': consts.TOOLTIP_KERNEL_OP_TC_ELIGIBLE}]
         col_names = ['Calls', 'Total Duration (us)', 'Mean Duration (us)', 'Max Duration (us)', 'Min Duration (us)']
         for column in col_names:
             table['columns'].append({'type': 'number', 'name': column})
-        mlu_metrics_columns = self.profile_data.mlu_metrics_parser.get_mlu_metrics_columns()
-        table['columns'].extend(mlu_metrics_columns)
+        gpu_metrics_columns = self.profile_data.gpu_metrics_parser.get_gpu_metrics_columns()
+        table['columns'].extend(gpu_metrics_columns)
 
         table['rows'] = []
         kernel_list: List[KernelAggByNameOp] = sorted(
             self.profile_data.kernel_list_groupby_name_op, key=lambda x: x.total_duration, reverse=True)
         for agg_by_name_op in kernel_list:
+            dev_row = [str(agg_by_name_op.kernel_type or 'None'),
+                       str(agg_by_name_op.dim or '[,,,]'),
+                       str(agg_by_name_op.tasktopo),
+                       str(agg_by_name_op.tasktopo_node)] if dev == 'mlu' else \
+                      [str(agg_by_name_op.grid),
+                       str(agg_by_name_op.block),
+                       str(agg_by_name_op.regs_per_thread or '0'),
+                       str(agg_by_name_op.shared_memory or '0')]
             kernel_op_row = [agg_by_name_op.name, agg_by_name_op.op_name,
-                             str(agg_by_name_op.dim), agg_by_name_op.kernel_type,
+                             dev_row[0], dev_row[1], dev_row[2], dev_row[3],
                              'Yes' if agg_by_name_op.tc_used else 'No',
+                             'Yes' if agg_by_name_op.op_tc_eligible else 'No',
                              agg_by_name_op.calls,
                              agg_by_name_op.total_duration, round(agg_by_name_op.avg_duration),
                              agg_by_name_op.max_duration, agg_by_name_op.min_duration]
-            if self.profile_data.mlu_metrics_parser.has_blocks_per_sm:
+            if self.profile_data.gpu_metrics_parser.has_blocks_per_sm:
                 kernel_op_row.append(round(agg_by_name_op.avg_blocks_per_sm, 2))
-            if self.profile_data.mlu_metrics_parser.has_occupancy:
+            if self.profile_data.gpu_metrics_parser.has_occupancy:
                 kernel_op_row.append(round(agg_by_name_op.avg_occupancy, 2))
             table['rows'].append(kernel_op_row)
         return result
@@ -369,17 +399,17 @@ class RunGenerator(object):
                              'tooltip': consts.TOOLTIP_KERNEL_USES_TC}]
         columns = ['count', 'sum', 'mean', 'max', 'min']
         round_digits = [0, 0, 0, 0, 0]
-        if self.profile_data.mlu_metrics_parser.has_blocks_per_sm:
+        if self.profile_data.gpu_metrics_parser.has_blocks_per_sm:
             columns.append('blocks_per_sm')
             round_digits.append(2)
-        if self.profile_data.mlu_metrics_parser.has_occupancy:
+        if self.profile_data.gpu_metrics_parser.has_occupancy:
             columns.append('occupancy')
             round_digits.append(2)
         col_names = ['Calls', 'Total Duration (us)', 'Mean Duration (us)', 'Max Duration (us)', 'Min Duration (us)']
         for column in col_names:
             table['columns'].append({'type': 'number', 'name': column})
-        mlu_metrics_columns = self.profile_data.mlu_metrics_parser.get_mlu_metrics_columns()
-        table['columns'].extend(mlu_metrics_columns)
+        gpu_metrics_columns = self.profile_data.gpu_metrics_parser.get_gpu_metrics_columns()
+        table['columns'].extend(gpu_metrics_columns)
 
         table['rows'] = []
         for _id, (name, row) in enumerate(self.profile_data.kernel_stat.iterrows()):
@@ -398,30 +428,36 @@ class RunGenerator(object):
         return data
 
     @staticmethod
-    def _get_mlu_info(device_props, mlu_id):
-        if (device_props is None) or (mlu_id >= len(device_props)) or (mlu_id < 0):
+    def _get_gpu_info(device_props, gpu_id):
+        if (device_props is None) or (gpu_id >= len(device_props)) or (gpu_id < 0):
             return None
 
-        device_prop: Dict = device_props[mlu_id]
-        mlu_info = {}
+        device_prop: Dict = device_props[gpu_id]
+        gpu_info = {}
         name = device_prop.get('name')
         if name is not None:
-            mlu_info['Name'] = name
+            gpu_info['Name'] = name
 
-        mem = device_prop.get('totalMem(MiB)')
+        mem = device_prop.get('totalGlobalMem')
         if mem is not None:
-            mlu_info['Memory'] = '{} GB'.format(round(float(mem) / 1024, 2))
-            mlu_info['Memory Raw'] = mem
+            gpu_info['Memory'] = '{} GB'.format(round(float(mem) / 1024 / 1024 / 1024, 2))
+            gpu_info['Memory Raw'] = mem
+        else:
+            # for mlu
+            mem = device_prop.get('totalMem(MiB)')
+            if mem is not None:
+                gpu_info['Memory'] = '{} GB'.format(round(float(mem) / 1024, 2))
+                gpu_info['Memory Raw'] = mem
 
         major = device_prop.get('computeMajor')
         minor = device_prop.get('computeMinor')
         if major is not None and minor is not None:
-            mlu_info['Compute Capability'] = '{}.{}'.format(major, minor)
+            gpu_info['Compute Capability'] = '{}.{}'.format(major, minor)
 
-        return mlu_info
+        return gpu_info
 
 
-class DistributedRunGenerator(object):
+class DistributedRunGenerator:
     def __init__(self, all_profile_data: Iterable[DistributedRunProfileData], span):
         self.all_profile_data = all_profile_data
         self.span = span
@@ -429,15 +465,16 @@ class DistributedRunGenerator(object):
     def generate_run_profile(self):
         profile_run = DistributedRunProfile(self.span)
         profile_run.views.append(consts.DISTRIBUTED_VIEW)
-        profile_run.mlu_info = self._generate_mlu_info()
+        profile_run.device_type = self.all_profile_data[0].device_type if self.all_profile_data else 'gpu'
+        profile_run.gpu_info = self._generate_gpu_info(profile_run.device_type)
         profile_run.steps_to_overlap = self._generate_overlap_graph()
         profile_run.steps_to_wait = self._generate_wait_graph()
         profile_run.comm_ops = self._generate_ops_table()
         return profile_run
 
-    def _generate_mlu_info(self):
-        # first key is node name, the second key is process id, the third key is MLU0/,
-        # the value is the mlu info json
+    def _generate_gpu_info(self, device_type='gpu'):
+        # first key is node name, the second key is process id, the third key is GPU0/,
+        # the value is the gpu info json
         result: Dict[str, Dict[str, Dict[str, Dict]]] = OrderedDict()
         index = 0
         for data in sorted(self.all_profile_data, key=lambda x: x.worker):
@@ -459,9 +496,9 @@ class DistributedRunGenerator(object):
             process_id = 'Process ' + str(process_id)
             result[node][process_id] = OrderedDict()
             for used_device in data.used_devices:
-                mlu_info = RunGenerator._get_mlu_info(data.device_props, used_device)
-                if mlu_info is not None:
-                    result[node][process_id]['MLU'+str(used_device)] = mlu_info
+                gpu_info = RunGenerator._get_gpu_info(data.device_props, used_device)
+                if gpu_info is not None:
+                    result[node][process_id][device_type.upper()+str(used_device)] = gpu_info
 
         if result:
             for k, v in result.items():
@@ -496,7 +533,8 @@ class DistributedRunGenerator(object):
                 ]
                 steps_to_overlap['all'][data.worker] = [
                     sum(x) for x in zip(steps_to_overlap['all'][data.worker], steps_to_overlap[step_name][data.worker])]
-            steps_to_overlap['all'][data.worker] = [x/step_number for x in steps_to_overlap['all'][data.worker]]
+            steps_to_overlap['all'][data.worker] = [int(x / max(1, step_number)) for x in
+                                                    steps_to_overlap['all'][data.worker]]
         for k, v in steps_to_overlap.items():
             steps_to_overlap[k] = OrderedDict(sorted(v.items()))
         result['data'] = steps_to_overlap
@@ -522,7 +560,8 @@ class DistributedRunGenerator(object):
                 ]
                 steps_to_wait['all'][data.worker] = [
                     sum(x) for x in zip(steps_to_wait['all'][data.worker], steps_to_wait[step][data.worker])]
-            steps_to_wait['all'][data.worker] = [x/step_number for x in steps_to_wait['all'][data.worker]]
+            steps_to_wait['all'][data.worker] = [int(x / max(1, step_number)) for x in
+                                                 steps_to_wait['all'][data.worker]]
 
         for k, v in steps_to_wait.items():
             steps_to_wait[k] = OrderedDict(sorted(v.items()))

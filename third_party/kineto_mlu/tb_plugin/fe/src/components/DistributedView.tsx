@@ -12,16 +12,16 @@ import Select, { SelectProps } from '@material-ui/core/Select'
 import { makeStyles } from '@material-ui/core/styles'
 import * as React from 'react'
 import * as api from '../api'
-import { DistributedGraph, MluInfo, Graph } from '../api'
+import { DistributedGraph, GpuInfo, Graph } from '../api'
 import { firstOrUndefined } from '../utils'
 import { ColumnChart } from './charts/ColumnChart'
 import { TableChart } from './charts/TableChart'
 import { DataLoading } from './DataLoading'
-import { MluInfoTable } from './MluInfoTable'
+import { GpuInfoTable } from './GpuInfoTable'
 import { makeChartHeaderRenderer, useTooltipCommonStyles } from './helpers'
 import {
   DistributedCommopsTableTooltip,
-  DistributedMluInfoTableTooltip,
+  DistributedGpuInfoTableTooltip,
   DistributedOverlapGraphTooltip,
   DistributedWaittimeGraphTooltip
 } from './TooltipDescriptions'
@@ -71,7 +71,7 @@ export const DistributedView: React.FC<IProps> = (props) => {
   const [commopsTableData, setCommopsTableData] = React.useState<
     any | undefined
   >(undefined)
-  const [mluInfo, setMluInfo] = React.useState<MluInfo | undefined>(undefined)
+  const [gpuInfo, setGpuInfo] = React.useState<GpuInfo | undefined>(undefined)
   const [commopsTableTitle, setCommopsTableTitle] = React.useState('')
   const [commopsWorkers, setCommopsWorkers] = React.useState<string[]>([])
   const [overlapSteps, setOverlapSteps] = React.useState<string[]>([])
@@ -114,8 +114,8 @@ export const DistributedView: React.FC<IProps> = (props) => {
       setCommopsWorkers(Object.keys(resp.data))
       setCommopsTableTitle(resp.metadata.title)
     })
-    api.defaultApi.distributedMluinfoGet(run, 'All', span).then((resp) => {
-      setMluInfo(resp)
+    api.defaultApi.distributedGpuinfoGet(run, 'All', span).then((resp) => {
+      setGpuInfo(resp)
     })
   }, [run, worker, span])
 
@@ -164,17 +164,17 @@ export const DistributedView: React.FC<IProps> = (props) => {
         <CardHeader title="Distributed View" />
         <CardContent>
           <Grid container spacing={1}>
-            {mluInfo && (
+            {gpuInfo && (
               <Grid item sm={12}>
                 <Card elevation={0}>
                   <CardHeader
                     title={chartHeaderRenderer(
-                      mluInfo.metadata.title,
-                      DistributedMluInfoTableTooltip
+                      gpuInfo.metadata.title,
+                      DistributedGpuInfoTableTooltip
                     )}
                   />
                   <CardContent>
-                    <MluInfoTable mluInfo={mluInfo} />
+                    <GpuInfoTable gpuInfo={gpuInfo} />
                   </CardContent>
                 </Card>
               </Grid>

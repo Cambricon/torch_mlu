@@ -73,8 +73,8 @@ export const Overview: React.FC<IProps> = (props) => {
   const [steps, setSteps] = React.useState<api.Graph | undefined>(undefined)
   const [performances, setPerformances] = React.useState<api.Performance[]>([])
   const [environments, setEnvironments] = React.useState<api.Environment[]>([])
-  const [mluMetrics, setMluMetrics] = React.useState<
-    api.MluMetrics | undefined
+  const [gpuMetrics, setGpuMetrics] = React.useState<
+    api.GpuMetrics | undefined
   >(undefined)
   const [recommendations, setRecommendations] = React.useState('')
 
@@ -92,8 +92,8 @@ export const Overview: React.FC<IProps> = (props) => {
       setEnvironments(resp.environments)
       setSteps(resp.steps)
       setRecommendations(resp.recommendations)
-      setMluMetrics(resp.mlu_metrics)
-      console.log(resp.mlu_metrics)
+      setGpuMetrics(resp.gpu_metrics)
+      console.log(resp.gpu_metrics)
     })
   }, [run, worker, span])
 
@@ -109,7 +109,7 @@ export const Overview: React.FC<IProps> = (props) => {
     [tooltipCommonClasses, chartHeaderRenderer]
   )
 
-  const cardSizes = mluMetrics
+  const cardSizes = gpuMetrics
     ? ([2, 3, 7] as const)
     : ([4, undefined, 8] as const)
 
@@ -135,17 +135,17 @@ export const Overview: React.FC<IProps> = (props) => {
               [environments]
             )}
           </Grid>
-          {mluMetrics && (
+          {gpuMetrics && (
             <Grid item sm={cardSizes[1]}>
               <Card variant="outlined">
                 <CardHeader
-                  title={chartHeaderRenderer('MLU Summary', mluMetrics.tooltip)}
+                  title={chartHeaderRenderer('Device Summary', gpuMetrics.tooltip)}
                 />
                 <CardContent
                   className={classes.topGraph}
                   style={{ overflow: 'auto' }}
                 >
-                  {mluMetrics.data.map((metric) => (
+                  {gpuMetrics.data.map((metric) => (
                     <TextListItem
                       name={metric.title}
                       value={metric.value}

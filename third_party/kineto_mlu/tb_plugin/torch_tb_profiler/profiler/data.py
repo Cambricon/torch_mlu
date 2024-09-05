@@ -14,7 +14,7 @@ from ..utils import href
 from . import trace
 from .communication import analyze_communication_nodes
 from .event_parser import CommLibTypes, EventParser, ProfileRole
-from .mlu_metrics_parser import MLUMetricsParser
+from .gpu_metrics_parser import GPUMetricsParser
 from .kernel_parser import KernelParser
 from .memory_parser import MemoryParser, MemorySnapshot
 from .node import OperatorNode
@@ -26,7 +26,7 @@ from .trace import BaseEvent, EventTypes, MemoryEvent
 logger = utils.get_logger()
 
 
-class RunProfileData(object):
+class RunProfileData:
     def __init__(self, worker: str, span: str, trace_json: Dict):
         self.worker = worker
         self.span = span
@@ -36,6 +36,7 @@ class RunProfileData(object):
         self.data_schema_version = trace_json.get('schemaVersion', None)
         self.distributed_info = trace_json.get('distributedInfo', None)
         self.device_props = trace_json.get('deviceProperties', None)
+        self.device_type = self._get_device_type()
 
         self.profiler_start_ts = float('inf')
         self.events: List[BaseEvent] = []
@@ -72,8 +73,8 @@ class RunProfileData(object):
         self.steps_names = None
         self.avg_costs = None
 
-        # MLU parser
-        self.mlu_metrics_parser: MLUMetricsParser = None
+        # GPU parser
+        self.gpu_metrics_parser: GPUMetricsParser = None
 
         # Operator aggregator
         self.op_list_groupby_name = None
@@ -187,7 +188,7 @@ class RunProfileData(object):
         logger.debug('ModuleAggregator')
         with utils.timing('ModuleAggregator aggegation'):
             module_aggregator = ModuleAggregator()
-            module_aggregator.aggregate(self.tid2tree)
+            module_aggregator.aggregate(self.tid2tree, self.device_type)
         self.op_list_groupby_name = module_aggregator.op_list_groupby_name
         self.op_list_groupby_name_input = module_aggregator.op_list_groupby_name_input
         self.stack_lists_group_by_name = module_aggregator.stack_lists_group_by_name
@@ -202,13 +203,13 @@ class RunProfileData(object):
         self.steps_costs = overall_parser.steps_costs
         self.comm_overlap_costs = overall_parser.communication_overlap
 
-        logger.debug('MLUMetricsParser')
-        self.mlu_metrics_parser = MLUMetricsParser.parse_events(
+        logger.debug('GPUMetricsParser')
+        self.gpu_metrics_parser = GPUMetricsParser.parse_events(
             self.events, parser.global_start_ts, parser.global_end_ts, parser.steps[0][0], parser.steps[-1][1])
 
         logger.debug('TensorCoresParser')
         tensorcores_parser = TensorCoresParser.parse_events(
-            self.tid2tree, module_aggregator.ops, self.mlu_metrics_parser.mlu_ids)
+            self.tid2tree, module_aggregator.ops, self.gpu_metrics_parser.gpu_ids)
         self.tc_eligible_ops_kernel_ratio = tensorcores_parser.tc_eligible_ops_kernel_ratio
         self.tc_ratio = tensorcores_parser.tc_ratio
 
@@ -239,15 +240,34 @@ class RunProfileData(object):
             )
 
         self._analyze_distributed_metrics()
-        self._analyze_mlu_metrics()
+        self._analyze_gpu_metrics()
 
         if self.device_props:
+            if self.device_type == 'gpu':
+                # Tensor Cores feature is available on GPU cards with compute capability >= 7.0
+                # https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#features-and-technical-specifications
+                major = self.device_props[0].get('computeMajor')
+                # If it's a pure CPU run, then self.tc_used_ratio is None, this rule will not be triggered.
+                if (major is not None and major >= 7 and
+                        self.tc_used_ratio == 0.0 and
+                        self.tc_eligible_ops_kernel_ratio > 0.0):
+                    url = 'https://pytorch.org/docs/stable/amp.html'
+                    self.recommendations.append(
+                        f'Kernels with {round(self.tc_eligible_ops_kernel_ratio * 100)}%'
+                        ' time are launched by Tensor Cores eligible operators. '
+                        f"You could enable {href('Automatic Mixed Precision', url)} to speedup by using FP16.")
+
             # Memory related
             if self.memory_snapshot:
                 for (dev_type, dev_id), peak_mem in self.memory_snapshot.get_peak_memory().items():
                     if dev_type == -1:  # ignore cpu
                         continue
-                    total_mem = self.device_props[dev_id].get('totalMem(MiB)') * 1024 * 1024
+                    total_mem = None
+                    if self.device_type == 'gpu':
+                        total_mem = self.device_props[dev_id].get('totalGlobalMem')
+                    else:
+                        # for mlu
+                        total_mem = self.device_props[dev_id].get('totalMem(MiB)') * 1024 * 1024
                     if total_mem is not None and peak_mem > total_mem * 0.9:
                         percentage = peak_mem / total_mem * 100
                         total_mem_gb = total_mem / 1024 / 1024 / 1024
@@ -255,19 +275,48 @@ class RunProfileData(object):
                         amp_url = 'https://pytorch.org/docs/stable/amp.html'
                         self.recommendations.append(
                             f'Device memory usage is at the limit of device memory capacity '
-                            f'({percentage:.1f}% of {total_mem_gb:.1f}GB on MLU{dev_id}). '
-                            'To get better value of your MLU or to use larger batch size for training, please refer to '
+                            f'({percentage:.1f}% of {total_mem_gb:.1f}GB on {self.device_type.upper()}{dev_id}). '
+                            f'To get better value of your {self.device_type.upper()} or to use larger batch size for training, please refer to '
                             f"{href('Gradient Checkpoint', ckp_url)} or {href('Automatic Mixed Precision', amp_url)}.")
                         break
+
+    def _get_device_type(self):
+        if self.device_props is None:
+            return None
+
+        #device_prop: Dict = self.device_props[0]
+        #name = device_prop.get('name')
+        #if name is None:
+        #    return None
+        #else:
+        #    return 'mlu' if name.startswith('MLU') else 'gpu'
+
+        # TODO(PYTORCH-11641): Currently for MLU, 'deviceProperties' is
+        # not displayed in trace file, it always return '[]'.
+        return 'mlu' if not self.device_props else 'gpu'
 
     def _analyze_distributed_metrics(self):
         if self.use_dp and len(self.used_devices) > 1:
             url = 'https://pytorch.org/docs/stable/notes/cuda.html#cuda-nn-ddp-instead'
             self.recommendations.append(
                 f"It is recommended to {href('use DistributedDataParallel instead of DataParallel', url)}"
-                ' to do multi-MLU training.')
+                ' to do multi-card training.')
 
-        if self.use_ddp and CommLibTypes.Cncl not in self.comm_lib and self.device_props:
+        if self.use_ddp and CommLibTypes.Nccl not in self.comm_lib and self.device_type == 'gpu':
+            for device_prop in self.device_props:
+                major = device_prop.get('computeMajor')
+                minor = device_prop.get('computeMinor')
+                if major is None or minor is None:
+                    continue
+                compute_capability = '{}.{}'.format(major, minor)
+                if float(compute_capability) >= 3.5:
+                    text = (
+                        'Nccl backend is currently the fastest and highly recommended backend'
+                        ' when using DDP for training.')
+                    self.recommendations.append(text)
+                    break
+
+        if self.use_ddp and CommLibTypes.Cncl not in self.comm_lib and self.device_type == 'mlu':
             text = (
                 'Cncl backend is currently the fastest and highly recommended backend'
                 ' when using DDP for training.')
@@ -292,26 +341,26 @@ class RunProfileData(object):
         memory_events.sort(key=lambda e: e.ts)
         return memory_events
 
-    def _analyze_mlu_metrics(self):
-        def get_mlus_str(mlus):
-            mlu_list_str = str(mlus[0])
-            for i in range(1, len(mlus)):
-                if i == len(mlus) - 1:
-                    mlu_list_str += 'and {}'.format(mlus[i])
+    def _analyze_gpu_metrics(self):
+        def get_gpus_str(gpus):
+            gpu_list_str = str(gpus[0])
+            for i in range(1, len(gpus)):
+                if i == len(gpus) - 1:
+                    gpu_list_str += 'and {}'.format(gpus[i])
                 else:
-                    mlu_list_str += ', {}'.format(mlus[i])
-            has_str = 'has' if len(mlu_list_str) == 1 else 'have'
-            return mlu_list_str, has_str
+                    gpu_list_str += ', {}'.format(gpus[i])
+            has_str = 'has' if len(gpu_list_str) == 1 else 'have'
+            return gpu_list_str, has_str
 
-        low_util_mlus = []
-        for mlu_id in self.mlu_metrics_parser.mlu_ids:
-            if self.mlu_metrics_parser.mlu_utilization[mlu_id] < 0.5:
-                low_util_mlus.append(mlu_id)
-        if len(low_util_mlus) > 0:
-            mlu_list_str, has_str = get_mlus_str(low_util_mlus)
-            text = 'MLU {} {} low utilization. You could try to ' \
+        low_util_gpus = []
+        for gpu_id in self.gpu_metrics_parser.gpu_ids:
+            if self.gpu_metrics_parser.gpu_utilization[gpu_id] < 0.5:
+                low_util_gpus.append(gpu_id)
+        if len(low_util_gpus) > 0:
+            gpu_list_str, has_str = get_gpus_str(low_util_gpus)
+            text = '{} {} {} low utilization. You could try to ' \
                    'increase batch size to improve. Note: Increasing batch size ' \
-                   'may affect the speed and stability of model convergence.'.format(mlu_list_str, has_str)
+                   'may affect the speed and stability of model convergence.'.format(self.device_type.upper() if self.device_type else 'Device', gpu_list_str, has_str)
             self.recommendations.append(text)
 
 
@@ -324,6 +373,7 @@ class DistributedRunProfileData:
         self.comm_lib = run_profile_data.comm_lib
         self.comm_node_list = run_profile_data.comm_node_list
         self.comm_overlap_costs = run_profile_data.comm_overlap_costs
+        self.device_type = run_profile_data.device_type
         self.used_devices = run_profile_data.used_devices
         self.device_props = run_profile_data.device_props
         self.distributed_info = run_profile_data.distributed_info

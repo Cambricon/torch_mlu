@@ -27,7 +27,7 @@ class TestKinetoTbPlugin(TestCase):
     def install_tb_plugin(self, base_dir):
         total_error_info = []
         os.chdir(base_dir)
-        cmd = "pip install ."
+        cmd = "pip install -e ."
         args = shlex.split(cmd)
         return_code = shell(args)
         gen_err_message(return_code, "Install tb_plugin", total_error_info)

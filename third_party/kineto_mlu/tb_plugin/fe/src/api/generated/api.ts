@@ -261,70 +261,70 @@ export interface Environment {
 /**
  *
  * @export
- * @interface MluInfo
+ * @interface GpuInfo
  */
-export interface MluInfo {
+export interface GpuInfo {
   /**
    *
-   * @type {MluInfoMetadata}
-   * @memberof MluInfo
+   * @type {GpuInfoMetadata}
+   * @memberof GpuInfo
    */
-  metadata: MluInfoMetadata
+  metadata: GpuInfoMetadata
   /**
    *
    * @type {any}
-   * @memberof MluInfo
+   * @memberof GpuInfo
    */
   data: any
 }
 /**
  *
  * @export
- * @interface MluInfoMetadata
+ * @interface GpuInfoMetadata
  */
-export interface MluInfoMetadata {
+export interface GpuInfoMetadata {
   /**
    *
    * @type {string}
-   * @memberof MluInfoMetadata
+   * @memberof GpuInfoMetadata
    */
   title: string
 }
 /**
  *
  * @export
- * @interface MluMetric
+ * @interface GpuMetric
  */
-export interface MluMetric {
+export interface GpuMetric {
   /**
    *
    * @type {string}
-   * @memberof MluMetric
+   * @memberof GpuMetric
    */
   title: string
   /**
    *
    * @type {string}
-   * @memberof MluMetric
+   * @memberof GpuMetric
    */
   value: string
 }
 /**
  *
  * @export
- * @interface MluMetrics
+ * @interface GpuMetrics
  */
-export interface MluMetrics {
+export interface GpuMetrics {
   /**
    *
-   * @type {Array<MluMetric>}
-   * @memberof MluMetrics
+   * @type {Array<GpuMetric>}
+   * @memberof GpuMetrics
    */
-  data: Array<MluMetric>
+  data: Array<GpuMetric>
   /**
    *
    * @type {string}
-   * @memberof MluMetrics
+   * @memberof GpuMetrics
    */
   tooltip: string
 }
@@ -443,10 +443,10 @@ export interface InlineResponse2001 {
 export interface InlineResponse2002 {
   /**
    *
-   * @type {MluInfoMetadata}
+   * @type {GpuInfoMetadata}
    * @memberof InlineResponse2002
    */
-  metadata: MluInfoMetadata
+  metadata: GpuInfoMetadata
   /**
    *
    * @type {any}
@@ -1041,10 +1041,10 @@ export interface Overview {
   recommendations: string
   /**
    *
-   * @type {MluMetrics}
+   * @type {GpuMetrics}
    * @memberof Overview
    */
-  mlu_metrics?: MluMetrics
+  gpu_metrics?: GpuMetrics
 }
 /**
  *
@@ -1377,7 +1377,7 @@ export const DefaultApiFetchParamCreator = function (
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    distributedMluinfoGet(
+    distributedGpuinfoGet(
       run: string,
       worker: string,
       span: string,
@@ -1387,24 +1387,24 @@ export const DefaultApiFetchParamCreator = function (
       if (run === null || run === undefined) {
         throw new RequiredError(
           'run',
-          'Required parameter run was null or undefined when calling distributedMluinfoGet.'
+          'Required parameter run was null or undefined when calling distributedGpuinfoGet.'
         )
       }
       // verify required parameter 'worker' is not null or undefined
       if (worker === null || worker === undefined) {
         throw new RequiredError(
           'worker',
-          'Required parameter worker was null or undefined when calling distributedMluinfoGet.'
+          'Required parameter worker was null or undefined when calling distributedGpuinfoGet.'
         )
       }
       // verify required parameter 'span' is not null or undefined
       if (span === null || span === undefined) {
         throw new RequiredError(
           'span',
-          'Required parameter span was null or undefined when calling distributedMluinfoGet.'
+          'Required parameter span was null or undefined when calling distributedGpuinfoGet.'
         )
       }
-      const localVarPath = `/distributed/mluinfo`
+      const localVarPath = `/distributed/gpuinfo`
       const localVarUrlObj = url.parse(localVarPath, true)
       const localVarRequestOptions = Object.assign({ method: 'GET' }, options)
       const localVarHeaderParameter = {} as any
@@ -2906,15 +2906,15 @@ export const DefaultApiFp = function (configuration?: Configuration) {
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    distributedMluinfoGet(
+    distributedGpuinfoGet(
       run: string,
       worker: string,
       span: string,
       options?: any
-    ): (fetch?: FetchAPI, basePath?: string) => Promise<MluInfo> {
+    ): (fetch?: FetchAPI, basePath?: string) => Promise<GpuInfo> {
       const localVarFetchArgs = DefaultApiFetchParamCreator(
         configuration
-      ).distributedMluinfoGet(run, worker, span, options)
+      ).distributedGpuinfoGet(run, worker, span, options)
       return (
         fetch: FetchAPI = portableFetch,
         basePath: string = BASE_PATH
@@ -3649,13 +3649,13 @@ export const DefaultApiFactory = function (
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    distributedMluinfoGet(
+    distributedGpuinfoGet(
       run: string,
       worker: string,
       span: string,
       options?: any
     ) {
-      return DefaultApiFp(configuration).distributedMluinfoGet(
+      return DefaultApiFp(configuration).distributedGpuinfoGet(
         run,
         worker,
         span,
@@ -4102,13 +4102,13 @@ export class DefaultApi extends BaseAPI {
    * @throws {RequiredError}
    * @memberof DefaultApi
    */
-  public distributedMluinfoGet(
+  public distributedGpuinfoGet(
     run: string,
     worker: string,
     span: string,
     options?: any
   ) {
-    return DefaultApiFp(this.configuration).distributedMluinfoGet(
+    return DefaultApiFp(this.configuration).distributedGpuinfoGet(
       run,
       worker,
       span,

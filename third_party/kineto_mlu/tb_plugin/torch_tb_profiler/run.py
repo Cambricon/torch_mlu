@@ -9,12 +9,12 @@ from .profiler.diffrun import compare_op_tree, diff_summary
 from .profiler.memory_parser import MemoryMetrics, MemoryRecord, MemorySnapshot
 from .profiler.module_op import Stats
 from .profiler.node import OperatorNode
-from .utils import Canonicalizer, DisplayRounder
+from .utils import Canonicalizer, DisplayRounder, lttb_sample
 
 logger = utils.get_logger()
 
 
-class Run(object):
+class Run:
     """ A profiler run. For visualization purpose only.
     May contain profiling results from multiple workers. E.g. distributed scenario.
     """
@@ -90,7 +90,7 @@ class Run(object):
             return self.profiles.values()
 
 
-class RunProfile(object):
+class RunProfile:
     """ Cooked profiling result for a worker. For visualization purpose only.
     """
 
@@ -117,10 +117,13 @@ class RunProfile(object):
         self.tc_pie = None
         self.trace_file_path: str = None
 
-        self.mlu_metrics = None
+        # add device_type to distinguish GPU and MLU
+        self.device_type = None
 
-        self.mlu_summary = None
-        self.mlu_tooltip = None
+        self.gpu_metrics = None
+
+        self.gpu_summary = None
+        self.gpu_tooltip = None
 
         # for memory stats and curve
         self.memory_snapshot: Optional[MemorySnapshot] = None
@@ -130,8 +133,8 @@ class RunProfile(object):
         self.module_stats: Optional[List(Stats)] = None
         self.pl_module_stats: Optional[List(Stats)] = None
 
-    def append_mlu_metrics(self, raw_data: bytes):
-        counter_json_str = ', {}'.format(', '.join(self.mlu_metrics))
+    def append_gpu_metrics(self, raw_data: bytes):
+        counter_json_str = ', {}'.format(', '.join(self.gpu_metrics))
         counter_json_bytes = bytes(counter_json_str, 'utf-8')
 
         raw_data_without_tail = raw_data[: raw_data.rfind(b']')]
@@ -204,7 +207,7 @@ class RunProfile(object):
                 ])
 
         for dev_name in sorted(stats.keys()):
-            if dev_name.startswith('MLU'):
+            if dev_name.startswith('GPU') or dev_name.startswith('MLU'):
                 result['metadata']['default_device'] = dev_name
                 break
 
@@ -227,7 +230,7 @@ class RunProfile(object):
                     [2, 16, 16, 1000000, "aten::empty],
                     [4, 4, 16, 1000000, '...'],
                 ],
-                'MLU0': ...
+                'GPU0': ...
             }
             ```"""
             curves = defaultdict(list)
@@ -283,16 +286,18 @@ class RunProfile(object):
             peaks_formatted[dev] = 'Peak Memory Usage: {:.1f}{}'.format(cano.convert_memory(value), cano.memory_metric)
             if dev != 'CPU':
                 try:
-                    totals[dev] = cano.convert_memory(self.mlu_infos[int(dev[3:])]['Memory Raw'])
+                    totals[dev] = cano.convert_memory(self.gpu_infos[int(dev[3:])]['Memory Raw'])
                 except BaseException:
                     pass
 
         devices: List[str] = sorted(list(curves.keys()))
         default_device = 'CPU'
         for dev in devices:
-            if dev.startswith('MLU'):
+            if dev.startswith('GPU') or dev.startswith('MLU'):
                 default_device = dev
                 break
+
+        curves = lttb_sample(curves)
 
         return {
             'metadata': {
@@ -390,7 +395,7 @@ class RunProfile(object):
 
         default_device = 'CPU'
         for dev_name in sorted(events.keys()):
-            if dev_name.startswith('MLU'):
+            if dev_name.startswith('GPU') or dev_name.startswith('MLU'):
                 default_device = dev_name
                 break
 
@@ -406,7 +411,7 @@ class RunProfile(object):
                 {'name': f'Release Time ({cano.time_metric})', 'type': 'number', 'tooltip': ''},
                 {'name': f'Duration ({cano.time_metric})', 'type': 'number', 'tooltip': ''},
             ],
-            'rows': events,  # in the form of { 'CPU': [...], 'MLU0': [...], ... }
+            'rows': events,  # in the form of { 'CPU': [...], 'GPU0': [...], ... }
         }
 
     def get_module_view(self):
@@ -471,7 +476,7 @@ class RunProfile(object):
         return diff_stats
 
 
-class DistributedRunProfile(object):
+class DistributedRunProfile:
     """ Profiling all workers in a view.
     """
 
@@ -479,7 +484,9 @@ class DistributedRunProfile(object):
         self.worker = 'All'
         self.span = span
         self.views = []
-        self.mlu_info = None
+        # add device_type to distinguish GPU and MLU
+        self.device_type = None
+        self.gpu_info = None
         self.steps_to_overlap = None
         self.steps_to_wait = None
         self.comm_ops = None

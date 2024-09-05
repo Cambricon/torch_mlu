@@ -2,7 +2,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # --------------------------------------------------------------------------
 import sys
-from collections import defaultdict
+from collections import defaultdict, Counter
 from typing import Callable, Dict, List
 
 from .. import utils
@@ -27,6 +27,10 @@ class OperatorAgg:
         self.tc_total_duration: int = 0
         # TODO: Think about adding these avgs to UI.
 
+        # aggregate detailed information of op's launch kernels
+        self.kernel_calls: int = 0
+        self.kernel_dict = Counter()
+
     @property
     def tc_self_ratio(self) -> float:
         return self.tc_self_duration / self.self_device_duration if self.self_device_duration > 0 else 0
@@ -50,6 +54,12 @@ def aggregate_ops(op_list: List[OperatorNode],
         agg.self_device_duration += op.self_device_duration
         agg.tc_self_duration += op.tc_self_duration
         agg.tc_total_duration += op.tc_total_duration
+
+        _, kernels = op.get_operator_and_kernels()
+        agg.kernel_calls += len(kernels)
+        kernels_cnter = Counter([kernel.name for kernel in kernels])
+        agg.kernel_dict.update(kernels_cnter)
+
         return agg
 
     agg_dicts: List[Dict[str, OperatorAgg]] = [{} for _ in range(len(keys_func))]
@@ -69,6 +79,11 @@ class KernelAggByNameOp:
         self.block = kernel.block
         self.regs_per_thread = kernel.regs_per_thread
         self.shared_memory = kernel.shared_memory
+        # for mlu
+        self.kernel_type = kernel.kernel_type
+        self.dim = kernel.dim
+        self.tasktopo = kernel.tasktopo
+        self.tasktopo_node = kernel.tasktopo_node
 
         self.calls: int = 0
         self.total_duration: int = 0
@@ -78,11 +93,6 @@ class KernelAggByNameOp:
         self.occupancy = 0.0
         self.tc_used = kernel.tc_used
         self.op_tc_eligible = kernel.op_tc_eligible
-
-        self.kernel_type = kernel.kernel_type
-        self.dim = kernel.dim
-        self.tasktopo = kernel.tasktopo
-        self.tasktopo_node = kernel.tasktopo_node
 
     @property
     def avg_duration(self):
@@ -97,14 +107,20 @@ class KernelAggByNameOp:
         return self.occupancy / self.total_duration if self.total_duration > 0 else 0
 
 
-def aggregate_kernels(kernel_list: List[DeviceNode]) -> List[KernelAggByNameOp]:
+def aggregate_kernels(kernel_list: List[DeviceNode], device_type='gpu') -> List[KernelAggByNameOp]:
     name_op_to_agg: Dict[str, KernelAggByNameOp] = {}
     for kernel in kernel_list:
         dur = kernel.end_time - kernel.start_time
         op_name = 'N/A' if kernel.op_name is None else kernel.op_name
-        key = '###'.join((kernel.name, op_name,
-                          str(kernel.dim), str(kernel.kernel_type),
-                          str(kernel.tasktopo or '0'), str(kernel.tasktopo_node or '0')))
+        key = ''
+        if device_type == 'mlu':
+            key = '###'.join((kernel.name, op_name,
+                              str(kernel.kernel_type), str(kernel.dim),
+                              str(kernel.tasktopo), str(kernel.tasktopo_node)))
+        else:
+            key = '###'.join((kernel.name, op_name,
+                              str(kernel.grid), str(kernel.block),
+                              str(kernel.regs_per_thread or '0'), str(kernel.shared_memory or '0')))
         if key not in name_op_to_agg:
             name_op_to_agg[key] = KernelAggByNameOp(kernel, op_name)
         agg = name_op_to_agg[key]
@@ -129,7 +145,7 @@ class ModuleAggregator:
         self.stack_lists_group_by_name_input: Dict[str, List[OperatorAgg]] = None
         self.ops: List[OperatorNode] = None
 
-    def aggregate(self, tid2tree: Dict[int, OperatorNode]):
+    def aggregate(self, tid2tree: Dict[int, OperatorNode], device_type='gpu'):
         # get the operators and kernels recursively by traverse the node tree root.
         ops: List[OperatorNode] = []
         kernels: List[DeviceNode] = []
@@ -139,7 +155,7 @@ class ModuleAggregator:
             kernels.extend(root_kernels)
 
         # aggregate both kernels and operators
-        self.kernel_list_groupby_name_op = aggregate_kernels(kernels)
+        self.kernel_list_groupby_name_op = aggregate_kernels(kernels, device_type)
 
         keys: List[Callable[[OperatorNode], str]] = [
             lambda x: x.name,

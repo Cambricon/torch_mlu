@@ -7,24 +7,23 @@ from .. import consts
 from .node import OperatorNode
 
 
-# Note: Not available for MLU
 class TensorCoresParser:
     def __init__(self, tc_ratio: List[float], tc_eligible_ops_kernel_ratio: float):
-        # For calculating Tensor Cores time ratio per MLU.
+        # For calculating Tensor Cores time ratio per GPU.
         self.tc_ratio = tc_ratio
         self.tc_eligible_ops_kernel_ratio = tc_eligible_ops_kernel_ratio
 
     @classmethod
-    def parse_events(cls, tid2tree: Dict[str, OperatorNode], ops: Iterable[OperatorNode], mlu_ids: Iterable[int]):
-        tc_ratio = cls._calculate_tc_ratio(ops, mlu_ids)
+    def parse_events(cls, tid2tree: Dict[str, OperatorNode], ops: Iterable[OperatorNode], gpu_ids: Iterable[int]):
+        tc_ratio = cls._calculate_tc_ratio(ops, gpu_ids)
         tc_eligible_ops_kernel_ratio = cls._get_tc_eligible_ops_kernel_ratio(tid2tree, ops)
         return cls(tc_ratio, tc_eligible_ops_kernel_ratio)
 
     @staticmethod
-    def _calculate_tc_ratio(ops: Iterable[OperatorNode], mlu_ids: Iterable[int]):
-        tc_ratio: List[float] = [None] * consts.MAX_MLU_PER_NODE
-        tc_time = [0] * consts.MAX_MLU_PER_NODE
-        total_time = [0] * consts.MAX_MLU_PER_NODE
+    def _calculate_tc_ratio(ops: Iterable[OperatorNode], gpu_ids: Iterable[int]):
+        tc_ratio: List[float] = [None] * consts.MAX_GPU_PER_NODE
+        tc_time = [0] * consts.MAX_GPU_PER_NODE
+        total_time = [0] * consts.MAX_GPU_PER_NODE
         has_kernel = False
         for op in ops:
             for rt in op.runtimes:
@@ -38,11 +37,11 @@ class TensorCoresParser:
                             tc_time[k.device_id] += dur
                         total_time[k.device_id] += dur
         if has_kernel:  # If no kernel, then keep all self.tc_ratio as None.
-            for mlu_id in mlu_ids:
-                if total_time[mlu_id] > 0:
-                    tc_ratio[mlu_id] = tc_time[mlu_id] / total_time[mlu_id]
+            for gpu_id in gpu_ids:
+                if total_time[gpu_id] > 0:
+                    tc_ratio[gpu_id] = tc_time[gpu_id] / total_time[gpu_id]
                 else:
-                    tc_ratio[mlu_id] = 0.0
+                    tc_ratio[gpu_id] = 0.0
         return tc_ratio
 
     @staticmethod

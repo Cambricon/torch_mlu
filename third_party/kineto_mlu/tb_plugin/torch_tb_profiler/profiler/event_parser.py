@@ -12,11 +12,11 @@ from .node import (CommunicationNode, DeviceNode, ModuleNode, OperatorNode, PLMo
                    ProfilerStepNode, RuntimeNode, create_operator_node)
 from .op_tree import OpTreeBuilder
 from .range_utils import merge_ranges
-from .trace import (BaseEvent, DurationEvent, EventTypes, KernelEvent, CnclOpNameSet, GlooOpNameSet)
+from .trace import (BaseEvent, DurationEvent, EventTypes, KernelEvent, CnclOpNameSet, NcclOpNameSet, GlooOpNameSet)
 
 logger = utils.get_logger()
 
-CommLibTypes = IntEnum('CommLibTypes', ['Cncl', 'Gloo'], start=0)
+CommLibTypes = IntEnum('CommLibTypes', ['Cncl', 'Nccl', 'Gloo'], start=0)
 
 
 class ProfileRole(IntEnum):
@@ -77,13 +77,13 @@ class NodeParserMixin:
                 pl_tid2list,
                 tid2zero_rt_list)
 
-        if CommLibTypes.Cncl in self.comm_lib:
+        if CommLibTypes.Nccl in self.comm_lib or CommLibTypes.Cncl in self.comm_lib:
             for event in events:
                 # MLU communication kernel maybe call MEMCPY P2P
                 if event.type == EventTypes.KERNEL or event.type == EventTypes.MEMCPY:
                     self._update_communication_node(event)
 
-        # associate MLU Runtimes with CPU events
+        # associate CUDA Runtimes with CPU events
         for op_list in tid2list.values():
             for op in op_list:
                 runtime_nodes = externalid_to_runtime.pop(op.external_id, [])
@@ -91,7 +91,7 @@ class NodeParserMixin:
                     op.runtimes.extend(runtime_nodes)
         for ext_id in externalid_to_runtime:
             if ext_id != 0:
-                logger.debug("{} Runtime with external id {} don't correlate to any operator!".format(
+                logger.warning("{} Runtime with external id {} don't correlate to any operator!".format(
                     len(externalid_to_runtime[ext_id]), ext_id))
 
         if len(corrid_to_device) > 0:
@@ -99,6 +99,7 @@ class NodeParserMixin:
             for nodes in corrid_to_device.values():
                 for n in nodes:
                     node_count_dict[n.type] += 1
+                    logger.debug((f"{n.name.split('(')[0]} doesn't belongs to any operator, external id: {n.external_id}"))
 
             logger.debug(("Some events doesn't belongs to any operators: "
                           f"{', '.join([':'.join((k, str(v))) for k, v in node_count_dict.items()])}"))
@@ -142,7 +143,7 @@ class NodeParserMixin:
 
                 # Check the external_id
                 if rt_node.external_id != device_node.external_id:
-                    logger.warning(
+                    logger.debug(
                         'Runtime and Device-op have same correlation id %s but with different external id!'
                         ' (runtime external_id, device external_id): (%s, %s)' %
                         (corrid, rt_node.external_id, device_node.external_id))
@@ -164,7 +165,7 @@ class NodeParserMixin:
             if device_nodes:
                 for device_node in device_nodes:
                     if rt_node.external_id != device_node.external_id:
-                        logger.warning(
+                        logger.debug(
                             'Runtime and Device-op have same correlation id %s but with different external id!'
                             ' (rt external_id, device external_id): (%s, %s)' %
                             (corrid, rt_node.external_id, device_node.external_id))
@@ -182,10 +183,12 @@ class NodeParserMixin:
                 op_node = PLModuleNode.create(event)
             else:
                 op_node = create_operator_node(event)
-            if event.name in CnclOpNameSet or event.name in GlooOpNameSet:
+            if event.name in CnclOpNameSet or event.name in NcclOpNameSet or event.name in GlooOpNameSet:
                 comm_node = CommunicationNode.create(event)
                 if event.name in CnclOpNameSet:
                     self.comm_lib.add(CommLibTypes.Cncl)
+                if event.name in NcclOpNameSet:
+                    self.comm_lib.add(CommLibTypes.Nccl)
                 if event.name in GlooOpNameSet:
                     self.comm_lib.add(CommLibTypes.Gloo)
                 ts = event.ts
@@ -216,7 +219,7 @@ class StepParser:
         self.cpu_max_ts = -sys.maxsize - 1  # Max time of CPU side events.
         self.global_min_ts = sys.maxsize  # Min time of all events.
         self.global_max_ts = -sys.maxsize - 1  # Max time of all events.
-        # The below two form time range for adding mlu utilization to trace view.
+        # The below two form time range for adding gpu utilization to trace view.
         # Use 'PyTorch Profiler (0)' as them.
         # If not exists, assign global_min_ts and global_max_ts to them.
         self.global_start_ts = sys.maxsize
@@ -278,7 +281,7 @@ class StepParser:
             self.role_ranges[ProfileRole.Memset].append((ts, ts + dur))
         elif evt_type == EventTypes.RUNTIME:
             self.role_ranges[ProfileRole.Runtime].append((ts, ts + dur))
-        elif ((evt_type == EventTypes.OPERATOR  or evt_type == EventTypes.USER_ANNOTATION) and (
+        elif ((evt_type == EventTypes.OPERATOR or evt_type == EventTypes.USER_ANNOTATION) and (
                 (event.name.startswith('enumerate(DataLoader)#') and event.name.endswith('.__next__'))
                 or event.name.startswith('enumerate(DataPipe)#'))):
             self.role_ranges[ProfileRole.DataLoader].append((ts, ts + dur))
@@ -286,7 +289,7 @@ class StepParser:
             self.steps.append((ts, ts + dur))
             self.steps_names.append(str(event.step))
         elif evt_type in [EventTypes.PYTHON, EventTypes.OPERATOR, EventTypes.USER_ANNOTATION]:
-            if event.name in GlooOpNameSet or event.name in CnclOpNameSet:
+            if event.name in GlooOpNameSet or event.name in NcclOpNameSet or event.name in CnclOpNameSet:
                 self.role_ranges[ProfileRole.Communication].append((ts, ts + dur))
             else:
                 self.role_ranges[ProfileRole.CpuOp].append((ts, ts + dur))
@@ -374,8 +377,8 @@ class StepParser:
         Update self.steps_names if some tail steps are removed."""
 
         # Change step time to device side on the condition that any step have device time.
-        is_use_mlu = prev_step_end_time is not None
-        if is_use_mlu:
+        is_use_gpu = prev_step_end_time is not None
+        if is_use_gpu:
             for i_step in range(len(self.steps)):
                 step_start_time = max(prev_step_end_time, self.steps[i_step][0])
                 step_end_time = self.steps[i_step][1]
@@ -393,7 +396,7 @@ class StepParser:
                 prev_step_end_time = step_end_time
 
         is_remove_tail_steps = True  # TODO: Use tensorboard argument instead.
-        if is_use_mlu and len(self.steps) > 1 and is_remove_tail_steps:
+        if is_use_gpu and len(self.steps) > 1 and is_remove_tail_steps:
             i_step = len(self.steps) - 1
             while i_step >= 0:
                 if steps_matched_device_nodes[i_step] > 0:

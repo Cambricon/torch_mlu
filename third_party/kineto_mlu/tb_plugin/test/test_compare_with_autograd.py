@@ -1,3 +1,4 @@
+import copy
 import os
 import time
 import unittest
@@ -59,11 +60,11 @@ def get_autograd_result(p, worker_name, record_shapes=False, with_stack=False):
             line = [avg.key, int(avg.count)]
             if is_mlu:
                 line.extend([int(avg.self_privateuse1_time_total), int(avg.privateuse1_time_total)])
-            # line.extend([int(avg.self_cpu_time_total), int(avg.cpu_time_total)])
+            #line.extend([int(avg.self_cpu_time_total), int(avg.cpu_time_total)])
             line.extend([int(avg.cpu_time_total)])
             result_dict[worker_name + '#operator'].append(line)
         elif is_mlu and evt_type == 'kernel':
-            line = [avg.key, int(avg.count), int(avg.self_privateuse1_time_total)]
+            line = [avg.key, int(avg.count), int(avg.self_mlu_time_total)]
             result_dict[worker_name + '#kernel'].append(line)
     if record_shapes:
         result_dict[worker_name + '#operator#input_shape'] = list()
@@ -78,7 +79,7 @@ def get_autograd_result(p, worker_name, record_shapes=False, with_stack=False):
                 line = [avg.key, str(avg.input_shapes) if avg.input_shapes else '[]', int(avg.count)]
                 if is_mlu:
                     line.extend([int(avg.self_privateuse1_time_total), int(avg.privateuse1_time_total)])
-                # line.extend([int(avg.self_cpu_time_total), int(avg.cpu_time_total)])
+                #line.extend([int(avg.self_cpu_time_total), int(avg.cpu_time_total)])
                 line.extend([int(avg.cpu_time_total)])
                 result_dict[worker_name + '#operator#input_shape'].append(line)
     # The call stack for legacy and kineto profiler is different for now,
@@ -127,9 +128,9 @@ def generate_plugin_result_row(data):
     if 'device_self_duration' in data:
         row.append(data['device_self_duration'])
         row.append(data['device_total_duration'])
-    # row.extend([data['host_self_duration'], data['host_total_duration']])
+    #row.extend([data['host_self_duration'], data['host_total_duration']])
     row.extend([data['host_total_duration']])
-    if 'call_stack' in data:
+    if False and 'call_stack' in data:
         row.append(data['call_stack'])
     return row
 
@@ -178,15 +179,16 @@ def get_plugin_result(run, record_shapes=False, with_stack=False):
 
 
 def get_train_func(use_mlu=True):
-    model = models.resnet50(pretrained=True)
+    # Using randome initialization to avoid downloading pretrained weights
+    model = models.resnet50(weights=None)
     if use_mlu:
         model.mlu()
 
     transform = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor()])
-    # Using fake data to avoid CIFAR10 download failed.
-    # trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-    #                                         download=True, transform=transform)
-    trainset = torchvision.datasets.FakeData(size=10000, image_size=(3, 32, 32),
+    # CIFAR10 dataset is hard to download, using FakeData instead of it
+    #trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+    #                                        download=True, transform=transform)
+    trainset = torchvision.datasets.FakeData(size=10000, image_size=(3, 32, 32), 
                                              num_classes=10, transform=transform)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=2,
                                               shuffle=True, num_workers=0)
@@ -249,8 +251,9 @@ class TestCompareWithAutogradResult(unittest.TestCase):
                     self.assertTrue(line in autograd_result[key])
         self.assertEqual(count, len(plugin_result.keys()))
 
-    # @pytest.mark.skipif(not torch.mlu.is_available(), reason='')
-    @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    #@pytest.mark.skipif(not torch.mlu.is_available(), reason='')
+    # @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    @unittest.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
     def test_autograd_api(self):
         with torch.autograd.profiler.profile(use_device='mlu', use_kineto=True, record_shapes=True) as p:
             get_train_func()(5)
@@ -281,23 +284,27 @@ class TestCompareWithAutogradResult(unittest.TestCase):
         ) as p:
             get_train_func(use_mlu)(13, p)
         self.compare_results(log_dir, profilers_dict, use_mlu, record_shapes, with_stack)
-
-    @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    
+    # @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    @unittest.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
     def test_profiler_api_without_mlu(self):
         self.base_profiler_api(False, True, True, False)
 
-    # @pytest.mark.skipif(not torch.mlu.is_available(), reason='')
-    @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    #@pytest.mark.skipif(not torch.mlu.is_available(), reason='')
+    # @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    @unittest.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
     def test_profiler_api_with_record_shapes_memory_stack(self):
         self.base_profiler_api(True, True, True, True)
 
-    # @pytest.mark.skipif(not torch.mlu.is_available(), reason='')
-    @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    #@pytest.mark.skipif(not torch.mlu.is_available(), reason='')
+    # @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    @unittest.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
     def test_profiler_api_without_record_shapes_memory_stack(self):
         self.base_profiler_api(True, False, False, False)
 
-    # @pytest.mark.skipif(not torch.mlu.is_available(), reason='')
-    @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    #@pytest.mark.skipif(not torch.mlu.is_available(), reason='')
+    # @pytest.mark.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
+    @unittest.skip(reason='There are some issues caused by nsTous and shapes of list tensors')
     def test_profiler_api_without_step(self):
         log_dir = create_log_dir()
         profilers_dict = dict()
@@ -310,3 +317,7 @@ class TestCompareWithAutogradResult(unittest.TestCase):
         ):
             get_train_func()(7)
         self.compare_results(log_dir, profilers_dict)
+
+
+if __name__ == '__main__':
+    unittest.main()

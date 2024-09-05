@@ -322,7 +322,7 @@ paths:
                         type: string
                   data:
                     type: object
-  /distributed/mluinfo:
+  /distributed/gpuinfo:
     get:
       parameters:
         - in: query
@@ -346,7 +346,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/MluInfo'
+                $ref: '#/components/schemas/GpuInfo'
   /memory:
     get:
       parameters:
@@ -768,8 +768,8 @@ components:
           $ref: '#/components/schemas/Graph'
         recommendations:
           type: string
-        mlu_metrics:
-          $ref: '#/components/schemas/MluMetrics'
+        gpu_metrics:
+          $ref: '#/components/schemas/GpuMetrics'
     OperatorGraph:
       type: object
       required:
@@ -907,7 +907,7 @@ components:
               type: string
         data:
           type: object
-    MluInfo:
+    GpuInfo:
       type: object
       required:
         - metadata
@@ -922,7 +922,7 @@ components:
               type: string
         data:
           type: object
-    MluMetrics:
+    GpuMetrics:
       type: object
       required:
         - data
@@ -931,10 +931,10 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/MluMetric'
+            $ref: '#/components/schemas/GpuMetric'
         tooltip:
           type: string
-    MluMetric:
+    GpuMetric:
       type: object
       required:
         - title

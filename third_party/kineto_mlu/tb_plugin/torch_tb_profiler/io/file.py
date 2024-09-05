@@ -44,6 +44,12 @@ try:
 except ImportError:
     GS_ENABLED = False
 
+try:
+    # Imports the HDFS library
+    from fsspec.implementations.arrow import HadoopFileSystem
+    HDFS_ENABLED = True
+except ImportError:
+    HDFS_ENABLED = False
 
 _DEFAULT_BLOCK_SIZE = 16 * 1024 * 1024
 
@@ -352,8 +358,12 @@ if GS_ENABLED:
     from .gs import GoogleBlobSystem
     register_filesystem("gs", GoogleBlobSystem())
 
+if HDFS_ENABLED:
+    from .hdfs import HadoopFileSystem
+    register_filesystem("hdfs", HadoopFileSystem())
 
-class File(object):
+
+class File:
     def __init__(self, filename, mode):
         if mode not in ("r", "rb", "br", "w", "wb", "bw"):
             raise ValueError("mode {} not supported by File".format(mode))

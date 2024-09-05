@@ -14,16 +14,16 @@ def load_profile(worker, span, path):
 
 class TestDiffRun(unittest.TestCase):
 
-    @pytest.mark.skipif(not (os.path.isfile(os.path.abspath('../samples/resnet50_num_workers_0/worker0.1698925322189.pt.trace.json')) and
-                        os.path.isfile(os.path.abspath('../samples/resnet50_num_workers_0/worker0.1698925470360.pt.trace.json'))),
+    @pytest.mark.skipif(not (os.path.isfile(os.path.expanduser('../samples/resnet50_mlu/worker0.1722494940814525708.pt.trace.json')) and
+                        os.path.isfile(os.path.expanduser('../samples/resnet50_mlu/worker0.1722494943146637054.pt.trace.json'))),
                         reason="file doesn't exist")
     def test_happy_path(self):
-        path1 = os.path.abspath('../samples/resnet50_num_workers_0/worker0.1698925322189.pt.trace.json')
+        path1 = '../samples/resnet50_mlu/worker0.1722494940814525708.pt.trace.json'
         profile1 = load_profile('worker0', 1, path1)
         roots = list(profile1.tid2tree.values())
         root = roots[0]
 
-        path2 = os.path.abspath('../samples/resnet50_num_workers_0/worker0.1698925470360.pt.trace.json')
+        path2 = '../samples/resnet50_mlu/worker0.1722494943146637054.pt.trace.json'
         profile2 = load_profile('worker0', 1, path2)
         roots1 = list(profile2.tid2tree.values())
         root1 = roots1[0]

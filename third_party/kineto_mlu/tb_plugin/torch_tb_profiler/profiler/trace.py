@@ -11,15 +11,17 @@ __all__ = ['EventTypes', 'create_event']
 logger = utils.get_logger()
 
 CnclOpNameSet = ['cncl:broadcast', 'cncl:reduce', 'cncl:all_reduce', 'cncl:all_gather', 'cncl:reduce_scatter']
+NcclOpNameSet = ['nccl:broadcast', 'nccl:reduce', 'nccl:all_reduce', 'nccl:all_gather', 'nccl:reduce_scatter']
 GlooOpNameSet = ['gloo:broadcast', 'gloo:reduce', 'gloo:all_reduce', 'gloo:all_gather', 'gloo:reduce_scatter']
 
 class DeviceType(IntEnum):
     CPU = 0
+    CUDA = 1
     MLU = 20
     PrivateUse1 = MLU
 
 
-class EventTypes(object):
+class EventTypes:
     TRACE = 'Trace'
     OPERATOR = 'Operator'
     PROFILER_STEP = 'ProfilerStep'
@@ -41,6 +43,7 @@ EventTypeMap = {
     'cpu_op': EventTypes.OPERATOR,
     'operator': EventTypes.OPERATOR,
     'runtime': EventTypes.RUNTIME,
+    'cuda_runtime': EventTypes.RUNTIME,
     'privateuse1_runtime': EventTypes.RUNTIME,
     'kernel': EventTypes.KERNEL,
     'memcpy': EventTypes.MEMCPY,
@@ -55,7 +58,7 @@ EventTypeMap = {
 }
 
 
-class BaseEvent(object):
+class BaseEvent:
     def __init__(self, type, data):
         self.type: str = type
         self.name: str = data.get('name')
@@ -88,6 +91,7 @@ class KernelEvent(DurationEvent):
         self.regs_per_thread = self.args.get('registers per thread')
         self.shared_memory = self.args.get('shared memory')
         self.device_id = self.args.get('device')
+        # for mlu
         self.kernel_type = self.args.get('kernel type')
         self.dim = self.args.get('dim')
         self.tasktopo = self.args.get('tasktopo')

@@ -292,8 +292,13 @@ class OpTreeBuilder:
             OpTreeBuilder._build_backward_module(child, parent, fwd_bwd_map, result)
 
         if isinstance(node, ModuleNode) and parent and parent.children:
-            parent.fill_stats()
-            parent.tid = parent.children[0].tid
+            # remove meaningless BackwardNode to avoid being children, see PYTORCH-11553
+            for idx, child in enumerate(parent.children):
+                if type(child) is BackwardNode and child.start_time is None:
+                    parent.children.pop(idx)
+            if parent.children:
+                parent.fill_stats()
+                parent.tid = parent.children[0].tid
 
     @staticmethod
     def _insert_backward_modules(root: OperatorNode, backward_modules: List[BackwardNode]):
