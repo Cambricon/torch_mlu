@@ -845,6 +845,9 @@ class TORCH_MLU_API ProcessGroupCNCL : public c10d::Backend {
 
   size_t uid_;
 
+  // Number of devices on this node.
+  int localDeviceCount_{0};
+
   // Set of communicators that this process group has aborted and their
   // cnclCliqueId has been written to the store. We don't need a lock
   // for this map since only the watchdog thread accesses this set. The
@@ -986,6 +989,10 @@ class TORCH_MLU_API ProcessGroupCNCL : public c10d::Backend {
       int peer,
       c10d::OpType op_type,
       const char* profilingTitle = nullptr);
+
+  c10::intrusive_ptr<c10d::Work> allreduce_impl(
+      at::Tensor& tensor,
+      const c10d::AllreduceOptions& opts = c10d::AllreduceOptions());
 
   // Checks for CNCL errors on each of the communicators and returns an
   // appropriate exception_ptr (nullptr if no errors).
