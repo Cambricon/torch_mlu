@@ -102,6 +102,14 @@ void sort_mlu_kernel(
     indices.copy_(indices_contiguous);
 }
 
+at::Tensor cnnl_argsort(
+    const Tensor& self,
+    bool stable,
+    int64_t dim,
+    bool descending) {
+  return std::get<1>(at::sort(self, stable, dim, descending));
+}
+
 REGISTER_PRIVATEUSE1_DISPATCH(sort_stub, &sort_mlu_kernel);
 
 } // namespace ops

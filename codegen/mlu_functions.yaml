@@ -1295,6 +1295,7 @@ aten:
     structured: True
   - func: sort.stable
     structured_delegate: sort.values_stable
+  - func: argsort.stable
   - func: _efficientzerotensor
   - func: bincount
   - func: is_set_to

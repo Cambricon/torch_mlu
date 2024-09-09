@@ -297,6 +297,53 @@ class TestOps(TestCase):
 
     # @unittest.skip("not test")
     @testinfo()
+    def test_argsort_stable(self):
+        shape_list = [
+            (64,),
+            (76, 102),
+            (32, 43, 54),
+            (2, 3, 4, 5),
+            (32, 1, 51, 43),
+            (2, 1, 4, 5, 6),
+            (32, 16, 51, 43, 52),
+        ]
+        type_list = [
+            torch.long,
+            torch.int,
+            torch.short,
+            torch.float,
+            torch.half,
+            torch.double,
+            torch.int8,
+            torch.uint8,
+        ]
+        order = [True, False]
+        stable = [True, False]
+        for i in shape_list:
+            for typeId in type_list:
+                x = torch.randn(i, dtype=torch.float).to(typeId)
+                random_i = random.randint(0, 1)
+                is_descending = order[random_i]
+                is_stable = stable[random_i]
+                dim = random.randint(-len(i), len(i) - 1)
+                index_cpu = torch.argsort(
+                    x, stable=is_stable, dim=dim, descending=is_descending
+                )
+                x_mlu = x.mlu()
+                index_mlu = torch.argsort(
+                    x_mlu, stable=is_stable, dim=dim, descending=is_descending
+                )
+                sorted_cpu = torch.gather(x, dim=dim, index=index_cpu)
+                sorted_mlu = torch.gather(x_mlu, dim=dim, index=index_mlu)
+                self.assertTensorsEqual(
+                    sorted_cpu.float(),
+                    sorted_mlu.cpu().float().contiguous(),
+                    0.0,
+                    use_MSE=True,
+                )
+
+    # @unittest.skip("not test")
+    @testinfo()
     def test_exception(self):
         x = torch.tensor([1.0, 2.0], dtype=torch.complex64).mlu()
         ref_msg = r"Sort currently does not support ComplexFloat dtypes on MLU."
