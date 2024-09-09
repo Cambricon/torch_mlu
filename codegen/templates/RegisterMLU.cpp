@@ -40,7 +40,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "aten/generated/MLUFunctions.h"
 #include "aten/operators/bang/bang_kernel.h"
 #include "aten/operators/cnnl/cnnl_kernel.h"
-#include "aten/operators/cnnl/internal/cnfft_plan_cache.h"
 #include "aten/operators/mluop/mluop_kernel.h"
 #include "aten/TensorIteratorBridge.h"
 
@@ -179,35 +178,6 @@ static Return op_call2(F impl_call, Args&&... args) {
 
 namespace {
 
-namespace {
-int64_t wrapper__cnfft_get_plan_cache_size(at::DeviceIndex device_index) {
-  // No device check
-  // DeviceGuard omitted
-  return torch_mlu::ops::detail::cnfft_get_plan_cache_size_impl(device_index);
-}
-}  // anonymous namespace
-namespace {
-int64_t wrapper__cnfft_get_plan_cache_max_size(at::DeviceIndex device_index) {
-  // No device check
-  // DeviceGuard omitted
-  return torch_mlu::ops::detail::cnfft_get_plan_cache_max_size_impl(device_index);
-}
-}  // anonymous namespace
-namespace {
-void wrapper__cnfft_set_plan_cache_max_size(at::DeviceIndex device_index, int64_t max_size) {
-  // No device check
-  // DeviceGuard omitted
-  return torch_mlu::ops::detail::cnfft_set_plan_cache_max_size_impl(device_index, max_size);
-}
-}  // anonymous namespace
-namespace {
-void wrapper__cnfft_clear_plan_cache(at::DeviceIndex device_index) {
-  // No device check
-  // DeviceGuard omitted
-  return torch_mlu::ops::detail::cnfft_clear_plan_cache_impl(device_index);
-}
-}  // anonymous namespace
-
 // wrapper definition
 ${dispatch_anonymous_definitions}
 
@@ -235,10 +205,6 @@ TORCH_LIBRARY_IMPL(torchaudio, PrivateUse1, m) {
 // MLU custom op registration
 TORCH_LIBRARY(torch_mlu, m) {
   ${custom_schema_registrations}
-  m.def("_cnfft_get_plan_cache_size(DeviceIndex device_index) -> int", tags_0);
-  m.def("_cnfft_get_plan_cache_max_size(DeviceIndex device_index) -> int", tags_0);
-  m.def("_cnfft_set_plan_cache_max_size(DeviceIndex device_index, int max_size) -> ()", tags_0);
-  m.def("_cnfft_clear_plan_cache(DeviceIndex device_index) -> ()", tags_0);
 }
 
 // MLU custom ops that need create backward graph node
@@ -251,34 +217,11 @@ TORCH_LIBRARY_IMPL(torch_mlu, PrivateUse1, m) {
   ${dispatch_custom_registrations}
 }
 
-TORCH_LIBRARY_IMPL(torch_mlu, CompositeImplicitAutograd, m) {
-  m.impl("_cnfft_get_plan_cache_size", TORCH_FN(wrapper__cnfft_get_plan_cache_size));
-  m.impl("_cnfft_get_plan_cache_max_size", TORCH_FN(wrapper__cnfft_get_plan_cache_max_size));
-  m.impl("_cnfft_set_plan_cache_max_size", TORCH_FN(wrapper__cnfft_set_plan_cache_max_size));
-  m.impl("_cnfft_clear_plan_cache", TORCH_FN(wrapper__cnfft_clear_plan_cache));
-}
-
 }  // anonymous namespace
 
 namespace mlu {
 
 ${dispatch_namespaced_definitions}
-
-int64_t _cnfft_get_plan_cache_size(at::DeviceIndex device_index) {
-  return wrapper__cnfft_get_plan_cache_size(device_index);
-}
-
-int64_t _cnfft_get_plan_cache_max_size(at::DeviceIndex device_index) {
-  return wrapper__cnfft_get_plan_cache_max_size(device_index);
-}
-
-void _cnfft_set_plan_cache_max_size(at::DeviceIndex device_index, int64_t max_size) {
-  return wrapper__cnfft_set_plan_cache_max_size(device_index, max_size);
-}
-
-void _cnfft_clear_plan_cache(at::DeviceIndex device_index) {
-  return wrapper__cnfft_clear_plan_cache(device_index);
-}
 
 }  // mlu
 

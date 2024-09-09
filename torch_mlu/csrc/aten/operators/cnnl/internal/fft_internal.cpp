@@ -202,4 +202,55 @@ const at::Tensor& cnnl_fft_internal(
 }
 
 } // namespace ops
+
+TORCH_LIBRARY_FRAGMENT(torch_mlu, m) {
+  const std::vector<at::Tag> tags_0 = {at::Tag::pt2_compliant_tag};
+  m.def("_cnfft_get_plan_cache_size(DeviceIndex device_index) -> int", tags_0);
+  m.def(
+      "_cnfft_get_plan_cache_max_size(DeviceIndex device_index) -> int",
+      tags_0);
+  m.def(
+      "_cnfft_set_plan_cache_max_size(DeviceIndex device_index, int max_size) -> ()",
+      tags_0);
+  m.def("_cnfft_clear_plan_cache(DeviceIndex device_index) -> ()", tags_0);
+}
+
+TORCH_LIBRARY_IMPL(torch_mlu, CompositeImplicitAutograd, m) {
+  m.impl(
+      "_cnfft_get_plan_cache_size",
+      TORCH_FN(ops::detail::cnfft_get_plan_cache_size_impl));
+  m.impl(
+      "_cnfft_get_plan_cache_max_size",
+      TORCH_FN(ops::detail::cnfft_get_plan_cache_max_size_impl));
+  m.impl(
+      "_cnfft_set_plan_cache_max_size",
+      TORCH_FN(ops::detail::cnfft_set_plan_cache_max_size_impl));
+  m.impl(
+      "_cnfft_clear_plan_cache",
+      TORCH_FN(ops::detail::cnfft_clear_plan_cache_impl));
+}
+
+namespace mlu {
+
+int64_t _cnfft_get_plan_cache_size(at::DeviceIndex device_index) {
+  return ops::detail::cnfft_get_plan_cache_size_impl(device_index);
+}
+
+int64_t _cnfft_get_plan_cache_max_size(at::DeviceIndex device_index) {
+  return ops::detail::cnfft_get_plan_cache_max_size_impl(device_index);
+}
+
+void _cnfft_set_plan_cache_max_size(
+    at::DeviceIndex device_index,
+    int64_t max_size) {
+  return ops::detail::cnfft_set_plan_cache_max_size_impl(
+      device_index, max_size);
+}
+
+void _cnfft_clear_plan_cache(at::DeviceIndex device_index) {
+  return ops::detail::cnfft_clear_plan_cache_impl(device_index);
+}
+
+} // namespace mlu
+
 } // namespace torch_mlu
