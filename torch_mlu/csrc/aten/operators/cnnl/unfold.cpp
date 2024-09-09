@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "aten/operators/cnnl/cnnl_kernel.h"
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 #include "ATen/native/ReduceOpsUtils.h"
+#include "aten/utils/dispatch.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -41,6 +42,16 @@ at::Tensor cnnl_unfold(
     int64_t size,
     int64_t step) {
   return at::native::unfold(self, dimension, size, step);
+}
+
+std::vector<int64_t> infer_expand_shape(at::IntArrayRef sizes, int64_t d) {
+  auto expand_sizes = sizes.vec();
+  expand_sizes.push_back(-1);
+  // The if handles the self.dim() == 0 case
+  if (d < sizes.size()) {
+    expand_sizes[d] = -1;
+  }
+  return expand_sizes;
 }
 
 at::Tensor cnnl_unfold_backward(
@@ -55,6 +66,11 @@ at::Tensor cnnl_unfold_backward(
   }
   int64_t input_dim = input_sizes.size();
   auto dim = at::maybe_wrap_dim(dimension, input_dim);
+  // infer grad_out expand shape and expand grad_out
+  auto expand_sizes = infer_expand_shape(input_sizes, dim);
+  at::IntArrayRef expand_sizes_ref(expand_sizes);
+  auto grad_out_broadcasted = grad_out.expand(expand_sizes_ref);
+
   std::vector<int64_t> stride;
   // fake stride for contiguous input
   int64_t z = 1;
@@ -75,10 +91,18 @@ at::Tensor cnnl_unfold_backward(
     }
   }
 
-  auto grad_contiguous = cnnl_contiguous(grad_out);
+  auto grad_contiguous = cnnl_contiguous(grad_out_broadcasted);
 
-  return cnnl_as_strided_backward_internal(
-      grad_input, grad_contiguous, new_stride, 0);
+  return AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
+      at::ScalarType::Half,
+      at::ScalarType::Bool,
+      at::ScalarType::BFloat16,
+      grad_out.scalar_type(),
+      "cnnl_as_strided_backward",
+      [&] {
+        return cnnl_as_strided_backward_internal(
+            grad_input, grad_contiguous, new_stride, 0);
+      });
 }
 
 } // namespace ops

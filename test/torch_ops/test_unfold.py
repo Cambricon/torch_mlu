@@ -144,6 +144,18 @@ class TestUnfoldOp(TestCase):
             )
 
     # @unittest.skip("not test")
+    @testinfo()
+    def test_PYTORCH_11859(self):
+        grad = torch.randn(1, 6, 10)
+        out_cpu = torch.ops.aten.unfold_backward(grad, (10, 20), 1, 10, 2)
+        out_mlu = torch.ops.aten.unfold_backward(grad.to("mlu"), (10, 20), 1, 10, 2)
+        self.assertTensorsEqual(out_cpu.float(), out_mlu.cpu().float(), 0.003)
+        grad = torch.randn(1)
+        out_cpu = torch.ops.aten.unfold_backward(grad, (), 0, 1, 1)
+        out_mlu = torch.ops.aten.unfold_backward(grad.to("mlu"), (), 0, 1, 1)
+        self.assertTensorsEqual(out_cpu.float(), out_mlu.cpu().float(), 0.003)
+
+    # @unittest.skip("not test")
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     @testinfo()
     def test_unflod_bfloat16(self):
