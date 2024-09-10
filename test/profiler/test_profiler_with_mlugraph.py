@@ -330,7 +330,7 @@ class TestProfiler(TestCase):
     @testinfo()
     @unittest.skipIf(torch.mlu.device_count() < 2, "Test requres 2 MLU devices")
     @unittest.skipIf(
-        "590" not in torch.mlu.get_device_name(), "Test only for MLU590 series"
+        "M9" not in torch.mlu.get_device_name(), "Test only for specific cards"
     )
     def test_profiler_with_allreduce_in_mlugraph(self):
         def find_free_port():
