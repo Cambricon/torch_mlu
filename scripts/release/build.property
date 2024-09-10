@@ -10,6 +10,6 @@
     "cnnlextra": ["release", "1.10.1-1"],
     "mluops": ["release", "1.2.3-1"],
     "benchmark": ["release", "0.7.1-torch1.13.1"]},
-    "genesis": ["daily", "1.1.2-20240801_145100-491617b", "3.0.0"],
+    "genesis": ["release", "1.1.2", "3.0.0"],
   "package_type": ["whl", "docker"]
 }

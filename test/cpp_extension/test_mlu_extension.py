@@ -73,7 +73,7 @@ class TestMluExtension(TestCase):
         base_dir = os.path.join(cur_dir, "../..", "examples", "mlu_extension")
         self.build_extension(base_dir)
         pyfiles_ = self.get_test_files(base_dir)
-        self.run_test(executable_, pyfiles_, base_dir)
+        self.run_test(executable_, pyfiles_, cur_dir)
 
 
 if __name__ == "__main__":
