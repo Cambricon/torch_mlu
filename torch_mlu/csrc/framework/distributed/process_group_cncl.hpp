@@ -608,6 +608,9 @@ class TORCH_MLU_API ProcessGroupCNCL : public c10d::Backend {
   // Thread that removes CNCL Work upon timeout
   std::thread work_cleanup_thread_;
 
+  // Number of devices on this node.
+  int localDeviceCount_{0};
+
   // Set of communicators that this process group has aborted and their
   // cnclCliqueId has been written to the store. We don't need a lock
   // for this map since only the watchdog thread accesses this set. The

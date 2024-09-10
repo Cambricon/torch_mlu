@@ -622,6 +622,7 @@ ProcessGroupCNCL::ProcessGroupCNCL(
       trace_key_start_(c10d::getTraceStartKey("CNCL", rank)),
       trace_key_end_(c10d::getTraceEndKey("CNCL", rank)),
       terminate_process_group_(false) {
+  this->localDeviceCount_ = torch_mlu::device_count();
   TORCH_CHECK(
       torch_mlu::device_count() != 0,
       "ProcessGroupCNCL is only supported with MLUs, no MLUs found!");
@@ -2069,36 +2070,59 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::_reduce_scatter_base(
 c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::barrier(
     const c10d::BarrierOptions& opts) {
   std::vector<at::Device> devices;
-  if (usedDeviceIdxs_.empty()) {
+  // Device to use for barrier.
+  int barDevIdx = -1;
+
+  // Select device to use for barrier
+  // 1st choice: User defined device ids if provided.
+  if (!opts.device_ids.empty()) {
+    barDevIdx = opts.device_ids[0];
+    devices.push_back(at::Device(at::DeviceType::PrivateUse1, barDevIdx));
+    // No 2nd choice for PT2.1 since the c10::Backend has no getBoundDeviceId.
+  } else if (!usedDeviceIdxs_.empty()) {
+    // 3rd choice: infer device id from the used device ids.
+    barDevIdx = *usedDeviceIdxs_.begin();
+    devices.push_back(at::Device(at::DeviceType::PrivateUse1, barDevIdx));
+  } else if (usedDeviceIdxs_.empty()) {
     // This means there is not yet a CNCL collective being called
     // Here we have to use the best guesses and will use a single MLU to call
     // allreduce to achieve barrier.
     // In case the multiple processes fall into the same node, we use rank to
     // ensure that each process is on a different MLU
-    auto num_mlus = torch_mlu::device_count();
-    int16_t device_idx = static_cast<int16_t>(rank_ % num_mlus);
-    LOG(INFO) << c10::str(
-        "Rank ",
-        this->getRank(),
-        " using MLU ",
-        device_idx,
-        " to perform barrier as devices used by this process are currently unknown. ",
-        "This can potentially cause a hang if this rank to MLU mapping is incorrect.",
-        "Specify device_ids in barrier() to force use of a particular device.");
-    devices.push_back(at::Device(at::DeviceType::PrivateUse1, device_idx));
+    // Note: it is better to use global rank because the group-local rank can be
+    // offset wrt the device id if intra-node MLUs are sharded into multiple
+    // dimensions.
+    barDevIdx = static_cast<int16_t>(rank_ % localDeviceCount_);
+    LOG(WARNING)
+        << c10::str(
+               "Rank ",
+               this->getRank(),
+               " using MLU ",
+               barDevIdx,
+               " to perform barrier as devices used by this process are currently unknown. ",
+               "This can potentially cause a hang if this rank to MLU mapping is incorrect.",
+               "Specify device_ids in barrier() to force use of a particular device.");
+    devices.push_back(at::Device(at::DeviceType::PrivateUse1, barDevIdx));
   } else {
     for (auto usedDeviceIdx : usedDeviceIdxs_) {
       devices.push_back(at::Device(at::DeviceType::PrivateUse1, usedDeviceIdx));
     }
   }
 
-  std::vector<at::Tensor> barrier_tensors;
-  barrier_tensors.reserve(devices.size());
+  TORCH_CHECK_WITH(
+      ValueError,
+      barDevIdx >= 0,
+      "Failed to infer a MLU device id to perform barrier. ");
 
+  // Create a dummy tensor on the device
+  // Note: we use zeros() instead of empty() to prevent barrier from triggering
+  // alarm when NaN checker is enabled.
+  std::vector<at::Tensor> barrierTensors;
+  barrierTensors.reserve(localDeviceCount_);
   torch_mlu::mlu::OptionalMLUGuard mlu_guard;
   for (auto& device : devices) {
     mlu_guard.set_index(device.index());
-    barrier_tensors.push_back(at::empty(
+    barrierTensors.push_back(at::zeros(
         {1},
         at::TensorOptions()
             .device(at::DeviceType::PrivateUse1)
@@ -2106,12 +2130,12 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::barrier(
   }
 
   // All reduce to achieve the barrier
-  auto work = allreduce(barrier_tensors);
+  auto work = allreduce(barrierTensors);
 
   // Work will take over barrierTensors
   auto cncl_work = dynamic_cast<ProcessGroupCNCL::WorkCNCL*>(work.get());
   TORCH_CHECK(cncl_work);
-  cncl_work->barrier_tensors_ = std::move(barrier_tensors);
+  cncl_work->barrier_tensors_ = std::move(barrierTensors);
 
   return work;
 }
