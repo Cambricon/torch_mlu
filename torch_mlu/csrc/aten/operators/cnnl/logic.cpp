@@ -28,12 +28,14 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <c10/core/ScalarType.h>
 #include "ATen/native/BinaryOps.h"
 #include "ATen/native/UnaryOps.h"
 #include "aten/operators/cnnl/cnnl_kernel.h"
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 #include "aten/DispatchStub.h"
 #include "aten/TensorIteratorBridge.h"
+#include "aten/utils/binaryops_util.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -56,6 +58,13 @@ void common_mlu_kernel(
 void eq_mlu_kernel(at::TensorIteratorBase& iter) {
   auto output = iter.output(0);
   auto compute_type = iter.common_dtype();
+  if (compute_type == at::kComplexFloat || compute_type == at::kComplexDouble) {
+    if (iter.input(0).data_ptr() == output.data_ptr()) {
+      TORCH_CHECK(false, "cnnl_eq does not support inplace for complex input");
+    }
+    TORCH_CHECK(
+        !isCpuScalar(iter.input(1)), "cnnl_eq does not support cpu scalar");
+  }
   cnnl_logic_internal(
       output, iter.input(0), iter.input(1), CNNL_LOGIC_OP_EQ, compute_type);
 }
