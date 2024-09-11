@@ -256,6 +256,20 @@ static const std::vector<at::ScalarType> all_support_types_without_complex(
      at::kDouble,
      at::kLong});
 
+static const std::vector<at::ScalarType> all_support_types_without_chalf(
+    {at::kFloat,
+     at::kHalf,
+     at::kBFloat16,
+     at::kChar,
+     at::kShort,
+     at::kByte,
+     at::kInt,
+     at::kBool,
+     at::kDouble,
+     at::kLong,
+     at::kComplexFloat,
+     at::kComplexDouble});
+
 static const std::vector<at::ScalarType> all_support_types_without_chalf_bool(
     {at::kFloat,
      at::kHalf,
@@ -470,7 +484,7 @@ FLOAT_HALF_BFLOAT16_REGISTER(REGISTER_PARAMS_WITHOUT_MIXED_INPUT)
   _(lt, all_support_types_without_complex, false, logic_input_mix_types) \
   _(ge, all_support_types_without_complex, false, logic_input_mix_types) \
   _(le, all_support_types_without_complex, false, logic_input_mix_types) \
-  _(eq, all_support_types_without_complex, false, logic_input_mix_types) \
+  _(eq, all_support_types_without_chalf, false, logic_input_mix_types)   \
   _(ne, all_support_types_without_complex, false, logic_input_mix_types) \
   _(logical_and,                                                         \
     all_support_types_without_complex,                                   \

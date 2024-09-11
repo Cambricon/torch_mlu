@@ -95,7 +95,7 @@ void cnnl_logic_internal(
       ? output.scalar_type()
       : compute_dtype;
   if (other.is_cpu() && other.numel() == 1) {
-    AT_DISPATCH_ALL_TYPES_AND3(
+    AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
         at::kHalf,
         at::kBFloat16,
         at::kBool,

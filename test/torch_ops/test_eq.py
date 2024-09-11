@@ -37,6 +37,8 @@ class TestEqOp(TestCase):
             torch.uint8,
             torch.long,
             torch.half,
+            torch.cfloat,
+            torch.cdouble,
         ]
         for t in type_list:
             for shape1, shape2 in [
@@ -73,6 +75,8 @@ class TestEqOp(TestCase):
             torch.uint8,
             torch.long,
             torch.half,
+            torch.cfloat,
+            torch.cdouble,
         ]
         for t in type_list:
             for shape1, shape2 in [
@@ -118,6 +122,8 @@ class TestEqOp(TestCase):
             torch.uint8,
             torch.long,
             torch.half,
+            torch.cfloat,
+            torch.cdouble,
         ]
         for t in type_list:
             for shape1, shape2 in [
@@ -244,6 +250,8 @@ class TestEqOp(TestCase):
             torch.uint8,
             torch.long,
             torch.half,
+            torch.cfloat,
+            torch.cdouble,
         ]
         for t in type_list:
             for shape1, shape2 in [
@@ -378,6 +386,15 @@ class TestEqOp(TestCase):
         ref_msg = ref_msg + "input dimension is 9 other dimension is 9"
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             a.eq_(b)
+        a = torch.randn(2, dtype=torch.cfloat).to("mlu")
+        b = torch.randn(2, dtype=torch.cfloat).to("mlu")
+        ref_msg = r"cnnl_eq does not support inplace for complex input"
+        with self.assertRaisesRegex(RuntimeError, ref_msg):
+            a.eq_(b)
+
+        ref_msg = r"cnnl_eq does not support cpu scalar"
+        with self.assertRaisesRegex(RuntimeError, ref_msg):
+            a.eq(1.0 + 1.0j)
 
     # @unittest.skip("not test")
     @testinfo()
