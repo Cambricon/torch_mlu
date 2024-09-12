@@ -96,10 +96,12 @@ void sort_mlu_kernel(
       descending,
       /*sorted*/ true,
       stable);
-  if (!values.is_same(values_contiguous))
+  if (is_copy_necessary(values, values_contiguous)) {
     values.copy_(values_contiguous);
-  if (!indices.is_same(indices_contiguous))
+  }
+  if (is_copy_necessary(indices, indices_contiguous)) {
     indices.copy_(indices_contiguous);
+  }
 }
 
 at::Tensor cnnl_argsort(
