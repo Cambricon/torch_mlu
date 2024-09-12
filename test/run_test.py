@@ -19,7 +19,6 @@ from common_utils import shell, print_to_stderr, gen_err_message
 dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # Note: torch_ops/ & custom_ops/ are dirs to be expanded in get_selected_tests
-# items in NATIVE_CI_BLACKLIST are also added to TESTS below
 TESTS = [
     "mlu/test_event",
     "mlu/test_stream",
@@ -88,243 +87,6 @@ CNNL_BLACKLIST = [
     "torch_ops/",
 ]
 
-torch_native_ci = os.getenv("PYTORCH_HOME") + "/test"
-NATIVE_CI_BLACKLIST = [
-    "torch_native_ci_1/",
-    "torch_native_ci_2/",
-]
-
-# single-card test
-NATIVE_CI_BLACKLIST1 = [
-    # '{path}/test_ao_sparsity'.format(path = torch_native_ci),
-    "{path}/test_autocast".format(path=torch_native_ci),
-    "{path}/test_autograd".format(path=torch_native_ci),
-    "{path}/test_binary_ufuncs".format(path=torch_native_ci),
-    # '{path}/test_bundled_inputs'.format(path = torch_native_ci),
-    # '{path}/test_comparison_utils'.format(path = torch_native_ci),
-    "{path}/test_complex".format(path=torch_native_ci),
-    "{path}/test_cuda".format(path=torch_native_ci),
-    # '{path}/test_cuda_sanitizer'.format(path = torch_native_ci),
-    # '{path}/test_cuda_trace'.format(path = torch_native_ci),
-    # '{path}/test_dataloader'.format(path = torch_native_ci),
-    # '{path}/test_datapipe'.format(path = torch_native_ci),
-    # '{path}/test_deploy'.format(path = torch_native_ci),
-    # '{path}/test_determination'.format(path = torch_native_ci),
-    # '{path}/test_dispatch'.format(path = torch_native_ci),
-    # '{path}/test_dlpack'.format(path = torch_native_ci),
-    # '{path}/test_dynamic_shapes'.format(path = torch_native_ci),
-    "{path}/test_expanded_weights".format(path=torch_native_ci),
-    # '{path}/test_fake_tensor'.format(path = torch_native_ci),
-    # '{path}/test_function_schema'.format(path = torch_native_ci),
-    # '{path}/test_functional_autograd_benchmark'.format(path = torch_native_ci),
-    # '{path}/test_functional_optim'.format(path = torch_native_ci),
-    # '{path}/test_functionalization'.format(path = torch_native_ci),
-    # '{path}/test_futures'.format(path = torch_native_ci),
-    # '{path}/test_fx'.format(path = torch_native_ci),
-    # '{path}/test_fx_backends'.format(path = torch_native_ci),
-    # '{path}/test_fx_experimental'.format(path = torch_native_ci),
-    # '{path}/test_fx_passes'.format(path = torch_native_ci),
-    # '{path}/test_fx_reinplace_pass'.format(path = torch_native_ci),
-    # '{path}/test_hub'.format(path = torch_native_ci),
-    # '{path}/test_import_stats'.format(path = torch_native_ci),
-    "{path}/test_indexing".format(path=torch_native_ci),
-    # '{path}/test_itt'.format(path = torch_native_ci),
-    # '{path}/test_license'.format(path = torch_native_ci),
-    "{path}/test_linalg".format(path=torch_native_ci),
-    # '{path}/test_logging'.format(path = torch_native_ci),
-    # '{path}/test_masked'.format(path = torch_native_ci),
-    # '{path}/test_maskedtensor'.format(path = torch_native_ci),
-    "{path}/test_meta".format(path=torch_native_ci),
-    "{path}/test_modules".format(path=torch_native_ci),
-    # '{path}/test_mobile_optimizer'.format(path = torch_native_ci),
-    # '{path}/test_model_dump'.format(path = torch_native_ci),
-    # '{path}/test_module_init'.format(path = torch_native_ci),
-    # '{path}/test_monitor'.format(path = torch_native_ci),
-    # '{path}/test_multiprocessing'.format(path = torch_native_ci),
-    # '{path}/test_multiprocessing_spawn'.format(path = torch_native_ci),
-    # '{path}/test_namedtensor'.format(path = torch_native_ci),
-    # '{path}/test_namedtuple_return_api'.format(path = torch_native_ci),
-    # '{path}/test_native_functions'.format(path = torch_native_ci),
-    # '{path}/test_native_mha'.format(path = torch_native_ci),
-    "{path}/test_nn".format(path=torch_native_ci),
-    # '{path}/test_nnapi'.format(path = torch_native_ci),
-    # '{path}/test_numba_integration'.format(path = torch_native_ci),
-    # '{path}/test_numpy_interop'.format(path = torch_native_ci),
-    # '{path}/test_openmp'.format(path = torch_native_ci),
-    "{path}/test_ops".format(path=torch_native_ci),
-    "{path}/test_ops_fwd_gradients.py".format(path=torch_native_ci),
-    # '{path}/test_optim'.format(path = torch_native_ci),
-    "{path}/test_overrides".format(path=torch_native_ci),
-    # '{path}/test_package'.format(path = torch_native_ci),
-    # '{path}/test_per_overload_api'.format(path = torch_native_ci),
-    # '{path}/test_proxy_tensor'.format(path = torch_native_ci),
-    # '{path}/test_pruning_op'.format(path = torch_native_ci),
-    # '{path}/test_public_bindings'.format(path = torch_native_ci),
-    # '{path}/test_python_dispatch'.format(path = torch_native_ci),
-    # '{path}/test_pytree'.format(path = torch_native_ci),
-    # '{path}/test_quantization'.format(path = torch_native_ci),
-    "{path}/test_reductions".format(path=torch_native_ci),
-    # '{path}/test_scatter_gather_ops'.format(path = torch_native_ci),
-    "{path}/test_schema_check".format(path=torch_native_ci),
-    # '{path}/test_segment_reductions'.format(path = torch_native_ci),
-    # '{path}/test_serialization'.format(path = torch_native_ci),
-    # '{path}/test_set_default_mobile_cpu_allocator'.format(path = torch_native_ci),
-    "{path}/test_shape_ops".format(path=torch_native_ci),
-    # '{path}/test_show_pickle'.format(path = torch_native_ci),
-    "{path}/test_sort_and_select".format(path=torch_native_ci),
-    "{path}/test_spectral_ops".format(path=torch_native_ci),
-    # '{path}/test_stateless'.format(path = torch_native_ci),
-    # '{path}/test_static_runtime'.format(path = torch_native_ci),
-    # '{path}/test_subclass'.format(path = torch_native_ci),
-    "{path}/test_tensor_creation_ops".format(path=torch_native_ci),
-    # '{path}/test_tensorboard'.format(path = torch_native_ci),
-    # '{path}/test_tensorexpr'.format(path = torch_native_ci),
-    # '{path}/test_tensorexpr_pybind'.format(path = torch_native_ci),
-    # '{path}/test_testing'.format(path = torch_native_ci),
-    # '{path}/test_throughput_benchmark'.format(path = torch_native_ci),
-    "{path}/test_torch".format(path=torch_native_ci),
-    # '{path}/test_transformers'.format(path = torch_native_ci),
-    # '{path}/test_type_hints'.format(path = torch_native_ci),
-    # '{path}/test_type_info'.format(path = torch_native_ci),
-    "{path}/test_type_promotion".format(path=torch_native_ci),
-    # '{path}/test_typing'.format(path = torch_native_ci),
-    "{path}/test_unary_ufuncs".format(path=torch_native_ci),
-    # '{path}/test_utils'.format(path = torch_native_ci),
-    "{path}/test_view_ops".format(path=torch_native_ci),
-    # '{path}/test_vmap'.format(path = torch_native_ci),
-    "{path}/nn/test_convolution".format(path=torch_native_ci),
-    "{path}/nn/test_dropout".format(path=torch_native_ci),
-    "{path}/nn/test_embedding".format(path=torch_native_ci),
-    "{path}/nn/test_init".format(path=torch_native_ci),
-    "{path}/nn/test_lazy_modules".format(path=torch_native_ci),
-    "{path}/nn/test_load_state_dict".format(path=torch_native_ci),
-    "{path}/nn/test_module_hooks".format(path=torch_native_ci),
-    "{path}/nn/test_multihead_attention".format(path=torch_native_ci),
-    "{path}/nn/test_packed_sequence".format(path=torch_native_ci),
-    "{path}/nn/test_parametrization".format(path=torch_native_ci),
-    "{path}/nn/test_pooling".format(path=torch_native_ci),
-    "{path}/nn/test_pruning".format(path=torch_native_ci),
-    "{path}/distributed/elastic/agent/server/test/api_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/agent/server/test/local_elastic_agent_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/events/lib_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/metrics/api_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/multiprocessing/api_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/multiprocessing/errors/api_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/multiprocessing/errors/error_handler_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/multiprocessing/redirects_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/multiprocessing/tail_log_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/rendezvous/api_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/rendezvous/c10d_rendezvous_backend_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/rendezvous/dynamic_rendezvous_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/rendezvous/etcd_rendezvous_backend_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/rendezvous/etcd_rendezvous_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/rendezvous/etcd_server_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/rendezvous/static_rendezvous_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/rendezvous/utils_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/timer/api_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/timer/file_based_local_timer_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/timer/local_timer_example".format(path=torch_native_ci),
-    "{path}/distributed/elastic/timer/local_timer_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/utils/data/cycling_iterator_test".format(
-        path=torch_native_ci
-    ),
-    "{path}/distributed/elastic/utils/distributed_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/utils/logging_test".format(path=torch_native_ci),
-    "{path}/distributed/elastic/utils/util_test".format(path=torch_native_ci),
-    "{path}/distributed/launcher/api_test".format(path=torch_native_ci),
-    "{path}/distributed/launcher/launch_test".format(path=torch_native_ci),
-    "{path}/distributed/launcher/run_test".format(path=torch_native_ci),
-    "{path}/distributed/test_launcher".format(path=torch_native_ci),
-]
-
-# multicard-test
-NATIVE_CI_BLACKLIST2 = [
-    "{path}/profiler/test_profiler".format(path=torch_native_ci),
-    "{path}/distributed/test_c10d_nccl".format(path=torch_native_ci),
-    "{path}/distributed/test_c10d_spawn_nccl".format(path=torch_native_ci),
-    "{path}/distributed/test_c10d_common".format(path=torch_native_ci),
-    "{path}/distributed/test_c10d_logger".format(path=torch_native_ci),
-    "{path}/distributed/test_c10d_object_collectives".format(path=torch_native_ci),
-    "{path}/distributed/algorithms/test_join".format(path=torch_native_ci),
-    "{path}/distributed/algorithms/ddp_comm_hooks/test_ddp_hooks".format(
-        path=torch_native_ci
-    ),
-    # fsdp test for precheckin
-    "{path}/distributed/fsdp/test_fsdp_backward_prefetch".format(path=torch_native_ci),
-    "{path}/distributed/fsdp/test_fsdp_core".format(path=torch_native_ci),
-    "{path}/distributed/fsdp/test_fsdp_pure_fp16".format(path=torch_native_ci),
-    "{path}/distributed/fsdp/test_fsdp_sharded_grad_scaler".format(
-        path=torch_native_ci
-    ),
-    "{path}/test_cuda_primary_ctx".format(path=torch_native_ci),
-]
-
-# extra fsdp test, test in daily test, skip in precheckin test
-FSDP_TEST = [
-    f"{torch_native_ci}/distributed/fsdp/test_checkpoint_wrapper",
-    f"{torch_native_ci}/distributed/fsdp/test_distributed_checkpoint",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_apply",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_checkpoint",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_clip_grad_norm",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_comm",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_comm_hooks",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_dtensor_state_dict",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_exec_order",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_fine_tune",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_flatten_params",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_freezing_weights",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_fx",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_grad_acc",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_hybrid_shard",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_ignored_modules",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_input",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_memory",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_meta",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_misc",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_mixed_precision",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_multiple_forward",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_multiple_wrapping",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_optim_state",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_overlap",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_state_dict",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_tp_integration",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_traversal",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_uneven",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_unshard_params",
-    f"{torch_native_ci}/distributed/fsdp/test_fsdp_use_orig_params",
-    f"{torch_native_ci}/distributed/fsdp/test_hsdp_dtensor_state_dict",
-    f"{torch_native_ci}/distributed/fsdp/test_shard_utils",
-    f"{torch_native_ci}/distributed/fsdp/test_utils",
-    f"{torch_native_ci}/distributed/fsdp/test_wrap",
-]
-TESTS += NATIVE_CI_BLACKLIST
-
 # Case used to generate .xml log, see description inside this file
 FAKECASE = "utils/test_fakecase_print_log"
 
@@ -340,8 +102,6 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
     if options.pytest:
         unittest_args = [arg if arg != "-f" else "-x" for arg in unittest_args]
         # Note: native ci cases produce too many pytest marker warnings, suppress warnings
-        if torch_native_ci in test_module:
-            unittest_args += ["--disable-warnings", "--junit-prefix=pytorch"]
         if options.result_dir != "" and os.path.isdir(options.result_dir):
             log_base = os.path.join(options.result_dir, test_module.replace("/", "_"))
             unittest_args += [f"--junitxml={log_base}.xml"]
@@ -351,31 +111,9 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
 
     command = executable + argv
     run_env = os.environ.copy()
-    # enable fallback to cpu for native ci cases
-    if torch_native_ci in test_module:
-        subprocess.check_call("./torch_native_ci/torch_mlu_ci_overrides/install.sh")
-        run_env["PYTORCH_TESTING_DEVICE_ONLY_FOR"] = "cuda"
-        run_env["PYTORCH_JIT"] = "0"
-        run_env["ENABLE_FALLBACK_TO_CPU"] = "1"
-        run_env["ENABLE_MLU_OVERFLOW_CHECK"] = "1"
-
-        # Solve the 'ModuleNotFoundError: No module named 'rendezvous_backend_test' when run
-        # c10d_rendezvous_backend_test.py and etcd_rendezvous_backend_test. Because there’s
-        # an __init__.py file in the rendezvous folder, pytest will then search upwards, and
-        # then miss the rendezvous folder, so this folder is not add to sys.path.
-        # Ref https://docs.pytest.org/en/7.1.x/explanation/pythonpath.html
-        if "distributed/elastic/rendezvous" in test_module:
-            if "PYTHONPATH" in run_env:
-                run_env[
-                    "PYTHONPATH"
-                ] = f"{torch_native_ci}/distributed/elastic/rendezvous:{run_env['PYTHONPATH']}"
-            else:
-                run_env[
-                    "PYTHONPATH"
-                ] = f"{torch_native_ci}/distributed/elastic/rendezvous"
-    else:
-        subprocess.check_call("pip uninstall -y torch_mlu-ci-overrides", shell=True)
-        run_env["ENABLE_FALLBACK_TO_CPU"] = "0"
+    # uninstall plugin just in case
+    subprocess.check_call("pip uninstall -y torch_mlu-ci-overrides", shell=True)
+    run_env["ENABLE_FALLBACK_TO_CPU"] = "0"
     if options.large:
         run_env["TEST_LARGETENSOR"] = "TRUE"
     if log_base:
@@ -391,15 +129,6 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
         return ret_code
     else:
         return shell(command, test_directory, run_env)
-
-
-def run_test_with_subprocess(test_module, test_directory, options):
-    options_copy = copy.deepcopy(options)
-    options_copy.pytest = False
-    options_copy.subprocess = True
-    return run_test(
-        test_module, test_directory, options_copy, "--use-pytest", "--subprocess"
-    )
 
 
 def get_backend_type(test_module):
@@ -482,9 +211,6 @@ CUSTOM_HANDLERS = {
     "kineto_gtest": test_executable_file,
     "mlu/test_event": run_test_with_subprocess_for_mlu,
     "mlu/test_mlu_cndev_based_avail": run_test_with_subprocess_for_mlu,
-    "{path}/test_cuda_primary_ctx".format(
-        path=torch_native_ci
-    ): run_test_with_subprocess,
 }
 
 
@@ -565,11 +291,6 @@ def parse_args():
         "--ignore_cnnl_blacklist",
         action="store_true",
         help="always ignore blacklisted train tests",
-    )
-    parser.add_argument(
-        "--ignore_native_ci_blacklist",
-        action="store_true",
-        help="always ignore blacklisted torch native ci train tests",
     )
     parser.add_argument(
         "--fsdp-tests",
@@ -693,14 +414,6 @@ def get_selected_tests(options):
         selected_tests = exclude_tests(CNNL_BLACKLIST, selected_tests)
     print("=========options.ignore_cnnl_blacklist===========")
 
-    print("=========options.ignore_native_ci_blacklist===========")
-    if not options.ignore_native_ci_blacklist:
-        selected_tests = exclude_tests(NATIVE_CI_BLACKLIST, selected_tests)
-    else:
-        subprocess.check_call("./torch_native_ci/torch_mlu_ci_overrides/install.sh")
-
-    print("=========options.ignore_native_ci_blacklist===========")
-
     selected_copy = selected_tests.copy()
     for selected in selected_copy:
         # TODO(fanshijie): test_distributed.py does not support pytest
@@ -712,14 +425,6 @@ def get_selected_tests(options):
 
         if selected in ["torch_ops/", "custom_ops/"]:
             selected_tests += select_current_op_portion(selected)
-            selected_tests = exclude_tests([selected], selected_tests)
-        elif selected in ["torch_native_ci_1/"]:
-            selected_tests += select_native_ci_portion()
-            selected_tests = exclude_tests([selected], selected_tests)
-        elif selected in ["torch_native_ci_2/"]:
-            selected_tests += NATIVE_CI_BLACKLIST2
-            if options.fsdp_tests:
-                selected_tests += FSDP_TEST
             selected_tests = exclude_tests([selected], selected_tests)
         elif selected in SINGLE_CARD_SKIP_TEST and options.only_single_card_test:
             selected_tests = exclude_tests([selected], selected_tests)
@@ -753,34 +458,6 @@ def select_current_op_portion(module):
         if parallel_index == index % parallel_total:
             selected_op_test.append(op_module)
     return selected_op_test
-
-
-"""
-    * This function splits testcases in NATIVE_CI_BLACKLIST1
-    * CI_PARALLEL_TOTAL number of portions, with currently selected portion
-    * index being CI_PARALLEL_INDEX.
-    * CI_PARALLEL_TOTAL and CI_PARALLEL_INDEX are env variables set by
-    * jenkins pipeline when parallel is used.
-"""
-
-
-def select_native_ci_portion():
-    parallel_total = int(os.environ.get("CI_PARALLEL_TOTAL", 1))
-    parallel_index = int(os.environ.get("CI_PARALLEL_INDEX", 0))
-
-    if parallel_total == 1:
-        return NATIVE_CI_BLACKLIST1
-
-    selected_cases = []
-    for index, case in enumerate(NATIVE_CI_BLACKLIST1):
-        if case == "{path}/test_ops".format(path=torch_native_ci):
-            # test_ops takes a long time, put it in one job
-            if parallel_index == parallel_total - 1:
-                selected_cases.append(case)
-        else:
-            if parallel_index == index % (parallel_total - 1):
-                selected_cases.append(case)
-    return selected_cases
 
 
 def main():
