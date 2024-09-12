@@ -29,7 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
-
 namespace torch_mlu {
 namespace ops {
 
@@ -41,7 +40,7 @@ void cnnl_topk_internal(
     int64_t dim,
     bool largest,
     bool sorted,
-    std::optional<bool> stable) {
+    bool stable) {
   auto memory_format = self.suggest_memory_format();
   dim = modify_dim_based_on_layout(dim, memory_format);
   auto self_impl = getMluTensorImpl(self);
@@ -90,7 +89,7 @@ void cnnl_topk_internal(
             dim,
             largest,
             sorted,
-            true,
+            stable,
             workspace_ptr.get(),
             workspace_size,
             values_desc.get(),
