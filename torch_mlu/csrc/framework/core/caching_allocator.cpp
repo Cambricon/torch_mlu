@@ -331,7 +331,7 @@ struct AllocParams {
       cnrtQueue_t stream,
       ChunkPool* pool,
       size_t alloc_size,
-      MemoryStats& stats)
+      DeviceStats& stats)
       : search_key(device, stream, size),
         pool(pool),
         alloc_size(alloc_size),
@@ -446,7 +446,7 @@ class DeviceCachingAllocator {
   mutable std::recursive_mutex mutex;
 
   // Memory statistics
-  MemoryStats stats;
+  DeviceStats stats;
 
   // cached chunks are larger than 1 MB
   ChunkPool large_chunks;
@@ -983,7 +983,7 @@ class DeviceCachingAllocator {
   }
 
   /** Returns a copy of the memory allocator stats for the device **/
-  MemoryStats getStats() {
+  DeviceStats getStats() {
     std::lock_guard<std::recursive_mutex> lock(mutex);
     return stats;
   }
@@ -2208,7 +2208,7 @@ class NativeCachingAllocator : public MLUAllocator {
     device_allocator[chunk->device]->free(chunk);
   }
 
-  void setMemoryFraction(double fraction, int device) override {
+  void setMemoryFraction(double fraction, c10::DeviceIndex device) override {
     TORCH_INTERNAL_ASSERT(
         0 <= device && static_cast<size_t>(device) < device_allocator.size(),
         "Allocator not initialized for device ",
@@ -2313,8 +2313,9 @@ class NativeCachingAllocator : public MLUAllocator {
     return result;
   }
 
-  std::shared_ptr<AllocatorState> getCheckpointState(int device, MempoolId_t id)
-      override {
+  std::shared_ptr<AllocatorState> getCheckpointState(
+      c10::DeviceIndex device,
+      MempoolId_t id) override {
     return device_allocator[device]->getCheckpointState(id);
   }
 
@@ -2331,7 +2332,7 @@ class NativeCachingAllocator : public MLUAllocator {
    * functions for all allocated chunks in the new checkpoint state.
    */
   CheckpointDelta setCheckpointPoolState(
-      int device,
+      c10::DeviceIndex device,
       std::shared_ptr<AllocatorState> as) override {
     std::shared_ptr<PrivatePoolState> pps =
         std::dynamic_pointer_cast<PrivatePoolState>(as);
@@ -2410,7 +2411,7 @@ class NativeCachingAllocator : public MLUAllocator {
     }
   }
 
-  void cacheInfo(int dev_id, size_t* largestChunk) override {
+  void cacheInfo(c10::DeviceIndex dev_id, size_t* largestChunk) override {
     device_allocator[dev_id]->cacheInfo(largestChunk);
   }
 
@@ -2423,24 +2424,24 @@ class NativeCachingAllocator : public MLUAllocator {
         ": did you call init?");
   }
 
-  MemoryStats getMemoryStats(int device) override {
+  DeviceStats getDeviceStats(c10::DeviceIndex device) override {
     assertValidDevice(device);
     return device_allocator[device]->getStats();
   }
 
-  void resetAccumulatedStats(int device) override {
+  void resetAccumulatedStats(c10::DeviceIndex device) override {
     assertValidDevice(device);
     return device_allocator[device]->resetAccumulatedStats();
   }
 
-  void resetPeakStats(int device) override {
+  void resetPeakStats(c10::DeviceIndex device) override {
     assertValidDevice(device);
     return device_allocator[device]->resetPeakStats();
   }
 
   // MLUGraph interactions
   void beginAllocateToPool(
-      int device,
+      c10::DeviceIndex device,
       MempoolId_t mempool_id,
       std::function<bool(cnrtQueue_t)> filter) override {
     assertValidDevice(device);
@@ -2448,12 +2449,13 @@ class NativeCachingAllocator : public MLUAllocator {
         std::move(mempool_id), std::move(filter));
   }
 
-  void endAllocateToPool(int device, MempoolId_t mempool_id) override {
+  void endAllocateToPool(c10::DeviceIndex device, MempoolId_t mempool_id)
+      override {
     assertValidDevice(device);
     device_allocator[device]->endAllocateToPool(mempool_id);
   }
 
-  void releasePool(int device, MempoolId_t mempool_id) override {
+  void releasePool(c10::DeviceIndex device, MempoolId_t mempool_id) override {
     assertValidDevice(device);
     device_allocator[device]->releasePool(std::move(mempool_id));
   }
@@ -2480,7 +2482,8 @@ class NativeCachingAllocator : public MLUAllocator {
     return r;
   }
 
-  void enablePeerAccess(int dev, int dev_to_access) override {
+  void enablePeerAccess(c10::DeviceIndex dev, c10::DeviceIndex dev_to_access)
+      override {
     torch_mlu::mlu::MLUGuard device_guard(dev);
     unsigned int can_access = 0;
     cnrtRet_t err = cnrtGetPeerAccessibility(&can_access, dev_to_access, 0);
@@ -2665,8 +2668,8 @@ std::map<std::string, int64_t> mlu_memory_stats(int device) {
     return dict;
   };
 
-  const MemoryStats stats =
-      torch_mlu::MLUCachingAllocator::getMemoryStats(device);
+  const DeviceStats stats =
+      torch_mlu::MLUCachingAllocator::getDeviceStats(device);
   std::unordered_map<std::string, std::vector<std::vector<int64_t>>> result;
   result["allocation"] = statArrayToDict(stats.allocation);
   result["segment"] = statArrayToDict(stats.segment);

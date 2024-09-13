@@ -5,12 +5,14 @@
 #include <thread>
 
 #include <ATen/Context.h>
+#include "ATen/ATen.h"
 #include "c10/util/Optional.h"
 #include "framework/core/caching_allocator.h"
 #include "framework/core/caching_allocator_config.h"
 #include "framework/core/device.h"
 #include "framework/core/device_utils.h"
 #include "framework/core/MLUStream.h"
+#include "python/MLUPluggableAllocator.h"
 
 namespace torch_mlu {
 
@@ -302,6 +304,19 @@ TEST(MLUCachingAllocatorTest, set_memory_fraction) {
   if (!exception_flag) {
     ASSERT_GE(1, 0); // True
   }
+}
+
+static int called_dummy_free_0 = 0;
+static int called_dummy_free_1 = 0;
+
+void* dummy_alloc_0(size_t size, int device, void* stream) {
+  return nullptr;
+}
+void dummy_free_0(void* data, size_t size, int device, void* stream) {
+  called_dummy_free_0++;
+}
+void dummy_free_1(void* data, size_t size, int device, void* stream) {
+  called_dummy_free_1++;
 }
 
 } // namespace torch_mlu

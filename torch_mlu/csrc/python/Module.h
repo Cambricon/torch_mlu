@@ -38,5 +38,6 @@ PyObject* THMPModule_setDevice_wrap(PyObject* self, PyObject* arg);
 void THMPModule_methods(PyObject* module);
 void registerMLUDeviceProperties(PyObject* module);
 void registerMluAllocator(PyObject* module);
+void registerMluPluggableAllocator(PyObject* module);
 PyObject* THMPModule_getDevice_wrap(PyObject* self, PyObject* noargs);
 #endif // TORCH_MLU_CSRC_PYTHON_MODULE_H_

@@ -60,6 +60,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "python/PythonTensor.h"
 #include "python/combined_traceback.h"
 #include "python/MluIPCTypes.h"
+#include "python/MLUPluggableAllocator.h"
 
 static bool in_bad_fork = false; // True for children forked after mlu init
 
@@ -368,7 +369,7 @@ PyObject* THMPModule_memoryStats(PyObject* _unused, PyObject* arg) {
   TORCH_CHECK(THPUtils_checkLong(arg), "invalid argument to memory_allocated");
   const int device = (int)THPUtils_unpackLong(arg);
 
-  using torch_mlu::MLUCachingAllocator::MemoryStats;
+  using torch_mlu::MLUCachingAllocator::DeviceStats;
   using torch_mlu::MLUCachingAllocator::Stat;
   using torch_mlu::MLUCachingAllocator::StatArray;
   using torch_mlu::MLUCachingAllocator::StatType;
@@ -393,8 +394,8 @@ PyObject* THMPModule_memoryStats(PyObject* _unused, PyObject* arg) {
     return dict;
   };
 
-  const MemoryStats stats =
-      torch_mlu::MLUCachingAllocator::getMemoryStats(device);
+  const DeviceStats stats =
+      torch_mlu::MLUCachingAllocator::getDeviceStats(device);
 
   py::dict result;
   result["num_alloc_retries"] = stats.num_alloc_retries;
@@ -1023,4 +1024,126 @@ void registerMluAllocator(PyObject* module) {
 
         addStorageDeleterFns(storages_to_add_deleters_to, delta);
       });
+}
+
+void registerMluPluggableAllocator(PyObject* module) {
+  auto m = py::handle(module).cast<py::module>();
+
+  py::class_<
+      torch_mlu::MLUCachingAllocator::MLUAllocator,
+      std::shared_ptr<torch_mlu::MLUCachingAllocator::MLUAllocator>>(
+      m, "_mlu_MLUAllocator");
+
+  m.def("_mlu_getAllocator", []() {
+    return py::cast(torch_mlu::MLUPluggableAllocator::getCurrentAllocator());
+  });
+
+  m.def(
+      "_mlu_changeCurrentAllocator",
+      [](const std::shared_ptr<torch_mlu::MLUCachingAllocator::MLUAllocator>&
+             allocator) {
+        torch_mlu::MLUPluggableAllocator::changeCurrentAllocator(allocator);
+      });
+
+  py::class_<
+      torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator,
+      torch_mlu::MLUCachingAllocator::MLUAllocator,
+      std::shared_ptr<torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator>>(
+      m, "_MLUPluggableAllocator")
+      .def(
+          "set_init_fn",
+          [](torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator& self,
+             uint64_t func_ptr) {
+            using FuncType = void(int);
+            std::function<FuncType> func =
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                reinterpret_cast<FuncType*>(func_ptr);
+            self.set_init_fn(func);
+          })
+      .def(
+          "set_reset_fn",
+          [](torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator& self,
+             uint64_t func_ptr) {
+            using FuncType = void();
+            std::function<FuncType> func =
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                reinterpret_cast<FuncType*>(func_ptr);
+            self.set_reset_fn(func);
+          })
+      .def(
+          "set_memory_fraction_fn",
+          [](torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator& self,
+             uint64_t func_ptr) {
+            using FuncType = void(double, int);
+            std::function<FuncType> func =
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                reinterpret_cast<FuncType*>(func_ptr);
+            self.set_memory_fraction_fn(func);
+          })
+      .def(
+          "set_base_alloc_fn",
+          [](torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator& self,
+             uint64_t func_ptr) {
+            using FuncType = void*(void*, size_t*);
+            std::function<FuncType> func =
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                reinterpret_cast<FuncType*>(func_ptr);
+            self.set_base_alloc_fn(func);
+          })
+      .def(
+          "set_record_stream_fn",
+          [](torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator& self,
+             uint64_t func_ptr) {
+            using FuncType = void(void*, cnrtQueue_t);
+            std::function<FuncType> func =
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                reinterpret_cast<FuncType*>(func_ptr);
+            self.set_record_stream_fn(func);
+          })
+      .def(
+          "set_begin_allocate_to_pool",
+          [](torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator& self,
+             uint64_t func_ptr) {
+            using FuncType = void(
+                int,
+                torch_mlu::MLUCachingAllocator::MempoolId_t,
+                std::function<bool(cnrtQueue_t)>);
+            std::function<FuncType> func =
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                reinterpret_cast<FuncType*>(func_ptr);
+            self.set_begin_allocate_to_pool(func);
+          })
+      .def(
+          "set_end_allocate_to_pool_fn",
+          [](torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator& self,
+             uint64_t func_ptr) {
+            using FuncType =
+                void(int, torch_mlu::MLUCachingAllocator::MempoolId_t);
+            std::function<FuncType> func =
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                reinterpret_cast<FuncType*>(func_ptr);
+            self.set_end_allocate_to_pool_fn(func);
+          })
+      .def(
+          "set_release_pool",
+          [](torch_mlu::MLUPluggableAllocator::MLUPluggableAllocator& self,
+             uint64_t func_ptr) {
+            using FuncType =
+                void(int, torch_mlu::MLUCachingAllocator::MempoolId_t);
+            std::function<FuncType> func =
+                // NOLINTNEXTLINE(performance-no-int-to-ptr)
+                reinterpret_cast<FuncType*>(func_ptr);
+            self.set_release_pool(func);
+          });
+
+  m.def("_mlu_customAllocator", [](uint64_t malloc_ptr, uint64_t free_ptr) {
+    using namespace torch_mlu::MLUPluggableAllocator;
+    std::function<MallocFuncType> malloc_fn =
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        reinterpret_cast<MallocFuncType*>(malloc_ptr);
+    std::function<FreeFuncType> free_fn =
+        // NOLINTNEXTLINE(performance-no-int-to-ptr)
+        reinterpret_cast<FreeFuncType*>(free_ptr);
+    return createCustomAllocator(malloc_fn, free_fn);
+  });
 }

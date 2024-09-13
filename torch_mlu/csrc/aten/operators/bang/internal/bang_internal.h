@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vector>
+#include <optional>
 #include "aten/operators/bang/internal/common_util.h"
 
 namespace torch_mlu {

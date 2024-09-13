@@ -209,6 +209,7 @@ default_cuda_args_list = [
     "torch.random.fork_rng",
 ]
 
+
 # handle profiler, set use_cuda=False
 def prepare_trace(self):
     self.profiler = prof.profile(
@@ -299,6 +300,7 @@ def replace_nccl_with_cncl(fn):
 
     return wrapper_fn
 
+
 # profiler
 # sort_by='*cuda*' -> sort_by='*mlu*'
 # use_cuda=True  ->  use_mlu=True
@@ -347,6 +349,7 @@ def replace_profiler_legacy(module, fn_name):
     fn = getattr(module, fn_name, None)
     if fn:
         setattr(module, fn_name, replace_profiler_legacy_args(fn))
+
 
 # dataloader
 # pin_memory_device=''->pin_memory_device='mlu'
@@ -401,6 +404,7 @@ def original_device_constructors():
     global old_device_constructors_
     return old_device_constructors_
 
+
 def replace_default_cuda_args_with_mlu(fn):
     @wraps(fn)
     def warp_fn(*args, **kwargs):
@@ -420,6 +424,7 @@ def replace_default_cuda_args_with_mlu(fn):
 
     return warp_fn
 
+
 def replace_default_cuda_args(func_name):
     components = func_name.split(".")
     module = torch
@@ -431,6 +436,7 @@ def replace_default_cuda_args(func_name):
     fn = getattr(module, fn_name, None)
     if fn is not None:
         setattr(module, fn_name, replace_default_cuda_args_with_mlu(fn))
+
 
 def apply_monkey_patches():
     # replace order MATTERS, this functions need to be replaced before torch_fn_list
@@ -535,6 +541,8 @@ def apply_monkey_patches():
     )
     torch.TypedStorage._share_cuda_ = torch.TypedStorage._share_mlu_
     torch.TypedStorage._new_shared_cuda = torch.TypedStorage._new_shared_mlu
+
+    torch.cuda.memory.CUDAPluggableAllocator = torch.cuda.memory.MLUPluggableAllocator
 
     for func_name in default_cuda_args_list:
         replace_default_cuda_args(func_name)

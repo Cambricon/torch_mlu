@@ -26,6 +26,7 @@ TESTS = [
     "mlu/test_lazy_init",
     "mlu/test_autograd",
     "mlu/test_mlu_cndev_based_avail",
+    "mlu/test_pluggable_allocator",
     "torch_ops/",
     "custom_ops/",
     "torch/test_save_and_load",
