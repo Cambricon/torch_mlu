@@ -19,7 +19,6 @@ from common_utils import shell, print_to_stderr, gen_err_message
 dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # Note: torch_ops/ & custom_ops/ are dirs to be expanded in get_selected_tests
-# items in NATIVE_CI_BLACKLIST are also added to TESTS below
 TESTS = [
     "mlu/test_event",
     "mlu/test_stream",
@@ -87,185 +86,6 @@ CNNL_BLACKLIST = [
     "torch_ops/",
 ]
 
-NATIVE_CI_BLACKLIST = [
-    "torch_native_ci_1/",
-    "torch_native_ci_2/",
-]
-
-# single-card test
-NATIVE_CI_BLACKLIST1 = []
-
-# multicard-test
-NATIVE_CI_BLACKLIST2 = []
-
-# extra fsdp test, test in daily test, skip in precheckin test
-FSDP_TEST = [
-    "torch_native_ci/distributed/fsdp/test_checkpoint_wrapper",
-    # https://github.com/pytorch/pytorch/issues/113936
-    # 'torch_native_ci/distributed/fsdp/test_distributed_checkpoint',
-    "torch_native_ci/distributed/fsdp/test_fsdp_apply",
-    "torch_native_ci/distributed/fsdp/test_fsdp_backward_prefetch",
-    "torch_native_ci/distributed/fsdp/test_fsdp_checkpoint",
-    "torch_native_ci/distributed/fsdp/test_fsdp_clip_grad_norm",
-    "torch_native_ci/distributed/fsdp/test_fsdp_comm",
-    "torch_native_ci/distributed/fsdp/test_fsdp_comm_hooks",
-    "torch_native_ci/distributed/fsdp/test_fsdp_dtensor_state_dict",
-    "torch_native_ci/distributed/fsdp/test_fsdp_exec_order",
-    "torch_native_ci/distributed/fsdp/test_fsdp_fine_tune",
-    "torch_native_ci/distributed/fsdp/test_fsdp_flatten_params",
-    "torch_native_ci/distributed/fsdp/test_fsdp_freezing_weights",
-    "torch_native_ci/distributed/fsdp/test_fsdp_fx",
-    "torch_native_ci/distributed/fsdp/test_fsdp_grad_acc",
-    "torch_native_ci/distributed/fsdp/test_fsdp_hybrid_shard",
-    "torch_native_ci/distributed/fsdp/test_fsdp_ignored_modules",
-    "torch_native_ci/distributed/fsdp/test_fsdp_input",
-    "torch_native_ci/distributed/fsdp/test_fsdp_memory",
-    "torch_native_ci/distributed/fsdp/test_fsdp_meta",
-    "torch_native_ci/distributed/fsdp/test_fsdp_misc",
-    "torch_native_ci/distributed/fsdp/test_fsdp_mixed_precision",
-    "torch_native_ci/distributed/fsdp/test_fsdp_multiple_forward",
-    "torch_native_ci/distributed/fsdp/test_fsdp_multiple_wrapping",
-    "torch_native_ci/distributed/fsdp/test_fsdp_optim_state",
-    # skip test_fsdp_overlap for torch.cuda._sleep
-    # 'torch_native_ci/distributed/fsdp/test_fsdp_overlap',
-    "torch_native_ci/distributed/fsdp/test_fsdp_state_dict",
-    "torch_native_ci/distributed/fsdp/test_fsdp_tp_integration",
-    "torch_native_ci/distributed/fsdp/test_fsdp_traversal",
-    "torch_native_ci/distributed/fsdp/test_fsdp_uneven",
-    "torch_native_ci/distributed/fsdp/test_fsdp_unshard_params",
-    "torch_native_ci/distributed/fsdp/test_fsdp_use_orig_params",
-    "torch_native_ci/distributed/fsdp/test_hsdp_dtensor_state_dict",
-    "torch_native_ci/distributed/fsdp/test_shard_utils",
-    "torch_native_ci/distributed/fsdp/test_utils",
-    "torch_native_ci/distributed/fsdp/test_wrap",
-]
-
-# extra inductor test, test in precheckin test
-INDUCTOR_WHITE_TEST = [
-    "mlu/test_lazy_init",
-]
-
-INDUCTOR_TEST = [
-    # 'torch_native_ci/inductor/test_aot_inductor.py',
-    # 'torch_native_ci/inductor/test_aot_inductor_utils.py',
-    "torch_native_ci/inductor/test_benchmark_fusion.py",
-    # 'torch_native_ci/inductor/test_binary_folding.py',
-    "torch_native_ci/inductor/test_codecache.py",
-    "torch_native_ci/inductor/test_codegen_triton.py",
-    # 'torch_native_ci/inductor/test_compiled_autograd.py',
-    # 'torch_native_ci/inductor/test_compiled_optimizers.py',
-    "torch_native_ci/inductor/test_config.py",
-    "torch_native_ci/inductor/test_control_flow.py",
-    "torch_native_ci/inductor/test_coordinate_descent_tuner.py",
-    # 'torch_native_ci/inductor/test_cpu_cpp_wrapper.py',
-    # 'torch_native_ci/inductor/test_cpu_repro.py',
-    # 'torch_native_ci/inductor/test_cuda_cpp_wrapper.py',
-    # 'torch_native_ci/inductor/test_cuda_repro.py',
-    # 'torch_native_ci/inductor/test_cudacodecache.py',
-    "torch_native_ci/inductor/test_cudagraph_trees.py",
-    "torch_native_ci/inductor/test_custom_lowering.py",
-    "torch_native_ci/inductor/test_custom_post_grad_passes.py",
-    # 'torch_native_ci/inductor/test_debug_trace.py',
-    "torch_native_ci/inductor/test_decompose_mem_bound_mm.py",
-    "torch_native_ci/inductor/test_dependencies.py",
-    "torch_native_ci/inductor/test_distributed_patterns.py",
-    # 'torch_native_ci/inductor/test_efficient_conv_bn_eval.py',
-    # 'torch_native_ci/inductor/test_extension_backend.py',
-    # 'torch_native_ci/inductor/test_foreach.py',
-    # 'torch_native_ci/inductor/test_fp8.py',
-    # 'torch_native_ci/inductor/test_fused_attention.py',
-    # 'torch_native_ci/inductor/test_fx_fusion.py',
-    "torch_native_ci/inductor/test_group_batch_fusion.py",
-    "torch_native_ci/inductor/test_indexing.py",
-    "torch_native_ci/inductor/test_inductor_freezing.py",
-    "torch_native_ci/inductor/test_inductor_utils.py",
-    "torch_native_ci/inductor/test_inplacing_pass.py",
-    "torch_native_ci/inductor/test_kernel_benchmark.py",
-    # 'torch_native_ci/inductor/test_layout_optim.py',
-    "torch_native_ci/inductor/test_max_autotune.py",
-    # 'torch_native_ci/inductor/test_memory_planning.py',
-    "torch_native_ci/inductor/test_metrics.py",
-    "torch_native_ci/inductor/test_minifier.py",
-    # 'torch_native_ci/inductor/test_minifier_isolate.py',
-    # 'torch_native_ci/inductor/test_mkldnn_pattern_matcher.py',
-    "torch_native_ci/inductor/test_mmdecomp.py",
-    # 'torch_native_ci/inductor/test_move_constructors_to_cuda.py',
-    "torch_native_ci/inductor/test_multi_kernel.py",
-    # 'torch_native_ci/inductor/test_pad_mm.py',
-    "torch_native_ci/inductor/test_pattern_matcher.py",
-    "torch_native_ci/inductor/test_perf.py",
-    "torch_native_ci/inductor/test_profiler.py",
-    "torch_native_ci/inductor/test_select_algorithm.py",
-    "torch_native_ci/inductor/test_smoke.py",
-    # 'torch_native_ci/inductor/test_snode_runtime.py',
-    "torch_native_ci/inductor/test_split_cat_fx_passes.py",
-    "torch_native_ci/inductor/test_standalone_compile.py",
-    "torch_native_ci/inductor/test_torchinductor.py",
-    # 'torch_native_ci/inductor/test_torchinductor_codegen_dynamic_shapes.py',
-    # 'torch_native_ci/inductor/test_torchinductor_dynamic_shapes.py',
-    # 'torch_native_ci/inductor/test_torchinductor_opinfo.py',
-    "torch_native_ci/inductor/test_triton_heuristics.py",
-    "torch_native_ci/inductor/test_triton_kernels.py",
-    "torch_native_ci/inductor/test_triton_wrapper.py",
-    "torch_native_ci/inductor/test_unbacked_symints.py",
-    "torch_native_ci/inductor/test_utils.py",
-    "torch_native_ci/dynamo/test_activation_checkpointing.py",
-    "torch_native_ci/dynamo/test_after_aot.py",
-    "torch_native_ci/dynamo/test_aot_autograd.py",
-    "torch_native_ci/dynamo/test_autograd_function.py",
-    "torch_native_ci/dynamo/test_backends.py",
-    "torch_native_ci/dynamo/test_backward_higher_order_ops.py",
-    # 'torch_native_ci/dynamo/test_base_output.py',
-    "torch_native_ci/dynamo/test_bytecode_hook.py",
-    "torch_native_ci/dynamo/test_compile.py",
-    "torch_native_ci/dynamo/test_comptime.py",
-    "torch_native_ci/dynamo/test_config.py",
-    "torch_native_ci/dynamo/test_ctx_manager.py",
-    "torch_native_ci/dynamo/test_cudagraphs.py",
-    "torch_native_ci/dynamo/test_debug_utils.py",
-    "torch_native_ci/dynamo/test_decorators.py",
-    "torch_native_ci/dynamo/test_dynamic_shapes.py",
-    "torch_native_ci/dynamo/test_exc.py",
-    "torch_native_ci/dynamo/test_export.py",
-    "torch_native_ci/dynamo/test_export_mutations.py",
-    "torch_native_ci/dynamo/test_frame_init.py",
-    "torch_native_ci/dynamo/test_functions.py",
-    "torch_native_ci/dynamo/test_global.py",
-    "torch_native_ci/dynamo/test_guard_manager.py",
-    "torch_native_ci/dynamo/test_higher_order_ops.py",
-    "torch_native_ci/dynamo/test_hooks.py",
-    "torch_native_ci/dynamo/test_input_attr_tracking.py",
-    "torch_native_ci/dynamo/test_interop.py",
-    "torch_native_ci/dynamo/test_logging.py",
-    "torch_native_ci/dynamo/test_minifier.py",
-    "torch_native_ci/dynamo/test_misc.py",
-    # 'torch_native_ci/dynamo/test_model_output.py',
-    "torch_native_ci/dynamo/test_modules.py",
-    "torch_native_ci/dynamo/test_nops.py",
-    "torch_native_ci/dynamo/test_optimizers.py",
-    "torch_native_ci/dynamo/test_pre_dispatch.py",
-    "torch_native_ci/dynamo/test_profiler.py",
-    "torch_native_ci/dynamo/test_python_autograd.py",
-    "torch_native_ci/dynamo/test_recompile_ux.py",
-    "torch_native_ci/dynamo/test_recompiles.py",
-    "torch_native_ci/dynamo/test_reorder_logs.py",
-    "torch_native_ci/dynamo/test_replay_record.py",
-    "torch_native_ci/dynamo/test_repros.py",
-    "torch_native_ci/dynamo/test_sdpa.py",
-    "torch_native_ci/dynamo/test_skip_non_tensor.py",
-    "torch_native_ci/dynamo/test_sources.py",
-    "torch_native_ci/dynamo/test_structured_trace.py",
-    "torch_native_ci/dynamo/test_subclasses.py",
-    "torch_native_ci/dynamo/test_subgraphs.py",
-    # 'torch_native_ci/dynamo/test_torchrec.py',
-    "torch_native_ci/dynamo/test_trace_rules.py",
-    "torch_native_ci/dynamo/test_unspec.py",
-    "torch_native_ci/dynamo/test_verify_correctness.py",
-]
-
-
-TESTS += NATIVE_CI_BLACKLIST
-
 # Case used to generate .xml log, see description inside this file
 FAKECASE = "utils/test_fakecase_print_log"
 
@@ -281,8 +101,6 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
     if options.pytest:
         unittest_args = [arg if arg != "-f" else "-x" for arg in unittest_args]
         # Note: native ci cases produce too many pytest marker warnings, suppress warnings
-        if "torch_native_ci" in test_module:
-            unittest_args += ["--disable-warnings"]
         if options.result_dir != "" and os.path.isdir(options.result_dir):
             log_base = os.path.join(options.result_dir, test_module.replace("/", "_"))
             unittest_args += [f"--junitxml={log_base}.xml"]
@@ -293,11 +111,7 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
     command = executable + argv
     run_env = os.environ.copy()
     # enable fallback to cpu for native ci cases
-    if "torch_native_ci" in test_module:
-        run_env["PYTORCH_TESTING_DEVICE_ONLY_FOR"] = "mlu"
-        run_env["ENABLE_FALLBACK_TO_CPU"] = "1"
-    else:
-        run_env["ENABLE_FALLBACK_TO_CPU"] = "0"
+    run_env["ENABLE_FALLBACK_TO_CPU"] = "0"
     if options.large:
         run_env["TEST_LARGETENSOR"] = "TRUE"
     if log_base:
@@ -476,11 +290,6 @@ def parse_args():
         help="always ignore blacklisted train tests",
     )
     parser.add_argument(
-        "--ignore_native_ci_blacklist",
-        action="store_true",
-        help="always ignore blacklisted torch native ci train tests",
-    )
-    parser.add_argument(
         "--fsdp-tests",
         action="store_true",
         help="run all distributed fsdp tests",
@@ -510,11 +319,6 @@ def parse_args():
         action="store_true",
         help="If true, exits immediately upon the first failing testcase."
         "Otherwise, all selected tests are executed regardless of failures.",
-    )
-    parser.add_argument(
-        "--test_scope",
-        choices=["default", "inductor", "all"],
-        help="Choose a test_scope: default(test_eager_only), inductor(test_inductor_only), or eager+inductor",
     )
     return parser.parse_args()
 
@@ -584,12 +388,6 @@ def exclude_tests(exclude_list, selected_tests, exclude_message=None):
 def get_selected_tests(options):
     selected_tests = options.include
 
-    if options.test_scope == "inductor":
-        selected_tests = INDUCTOR_TEST + INDUCTOR_WHITE_TEST
-        return selected_tests
-    if options.test_scope == "all":
-        selected_tests += INDUCTOR_TEST
-
     if options.bring_to_front:
         to_front = set(options.bring_to_front)
         selected_tests = options.bring_to_front + list(
@@ -611,11 +409,6 @@ def get_selected_tests(options):
         selected_tests = exclude_tests(CNNL_BLACKLIST, selected_tests)
     print("=========options.ignore_cnnl_blacklist===========")
 
-    print("=========options.ignore_native_ci_blacklist===========")
-    if not options.ignore_native_ci_blacklist:
-        selected_tests = exclude_tests(NATIVE_CI_BLACKLIST, selected_tests)
-    print("=========options.ignore_native_ci_blacklist===========")
-
     selected_copy = selected_tests.copy()
     for selected in selected_copy:
         # TODO(fanshijie): test_distributed.py does not support pytest
@@ -627,14 +420,6 @@ def get_selected_tests(options):
 
         if selected in ["torch_ops/", "custom_ops/"]:
             selected_tests += select_current_op_portion(selected)
-            selected_tests = exclude_tests([selected], selected_tests)
-        elif selected in ["torch_native_ci_1/"]:
-            selected_tests += select_native_ci_portion()
-            selected_tests = exclude_tests([selected], selected_tests)
-        elif selected in ["torch_native_ci_2/"]:
-            selected_tests += NATIVE_CI_BLACKLIST2
-            if options.fsdp_tests:
-                selected_tests += FSDP_TEST
             selected_tests = exclude_tests([selected], selected_tests)
         elif selected in SINGLE_CARD_SKIP_TEST and options.only_single_card_test:
             selected_tests = exclude_tests([selected], selected_tests)
@@ -670,61 +455,6 @@ def select_current_op_portion(module):
     return selected_op_test
 
 
-"""
-    * This function splits testcases in NATIVE_CI_BLACKLIST1
-    * CI_PARALLEL_TOTAL number of portions, with currently selected portion
-    * index being CI_PARALLEL_INDEX.
-    * CI_PARALLEL_TOTAL and CI_PARALLEL_INDEX are env variables set by
-    * jenkins pipeline when parallel is used.
-"""
-
-
-def select_native_ci_portion():
-    parallel_total = int(os.environ.get("CI_PARALLEL_TOTAL", 1))
-    parallel_index = int(os.environ.get("CI_PARALLEL_INDEX", 0))
-
-    if parallel_total == 1:
-        return NATIVE_CI_BLACKLIST1
-
-    selected_cases = []
-    for index, case in enumerate(NATIVE_CI_BLACKLIST1):
-        if case == "torch_native_ci/test_ops":
-            # test_ops takes a long time, put it in one job
-            if parallel_index == parallel_total - 1:
-                selected_cases.append(case)
-        else:
-            if parallel_index == index % (parallel_total - 1):
-                selected_cases.append(case)
-    return selected_cases
-
-
-def extract_torch_native_ci_lists(filename):
-    global NATIVE_CI_BLACKLIST1
-    NATIVE_CI_BLACKLIST1.clear()
-    global NATIVE_CI_BLACKLIST2
-    NATIVE_CI_BLACKLIST2.clear()
-    start_reading = False
-    native_test_folder_name = "torch_native_ci/"
-
-    with open(filename, "r") as file:
-        for line in file:
-            if start_reading:
-                if ")" in line:
-                    break
-                if "#" in line:
-                    continue
-                if "distributed/" in line or "test_autograd" in line:
-                    NATIVE_CI_BLACKLIST2.append(
-                        native_test_folder_name + line.strip()[:-3]
-                    )
-                else:
-                    NATIVE_CI_BLACKLIST1.append(
-                        native_test_folder_name + line.strip()[:-3]
-                    )
-            elif "TestList=(" in line:
-                start_reading = True
-
-
 def main():
     options = parse_args()
     # build cpp gtest
@@ -733,8 +463,6 @@ def main():
     #    subprocess.check_call('cpp/scripts/build_cpp_test.sh')
 
     test_directory = os.path.dirname(os.path.abspath(__file__))
-    native_test_array_file = test_directory + "/torch_native_ci/run_mlu_test.sh"
-    extract_torch_native_ci_lists(native_test_array_file)
 
     selected_tests = get_selected_tests(options)
     total_error_info = []
