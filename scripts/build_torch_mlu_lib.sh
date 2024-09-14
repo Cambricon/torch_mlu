@@ -133,6 +133,7 @@ function build_ext_lib() {
                          -DCMAKE_INSTALL_PREFIX="$TORCH_MLU_INSTALL_DIR" \
                          -DCMAKE_BUILD_TYPE=$cmake_build_type \
                          -DBUILD_TEST="$BUILD_TEST" \
+                         -DBUILD_LIBTORCH="$BUILD_LIBTORCH" \
                          -DUSE_PYTHON="$USE_PYTHON" \
                          -DUSE_BANG="$USE_BANG" \
                          -DUSE_MLUOP="$USE_MLUOP" \

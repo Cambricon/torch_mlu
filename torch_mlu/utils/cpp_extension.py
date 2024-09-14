@@ -26,7 +26,6 @@ COMMON_FLAGS = [
     "-pthread",
 ]
 
-
 def _find_neuware_home() -> Optional[str]:
     r"""Finds the NEUWARE_HOME install path."""
     # Guess #1
