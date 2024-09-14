@@ -19,7 +19,6 @@ from common_utils import shell, print_to_stderr, gen_err_message
 dir_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 
 # Note: torch_ops/ & custom_ops/ are dirs to be expanded in get_selected_tests
-# items in NATIVE_CI_BLACKLIST are also added to TESTS below
 TESTS = [
     "mlu/test_event",
     "mlu/test_stream",
@@ -92,62 +91,6 @@ CNNL_BLACKLIST = [
     "torch_ops/",
 ]
 
-NATIVE_CI_BLACKLIST = [
-    "torch_native_ci_1/",
-    "torch_native_ci_2/",
-]
-
-# single-card test
-NATIVE_CI_BLACKLIST1 = []
-
-# multicard-test
-NATIVE_CI_BLACKLIST2 = []
-
-# extra fsdp test, test in daily test, skip in precheckin test
-FSDP_TEST = [
-    "torch_native_ci/distributed/fsdp/test_checkpoint_wrapper",
-    # https://github.com/pytorch/pytorch/issues/113936
-    # 'torch_native_ci/distributed/fsdp/test_distributed_checkpoint',
-    "torch_native_ci/distributed/fsdp/test_fsdp_apply",
-    "torch_native_ci/distributed/fsdp/test_fsdp_backward_prefetch",
-    "torch_native_ci/distributed/fsdp/test_fsdp_checkpoint",
-    "torch_native_ci/distributed/fsdp/test_fsdp_clip_grad_norm",
-    "torch_native_ci/distributed/fsdp/test_fsdp_comm",
-    "torch_native_ci/distributed/fsdp/test_fsdp_comm_hooks",
-    "torch_native_ci/distributed/fsdp/test_fsdp_dtensor_state_dict",
-    "torch_native_ci/distributed/fsdp/test_fsdp_exec_order",
-    "torch_native_ci/distributed/fsdp/test_fsdp_fine_tune",
-    "torch_native_ci/distributed/fsdp/test_fsdp_flatten_params",
-    "torch_native_ci/distributed/fsdp/test_fsdp_freezing_weights",
-    "torch_native_ci/distributed/fsdp/test_fsdp_fx",
-    "torch_native_ci/distributed/fsdp/test_fsdp_grad_acc",
-    "torch_native_ci/distributed/fsdp/test_fsdp_hybrid_shard",
-    "torch_native_ci/distributed/fsdp/test_fsdp_ignored_modules",
-    "torch_native_ci/distributed/fsdp/test_fsdp_input",
-    "torch_native_ci/distributed/fsdp/test_fsdp_memory",
-    "torch_native_ci/distributed/fsdp/test_fsdp_meta",
-    "torch_native_ci/distributed/fsdp/test_fsdp_misc",
-    "torch_native_ci/distributed/fsdp/test_fsdp_mixed_precision",
-    "torch_native_ci/distributed/fsdp/test_fsdp_multiple_forward",
-    "torch_native_ci/distributed/fsdp/test_fsdp_multiple_wrapping",
-    "torch_native_ci/distributed/fsdp/test_fsdp_optim_state",
-    # skip test_fsdp_overlap for torch.cuda._sleep
-    # 'torch_native_ci/distributed/fsdp/test_fsdp_overlap',
-    "torch_native_ci/distributed/fsdp/test_fsdp_state_dict",
-    "torch_native_ci/distributed/fsdp/test_fsdp_tp_integration",
-    "torch_native_ci/distributed/fsdp/test_fsdp_traversal",
-    "torch_native_ci/distributed/fsdp/test_fsdp_uneven",
-    "torch_native_ci/distributed/fsdp/test_fsdp_unshard_params",
-    "torch_native_ci/distributed/fsdp/test_fsdp_use_orig_params",
-    "torch_native_ci/distributed/fsdp/test_hsdp_dtensor_state_dict",
-    "torch_native_ci/distributed/fsdp/test_shard_utils",
-    "torch_native_ci/distributed/fsdp/test_utils",
-    "torch_native_ci/distributed/fsdp/test_wrap",
-]
-
-
-TESTS += NATIVE_CI_BLACKLIST
-
 # Case used to generate .xml log, see description inside this file
 FAKECASE = "utils/test_fakecase_print_log"
 
@@ -163,8 +106,6 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
     if options.pytest:
         unittest_args = [arg if arg != "-f" else "-x" for arg in unittest_args]
         # Note: native ci cases produce too many pytest marker warnings, suppress warnings
-        if "torch_native_ci" in test_module:
-            unittest_args += ["--disable-warnings"]
         if options.result_dir != "" and os.path.isdir(options.result_dir):
             log_base = os.path.join(options.result_dir, test_module.replace("/", "_"))
             unittest_args += [f"--junitxml={log_base}.xml"]
@@ -175,11 +116,7 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
     command = executable + argv
     run_env = os.environ.copy()
     # enable fallback to cpu for native ci cases
-    if "torch_native_ci" in test_module:
-        run_env["PYTORCH_TESTING_DEVICE_ONLY_FOR"] = "mlu"
-        run_env["ENABLE_FALLBACK_TO_CPU"] = "1"
-    else:
-        run_env["ENABLE_FALLBACK_TO_CPU"] = "0"
+    run_env["ENABLE_FALLBACK_TO_CPU"] = "0"
     if options.large:
         run_env["TEST_LARGETENSOR"] = "TRUE"
     if log_base:
@@ -363,16 +300,6 @@ def parse_args():
         help="always ignore blacklisted train tests",
     )
     parser.add_argument(
-        "--ignore_native_ci_blacklist",
-        action="store_true",
-        help="always ignore blacklisted torch native ci train tests",
-    )
-    parser.add_argument(
-        "--fsdp-tests",
-        action="store_true",
-        help="run all distributed fsdp tests",
-    )
-    parser.add_argument(
         "additional_unittest_args",
         nargs="*",
         help="additional arguments passed through to unittest, e.g., "
@@ -487,11 +414,6 @@ def get_selected_tests(options):
         selected_tests = exclude_tests(CNNL_BLACKLIST, selected_tests)
     print("=========options.ignore_cnnl_blacklist===========")
 
-    print("=========options.ignore_native_ci_blacklist===========")
-    if not options.ignore_native_ci_blacklist:
-        selected_tests = exclude_tests(NATIVE_CI_BLACKLIST, selected_tests)
-    print("=========options.ignore_native_ci_blacklist===========")
-
     selected_copy = selected_tests.copy()
     for selected in selected_copy:
         # TODO(fanshijie): test_distributed.py does not support pytest
@@ -503,14 +425,6 @@ def get_selected_tests(options):
 
         if selected in ["torch_ops/", "custom_ops/"]:
             selected_tests += select_current_op_portion(selected)
-            selected_tests = exclude_tests([selected], selected_tests)
-        elif selected in ["torch_native_ci_1/"]:
-            selected_tests += select_native_ci_portion()
-            selected_tests = exclude_tests([selected], selected_tests)
-        elif selected in ["torch_native_ci_2/"]:
-            selected_tests += NATIVE_CI_BLACKLIST2
-            if options.fsdp_tests:
-                selected_tests += FSDP_TEST
             selected_tests = exclude_tests([selected], selected_tests)
         elif selected in SINGLE_CARD_SKIP_TEST and options.only_single_card_test:
             selected_tests = exclude_tests([selected], selected_tests)
@@ -546,61 +460,6 @@ def select_current_op_portion(module):
     return selected_op_test
 
 
-"""
-    * This function splits testcases in NATIVE_CI_BLACKLIST1
-    * CI_PARALLEL_TOTAL number of portions, with currently selected portion
-    * index being CI_PARALLEL_INDEX.
-    * CI_PARALLEL_TOTAL and CI_PARALLEL_INDEX are env variables set by
-    * jenkins pipeline when parallel is used.
-"""
-
-
-def select_native_ci_portion():
-    parallel_total = int(os.environ.get("CI_PARALLEL_TOTAL", 1))
-    parallel_index = int(os.environ.get("CI_PARALLEL_INDEX", 0))
-
-    if parallel_total == 1:
-        return NATIVE_CI_BLACKLIST1
-
-    selected_cases = []
-    for index, case in enumerate(NATIVE_CI_BLACKLIST1):
-        if case == "torch_native_ci/test_ops":
-            # test_ops takes a long time, put it in one job
-            if parallel_index == parallel_total - 1:
-                selected_cases.append(case)
-        else:
-            if parallel_index == index % (parallel_total - 1):
-                selected_cases.append(case)
-    return selected_cases
-
-
-def extract_torch_native_ci_lists(filename):
-    global NATIVE_CI_BLACKLIST1
-    NATIVE_CI_BLACKLIST1.clear()
-    global NATIVE_CI_BLACKLIST2
-    NATIVE_CI_BLACKLIST2.clear()
-    start_reading = False
-    native_test_folder_name = "torch_native_ci/"
-
-    with open(filename, "r") as file:
-        for line in file:
-            if start_reading:
-                if ")" in line:
-                    break
-                if "#" in line:
-                    continue
-                if "distributed/" in line or "test_autograd" in line:
-                    NATIVE_CI_BLACKLIST2.append(
-                        native_test_folder_name + line.strip()[:-3]
-                    )
-                else:
-                    NATIVE_CI_BLACKLIST1.append(
-                        native_test_folder_name + line.strip()[:-3]
-                    )
-            elif "TestList=(" in line:
-                start_reading = True
-
-
 def main():
     options = parse_args()
     # build cpp gtest
@@ -609,8 +468,6 @@ def main():
     #    subprocess.check_call('cpp/scripts/build_cpp_test.sh')
 
     test_directory = os.path.dirname(os.path.abspath(__file__))
-    native_test_array_file = test_directory + "/torch_native_ci/run_mlu_test.sh"
-    extract_torch_native_ci_lists(native_test_array_file)
 
     selected_tests = get_selected_tests(options)
     total_error_info = []
