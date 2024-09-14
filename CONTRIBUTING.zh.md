@@ -24,7 +24,7 @@
 
 ## 安装步骤
 
-### 1. 构建根目录，以base为例。
+### 1. 构建根目录，以base为例
    - `base/`: 根目录
      - `torch_mlu/`: torch_mlu仓库源码
      - `pytorch/`: pytorch仓库源码, 如果不编译pytorch则不需要
@@ -37,7 +37,7 @@
    popd
    ```
 
-### 2. 安装Virtualenv并激活虚拟环境。本例使用base目录。
+### 2. 安装Virtualenv并激活虚拟环境，本例使用base目录
 
    ```
    pushd base
@@ -47,7 +47,7 @@
    popd
    ```
 
-### 3. 导入编译与运行测试脚本所需的环境变量。
+### 3. 导入编译与运行测试脚本所需的环境变量
    
   （可选）配置NEUWARE_HOME<br>
    通常容器内的开发环境会默认配置好NEUWARE_HOME环境变量指向正确的SDK路径。如果您需要更换其他版本的SDK，可以执行
@@ -96,7 +96,7 @@
    popd
    ```
 
-### 5. 编译Cambricon TORCH_MLU。
+### 5. 编译Cambricon TORCH_MLU
 
    第三方依赖包列表可在TORCH_MLU源码主目录下的requirements.txt中查询。
 
@@ -110,7 +110,7 @@
    ```
 
 
-### 6. 确认编译结果。
+### 6. 确认编译结果
 
    可在Python中引用PyTorch与Cambricon TORCH_MLU测试是否编译成功。
 
@@ -120,14 +120,14 @@
    >>> import torch_mlu
    ```
 
-### 7. 安装torchvision、torchaudio（可选）。
+### 7. 安装torchvision、torchaudio（可选）
 
 
    ```
    pip install --isolated torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cpu --no-deps
    ```
 
-### 8. 运行测试示例。
+### 8. 运行测试示例
 
    该示例需要在MLU服务器上运行, 且依赖torchvision。
 
