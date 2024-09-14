@@ -37,6 +37,11 @@ RUN_BUILD_USE_PYTHON = bool(
     or (os.getenv("USE_PYTHON").upper() not in ["OFF", "0", "NO", "FALSE", "N"])
 )
 
+RUN_BUILD_LIBTORCH = bool(
+    (os.getenv("BUILD_LIBTORCH") is not None)
+    and (os.getenv("BUILD_LIBTORCH").upper() not in ["OFF", "0", "NO", "FALSE", "N"])
+)
+
 RUN_BUILD_USE_BANG = bool(
     (os.getenv("USE_BANG") is None)
     or (os.getenv("USE_BANG").upper() not in ["OFF", "0", "NO", "FALSE", "N"])
@@ -145,6 +150,7 @@ def build_libs():
     my_env["USE_CNCL"] = "OFF" if _check_env_off_flag("USE_CNCL") else "ON"
     my_env["USE_PROFILE"] = "OFF" if _check_env_off_flag("USE_PROFILE") else "ON"
     my_env["USE_MAGICMIND"] = "ON" if _check_env_flag("USE_MAGICMIND") else "OFF"
+    my_env["BUILD_LIBTORCH"] = "ON" if _check_env_flag("BUILD_LIBTORCH") else "OFF"
 
     # python environment
     cmake_python_library = "{}/{}".format(
@@ -212,6 +218,8 @@ class Clean(distutils.command.clean.clean):
 
 # Configuration for Build the Project.
 main_libraries = ["torch_mlu_python"]
+if RUN_BUILD_LIBTORCH:
+    main_libraries = ["torch_mlu"]
 include_dirs = []
 library_dirs = []
 

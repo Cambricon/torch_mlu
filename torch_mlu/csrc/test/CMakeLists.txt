@@ -63,6 +63,14 @@ link_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 set(GTEST_SRCS "")
   file(GLOB_RECURSE BASIC_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/cnnl/*.cpp"
                                "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp")
+if(BUILD_LIBTORCH)
+    file(GLOB_RECURSE EXCLUDED_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/common/test_process_group_cncl_errors.cpp
+    )
+
+    list(REMOVE_ITEM BASIC_SRCS ${EXCLUDED_SRCS})
+endif()
+
 list(APPEND GTEST_SRCS ${BASIC_SRCS})
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-no-as-needed")
@@ -76,8 +84,13 @@ foreach(test_src ${GTEST_SRCS})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin/${CPP_FOLDER})
   add_executable(${test_name}  ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
                                ${test_src})
-  target_link_libraries(${test_name} torch_mlu gtest_shared
-                        torch_cpu c10 torch torch_python pthread ${DEPENDENT_LIBRARIES} ${PYTHON_LIBRARIES} dl util)
+  if(USE_PYTHON)
+    target_link_libraries(${test_name} torch_mlu gtest_shared
+                          torch_cpu c10 torch torch_python pthread ${DEPENDENT_LIBRARIES} ${PYTHON_LIBRARIES} dl util)
+  else()
+    target_link_libraries(${test_name} torch_mlu gtest_shared
+                          torch_cpu c10 torch pthread ${DEPENDENT_LIBRARIES} dl util)
+  endif()
 endforeach()
 
 install(TARGETS gtest_shared DESTINATION "${GTEST_SHARED_INSTALL_LIB_DIR}")

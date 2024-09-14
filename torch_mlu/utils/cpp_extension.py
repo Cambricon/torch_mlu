@@ -46,12 +46,14 @@ pytorch_dir = get_pytorch_dir()
 
 def _prepare_ldflags(extra_ldflags, with_bang, verbose, is_standalone):
     NEUWARE_HOME = _find_neuware_home()
+    build_libtorch = os.environ.get("BUILD_LIBTORCH")
     extra_ldflags.append("-L" + pytorch_dir + "/lib")
     extra_ldflags.append("-lc10")
     extra_ldflags.append("-ltorch_cpu")
     if with_bang:
         extra_ldflags.append("-ltorch_mlu")
-        extra_ldflags.append("-ltorch_mlu_python")
+        if not build_libtorch or build_libtorch.lower() in ("0", "false", "n", "no"):
+            extra_ldflags.append("-ltorch_mlu_python")
         extra_ldflags.append("-lbangc")
         cur_path = os.path.abspath(__file__)
         torch_mlu_path = os.path.dirname(os.path.dirname(cur_path))
