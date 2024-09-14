@@ -39,21 +39,9 @@ torch_mlu 是[寒武纪科技](https://www.cambricon.com)开发的 PyTorch 扩�
     > **注意:**
     >
     > * Cambricon torch_mlu 依赖于PyTorch，因此需要先安装 PyTorch。
-    > * 对于PyTorch 2.1 以及 2.3 版本此步骤需要安装Cambricon torch_mlu 发布的PyTorch的二进制wheel安装包（非官方的安装包）。
 
-   对于PyTorch 2.1，运行如下命令：
 
-   ```
-   pip install torch-2.1.0-cp310-cp310-linux_x86_64.whl
-   ```
-
-   对于PyTorch 2.3，运行如下命令：
-
-   ```
-   pip install torch-2.3.0+cpu-cp310-cp310-linux_x86_64.whl
-   ```
-
-   对于PyTorch 2.4，可以按照PyTorch官方指南（https://pytorch.org ）安装Cambricon torch_mlu支持的PyTorch版本，也可以直接使用以下命令。
+   可以按照PyTorch官方指南（https://pytorch.org ）安装Cambricon torch_mlu支持的PyTorch版本，也可以直接使用以下命令。
 
    ```
    pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cpu # 安装 PyTorch cpu wheel包
@@ -83,20 +71,6 @@ torch_mlu 是[寒武纪科技](https://www.cambricon.com)开发的 PyTorch 扩�
    以上测例说明安装成功。如果安装失败，则会有相应的错误提示。
 
 6. 安装torchvision、torchaudio（可选）。
-
-   对于PyTorch 2.1，运行如下命令：
-
-   ```
-   pip install --isolated torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cpu --no-deps
-   ```
-
-   对于PyTorch 2.3，运行如下命令：
-
-   ```
-   pip install --isolated torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cpu --no-deps
-   ```
-
-   对于PyTorch 2.4，运行如下命令：
 
    ```
    pip install --isolated torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cpu --no-deps
