@@ -24,56 +24,72 @@
 
 ## 安装步骤
 
-1. 导入编译与运行测试脚本所需的环境变量。
+### 1. 构建根目录，以base为例
+   - `base/`: 根目录
+     - `torch_mlu/`: torch_mlu仓库源码
+     - `pytorch/`: pytorch仓库源码
 
    ```
-   #设置环境变量:（如PYTORCH_HOME，TORCH_MLU_HOME，LD_LIBRARY_PATH等）
-   pushd cambricon_torch
-   export SRC_PACKAGES=$PWD
-   source $SRC_PACKAGES/torch_mlu/scripts/release/env_pytorch.sh
+   mkdir base
+   pushd base
+   #克隆torch_mlu源码
+   git clone https://gitee.com/cambricon/torch_mlu.git -b r1.22_pt2.3.0
+   #克隆对应版本的pytorch源码 
+   git clone https://github.com/pytorch/pytorch.git -b v2.3.0
    popd
    ```
 
-
-2. 在Cambricon PyTorch或Cambricon TORCH_MLU源码目录下安装Virtualenv并激活虚拟环境。本例使用Cambricon TORCH_MLU目录。
+### 2. 安装Virtualenv并激活虚拟环境，本例使用base目录
 
    ```
-   pushd ${TORCH_MLU_HOME}
+   pushd base
    $(which pip3) install virtualenv #安装虚拟环境，此处pip3可按需更换为指定版本
    $(which python3) -m virtualenv venv/pytorch #安装虚拟环境，此处python3可按需更换为指定版本
    source venv/pytorch/bin/activate #激活虚拟环境
    popd
    ```
 
-
-3. 【可选】对PyTorch进行Patch
-
-    > **注意:**
-    >
-    > 目前仅 PyTorch 2.1 以及 2.3 版本需要执行此步骤。main, PyTorch 2.4 以后的版本无需执行此步骤。
-
+### 3. 导入编译与运行测试脚本所需的环境变量
+   
+  （可选）配置NEUWARE_HOME<br>
+   通常容器内的开发环境会默认配置好NEUWARE_HOME环境变量指向正确的SDK路径。如果您需要更换其他版本的SDK，可以执行
 
    ```
-   pushd ${TORCH_MLU_HOME}/scripts
-   bash apply_patches_to_pytorch.sh
+   export NEUWARE_HOME=/path/neuware_home
+   ```
+
+   按如下步骤执行`env_pytorch.sh`后，会自动设置编译所需环境变量
+
+   ```
+   #设置环境变量:（如PYTORCH_HOME，TORCH_MLU_HOME，LD_LIBRARY_PATH等）
+   pushd base
+   export SRC_PACKAGES=$PWD
+   source $SRC_PACKAGES/torch_mlu/scripts/release/env_pytorch.sh
    popd
    ```
 
+### 4. 编译Cambricon Pytorch
 
-4. 安装Cambricon PyTorch所依赖的第三方包，并编译Cambricon PyTorch。
-
+   安装Cambricon PyTorch所依赖的第三方包，并编译Cambricon PyTorch。<br>
    第三方依赖包列表可在PyTorch源码主目录下的requirements.txt中查询。
 
    ```
    pushd ${PYTORCH_HOME}
+   git submodule sync
+   git submodule update --init --recursive
+   #打patch到pytorch源码中
+   pushd ${TORCH_MLU_HOME}
+   ./scripts/apply_patches_to_pytorch.sh
+   popd
+   pip install numpy==1.26.4 #numpy建议指定为1.26.x
    pip install -r requirements.txt #安装第三方包
    rm -rf build #清理环境
+   pip uninstall -y torch
    python setup.py install #开始编译
    popd
    ```
 
-
-5. 安装Cambricon TORCH_MLU所依赖的第三方包，并编译Cambricon TORCH_MLU。
+### 5. 编译Cambricon TORCH_MLU
 
    第三方依赖包列表可在TORCH_MLU源码主目录下的requirements.txt中查询。
 
@@ -81,12 +97,13 @@
    pushd ${TORCH_MLU_HOME}
    pip install -r requirements.txt #安装第三方包
    rm -rf build
+   pip uninstall -y torch_mlu
    python setup.py install #开始编译
    popd
    ```
 
 
-6. 确认编译结果。
+### 6. 确认编译结果
 
    可在Python中引用PyTorch与Cambricon TORCH_MLU测试是否编译成功。
 
@@ -96,9 +113,16 @@
    >>> import torch_mlu
    ```
 
-7. 运行测试示例。
+### 7. 安装torchvision、torchaudio（可选）
 
-   该示例需要在MLU服务器上运行。
+
+   ```
+   pip install --isolated torchvision==0.18.0 torchaudio==2.3.0 --index-url https://download.pytorch.org/whl/cpu --no-deps
+   ```
+
+### 8. 运行测试示例
+
+   该示例需要在MLU服务器上运行, 且依赖torchvision。
 
    ``${TORCH_MLU_HOME}/examples/training`` 目录下为训练脚本。
 
@@ -106,41 +130,6 @@
    # 训练模式测试
    python $TORCH_MLU_HOME/examples/training/single_card_demo.py
    ```
-
-10. 安装torchvision、torchaudio（可选）。
-
-    对于PyTorch 2.1，运行如下命令：
-
-    ```
-    git clone https://github.com/pytorch/vision.git -b v0.16.0
-    cd vision
-    python setup.py install
-    git clone https://github.com/pytorch/audio.git -b v2.1.1
-    cd audio
-    python setup.py install
-    ```
-
-    对于PyTorch 2.3，运行如下命令：
-
-    ```
-    git clone https://github.com/pytorch/vision.git -b v0.18.0
-    cd vision
-    python setup.py install
-    git clone https://github.com/pytorch/audio.git -b v2.3.0
-    cd audio
-    python setup.py install
-    ```
-
-    对于PyTorch 2.4，运行如下命令：
-
-    ```
-    git clone https://github.com/pytorch/vision.git -b v0.19.0
-    cd vision
-    python setup.py install
-    git clone https://github.com/pytorch/audio.git -b v2.4.0
-    cd audio
-    python setup.py install
-    ```
 
 
 <h2 id="开发指导.md">开发指导</h2>
