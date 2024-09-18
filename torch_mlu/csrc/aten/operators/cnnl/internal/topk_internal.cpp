@@ -41,7 +41,7 @@ void cnnl_topk_internal(
     int64_t dim,
     bool largest,
     bool sorted,
-    c10::optional<bool> stable) {
+    bool stable) {
   auto memory_format = self.suggest_memory_format();
   dim = modify_dim_based_on_layout(dim, memory_format);
   auto self_impl = getMluTensorImpl(self);
@@ -90,7 +90,7 @@ void cnnl_topk_internal(
             dim,
             largest,
             sorted,
-            true,
+            stable,
             workspace_ptr.get(),
             workspace_size,
             values_desc.get(),

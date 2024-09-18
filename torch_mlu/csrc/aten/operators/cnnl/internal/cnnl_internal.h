@@ -331,7 +331,7 @@ void cnnl_topk_internal(
     int64_t dim,
     bool largest,
     bool sorted,
-    c10::optional<bool> stable);
+    bool stable);
 
 void cnnl_median_internal(
     const at::Tensor& input,

@@ -5,6 +5,7 @@ import unittest
 import logging
 import random
 import torch
+import itertools
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
@@ -220,29 +221,39 @@ class TestOps(TestCase):
         order = [True, False]
         channel_first = [True, False]
         stable = [True, False]
-        for i in shape_list:
-            for typeId in type_list:
-                x = torch.randn(i, dtype=torch.float).to(typeId)
-                random_i = random.randint(0, 1)
-                is_descending = order[random_i]
-                channel = channel_first[random_i]
-                is_stable = stable[random_i]
-                dim = random.randint(-len(i), len(i) - 1)
-                out_cpu = torch.sort(
-                    x, stable=is_stable, dim=dim, descending=is_descending
-                )
-                if channel is False:
-                    x = self.convert_to_channel_last(x)
-                out_mlu = torch.sort(
-                    x.to("mlu"), stable=is_stable, dim=dim, descending=is_descending
-                )
+        for i, typeId, is_descending, is_stable, channel in itertools.product(
+            shape_list, type_list, order, stable, channel_first
+        ):
+            x = torch.randn(i, dtype=torch.float).to(typeId)
+            dim = random.randint(-len(i), len(i) - 1)
+            sorted_tensor = torch.zeros(i).to(typeId)
+            indices = torch.zeros(i).long()
+            out_cpu = torch.sort(
+                x,
+                stable=is_stable,
+                dim=dim,
+                descending=is_descending,
+                out=(sorted_tensor, indices),
+            )
+            if channel is False:
+                x = self.convert_to_channel_last(x)
+            out_mlu = torch.sort(
+                x.to("mlu"), stable=is_stable, dim=dim, descending=is_descending
+            )
+            self.assertTensorsEqual(
+                out_cpu[0].float(),
+                out_mlu[0].cpu().float().contiguous(),
+                0.0,
+                use_MSE=True,
+            )
+            self.assertTrue(out_cpu[1].dtype, out_mlu[1].cpu().dtype)
+            if is_stable:
                 self.assertTensorsEqual(
-                    out_cpu[0].float(),
-                    out_mlu[0].cpu().float().contiguous(),
+                    out_cpu[1].float(),
+                    out_mlu[1].cpu().float().contiguous(),
                     0.0,
                     use_MSE=True,
                 )
-                self.assertTrue(out_cpu[1].dtype, out_mlu[1].cpu().dtype)
 
     # @unittest.skip("not test")
     @testinfo()
@@ -323,25 +334,33 @@ class TestOps(TestCase):
         ]
         order = [True, False]
         stable = [True, False]
-        for i in shape_list:
-            for typeId in type_list:
-                x = torch.randn(i, dtype=torch.float).to(typeId)
-                random_i = random.randint(0, 1)
-                is_descending = order[random_i]
-                is_stable = stable[random_i]
-                dim = random.randint(-len(i), len(i) - 1)
-                index_cpu = torch.argsort(
-                    x, stable=is_stable, dim=dim, descending=is_descending
-                )
-                x_mlu = x.mlu()
-                index_mlu = torch.argsort(
-                    x_mlu, stable=is_stable, dim=dim, descending=is_descending
-                )
+        channel_first = [True, False]
+        for i, typeId, is_descending, is_stable, channel in itertools.product(
+            shape_list, type_list, order, stable, channel_first
+        ):
+            x = torch.randn(i, dtype=torch.float).to(typeId)
+            random_i = random.randint(0, 1)
+            is_descending = order[random_i]
+            is_stable = stable[random_i]
+            dim = random.randint(-len(i), len(i) - 1)
+            index_cpu = torch.argsort(
+                x, stable=is_stable, dim=dim, descending=is_descending
+            )
+            if channel is False:
+                x = self.convert_to_channel_last(x)
+            x_mlu = x.mlu()
+            index_mlu = torch.argsort(
+                x_mlu, stable=is_stable, dim=dim, descending=is_descending
+            )
+            index_mlu = index_mlu.contiguous()
+            if is_stable:
+                self.assertTensorsEqual(index_cpu, index_mlu.cpu(), 0.0, use_MSE=True)
+            else:
                 sorted_cpu = torch.gather(x, dim=dim, index=index_cpu)
                 sorted_mlu = torch.gather(x_mlu, dim=dim, index=index_mlu)
                 self.assertTensorsEqual(
-                    sorted_cpu.float(),
-                    sorted_mlu.cpu().float().contiguous(),
+                    sorted_cpu,
+                    sorted_mlu.cpu(),
                     0.0,
                     use_MSE=True,
                 )
