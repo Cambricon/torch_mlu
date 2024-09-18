@@ -49,6 +49,7 @@ class TestEnvMigration(TestCase):
                         var.strip().strip('"').strip() for var in match.split(",")
                     ]
                     env_set.update(var_list)
+                env_set.update(patterns[3].findall(line))  # pattern getenv
                 buffer = ""
         return env_set
 
@@ -115,6 +116,7 @@ class TestEnvMigration(TestCase):
             os.path.join(self.torch_mlu_home, "torch_mlu/csrc/utils"),
             os.path.join(self.torch_mlu_home, "torch_mlu/csrc/framework/core"),
             os.path.join(self.torch_mlu_home, "torch_mlu/csrc/framework/distributed"),
+            os.path.join(self.torch_mlu_home, "torch_mlu/mlu"),
         ]
         exclude_file = ["Utils.h"]
         functions = ["getCvarString", "getCvarInt", "getCvarBool"]
@@ -124,6 +126,7 @@ class TestEnvMigration(TestCase):
             ),
             re.compile(r"\b(?:" + "|".join(functions) + r")\(\s*{([^}]+)}\s*,"),
             re.compile(r"\b(?:" + "|".join(functions) + r")\(\s*$"),
+            re.compile(r'\bgetenv\(\s*"([A-Za-z0-9_]+)"\s*\)'),
         ]
 
         all_env_set = set()
@@ -131,7 +134,7 @@ class TestEnvMigration(TestCase):
             for root, _, files in os.walk(folder):
                 for file in files:
                     if (
-                        file.endswith((".cpp", ".hpp", ".h"))
+                        file.endswith((".cpp", ".hpp", ".h", ".py"))
                         and file not in exclude_file
                     ):
                         file_path = os.path.join(root, file)
