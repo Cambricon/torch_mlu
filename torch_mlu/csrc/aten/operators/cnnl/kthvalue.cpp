@@ -46,7 +46,6 @@ std::tuple<Tensor&, Tensor&> kthvalue_out_impl_mlu(
   if (self.numel() != 0) {
     AT_DISPATCH_MLU_FLOATING_TYPES_HALF_AND_BFLOAT16(
         self_contiguous.scalar_type(), "cnnl_kthvalue", [&] {
-          indices_contiguous = cast_long_to_int_if_needed(indices_contiguous);
           cnnl_kthvalue_internal(
               values_contiguous, indices_contiguous, self_contiguous, k, dim);
         });

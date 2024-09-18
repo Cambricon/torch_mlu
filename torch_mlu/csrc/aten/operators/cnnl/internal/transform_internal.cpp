@@ -49,7 +49,9 @@ at::Tensor& cnnl_transform_out_internal(
   // CNNL limited.
   // and actually only cnnl_data_type_ matters.
   TORCH_MLU_CHECK(
-      getCnnlType(input_impl) == getCnnlType(output_impl),
+      getCnnlType(input_impl) == getCnnlType(output_impl) ||
+          (input.scalar_type() == at::kLong &&
+           output.scalar_type() == at::kFloat),
       "input and output should have the same type");
   // get current handle
   auto handle = getCurrentHandle();

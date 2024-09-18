@@ -79,9 +79,6 @@ void index_add_mlu_impl(
     source_contiguous = cnnl_contiguous(source_, memory_format);
   }
 
-  self_contiguous = cast_long_to_int_if_needed(self_contiguous);
-  source_contiguous = cast_long_to_int_if_needed(source_contiguous);
-  result_contiguous = create_int_tensor_if_needed(result_contiguous);
   cnnl_index_add_internal(
       result_contiguous,
       self_contiguous,

@@ -42,10 +42,9 @@ void inline launch_clamp_scalar_mlu(
     at::TensorIteratorBase& iter,
     at::optional<at::Scalar> min,
     at::optional<at::Scalar> max) {
-  auto self = cast_long_to_int_if_needed(iter.input(0));
-  auto output = create_int_tensor_if_needed(iter.output(0));
+  auto self = iter.input(0);
+  auto output = iter.output(0);
   cnnl_clamp_internal(output, self, min, max);
-  cast_int_to_long_if_needed(output, iter.output(0));
   iter.cast_outputs();
 }
 
@@ -65,17 +64,16 @@ void clamp_scalar_mlu_kernel(
 }
 
 void clamp_mlu_kernel(at::TensorIteratorBase& iter) {
-  auto self = cast_long_to_int_if_needed(iter.input(0));
-  auto min = cast_long_to_int_if_needed(iter.input(1));
-  auto max = cast_long_to_int_if_needed(iter.input(2));
-  auto output = create_int_tensor_if_needed(iter.output(0));
+  auto self = iter.input(0);
+  auto min = iter.input(1);
+  auto max = iter.input(2);
+  auto output = iter.output(0);
   AT_DISPATCH_ALL_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       iter.common_dtype(),
       "clamp_mlu",
       [&] { cnnl_clamp_tensor_internal(output, self, min, max); });
-  cast_int_to_long_if_needed(output, iter.output(0));
   iter.cast_outputs();
 }
 

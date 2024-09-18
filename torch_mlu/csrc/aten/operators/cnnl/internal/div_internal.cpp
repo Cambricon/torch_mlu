@@ -44,9 +44,13 @@ at::Tensor& cnnl_div_out_internal(
   }
   if (rounding_mode == "true") {
     TORCH_MLU_CHECK(
-        at::isFloatingType(input.scalar_type()) &&
-            at::isFloatingType(other.scalar_type()),
-        "div inputs only support floating type");
+        at::isFloatingType(input.scalar_type()) ||
+            input.scalar_type() == at::kLong,
+        "div inputs only support floating/long type");
+    TORCH_MLU_CHECK(
+        at::isFloatingType(other.scalar_type()) ||
+            other.scalar_type() == at::kLong,
+        "div inputs only support floating/long type");
   } else {
     TORCH_MLU_CHECK(
         at::isFloatingType(input.scalar_type()) ||

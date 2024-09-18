@@ -5,6 +5,7 @@ import logging
 
 import sys
 import os
+from itertools import product
 import torch
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
@@ -256,6 +257,22 @@ class TestFloorDivideOp(TestCase):
         out_cpu = torch.floor_divide(x2, y2)
         out_mlu_2 = torch.floor_divide(x2.to("mlu"), y2.to("mlu"))
         torch.testing.assert_close(out_cpu, out_mlu_2.cpu(), equal_nan=True)
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_floor_divide_mixed_type(self):
+        input1_types = [torch.long]
+        input2_types = [torch.float]
+        shapes = [((), ()), ((), (1,)), ((2, 3, 4, 6), (3, 4, 6))]
+        product_list = product(input1_types, input2_types, shapes)
+        for input1_type, input2_type, shape in product_list:
+            shape1, shape2 = shape
+            a = torch.randint(low=1, high=10, size=shape1).to(input1_type)
+            b = torch.randn(shape2, dtype=torch.float).to(input2_type)
+
+            ouput = torch.floor_divide(a, b)
+            ouput_mlu = torch.floor_divide(a.mlu(), b.mlu())
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
 
 
 if __name__ == "__main__":

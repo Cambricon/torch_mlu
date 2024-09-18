@@ -46,11 +46,9 @@ void cnnl_masked_fill_kernel(
     at::TensorIterator& iter,
     at::Tensor value,
     const at::Tensor& mask) {
-  auto output = create_int_tensor_if_needed(iter.output(0));
-  auto self = cast_long_to_int_if_needed(iter.input(0));
-  auto value_int = cast_long_to_int_if_needed(value);
-  cnnl_masked_fill_internal(output, self, mask, value_int);
-  cast_int_to_long_if_needed(output, iter.output(0));
+  auto output = iter.output(0);
+  auto self = iter.input(0);
+  cnnl_masked_fill_internal(output, self, mask, value);
 }
 
 at::Tensor& cnnl_masked_fill_(

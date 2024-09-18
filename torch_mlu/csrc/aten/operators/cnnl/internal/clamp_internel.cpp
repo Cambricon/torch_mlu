@@ -133,7 +133,7 @@ void cnnl_clamp_internal(
       {"float", 1},
       {"double", 1},
       {"int", 2},
-      {"long int", 2},
+      {"long int", 6},
       {"half", 3},
       {"c10::Half", 4},
       {"c10::BFloat16", 5}};
@@ -152,6 +152,9 @@ void cnnl_clamp_internal(
       break;
     case 5:
       clip<uint16_t, cnrtBfloat>(output, self, min, max);
+      break;
+    case 6:
+      clip<long>(output, self, min, max);
       break;
     default:
       auto self_cast = self.to(at::kFloat);

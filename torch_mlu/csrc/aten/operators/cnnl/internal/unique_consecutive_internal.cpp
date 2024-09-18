@@ -80,15 +80,15 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_unique_consecutive_internal(
 
   // [in] indices_desc & [out] inverse_indices
   at::Tensor inverse_indices =
-      at::empty({0}, self.options().dtype(at::ScalarType::Int));
+      at::empty({0}, self.options().dtype(at::ScalarType::Long));
   void* inverse_indices_ptr = nullptr;
   if (return_inverse) {
     if (dim != self.dim()) { // dim != None
       inverse_indices =
-          at::empty(self.size(dim), self.options().dtype(at::ScalarType::Int));
+          at::empty(self.size(dim), self.options().dtype(at::ScalarType::Long));
     } else { // dim == None
       inverse_indices =
-          at::empty_like(self, self.options().dtype(at::ScalarType::Int));
+          at::empty_like(self, self.options().dtype(at::ScalarType::Long));
     }
     inverse_indices_ptr = getMluTensorImpl(inverse_indices)->mlu_data_ptr();
   }
@@ -96,15 +96,16 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_unique_consecutive_internal(
   indices_desc.set(inverse_indices);
 
   // [in] counts_desc & [out] counts
-  at::Tensor counts = at::empty({0}, self.options().dtype(at::ScalarType::Int));
+  at::Tensor counts =
+      at::empty({0}, self.options().dtype(at::ScalarType::Long));
   void* counts_ptr = nullptr;
   if (return_counts) {
     if (dim != self.dim()) { // dim != None
       counts = at::empty(
-          output.size(dim), output.options().dtype(at::ScalarType::Int));
+          output.size(dim), output.options().dtype(at::ScalarType::Long));
     } else { // dim == None
       counts =
-          at::empty_like(output, output.options().dtype(at::ScalarType::Int));
+          at::empty_like(output, output.options().dtype(at::ScalarType::Long));
     }
     counts_ptr = getMluTensorImpl(counts)->mlu_data_ptr();
   }
@@ -138,8 +139,6 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_unique_consecutive_internal(
     output.resize_(total_elements);
     counts.resize_(total_elements);
   }
-  inverse_indices = inverse_indices.to(at::ScalarType::Long);
-  counts = counts.to(at::ScalarType::Long);
 
   return std::make_tuple(output, inverse_indices, counts);
 }

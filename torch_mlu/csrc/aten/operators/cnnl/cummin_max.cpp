@@ -52,11 +52,11 @@ void cnnl__cummin_helper(
       get_channels_first_strides(values.sizes()),
       values.options()));
 
-  auto indices_contiguous = cast_long_to_int_if_needed(maybe_create_out(
+  auto indices_contiguous = maybe_create_out(
       indices,
       indices.sizes(),
       get_channels_first_strides(indices.sizes()),
-      indices.options()));
+      indices.options());
 
   AT_DISPATCH_MLU_TENSOR_SCLAER_TYPES(self.scalar_type(), "cummin", [&] {
     cnnl_cummin_max_internal(
@@ -90,11 +90,11 @@ void cnnl__cummax_helper(
       get_channels_first_strides(values.sizes()),
       values.options()));
 
-  auto indices_contiguous = cast_long_to_int_if_needed(maybe_create_out(
+  auto indices_contiguous = maybe_create_out(
       indices,
       indices.sizes(),
       get_channels_first_strides(indices.sizes()),
-      indices.options()));
+      indices.options());
 
   AT_DISPATCH_MLU_TENSOR_SCLAER_TYPES(self.scalar_type(), "cummax", [&] {
     cnnl_cummin_max_internal(

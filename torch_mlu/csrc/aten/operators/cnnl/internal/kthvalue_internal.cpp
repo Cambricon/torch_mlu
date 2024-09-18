@@ -44,13 +44,13 @@ void cnnl_kthvalue_internal(
       std::get<0>(indices_sizes_strides),
       std::get<1>(indices_sizes_strides),
       CNNL_LAYOUT_ARRAY,
-      CNNL_DTYPE_INT32);
+      CNNL_DTYPE_INT64);
 
   // malloc mlu memory
   auto self_ptr = self_impl->mlu_data_ptr();
   auto values_ptr = values_impl->mlu_data_ptr();
   auto indices_ptr = indices_impl->mlu_data_ptr();
-
+  // get workspace size
   size_t workspace_size = 0;
   TORCH_CNNL_CHECK(cnnlGetKthValueWorkspaceSize(
       handle, self_desc.desc(), indices_desc.desc(), k, dim, &workspace_size));

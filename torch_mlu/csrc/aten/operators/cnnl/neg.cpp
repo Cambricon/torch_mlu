@@ -57,10 +57,9 @@ void neg_mlu_kernel(at::TensorIteratorBase& iter) {
   if (iter.numel() == 0) {
     return;
   }
-  auto input = cast_long_to_int_if_needed(iter.input(0));
-  auto output = create_int_tensor_if_needed(iter.output(0));
+  auto input = iter.input(0);
+  auto output = iter.output(0);
   cnnl_neg_internal(output, input);
-  cast_int_to_long_if_needed(output, iter.output(0));
   iter.cast_outputs();
 }
 
