@@ -138,6 +138,9 @@ def _parse_visible_devices():
         var = os.getenv("MLU_VISIBLE_DEVICES")
 
     if var is None:
+        var = os.getenv("CUDA_VISIBLE_DEVICES")
+
+    if var is None:
         return list(range(64))
 
     def _strtoul(s: str) -> int:
@@ -311,10 +314,12 @@ def device_count():
     return r
 
 def _cndev_based_avail():
-    mlu_env = os.getenv("PYTORCH_CNDEV_BASED_MLU_CHECK", None)
-    if mlu_env:
-        return mlu_env == "1"
-    return os.getenv("PYTORCH_NVML_BASED_CUDA_CHECK") == "1"
+    var = os.getenv("PYTORCH_CNDEV_BASED_MLU_CHECK")
+
+    if var is None:
+        var = os.getenv("PYTORCH_NVML_BASED_CUDA_CHECK")
+
+    return var == "1"
 
 def is_available():
     r"""Returns a bool indicating if MLU is currently available."""
