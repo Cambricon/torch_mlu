@@ -112,8 +112,6 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
 
     command = executable + argv
     run_env = os.environ.copy()
-    # uninstall plugin just in case
-    subprocess.check_call("pip uninstall -y torch_mlu-ci-overrides", shell=True)
     run_env["ENABLE_FALLBACK_TO_CPU"] = "0"
     if options.large:
         run_env["TEST_LARGETENSOR"] = "TRUE"
