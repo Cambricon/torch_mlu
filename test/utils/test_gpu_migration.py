@@ -177,6 +177,19 @@ class TestGpuMigration(expecttest.TestCase):
             torch._C._cuda_getCurrentRawStream, torch_mlu._MLUC._mlu_getCurrentRawStream
         )
 
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_replace_aten_fn(self):
+        out = torch.ops.aten.arange.start_step(
+            0, 8192, 4096, dtype=torch.int32, device=torch.device("cuda")
+        )
+        self.assertTrue(out.is_mlu)
+        input = torch.empty(2, 3)
+        out = torch.ops.aten.ones_like(input, device=torch.device("cuda"))
+        self.assertTrue(out.is_mlu)
+        out = torch.ops.aten.ones_like.default(input, device=torch.device("cuda"))
+        self.assertTrue(out.is_mlu)
+
     @unittest.skip("not test")  # PYTORCH-11776
     @testinfo()
     def test_cuda_graph(self):
