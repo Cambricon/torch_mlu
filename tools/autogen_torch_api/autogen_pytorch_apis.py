@@ -5,6 +5,9 @@ import sys
 import logging
 import requests
 from tqdm import tqdm
+import json
+import io
+import yaml
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -22,7 +25,7 @@ CURRENT_SECTION_PATTERN = re.compile(
 )
 
 parser = argparse.ArgumentParser(
-    description="Automatically output Pytorch Python API list in reST format to the screem "
+    description="Automatically output Pytorch Python API list in yaml format to ./api_support_lists/ " 
     "from official docs of Pytorch."
 )
 parser.add_argument(
@@ -37,9 +40,12 @@ index_html = requests.get(docs_url + "genindex.html").text
 def section_search(line, matched_api, section2apis):
     href_match = HREF_PATTERN.search(line)
     generated_api_html = requests.get(docs_url + href_match.group(1)).text
+
     section_match = CURRENT_SECTION_PATTERN.search(generated_api_html)
     if section_match:
-        section2apis[section_match.group(1)].add(matched_api)
+        section2apis[section_map[section_match.group(1)]][matched_api] = {
+            "supported": False
+        }
     else:
         logging.warning(
             "Can not find which section this api "
@@ -47,12 +53,12 @@ def section_search(line, matched_api, section2apis):
             + ' belong to, it will be save to "Others", please check the html file structure'
         )
         if "Others" not in section2apis:
-            section2apis["Others"] = set()
-        section2apis["Others"].add(matched_api)
+            section2apis["Others"] = {}
+        section2apis["Others"][matched_api] = {"supported": False}
 
 
 # define some structures used to store the filtered results
-section2apis = {}
+section2apis = OrderedDict()
 section_map = OrderedDict()
 
 logging.info("Start parsing table of contents ...")
@@ -67,7 +73,7 @@ for line in index_html_lines:
         section_match = SECTION_MAP_PATTERN.search(line)
         if section_match:
             section_map[section_match.group(1)] = section_match.group(2)
-            section2apis[section_match.group(1)] = set()
+            section2apis[section_map[section_match.group(1)]] = {}
     if record_flg and line == "</ul>":
         break
     cur += 1
@@ -84,71 +90,68 @@ for line in tqdm(index_html_lines[cur:]):
             section_search(line, matched_api, section2apis)
         elif line.startswith('<li><a href="'):
             section_match = SECTION_PATTERN.search(line)
+
             if not section_match:
                 logging.error(
                     "Can not find section name, please check this line: " + line
                 )
                 sys.exit(1)
-            if section_match.group(1) not in section2apis:
+            if section_match.group(1) not in section_map:
                 section_search(line, matched_api, section2apis)
             else:
-                section2apis[section_match.group(1)].add(matched_api)
+                section2apis[section_map[section_match.group(1)]][matched_api] = {
+                    "supported": False
+                }
 
-logging.info("Start outputting API in reST List Table format...")
-print("原生PyTorch社区API\n++++++++++++++++++++\n\nPyTorch API\n^^^^^^^^^^^^^^^^^^^^^^^^\n")
-for k, v in section2apis.items():
-    if k == "Others":
-        print(k)
+
+def dict_to_list_format(d):
+    result = []
+    for key, value in d.items():
+        if isinstance(value, dict):
+            # Transfer dict to List
+            entries = []
+            for sub_key, sub_value in value.items():
+                entry = {"api": sub_key}
+                entry.update(sub_value)
+                entries.append(entry)
+            result.append({key: entries})
+    return result
+
+
+# Process yaml data
+yaml_data = dict_to_list_format(section2apis)
+yaml_string = io.StringIO()
+yaml.dump(
+    yaml_data,
+    yaml_string,
+    sort_keys=False,
+    default_flow_style=False,
+    allow_unicode=True,
+)
+output_yaml = yaml_string.getvalue()
+output_yaml = output_yaml.replace("\\", "")
+yaml_string = io.StringIO(output_yaml)
+
+
+yaml_content = yaml_string.getvalue()
+
+# Add empty lines
+yaml_lines = yaml_content.splitlines(True)
+yaml_content_with_blank_lines = ""
+previous_line = None
+for i, line in enumerate(yaml_lines):
+    yaml_content_with_blank_lines += line
+    if i < len(yaml_lines) - 1:
+        next_line = yaml_lines[i + 1]
     else:
-        print(section_map[k])
-    print("====================================\n")
-    if len(v) == 0:
-        print()
-        continue
-    print(".. list-table::")
-    if k == "Others":
-        print("    :widths: 8 2 8")
-    else:
-        val = section_map[k]
-        if val == "torch.cuda":
-            print("    :widths: 4 4 2 4")
-        elif val == "torch.amp":
-            print("    :widths: 8 8 2 8")
-        elif val == "torch.backends":
-            print("    :widths: 5 5 1 3")
-        elif val == "Understanding CUDA Memory Usage":
-            print("    :widths: 4 4 2 4")
-        elif (
-            val == "torch.distributed.elastic"
-            or val == "torch.distributions"
-            or val == "DDP Communication Hooks"
-            or val == "Quantization"
-        ):
-            print("    :widths: 8 2 4")
-        else:
-            print("    :widths: 8 2 8")
-    print("    :header-rows: 1")
-    print("    :align: center\n")
-    print("    * - PyTorch API")
-    if k != "Others" and (
-        section_map[k] == "torch.cuda"
-        or section_map[k] == "torch.amp"
-        or section_map[k] == "torch.backends"
-    ):
-        print(
-            "      - mlu对应API名称\n      - 是否支持\n      - 限制\n\n    * - "
-            + "\n      -\n      -\n      -\n\n    * - ".join(sorted(v))
-            + "\n      -\n      -\n      -\n\n"
-        )
-    elif k != "Others" and section_map[k] == "Understanding CUDA Memory Usage":
-        print(
-            "      - mlu对应API名称\n      - 是否支持\n      - 限制\n\n    * - "
-            + "\n      -\n      -\n      -\n\n    * - ".join(sorted(v))
-            + "\n      -\n      -\n      -\n\n"
-        )
-    else:
-        print(
-            "      - 是否支持\n      - 限制\n\n    * - "
-            + "\n      -\n      -\n\n    * - ".join(sorted(v))
-            + "\n      -\n      -\n\n"
-        )
+        next_line = None
+
+    if next_line and next_line.strip().startswith("-"):
+        yaml_content_with_blank_lines += "\n"
+    previous_line = line
+
+if yaml_content_with_blank_lines:
+    yaml_content_with_blank_lines += "\n"
+
+with open("new_api_support_list.yaml", "w", encoding="utf-8") as yaml_file:
+    yaml_file.write(yaml_content_with_blank_lines)

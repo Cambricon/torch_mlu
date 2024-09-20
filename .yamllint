@@ -1,0 +1,42 @@
+extends: default
+
+rules:
+  indentation:
+    spaces: 2
+    indent-sequences: false
+    check-multi-line-strings: true
+
+  empty-lines:
+    max: 1
+    max-start: 0
+    max-end: 1
+
+  empty-values:
+    forbid-in-block-mappings: true
+    forbid-in-flow-mappings: true
+    forbid-in-block-sequences: true
+
+  document-start:
+    present: false
+
+  line-length:
+    max: 1000 
+
+  trailing-spaces: {}
+
+  quoted-strings:
+    quote-type: any
+    required: only-when-needed
+
+  key-duplicates: {}
+
+  hyphens:
+    max-spaces-after: 1
+
+  truthy:
+    allowed-values: ['true', 'false']
+    check-keys: true
+
+  new-lines:
+    type: unix
+
