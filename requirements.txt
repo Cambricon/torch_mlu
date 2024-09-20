@@ -11,3 +11,5 @@ unittest-xml-reporting
 chardet
 pyyaml
 einops
+yamllint
+
