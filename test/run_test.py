@@ -78,6 +78,7 @@ TESTS = [
     "cnpx/test_cnpx.py",
     dir_path + "/examples/training/single_card_demo",
     dir_path + "/examples/training/multi_card_demo",
+    "api_support_list/test_api_support_list",
 ]
 
 SINGLE_CARD_SKIP_TEST = [

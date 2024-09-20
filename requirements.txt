@@ -10,3 +10,9 @@ librosa
 unittest-xml-reporting
 einops
 chardet
+yamllint
+
+
+
+
+

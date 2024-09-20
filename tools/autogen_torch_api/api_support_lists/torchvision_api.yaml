@@ -1,0 +1,119 @@
+- torchvision.ops:
+
+  - api: torchvision.ops.batched_nms
+    supported: false
+
+  - api: torchvision.ops.masks_to_boxes
+    supported: false
+
+  - api: torchvision.ops.nms
+    supported: true
+
+  - api: torchvision.ops.roi_align
+    supported: true
+
+  - api: torchvision.ops.roi_pool
+    supported: false
+
+  - api: torchvision.ops.ps_roi_align
+    supported: false
+
+  - api: torchvision.ops.ps_roi_pool
+    supported: false
+
+  - api: torchvision.ops.FeaturePyramidNetwork
+    supported: false
+
+  - api: torchvision.ops.MultiScaleRoIAlign
+    supported: false
+
+  - api: torchvision.ops.RoIAlign
+    supported: true
+
+  - api: torchvision.ops.RoIPool
+    supported: false
+
+  - api: torchvision.ops.PSRoIAlign
+    supported: false
+
+  - api: torchvision.ops.PSRoIPool
+    supported: false
+
+  - api: torchvision.ops.box_area
+    supported: false
+
+  - api: torchvision.ops.box_convert
+    supported: false
+
+  - api: torchvision.ops.box_iou
+    supported: false
+
+  - api: torchvision.ops.clip_boxes_to_image
+    supported: false
+
+  - api: torchvision.ops.complete_box_iou
+    supported: false
+
+  - api: torchvision.ops.distance_box_iou
+    supported: false
+
+  - api: torchvision.ops.generalized_box_iou
+    supported: false
+
+  - api: torchvision.ops.remove_small_boxes
+    supported: false
+
+  - api: torchvision.ops.complete_box_iou_loss
+    supported: false
+
+  - api: torchvision.ops.distance_box_iou_loss
+    supported: false
+
+  - api: torchvision.ops.generalized_box_iou_loss
+    supported: false
+
+  - api: torchvision.ops.sigmoid_focal_loss
+    supported: false
+
+  - api: torchvision.ops.Conv2dNormActivation
+    supported: false
+
+  - api: torchvision.ops.Conv3dNormActivation
+    supported: false
+
+  - api: torchvision.ops.DeformConv2d
+    supported: true
+
+  - api: torchvision.ops.DropBlock2d
+    supported: false
+
+  - api: torchvision.ops.DropBlock3d
+    supported: false
+
+  - api: torchvision.ops.FrozenBatchNorm2d
+    supported: false
+
+  - api: torchvision.ops.MLP
+    supported: false
+
+  - api: torchvision.ops.Permute
+    supported: false
+
+  - api: torchvision.ops.SqueezeExcitation
+    supported: false
+
+  - api: torchvision.ops.StochasticDepth
+    supported: false
+
+  - api: torchvision.ops.deform_conv2d
+    supported: true
+
+  - api: torchvision.ops.drop_block2d
+    supported: false
+
+  - api: torchvision.ops.drop_block3d
+    supported: false
+
+  - api: torchvision.ops.stochastic_depth
+    supported: false
+
