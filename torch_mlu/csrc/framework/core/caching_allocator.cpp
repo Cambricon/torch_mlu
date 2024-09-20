@@ -2508,7 +2508,7 @@ class NativeCachingAllocator : public MLUAllocator {
         // memcpy ok because both dst and src must have come from cnrtMalloc
         (!device_allocator[dstDevice]->hasAllocatedExpandableSegments() &&
          !device_allocator[srcDevice]->hasAllocatedExpandableSegments())) {
-      return cnrtMemcpyAsync(
+      return cnrtMemcpyAsync_V3(
           dst, const_cast<void*>(src), count, stream, cnrtMemcpyDevToDev);
     }
     // when p2p is not enabled, only cnrtMemcpyPeerAsync correctly handles

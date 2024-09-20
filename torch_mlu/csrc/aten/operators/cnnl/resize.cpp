@@ -67,7 +67,7 @@ void resize_bytes_mlu(
     auto stream = getCurrentMLUStream();
     auto mlu_nbytes =
         storage->nbytes() / dtype_offchip.itemsize() * on_chip_element_size;
-    TORCH_CNRT_CHECK(cnrtMemcpyAsync_V2(
+    TORCH_CNRT_CHECK(cnrtMemcpyAsync_V3(
         data.get(),
         const_cast<void*>(storage->data()),
         std::min(mlu_nbytes, mlu_size_bytes),

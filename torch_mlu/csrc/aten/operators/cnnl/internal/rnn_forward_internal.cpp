@@ -82,7 +82,7 @@ cnnl_rnn_training_internal(
         {static_cast<long>(seq_arr_size)}, input.options().dtype(at::kInt));
     dev_seq_lengths_ptr = dev_seq.data_ptr<int>();
     auto stream = getCurrentMLUStream();
-    CNRT_CHECK(cnrtMemcpyAsync_V2(
+    CNRT_CHECK(cnrtMemcpyAsync_V3(
         (void*)dev_seq_lengths_ptr,
         (void*)batch_sizes_int_ptr,
         copy_size,

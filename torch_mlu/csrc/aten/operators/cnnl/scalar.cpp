@@ -43,7 +43,7 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
   // Data representation of type double is only supported using float.
   if (self.scalar_type() == at::ScalarType::Double) {
     float value;
-    cnrtMemcpyAsync_V2(
+    cnrtMemcpyAsync_V3(
         &value,
         tensor_ptr,
         sizeof(float),
@@ -57,7 +57,7 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
   // complex<float>.
   if (self.scalar_type() == at::ScalarType::ComplexDouble) {
     c10::complex<float> value;
-    cnrtMemcpyAsync_V2(
+    cnrtMemcpyAsync_V3(
         &value,
         tensor_ptr,
         2 * sizeof(float),
@@ -79,7 +79,7 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
       "MLU _local_scalar_dense",
       [&] {
         scalar_t value;
-        cnrtMemcpyAsync_V2(
+        cnrtMemcpyAsync_V3(
             &value,
             tensor_ptr,
             sizeof(scalar_t),

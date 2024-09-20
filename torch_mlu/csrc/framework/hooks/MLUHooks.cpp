@@ -7,6 +7,7 @@
 #include "framework/core/caching_allocator.h"
 #include "aten/operators/cnnl/internal/cnfft_plan_cache.h"
 #include "aten/utils/utils.h"
+#include "aten/utils/p2p_access.h"
 
 // No need to have this whole header, we can just put it all in
 // the cpp file
@@ -67,6 +68,7 @@ void MLUHooks::initCUDA() const {
   maybe_set_mlu_module_loading("LAZY");
   const auto num_devices = device_count_ensure_non_zero();
   torch_mlu::MLUCachingAllocator::init(num_devices);
+  torch_mlu::init_p2p_access_cache(num_devices);
 }
 
 c10::Allocator* MLUHooks::getPinnedMemoryAllocator() const {

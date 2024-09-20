@@ -36,17 +36,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "framework/core/mlu_guard.h"
 #include "aten/operators/cnnl/copy.h"
 #include "aten/operators/cnnl/copy_utils.h"
+#include "aten/utils/p2p_access.h"
 
 namespace torch_mlu {
 namespace ops {
+
+static bool maybe_enable_p2p_access(Device dst_device, Device src_device) {
+  if (dst_device.is_cpu() || src_device.is_cpu()) {
+    return false;
+  }
+  return torch_mlu::get_p2p_access(src_device.index(), dst_device.index());
+}
 
 void copy_kernel_mlu(at::TensorIterator& iter, bool non_blocking) {
   AT_ASSERT(iter.ntensors() == 2);
   c10::Device dst_device = iter.device(0);
   c10::Device src_device = iter.device(1);
+
+  // Enable p2p access between devices.
+  bool p2p_enabled = maybe_enable_p2p_access(dst_device, src_device);
+
   // Copy on MLU (or between MLUs)
   if (dst_device.is_privateuseone() && src_device.is_privateuseone()) {
-    copy_device_to_device(iter, non_blocking);
+    copy_device_to_device(iter, non_blocking, p2p_enabled);
     return;
   }
 
