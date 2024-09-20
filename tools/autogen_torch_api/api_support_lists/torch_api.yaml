@@ -5551,7 +5551,7 @@
 
   - api: torch.distributed.irecv
     supported: true
-    limitations: 'src 参数不支持使用默认值，或者不传入该参数。'
+    limitations: src 参数不支持使用默认值，或者不传入该参数。
 
   - api: torch.distributed.is_available
     supported: true
@@ -5583,7 +5583,7 @@
 
   - api: torch.distributed.recv
     supported: true
-    limitations: 'src 参数不支持使用默认值，或者不传入该参数。'
+    limitations: src 参数不支持使用默认值，或者不传入该参数。
 
   - api: torch.distributed.reduce
     supported: true
