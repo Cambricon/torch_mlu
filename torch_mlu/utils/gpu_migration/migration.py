@@ -437,6 +437,12 @@ def apply_monkey_patches():
     torch.utils._device._device_constructors = original_device_constructors
     # torch.*
     replace_device(torch, torch_fn_list)
+
+    torch._ops.OpOverload.__call__ = replace_device_args(torch._ops.OpOverload.__call__)
+    torch._ops.OpOverloadPacket.__call__ = replace_device_args(
+        torch._ops.OpOverloadPacket.__call__
+    )
+
     torch.get_autocast_gpu_dtype = torch.mlu.get_autocast_dtype
     torch.set_autocast_gpu_dtype = torch.mlu.set_autocast_dtype
     torch.is_autocast_enabled = torch.mlu.is_autocast_enabled
