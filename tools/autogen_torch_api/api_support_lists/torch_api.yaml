@@ -461,7 +461,7 @@
     supported: false
 
   - api: torch.complex
-    supported: true
+    supported: false
 
   - api: torch.concat
     supported: true
