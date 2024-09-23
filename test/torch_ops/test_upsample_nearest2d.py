@@ -19,7 +19,6 @@ from common_utils import (
     read_card_info,
     TEST_LARGETENSOR,
     largeTensorTest,
-    skipBFloat16IfNotSupport,
 )  # pylint: disable=C0413, C0411
 
 TEST_BFLOAT16 = read_card_info()
@@ -64,8 +63,7 @@ class TestUpsampleNearest2dOp(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_upsample_nearest2d_bp(self):
-        # TODO(CNNLCORE-19092): uncomment after cnnl_v1.27.0
-        mode_list = ["nearest"]  # , 'nearest-exact']
+        mode_list = ["nearest", "nearest-exact"]
         shape_list = [(2, 3, 4, 5), (3, 3, 10, 12), (1, 1, 19, 19)]
         scale_factor_list = [0.4, 1, 2, 2.5]
         type_list = [torch.float32, torch.float16]
@@ -133,7 +131,6 @@ class TestUpsampleNearest2dOp(TestCase):
 
     # @unittest.skip("not test")
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
-    @skipBFloat16IfNotSupport()
     @testinfo()
     def test_upsample_nearest2d_bfloat16(self):
         shape_list = [(2, 3, 4, 5), (3, 3, 10, 12)]

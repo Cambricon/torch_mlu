@@ -94,25 +94,24 @@ TORCH_META_FUNC(upsample_nearest1d_backward_out_mlu)
       grad_output.options());
 }
 
-// TODO(CNNLCORE-19092): uncomment after cnnl_v1.27.0
-// TORCH_META_FUNC(_upsample_nearest_exact1d_backward_out_mlu)
-//(const at::Tensor& grad_output,
-// at::IntArrayRef output_size,
-// at::IntArrayRef input_size,
-// std::optional<double> scales) {
-//  auto full_output_size =
-//      at::native::upsample_1d_common_check(input_size, output_size);
-//
-//  check_dim_size(grad_output, 3, 0, full_output_size[0]);
-//  check_dim_size(grad_output, 3, 1, full_output_size[1]);
-//  check_dim_size(grad_output, 3, 2, full_output_size[2]);
-//
-//  set_output_raw_strided(
-//      0,
-//      input_size,
-//      get_channels_last_strides_1d(input_size),
-//      grad_output.options());
-//}
+TORCH_META_FUNC(_upsample_nearest_exact1d_backward_out_mlu)
+(const at::Tensor& grad_output,
+ at::IntArrayRef output_size,
+ at::IntArrayRef input_size,
+ std::optional<double> scales) {
+  auto full_output_size =
+      at::native::upsample_1d_common_check(input_size, output_size);
+
+  check_dim_size(grad_output, 3, 0, full_output_size[0]);
+  check_dim_size(grad_output, 3, 1, full_output_size[1]);
+  check_dim_size(grad_output, 3, 2, full_output_size[2]);
+
+  set_output_raw_strided(
+      0,
+      input_size,
+      get_channels_last_strides_1d(input_size),
+      grad_output.options());
+}
 
 static void upsample_nearest1d_out_mlu_template(
     const at::Tensor& input,
@@ -232,16 +231,15 @@ TORCH_IMPL_FUNC(upsample_nearest1d_backward_out_mlu)
       grad_output, output_size, input_size, scales, grad_input, false, false);
 }
 
-// TODO(CNNLCORE-19092): uncomment after cnnl_v1.27.0
-// TORCH_IMPL_FUNC(_upsample_nearest_exact1d_backward_out_mlu)
-//(const at::Tensor& grad_output,
-// at::IntArrayRef output_size,
-// at::IntArrayRef input_size,
-// std::optional<double> scales,
-// const at::Tensor& grad_input) {
-//  upsample_nearest1d_backward_out_mlu_template(grad_output, output_size,
-//  input_size, scales, grad_input, false, true);
-//}
+TORCH_IMPL_FUNC(_upsample_nearest_exact1d_backward_out_mlu)
+(const at::Tensor& grad_output,
+ at::IntArrayRef output_size,
+ at::IntArrayRef input_size,
+ std::optional<double> scales,
+ const at::Tensor& grad_input) {
+  upsample_nearest1d_backward_out_mlu_template(
+      grad_output, output_size, input_size, scales, grad_input, false, true);
+}
 
 } // namespace ops
 } // namespace torch_mlu

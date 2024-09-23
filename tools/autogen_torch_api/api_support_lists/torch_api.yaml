@@ -2278,7 +2278,6 @@
 
   - api: torch.nn.Upsample
     supported: true
-    limitations: mode参数为nearest或nearest-exact时，不支持5D输入；mode参数为nearest-exact时，不支持反向。
 
   - api: torch.nn.UpsamplingBilinear2d
     supported: true
@@ -2826,7 +2825,7 @@
 
   - api: torch.nn.functional.interpolate
     supported: true
-    limitations: mode参数为nearest或nearest-exact时，不支持5D输入；mode参数为nearest-exact时，不支持反向；antialias参数不支持为True。
+    limitations: antialias参数不支持为True。
 
   - api: torch.nn.functional.kl_div
     supported: true
@@ -3011,14 +3010,12 @@
 
   - api: torch.nn.functional.upsample
     supported: true
-    limitations: mode参数为nearest或nearest-exact时，不支持5D输入；mode参数为nearest-exact时，不支持反向。
 
   - api: torch.nn.functional.upsample_bilinear
     supported: true
 
   - api: torch.nn.functional.upsample_nearest
     supported: true
-    limitations: 不支持5D输入。
 
   - api: torch.nn.parallel.data_parallel
     supported: false
