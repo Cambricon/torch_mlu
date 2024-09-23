@@ -35,67 +35,70 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 namespace ops {
 
-TORCH_META_FUNC(upsample_nearest2d_out_mlu)
+TORCH_META_FUNC(upsample_nearest3d_out_mlu)
 (const at::Tensor& input,
  at::IntArrayRef output_size,
+ c10::optional<double> scales_d,
  c10::optional<double> scales_h,
  c10::optional<double> scales_w) {
   auto full_output_size =
-      at::native::upsample_2d_common_check(input.sizes(), output_size);
+      at::native::upsample_3d_common_check(input.sizes(), output_size);
 
   // Allow for empty batch size but not other dimensions
   TORCH_CHECK(
       input.numel() != 0 ||
           c10::multiply_integers(
               input.sizes().begin() + 1, input.sizes().end()),
-      "Non-empty 4D data tensor expected but got a tensor with sizes ",
+      "Non-empty 5D data tensor expected but got a tensor with sizes ",
       input.sizes());
 
   set_output_raw_strided(
       0,
       full_output_size,
       {},
-      input.options().memory_format(at::MemoryFormat::ChannelsLast));
+      input.options().memory_format(at::MemoryFormat::ChannelsLast3d));
 }
 
-TORCH_META_FUNC(_upsample_nearest_exact2d_out_mlu)
+TORCH_META_FUNC(_upsample_nearest_exact3d_out_mlu)
 (const at::Tensor& input,
  at::IntArrayRef output_size,
+ c10::optional<double> scales_d,
  c10::optional<double> scales_h,
  c10::optional<double> scales_w) {
   auto full_output_size =
-      at::native::upsample_2d_common_check(input.sizes(), output_size);
+      at::native::upsample_3d_common_check(input.sizes(), output_size);
 
   // Allow for empty batch size but not other dimensions
   TORCH_CHECK(
       input.numel() != 0 ||
           c10::multiply_integers(
               input.sizes().begin() + 1, input.sizes().end()),
-      "Non-empty 4D data tensor expected but got a tensor with sizes ",
+      "Non-empty 5D data tensor expected but got a tensor with sizes ",
       input.sizes());
 
   set_output_raw_strided(
       0,
       full_output_size,
       {},
-      input.options().memory_format(at::MemoryFormat::ChannelsLast));
+      input.options().memory_format(at::MemoryFormat::ChannelsLast3d));
 }
 
-TORCH_META_FUNC(upsample_nearest2d_backward_out_mlu)
+TORCH_META_FUNC(upsample_nearest3d_backward_out_mlu)
 (const at::Tensor& grad_output,
  at::IntArrayRef output_size,
  at::IntArrayRef input_size,
+ c10::optional<double> scales_d,
  c10::optional<double> scales_h,
  c10::optional<double> scales_w) {
   auto full_output_size =
-      at::native::upsample_2d_common_check(input_size, output_size);
+      at::native::upsample_3d_common_check(input_size, output_size);
 
   TORCH_CHECK(
-      grad_output.dim() == 4,
-      "Expected grad_output to be a tensor of dimension 4 but got: dimension ",
+      grad_output.dim() == 5,
+      "Expected grad_output to be a tensor of dimension 5 but got: dimension ",
       grad_output.dim());
 
-  for (const auto i : c10::irange(4)) {
+  for (const auto i : c10::irange(5)) {
     TORCH_CHECK(
         grad_output.size(i) == full_output_size[i],
         "Expected grad_output to have the same shape as output;",
@@ -113,24 +116,25 @@ TORCH_META_FUNC(upsample_nearest2d_backward_out_mlu)
       0,
       input_size,
       {},
-      grad_output.options().memory_format(at::MemoryFormat::ChannelsLast));
+      grad_output.options().memory_format(at::MemoryFormat::ChannelsLast3d));
 }
 
-TORCH_META_FUNC(_upsample_nearest_exact2d_backward_out_mlu)
+TORCH_META_FUNC(_upsample_nearest_exact3d_backward_out_mlu)
 (const at::Tensor& grad_output,
  at::IntArrayRef output_size,
  at::IntArrayRef input_size,
+ c10::optional<double> scales_d,
  c10::optional<double> scales_h,
  c10::optional<double> scales_w) {
   auto full_output_size =
-      at::native::upsample_2d_common_check(input_size, output_size);
+      at::native::upsample_3d_common_check(input_size, output_size);
 
   TORCH_CHECK(
-      grad_output.dim() == 4,
-      "Expected grad_output to be a tensor of dimension 4 but got: dimension",
+      grad_output.dim() == 5,
+      "Expected grad_output to be a tensor of dimension 5 but got: dimension",
       grad_output.dim());
 
-  for (const auto i : c10::irange(4)) {
+  for (const auto i : c10::irange(5)) {
     TORCH_CHECK(
         grad_output.size(i) == full_output_size[i],
         "Expected grad_output to have the same shape as output;",
@@ -148,12 +152,13 @@ TORCH_META_FUNC(_upsample_nearest_exact2d_backward_out_mlu)
       0,
       input_size,
       {},
-      grad_output.options().memory_format(at::MemoryFormat::ChannelsLast));
+      grad_output.options().memory_format(at::MemoryFormat::ChannelsLast3d));
 }
 
-static void upsample_nearest2d_out_mlu_template(
+static void upsample_nearest3d_out_mlu_template(
     const at::Tensor& input,
     at::IntArrayRef output_size,
+    c10::optional<double> scales_d,
     c10::optional<double> scales_h,
     c10::optional<double> scales_w,
     const at::Tensor& output,
@@ -167,15 +172,15 @@ static void upsample_nearest2d_out_mlu_template(
     return;
   }
 
-  // NHWC input
-  auto memory_format = at::MemoryFormat::ChannelsLast;
+  // NDHWC input
+  auto memory_format = at::MemoryFormat::ChannelsLast3d;
   auto input_contiguous = cnnl_contiguous(input, memory_format);
 
-  // NHWC output
+  // NDHWC output
   auto output_contiguous = maybe_create_out(
       output,
       output.sizes(),
-      get_channels_last_strides_2d(output.sizes()),
+      get_channels_last_strides_3d(output.sizes()),
       output.options());
 
   // cnnl interp
@@ -189,37 +194,56 @@ static void upsample_nearest2d_out_mlu_template(
       interp_mode,
       scales_h,
       scales_w,
-      c10::nullopt,
+      scales_d,
       is_exact);
   if (!output.is_same(output_contiguous)) {
     output.copy_(output_contiguous);
   }
 }
 
-TORCH_IMPL_FUNC(upsample_nearest2d_out_mlu)
+TORCH_IMPL_FUNC(upsample_nearest3d_out_mlu)
 (const at::Tensor& input,
  at::IntArrayRef output_size,
+ c10::optional<double> scales_d,
  c10::optional<double> scales_h,
  c10::optional<double> scales_w,
  const at::Tensor& output) {
-  upsample_nearest2d_out_mlu_template(
-      input, output_size, scales_h, scales_w, output, false, false, false);
+  upsample_nearest3d_out_mlu_template(
+      input,
+      output_size,
+      scales_d,
+      scales_h,
+      scales_w,
+      output,
+      false,
+      false,
+      false);
 }
 
-TORCH_IMPL_FUNC(_upsample_nearest_exact2d_out_mlu)
+TORCH_IMPL_FUNC(_upsample_nearest_exact3d_out_mlu)
 (const at::Tensor& input,
  at::IntArrayRef output_size,
+ c10::optional<double> scales_d,
  c10::optional<double> scales_h,
  c10::optional<double> scales_w,
  const at::Tensor& output) {
-  upsample_nearest2d_out_mlu_template(
-      input, output_size, scales_h, scales_w, output, false, true, true);
+  upsample_nearest3d_out_mlu_template(
+      input,
+      output_size,
+      scales_d,
+      scales_h,
+      scales_w,
+      output,
+      false,
+      true,
+      true);
 }
 
-static void upsample_nearest2d_backward_out_mlu_template(
+static void upsample_nearest3d_backward_out_mlu_template(
     const at::Tensor& grad_output,
     at::IntArrayRef output_size,
     at::IntArrayRef input_size,
+    c10::optional<double> scales_d,
     c10::optional<double> scales_h,
     c10::optional<double> scales_w,
     const at::Tensor& grad_input,
@@ -228,19 +252,19 @@ static void upsample_nearest2d_backward_out_mlu_template(
   at::TensorArg grad_input_arg{grad_input, "grad_input", 1},
       grad_output_arg{grad_output, "grad_output", 2};
   checkAllSameMLU(
-      "upsample_nearest2d_backward_out_mlu", {grad_output_arg, grad_input_arg});
+      "upsample_nearest3d_backward_out_mlu", {grad_output_arg, grad_input_arg});
 
   if (grad_input.numel() == 0) {
     return;
   }
 
-  // NHWC grad_input, grad_output
-  auto memory_format = at::MemoryFormat::ChannelsLast;
+  // NDHWC grad_input, grad_output
+  auto memory_format = at::MemoryFormat::ChannelsLast3d;
   auto grad_output_contiguous = cnnl_contiguous(grad_output, memory_format);
   auto grad_input_contiguous = maybe_create_out(
       grad_input,
       grad_input.sizes(),
-      get_channels_last_strides_2d(grad_input.sizes()),
+      get_channels_last_strides_3d(grad_input.sizes()),
       grad_input.options());
 
   cnnlInterpMode_t interp_mode = CNNL_INTERP_NEAREST;
@@ -253,23 +277,26 @@ static void upsample_nearest2d_backward_out_mlu_template(
       align_center,
       interp_mode,
       scales_h,
-      scales_w);
+      scales_w,
+      scales_d);
   if (!grad_input.is_same(grad_input_contiguous)) {
     grad_input.copy_(grad_input_contiguous);
   }
 }
 
-TORCH_IMPL_FUNC(upsample_nearest2d_backward_out_mlu)
+TORCH_IMPL_FUNC(upsample_nearest3d_backward_out_mlu)
 (const at::Tensor& grad_output,
  at::IntArrayRef output_size,
  at::IntArrayRef input_size,
+ c10::optional<double> scales_d,
  c10::optional<double> scales_h,
  c10::optional<double> scales_w,
  const at::Tensor& grad_input) {
-  upsample_nearest2d_backward_out_mlu_template(
+  upsample_nearest3d_backward_out_mlu_template(
       grad_output,
       output_size,
       input_size,
+      scales_d,
       scales_h,
       scales_w,
       grad_input,
@@ -277,17 +304,20 @@ TORCH_IMPL_FUNC(upsample_nearest2d_backward_out_mlu)
       false);
 }
 
-TORCH_IMPL_FUNC(_upsample_nearest_exact2d_backward_out_mlu)
+// TODO(CNNLCORE-19092): uncomment after cnnl_v1.27.0
+TORCH_IMPL_FUNC(_upsample_nearest_exact3d_backward_out_mlu)
 (const at::Tensor& grad_output,
  at::IntArrayRef output_size,
  at::IntArrayRef input_size,
+ c10::optional<double> scales_d,
  c10::optional<double> scales_h,
  c10::optional<double> scales_w,
  const at::Tensor& grad_input) {
-  upsample_nearest2d_backward_out_mlu_template(
+  upsample_nearest3d_backward_out_mlu_template(
       grad_output,
       output_size,
       input_size,
+      scales_d,
       scales_h,
       scales_w,
       grad_input,

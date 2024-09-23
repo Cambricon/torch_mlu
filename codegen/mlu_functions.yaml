@@ -105,12 +105,11 @@ aten:
   - func: _upsample_nearest_exact1d.out
     structured: True
     override_meta: True
-  # TODO(CNNLCORE-19092): uncomment after cnnl_v1.27.0
-  #- func: _upsample_nearest_exact1d_backward
-  #  structured_delegate: _upsample_nearest_exact1d_backward.grad_input
-  #- func: _upsample_nearest_exact1d_backward.grad_input
-  #  structured: True
-  #  override_meta: True
+  - func: _upsample_nearest_exact1d_backward
+    structured_delegate: _upsample_nearest_exact1d_backward.grad_input
+  - func: _upsample_nearest_exact1d_backward.grad_input
+    structured: True
+    override_meta: True
   - func: upsample_linear1d
     structured_delegate: upsample_linear1d.out
   - func: upsample_linear1d.out
@@ -136,12 +135,31 @@ aten:
   - func: _upsample_nearest_exact2d.out
     structured: True
     override_meta: True
-  # TODO(CNNLCORE-19092): uncomment after cnnl_v1.27.0
-  #- func: _upsample_nearest_exact2d_backward
-  #  structured_delegate: _upsample_nearest_exact2d_backward.grad_input
-  #- func: _upsample_nearest_exact2d_backward.grad_input
-  #  structured: True
-  #  override_meta: True
+  - func: _upsample_nearest_exact2d_backward
+    structured_delegate: _upsample_nearest_exact2d_backward.grad_input
+  - func: _upsample_nearest_exact2d_backward.grad_input
+    structured: True
+    override_meta: True
+  - func: upsample_nearest3d
+    structured_delegate: upsample_nearest3d.out
+  - func: upsample_nearest3d.out
+    structured: True
+    override_meta: True
+  - func: upsample_nearest3d_backward
+    structured_delegate: upsample_nearest3d_backward.grad_input
+  - func: upsample_nearest3d_backward.grad_input
+    structured: True
+    override_meta: True
+  - func: _upsample_nearest_exact3d
+    structured_delegate: _upsample_nearest_exact3d.out
+  - func: _upsample_nearest_exact3d.out
+    structured: True
+    override_meta: True
+  - func: _upsample_nearest_exact3d_backward
+    structured_delegate: _upsample_nearest_exact3d_backward.grad_input
+  - func: _upsample_nearest_exact3d_backward.grad_input
+    structured: True
+    override_meta: True
   - func: upsample_bilinear2d
     structured_delegate: upsample_bilinear2d.out
   - func: upsample_bilinear2d.out
