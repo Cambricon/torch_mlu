@@ -13,6 +13,7 @@ from . import codecache
 from . import lowering
 from . import triton_heuristics
 from . import autotune_process
+from . import scheduler
 from . import select_algorithm
 from . import decomposition
 from . import compile_fx
