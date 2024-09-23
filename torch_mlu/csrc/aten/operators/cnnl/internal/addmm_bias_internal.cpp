@@ -53,6 +53,7 @@ void cnnl_addmm_bias_out_internal(
     bool is_trans_mat2_,
     const at::Scalar& beta_,
     const at::Scalar& alpha_,
+    cnnlActivationMode_t mode,
     bool allow_tf32_) {
   // get tensor impl
   auto self_impl = getMluTensorImpl(self);
@@ -85,6 +86,35 @@ void cnnl_addmm_bias_out_internal(
   int32_t is_trans_mat1 = is_trans_mat1_;
   int32_t is_trans_mat2 = is_trans_mat2_;
   int32_t allow_tf32 = allow_tf32_;
+  int64_t ldc = result.strides()[0];
+  int64_t lda = mat1.strides()[0];
+  int64_t ldb = mat2.strides()[0];
+  int64_t m = is_trans_mat1_ ? mat1.sizes()[1] : mat1.sizes()[0];
+  int64_t k = is_trans_mat1_ ? mat1.sizes()[0] : mat1.sizes()[1];
+  int64_t n = is_trans_mat2_ ? mat2.sizes()[0] : mat2.sizes()[1];
+  if (m <= 1) {
+    ldc = std::max<int64_t>(n, 1);
+  }
+
+  if (is_trans_mat1_) {
+    if (k <= 1) {
+      lda = std::max<int64_t>(m, 1);
+    }
+  } else {
+    if (m <= 1) {
+      lda = std::max<int64_t>(k, 1);
+    }
+  }
+
+  if (is_trans_mat2_) {
+    if (n <= 1) {
+      ldb = std::max<int64_t>(k, 1);
+    }
+  } else {
+    if (k <= 1) {
+      ldb = std::max<int64_t>(n, 1);
+    }
+  }
 
   matmul_desc.set_attr(
       CNNL_MATMUL_EX_ALLOW_TF32, &(allow_tf32), sizeof(int32_t));
@@ -92,15 +122,41 @@ void cnnl_addmm_bias_out_internal(
       CNNL_MATMUL_EX_DESC_TRANSA, &(is_trans_mat1), sizeof(int32_t));
   matmul_desc.set_attr(
       CNNL_MATMUL_EX_DESC_TRANSB, &(is_trans_mat2), sizeof(int32_t));
+  matmul_desc.set_attr(CNNL_MATMUL_EX_DESC_LDA, &(lda), sizeof(int32_t));
+  matmul_desc.set_attr(CNNL_MATMUL_EX_DESC_LDB, &(ldb), sizeof(int32_t));
+  matmul_desc.set_attr(CNNL_MATMUL_EX_DESC_LDC, &(ldc), sizeof(int32_t));
+
+  // set activation info.
+  cnnlActivationDescriptor_t desc_activation = nullptr;
+  TORCH_CNNL_CHECK(cnnlCreateActivationDescriptor(&desc_activation));
+  cnnlActivationPreference_t prefer = CNNL_ACTIVATION_HIGH_PRECISION;
+  cnnlNanPropagation_t nan_prop = CNNL_NOT_PROPAGATE_NAN;
+  TORCH_CNNL_CHECK(cnnlSetActivationDescriptor_v6(
+      desc_activation, mode, prefer, nan_prop, 0, 0, 0, 0, false, true));
 
   // bias => self*beta(1.0) => self
-  cnnlMatMulEpilogueType_t epilogue_type = CNNL_MATMUL_EPI_BIAS;
+  cnnlMatMulEpilogueType_t epilogue_type =
+      CNNL_MATMUL_EPI_BIAS_SCALE_BN_ACTIVATION;
   matmul_desc.set_attr(
       CNNL_MATMUL_EX_DESC_EPILOGUE_TYPE,
       &(epilogue_type),
       sizeof(epilogue_type));
-  TORCH_CNNL_CHECK(
-      cnnlSetMatMulExBias(matmul_desc.desc(), self_desc.get(), self_ptr));
+  TORCH_CNNL_CHECK(cnnlSetMatMulExBiasScaleBNActive(
+      matmul_desc.desc(),
+      self_desc.get(),
+      self_ptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      0,
+      0,
+      0,
+      0,
+      0,
+      desc_activation));
 
   auto handle = getCurrentHandle();
   matmul_hr.get(

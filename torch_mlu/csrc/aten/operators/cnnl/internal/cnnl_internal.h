@@ -381,16 +381,30 @@ void cnnl_addmm_bias_out_internal(
     bool is_trans_mat2_,
     const at::Scalar& beta_,
     const at::Scalar& alpha_,
+    cnnlActivationMode_t mode,
     bool allow_tf32_);
 
 void cnnl_baddbmm_out_internal(
-    at::Tensor& result,
+    bool transa,
+    bool transb,
+    int32_t m,
+    int32_t n,
+    int32_t k,
+    int32_t batch_size,
+    const at::Tensor& self,
+    int32_t ldc,
+    int64_t stride_c,
+    const at::Scalar& alpha,
     const at::Tensor& batch1,
+    int32_t lda,
+    int64_t stride_a,
     const at::Tensor& batch2,
-    const at::Scalar& alpha_,
-    const at::Scalar& beta_,
-    bool is_trans_batch1_,
-    bool is_trans_batch2_,
+    int32_t ldb,
+    int64_t stride_b,
+    const at::Scalar& beta,
+    at::Tensor& result,
+    int32_t ldd,
+    int64_t stride_d,
     bool allow_tf32_);
 
 void cnnl_cast_internal(const at::Tensor& input, at::Tensor& output);

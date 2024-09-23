@@ -193,6 +193,14 @@ void CnnlMatmulExDescriptor::set_attr(
       cnnlSetMatMulExDescAttr(this->mut_desc(), attr, buf, size_in_bytes));
 }
 
+void CnnlStrideBatchMatmulDescriptor::set_attr(
+    cnnlStrideBatchMatMulDescAttribute_t attr,
+    const void* buf,
+    size_t size_in_bytes) {
+  TORCH_CNNL_CHECK(cnnlSetStrideBatchMatMulDescAttr(
+      this->mut_desc(), attr, buf, size_in_bytes));
+}
+
 void CnnlCTCLossDescriptor::set(
     cnnlCTCLossNormalizationMode_t norm_mode,
     cnnlCTCLossReduceMode_t reduce_mode,

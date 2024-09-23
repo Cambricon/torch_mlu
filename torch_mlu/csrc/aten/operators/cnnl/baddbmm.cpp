@@ -34,40 +34,53 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 namespace ops {
 
-std::tuple<at::Tensor, bool> getBMMInput(const at::Tensor& self) {
-  TORCH_CHECK(self.dim() == 3, "dimension must be 3 in bmm.");
-  bool is_trans_self;
-  if ((!self.is_contiguous()) && self.is_non_overlapping_and_dense()) {
-    auto permute_back_order = get_permute_back_order(self);
-    at::IntArrayRef back_array_order(permute_back_order);
-    auto self_before_permute = self.permute(back_array_order);
-    TORCH_CHECK(
-        self_before_permute.is_contiguous(),
-        "error order in permute_back_order.");
-    int64_t batch_order = 0;
-    for (int64_t i = 0; i < self.dim(); ++i) {
-      if (permute_back_order[i] == 0) {
-        batch_order = i;
-        permute_back_order[i] = permute_back_order[0];
-        permute_back_order[0] = 0;
-      }
-    }
-    auto self_contiguous = torch_mlu::ops::cnnl_transpose_internal(
-        self_before_permute, batch_order, 0);
-    TORCH_CHECK(
-        self_contiguous.is_contiguous(),
-        "output must be contiguous in getBMMInput.");
-    if (permute_back_order[1] == 1) {
-      is_trans_self = false;
-    } else {
-      is_trans_self = true;
-    }
-    return std::make_tuple(self_contiguous, is_trans_self);
+c10::MaybeOwned<Tensor> inline resolve_conj_if_indicated(
+    const Tensor& tensor,
+    bool resolve_conj) {
+  if (resolve_conj && tensor.is_conj()) {
+    return c10::MaybeOwned<Tensor>::owned(tensor.resolve_conj());
   } else {
-    is_trans_self = false;
-    return std::make_tuple(
-        cnnl_contiguous(self, c10::MemoryFormat::Contiguous), is_trans_self);
+    return c10::MaybeOwned<Tensor>::borrowed(tensor);
   }
+}
+
+c10::MaybeOwned<Tensor> prepare_batch_matrix_for_cnnl(
+    const Tensor& tensor,
+    bool& transpose_tensor,
+    int32_t& ld_tensor,
+    bool transpose_result,
+    int32_t m,
+    int32_t n) {
+  IntArrayRef tensor_strides = tensor.strides();
+  c10::MaybeOwned<Tensor> tensor_;
+  int fast_dim = transpose_result ? 2 : 1;
+  int leading_dim = transpose_result ? 1 : 2;
+  if (tensor_strides[fast_dim] == 1 &&
+      (tensor_strides[leading_dim] >= std::max<int64_t>(1, m))) {
+    transpose_tensor = true;
+    tensor_ = resolve_conj_if_indicated(tensor, false);
+    ld_tensor = tensor_->strides()[leading_dim];
+  } else if (
+      (tensor_strides[leading_dim] == 1) &&
+      (tensor_strides[fast_dim] >= std::max<int64_t>(1, n))) {
+    transpose_tensor = false;
+    tensor_ = resolve_conj_if_indicated(tensor, true);
+    ld_tensor = tensor_->strides()[fast_dim];
+  } else {
+    transpose_tensor = transpose_result;
+    // gemm call requires leading dimension and stride parameters to be non-zero
+    bool is_stride_non_zero =
+        tensor.strides()[1] != 0 && tensor.strides()[2] != 0;
+    if (tensor.is_contiguous() && is_stride_non_zero) {
+      tensor_ = resolve_conj_if_indicated(tensor, transpose_result);
+    } else {
+      tensor_ = c10::MaybeOwned<Tensor>::owned(
+          tensor.clone(at::MemoryFormat::Contiguous));
+    }
+    ld_tensor = tensor_->strides()[1];
+  }
+
+  return tensor_;
 }
 
 const at::Tensor& baddbmm_out_mlu_impl(
@@ -77,14 +90,10 @@ const at::Tensor& baddbmm_out_mlu_impl(
     const at::Tensor& batch2,
     const at::Scalar& beta,
     const at::Scalar& alpha) {
-  // NB: when baddbmm and beta != 0.0, result has already
-  // filled with self in meta function. So we do not need
-  // handle it, and self is not used.
-
-  at::IntArrayRef batch1_sizes = batch1.sizes();
+  // handle pathological cases that blas may not like
   if (result.numel() == 0) {
     return result;
-  } else if (batch1_sizes[2] == 0) {
+  } else if (batch1.size(2) == 0) {
     if (beta.to<c10::complex<double>>() == 0.0) {
       return result.zero_();
     } else {
@@ -112,46 +121,140 @@ const at::Tensor& baddbmm_out_mlu_impl(
       " but found ",
       result.scalar_type());
 
-  // transposed output is not supported.
-  auto result_contiguous = cnnl_contiguous(result);
+  bool transpose_result = false;
+  c10::MaybeOwned<Tensor> result_;
+  IntArrayRef result_strides = result.strides();
+  IntArrayRef result_sizes = result.sizes();
 
-  bool allow_tf32 = !at::NoTF32Guard::should_disable_tf32() &&
-      torch_mlu::Global::instance().allowTF32CnMatMul();
-  // cnnl does not support beta != 0 when use stride.
-  if (beta.to<c10::complex<double>>() != 0.0) {
-    // transpose of bmm
-    bool is_trans_batch1;
-    bool is_trans_batch2;
-    at::Tensor batch1_contiguous;
-    at::Tensor batch2_contiguous;
-
-    std::tie(batch1_contiguous, is_trans_batch1) = getBMMInput(batch1);
-    std::tie(batch2_contiguous, is_trans_batch2) = getBMMInput(batch2);
-    cnnl_baddbmm_out_internal(
-        result_contiguous,
-        batch1_contiguous,
-        batch2_contiguous,
-        alpha,
-        beta,
-        is_trans_batch1,
-        is_trans_batch2,
-        allow_tf32);
+  if ((result_strides[1] == 1) &&
+      ((result_sizes[2] == 1) ||
+       (result_strides[2] >= std::max<int64_t>(1, result_sizes[1])))) {
+    transpose_result = true;
+    result_ = resolve_conj_if_indicated(result, true);
+  } else if (
+      (result_strides[2] == 1) &&
+      (result_sizes[1] == 1 ||
+       (result_strides[1] >= std::max<int64_t>(1, result_sizes[2])))) {
+    transpose_result = false;
+    result_ = resolve_conj_if_indicated(result, true);
   } else {
-    cnnl_baddbmm_out_internal(
-        result_contiguous,
-        batch1,
-        batch2,
-        alpha,
-        beta,
-        // no need for transpose when use stride,
-        // cnnl kernel will neglect transpose.
-        false,
-        false,
-        allow_tf32);
+    result_ = c10::MaybeOwned<Tensor>::owned(
+        result.clone(at::MemoryFormat::Contiguous));
   }
 
-  if (!result.is_same(result_contiguous)) {
-    result.copy_(result_contiguous);
+  int leading_dim = transpose_result ? 1 : 2;
+  int fast_dim = transpose_result ? 2 : 1;
+
+  int32_t m = result_sizes[transpose_result ? 2 : 1];
+  int32_t n = result_sizes[leading_dim];
+  int32_t k = (transpose_result ? batch2 : batch1).sizes()[leading_dim];
+
+  int32_t lda, ldb, ldc;
+  bool transpose_batch1, transpose_batch2;
+  auto batch1_ = prepare_batch_matrix_for_cnnl(
+      transpose_result ? batch2 : batch1,
+      transpose_batch1,
+      lda,
+      transpose_result,
+      m,
+      k);
+  auto batch2_ = prepare_batch_matrix_for_cnnl(
+      transpose_result ? batch1 : batch2,
+      transpose_batch2,
+      ldb,
+      transpose_result,
+      k,
+      n);
+  ldc = result_->strides()[fast_dim];
+  int32_t num_batches = result_->sizes()[0];
+  bool allow_tf32 = !at::NoTF32Guard::should_disable_tf32() &&
+      torch_mlu::Global::instance().allowTF32CnMatMul();
+
+  // Note: leading dimensions generally are checked that they are > 0
+  // and at least as big the result requires (even if the value won't
+  // be used).
+  if (m <= 1) {
+    ldc = std::max<int64_t>(n, 1);
+  }
+
+  if (transpose_batch1) {
+    if (k <= 1) {
+      lda = std::max<int64_t>(m, 1);
+    }
+  } else {
+    if (m <= 1) {
+      lda = std::max<int64_t>(k, 1);
+    }
+  }
+
+  if (transpose_batch2) {
+    if (n <= 1) {
+      ldb = std::max<int64_t>(k, 1);
+    }
+  } else {
+    if (k <= 1) {
+      ldb = std::max<int64_t>(n, 1);
+    }
+  }
+
+  // complex are not supported
+  AT_DISPATCH_FLOATING_TYPES_AND2(
+      at::ScalarType::Half,
+      at::ScalarType::BFloat16,
+      result.scalar_type(),
+      "MLU bmm",
+      [&] {
+        at::Tensor batch1_tensor = *batch1_;
+        at::Tensor batch2_tensor = *batch2_;
+        at::Tensor result_tensor = *result_;
+        // If batch is 1 call gemm rather than bgemm
+        if (num_batches == 1) {
+          at::Tensor d_tensor = transpose_result
+              ? at::squeeze(result_tensor, 0).t()
+              : at::squeeze(result_tensor, 0);
+          cnnl_addmm_out_internal(
+              d_tensor,
+              d_tensor,
+              (transpose_result == transpose_batch1)
+                  ? at::squeeze(batch1_tensor, 0)
+                  : at::squeeze(batch1_tensor, 0).t(),
+              (transpose_result == transpose_batch2)
+                  ? at::squeeze(batch2_tensor, 0)
+                  : at::squeeze(batch2_tensor, 0).t(),
+              transpose_result,
+              transpose_batch1,
+              transpose_batch2,
+              beta,
+              alpha,
+              allow_tf32);
+        } else {
+          cnnl_baddbmm_out_internal(
+              transpose_batch1,
+              transpose_batch2,
+              m,
+              n,
+              k,
+              num_batches,
+              result_tensor,
+              ldc,
+              result_->strides()[0],
+              alpha,
+              batch1_tensor,
+              lda,
+              batch1_->strides()[0],
+              batch2_tensor,
+              ldb,
+              batch2_->strides()[0],
+              beta,
+              const_cast<at::Tensor&>(result_tensor),
+              ldc,
+              result_->strides()[0],
+              allow_tf32);
+        }
+      });
+
+  if (!result.is_same(*result_)) {
+    result.copy_(*result_);
   }
   return result;
 }
