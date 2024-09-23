@@ -106,7 +106,6 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
     # If using pytest, replace -f with equivalent -x
     if options.pytest:
         unittest_args = [arg if arg != "-f" else "-x" for arg in unittest_args]
-        # Note: native ci cases produce too many pytest marker warnings, suppress warnings
         if options.result_dir != "" and os.path.isdir(options.result_dir):
             log_base = os.path.join(options.result_dir, test_module.replace("/", "_"))
             unittest_args += [f"--junitxml={log_base}.xml"]
@@ -116,7 +115,6 @@ def run_test(test_module, test_directory, options, *extra_unittest_args):
 
     command = executable + argv
     run_env = os.environ.copy()
-    # enable fallback to cpu for native ci cases
     run_env["ENABLE_FALLBACK_TO_CPU"] = "0"
     if options.large:
         run_env["TEST_LARGETENSOR"] = "TRUE"
