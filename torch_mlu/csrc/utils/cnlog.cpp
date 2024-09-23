@@ -34,7 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unistd.h>
 #include <iostream>
 #include <mutex>
-#include <string>
 #include <thread>
 #include "utils/cnlog.h"
 

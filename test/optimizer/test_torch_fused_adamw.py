@@ -14,7 +14,7 @@ from common_utils import TEST_LARGETENSOR, largeTensorTest
 class Model(torch.nn.Module):
     def __init__(self):
         super(Model, self).__init__()
-        self.conv1 = torch.nn.Conv2d(1, 6, 5)
+        self.conv1 = torch.nn.Conv2d(3, 6, 5)
         self.relu1 = torch.nn.ReLU()
         self.pool1 = torch.nn.MaxPool2d(2)
         self.conv2 = torch.nn.Conv2d(6, 16, 5)
@@ -84,17 +84,12 @@ class TestFusedOptimizer(unittest.TestCase):
         for tensor in tensors:
             ref_param.append(torch.nn.Parameter(tensor.clone()))
             tst_param.append(torch.nn.Parameter(tensor.clone()))
-        ref_optim = None
-        if options.get("adam_w_mode", False):
-            tst_options = copy.deepcopy(options)
-            tst_options.pop("adam_w_mode")
-            ref_optim = torch.optim.Adam(ref_param, **tst_options)
-        else:
-            tst_options = copy.deepcopy(options)
-            tst_options.pop("adam_w_mode")
-            ref_optim = torch.optim.AdamW(ref_param, **tst_options)
-        tst_optim = self.fused_optim(tst_param, **options)
-
+        options["fused"] = False
+        options["foreach"] = False
+        tst_options = copy.deepcopy(options)
+        tst_options["fused"] = True
+        ref_optim = torch.optim.AdamW(ref_param, **options)
+        tst_optim = torch.optim.AdamW(tst_param, **tst_options)
         return (ref_param, tst_param, ref_optim, tst_optim)
 
     def gen_grad(self, ref_param, tst_param):
@@ -113,7 +108,7 @@ class TestFusedOptimizer(unittest.TestCase):
         max_abs_diff = max_rel_diff = 0
         for p_ref, p_tst in zip(ref_param, tst_param):
             max_abs_diff_p = (p_ref - p_tst).abs().max().item()
-            max_rel_diff_p = ((p_ref - p_tst) / p_ref).abs().max().item()
+            max_rel_diff_p = ((p_ref - p_tst) / (p_ref + 3e-06)).abs().max().item()
 
             if max_abs_diff_p > max_abs_diff:
                 max_abs_diff = max_abs_diff_p
@@ -123,20 +118,21 @@ class TestFusedOptimizer(unittest.TestCase):
         return max_abs_diff, max_rel_diff
 
     def gen_single_type_test(
-        self, param_type=torch.float, device="mlu", *, skip_assert: bool = False
+        self,
+        nelem=278011,
+        param_type=torch.float,
+        device="mlu",
+        *,
+        skip_assert: bool = False
     ):
-        nelem = 278011
+        # nelem = 20000 ok
         # Some ref and test optimizers may require different set of options.
         # This is a quick workaround to add that functionality while making
         # minimum changes in existing code.
         # If there is no "tst_options" field provided, safe to initialize
         # the test optimizer with the parameters of reference optimizer.
         for options in self.options_list:
-            tensor = torch.clamp(
-                torch.rand(nelem).to(dtype=param_type, device=device),
-                min=0.01,
-                max=100.0,
-            )
+            tensor = torch.rand(nelem).to(dtype=param_type, device=device)
             ref_param, tst_param, ref_optim, tst_optim = self.gen_param_optim(
                 [tensor], options
             )
@@ -150,19 +146,21 @@ class TestFusedOptimizer(unittest.TestCase):
                 max_abs_diff, max_rel_diff = self.get_max_diff(ref_param, tst_param)
                 self.assertLessEqual(max_abs_diff, self.max_abs_diff)
                 self.assertLessEqual(max_rel_diff, self.max_rel_diff)
+                torch.mlu.synchronize()
 
-    def run_net_and_compare_weight(self, model, model_, input_size, grad_size):
+    def run_net_and_compare_weight(
+        self, model, model_, input_size, grad_size, gradScalar=False
+    ):
         for options in self.options_list:
-            tst_optim = None
-            if options.get("adam_w_mode", False):
-                tst_options = copy.deepcopy(options)
-                tst_options.pop("adam_w_mode")
-                tst_optim = torch.optim.Adam(model.parameters(), **tst_options)
-            else:
-                tst_options = copy.deepcopy(options)
-                tst_options.pop("adam_w_mode")
-                tst_optim = torch.optim.AdamW(model.parameters(), **tst_options)
-            fused_optim = self.fused_optim(model_.parameters(), **options)
+            options["fused"] = False
+            options["foreach"] = False
+            tst_options = copy.deepcopy(options)
+            tst_options["fused"] = True
+            ref_optim = torch.optim.AdamW(model.parameters(), **options)
+            tst_optim = torch.optim.AdamW(model_.parameters(), **tst_options)
+            if gradScalar is not None:
+                ref_scalar = torch.mlu.amp.GradScaler()
+                tst_scalar = torch.mlu.amp.GradScaler()
             memory_format = torch.contiguous_format
             if len(input_size) == 4:
                 memory_format = torch.channels_last
@@ -177,15 +175,25 @@ class TestFusedOptimizer(unittest.TestCase):
                 y = model(x)
                 loss = ((gt - y) ** 2).mean()
 
-                loss.backward()
-                tst_optim.step()
+                if gradScalar is not None:
+                    ref_scalar.scale(loss).backward()
+                    ref_scalar.step(ref_optim)
+                    ref_scalar.update()
+                else:
+                    loss.backward()
+                    ref_optim.step()
 
                 # DUT
                 y = model_(x_)
                 loss_mlu = ((gt_ - y) ** 2).mean()
 
-                loss_mlu.backward()
-                fused_optim.step()
+                if gradScalar is not None:
+                    tst_scalar.scale(loss_mlu).backward()
+                    tst_scalar.step(tst_optim)
+                    tst_scalar.update()
+                else:
+                    loss_mlu.backward()
+                    tst_optim.step()
 
                 for module in zip(model.modules(), model_.modules()):
                     m = module[0]
@@ -209,8 +217,8 @@ class TestFusedOptimizer(unittest.TestCase):
                         )
 
                 # Init for next iteration
+                ref_optim.zero_grad()
                 tst_optim.zero_grad()
-                fused_optim.zero_grad()
                 model_.load_state_dict(copy.deepcopy(model.state_dict()))
 
 
@@ -219,23 +227,30 @@ class TestFusedAdam(TestFusedOptimizer):
         super().setUp()
         self.options_list = [
             {
-                "lr": 5e-4,
-                "betas": (0.9, 0.95),
-                "eps": 1e-08,
+                "lr": 0.001,
+                "betas": (0.6, 0.9),
+                "eps": 3e-06,
                 "weight_decay": 0.1,
                 "amsgrad": False,
-                "adam_w_mode": True,
+                "maximize": False,
             },
             {
-                "lr": 5e-4,
+                "lr": 0.01,
                 "betas": (0.9, 0.95),
-                "eps": 1e-08,
-                "weight_decay": 0.1,
-                "amsgrad": False,
-                "adam_w_mode": False,
+                "eps": 3e-06,
+                "weight_decay": 0.12,
+                "amsgrad": True,
+                "maximize": False,
+            },
+            {
+                "lr": 0.1,
+                "betas": (0.9, 0.99),
+                "eps": 3e-06,
+                "weight_decay": 0,
+                "amsgrad": True,
+                "maximize": True,
             },
         ]
-        self.fused_optim = torch_mlu.optimizers.FusedAdam
 
     def test_float(self):
         self.gen_single_type_test(param_type=torch.float)
@@ -256,83 +271,31 @@ class TestFusedAdam(TestFusedOptimizer):
             with torch.mlu.device(current_dev):
                 self.gen_single_type_test(param_type=torch.float, device=tensor_dev)
 
-    def test_adam_option(self):
-        nelem = 1
-        options_list = [
-            {
-                "lr": 0.01,
-                "betas": (0.6, 0.9),
-                "eps": 3e-06,
-                "weight_decay": 0.001,
-                "amsgrad": False,
-                "adam_w_mode": True,
-            },
-            {
-                "lr": 0.01,
-                "betas": (0.6, 0.9),
-                "eps": 3e-06,
-                "weight_decay": 0.001,
-                "amsgrad": False,
-                "adam_w_mode": False,
-            },
-        ]
-        for adam_option in options_list:
-            tensor = torch.rand(nelem, dtype=torch.float, device="mlu")
-            ref_param, tst_param, ref_optim, tst_optim = self.gen_param_optim(
-                [tensor], adam_option
-            )
-
-            for i in range(self.iters):
-                self.gen_grad(ref_param, tst_param)
-                ref_optim.step()
-                tst_optim.step()
-                max_abs_diff, max_rel_diff = self.get_max_diff(ref_param, tst_param)
-
-                self.assertLessEqual(max_abs_diff, self.max_abs_diff)
-                self.assertLessEqual(max_rel_diff, self.max_rel_diff)
-
-                # Init for next iteration
-                ref_optim.zero_grad()
-                tst_optim.zero_grad()
-
-                for p_ref, p_tst in zip(ref_param, tst_param):
-                    p_ref = p_tst
+    def test_adamw_one_element(self):
+        self.gen_single_type_test(nelem=1, param_type=torch.float)
 
     def test_network(self):
-        model = Model().mlu()
-        model_ = Model().mlu()
-        model_.load_state_dict(copy.deepcopy(model.state_dict()))
-        input_size = [32, 1, 28, 28]
-        grad_size = [32, 10]
-        self.run_net_and_compare_weight(model, model_, input_size, grad_size)
-        model = ModelLinear().mlu()
-        model_ = ModelLinear().mlu()
-        model_.load_state_dict(copy.deepcopy(model.state_dict()))
-        input_size = [16, 4096]
-        grad_size = [16, 1024]
-        self.run_net_and_compare_weight(model, model_, input_size, grad_size)
+        for gradScaler in [False, True]:
+            model = Model().mlu()
+            model_ = Model().mlu()
+            model_.load_state_dict(copy.deepcopy(model.state_dict()))
+            input_size = [32, 3, 28, 28]
+            grad_size = [32, 10]
+            self.run_net_and_compare_weight(
+                model, model_, input_size, grad_size, gradScaler
+            )
+            model = ModelLinear().mlu()
+            model_ = ModelLinear().mlu()
+            model_.load_state_dict(copy.deepcopy(model.state_dict()))
+            input_size = [16, 4096]
+            grad_size = [16, 1024]
+            self.run_net_and_compare_weight(
+                model, model_, input_size, grad_size, gradScaler
+            )
 
     def test_frozen_model(self):
         nelem = 1
-        options_list = [
-            {
-                "lr": 0.01,
-                "betas": (0.6, 0.9),
-                "eps": 3e-06,
-                "weight_decay": 0,
-                "amsgrad": False,
-                "adam_w_mode": True,
-            },
-            {
-                "lr": 0.01,
-                "betas": (0.6, 0.9),
-                "eps": 3e-06,
-                "weight_decay": 0,
-                "amsgrad": False,
-                "adam_w_mode": False,
-            },
-        ]
-        for adam_option in options_list:
+        for adam_option in self.options_list:
             tensor = torch.rand(nelem, dtype=torch.float, device="mlu")
             ref_param, tst_param, ref_optim, tst_optim = self.gen_param_optim(
                 [tensor], adam_option
@@ -354,14 +317,24 @@ class TestFusedAdam(TestFusedOptimizer):
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
     @largeTensorTest("44GB")
-    def test_fused_adam_large(self):
+    def test_fused_adamw_large(self):
         tensor = torch.clamp(
             torch.rand(2147483660).to(dtype=torch.float, device="mlu"),
             min=0.01,
             max=100.0,
         )
         ref_param = [torch.nn.Parameter(tensor.clone())]
-        fused_optim = self.fused_optim(ref_param, **self.options_list[0])
+        options = {
+            "lr": 0.001,
+            "betas": (0.6, 0.9),
+            "eps": 3e-06,
+            "weight_decay": 0.1,
+            "amsgrad": False,
+            "maximize": False,
+            "fused": True,
+            "foreach": False,
+        }
+        fused_optim = torch.optim.AdamW(ref_param, **options)
         for i in range(self.iters):
             ref_param[0].grad = torch.rand_like(ref_param[0])
             fused_optim.step()

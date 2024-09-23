@@ -53,4 +53,46 @@ cnnlType2CnrtType_V2(cnnlDataType_t cnnl_data_type);
 
 TORCH_MLU_API size_t getCnnlTypeSize(cnnlDataType_t cnnl_data_type);
 
+/**
+ * Note [CPPTypeToCNRTType]
+ *
+ * CPPTypeToCNRTType is to convert pytorch cpp type to cnrt type.
+ * And There also conver 64bit cpp type to 32bit cpp type. And now only
+ * support double, float, c10::Half and c10::BFloat16.
+ *
+ * MLUOpMathType:
+ * @brief get pytorch cpp and return cnrt type
+ * @param data_type: pytorch cpp type
+ * @return cnrt type
+ *
+ * Usage:
+ * cnrtDataType_V2_t value = CPPTypeToCNRTTypeValue<ori_type>::value;
+ *
+ */
+
+template <typename scalar_t>
+struct CPPTypeToCNRTTypeValue {};
+
+// Promote 16bit floating type to 32bit floating type.
+template <>
+struct CPPTypeToCNRTTypeValue<at::Half> {
+  static constexpr cnrtDataType_V2_t value = cnrtDataType_V2_t::cnrtHalf;
+};
+template <>
+struct CPPTypeToCNRTTypeValue<at::BFloat16> {
+  static constexpr cnrtDataType_V2_t value = cnrtDataType_V2_t::cnrtBfloat;
+};
+template <>
+struct CPPTypeToCNRTTypeValue<float> {
+  static constexpr cnrtDataType_V2_t value = cnrtDataType_V2_t::cnrtFloat;
+};
+template <>
+struct CPPTypeToCNRTTypeValue<double> {
+  static constexpr cnrtDataType_V2_t value = cnrtDataType_V2_t::cnrtFloat;
+};
+
+template <typename scalar_t>
+inline constexpr cnrtDataType_V2_t CPPTypeToCNRTTypeValue_v =
+    CPPTypeToCNRTTypeValue<scalar_t>::value;
+
 } // namespace torch_mlu

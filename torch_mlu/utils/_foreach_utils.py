@@ -7,15 +7,7 @@ def _get_foreach_kernels_supported_devices() -> List[str]:
     return ["cuda", "xpu"]
 
 
-def _get_fused_kernels_supported_devices() -> List[str]:
-    r"""Return the device type list that supports fused kernels in optimizer."""
-    return ["cuda", "xpu"]
-
-
 def apply_foreach_fused_patch():
     torch.utils._foreach_utils._get_foreach_kernels_supported_devices.__code__ = (
         _get_foreach_kernels_supported_devices.__code__
-    )
-    torch.utils._foreach_utils._get_fused_kernels_supported_devices.__code__ = (
-        _get_fused_kernels_supported_devices.__code__
     )

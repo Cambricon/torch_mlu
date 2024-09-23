@@ -1,9 +1,18 @@
 #pragma once
 
+#include <array>
+#include <vector>
 #include "aten/operators/bang/internal/common_util.h"
 
 namespace torch_mlu {
 namespace ops {
+
+namespace internal {
+enum class ADAM_MODE {
+  adam = 0,
+  adamw = 1,
+};
+}
 
 void dump(
     void* input,
@@ -76,28 +85,44 @@ void bang_fused_l2_norm_clean_internal(
     cnrtQueue_t queue,
     bool amp_opt);
 
-void bang_fused_adam_internal(
-    AddressList grad,
-    AddressList exp_avg,
-    AddressList exp_avg_sq,
-    AddressList param,
-    SizeList sizes,
-    int tensor_num,
+template <cnrtDataType_V2_t value, int depth>
+void apex_fused_adam_internal(
+    const std::vector<std::array<void*, depth>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
     float beta1,
+    float beta1_minus,
     float beta2,
-    float beta1_correction,
-    float beta2_correction,
-    float epsilon,
+    float beta2_minus,
     float epsilon_correction,
-    float learning_rate,
     float learning_rate_correction,
-    int adam_mode,
+    internal::ADAM_MODE mode,
     float decay,
     float decay_correction,
-    cnrtDim3_t k_dim,
-    cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    cnrtDataType_V2_t cnrt_type);
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
+
+template <cnrtDataType_V2_t value, int depth>
+void bang_torch_fused_adamw_internal(
+    const std::vector<std::array<void*, depth>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const std::vector<void*>& steps_ptr_list,
+    float* lr_ptr,
+    float learning_rate,
+    float beta1,
+    float beta1_minus,
+    float beta2,
+    float beta2_minus,
+    float weight_decay,
+    float epsilon,
+    bool maximize,
+    bool amsgrad,
+    float* grad_scale_ptr,
+    float* found_inf_ptr,
+    internal::ADAM_MODE mode,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
 
 void bang_fused_sgd_internal(
     AddressList g,

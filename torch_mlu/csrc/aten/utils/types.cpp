@@ -121,7 +121,7 @@ cnrtDataType_t cnnlType2CnrtType(cnnlDataType_t cnnl_data_type) {
     CNNL_TYPE_AND_CNRT_TYPE(DEFINE_CASE)
 #undef DEFINE_CASE
     default: {
-      LOG(ERROR) << "Invalid data type from cnnl to cnrt!";
+      CNLOG(ERROR) << "Invalid data type from cnnl to cnrt!";
       return CNRT_INVALID;
     }
   }
@@ -135,7 +135,7 @@ cnrtDataType_V2_t cnnlType2CnrtType_V2(cnnlDataType_t cnnl_data_type) {
     CNNL_TYPE_AND_CNRT_TYPE_V2(DEFINE_CASE)
 #undef DEFINE_CASE
     default: {
-      LOG(ERROR) << "Invalid data type from cnnl to cnrt!";
+      CNLOG(ERROR) << "Invalid data type from cnnl to cnrt!";
       return (cnrtDataType_V2_t)cnrtUnknown;
     }
   }

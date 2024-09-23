@@ -1,8 +1,8 @@
 /*
-All modification made by Cambricon Corporation: © 2022 Cambricon Corporation
+All modification made by Cambricon Corporation: © 2023 Cambricon Corporation
 All rights reserved.
 All other contributions:
-Copyright (c) 2014--2022, the respective contributors
+Copyright (c) 2014--2023, the respective contributors
 All rights reserved.
 For the list of contributors go to
 https://github.com/pytorch/pytorch/graphs/contributors Redistribution and use in
@@ -28,46 +28,45 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
+#include "aten/operators/bang/bang_kernel.h"
+#include "aten/operators/bang/internal/bang_internal.h"
+#include "aten/utils/utils.h"
 
-#include <vector>
-#include <string>
-#include <sstream>
-#include "utils/Export.h"
+namespace torch_mlu::ops {
 
-const int FATAL = 3;
-const int ERROR = 2;
-const int WARNING = 1;
-const int INFO = 0;
+static inline void check_device_and_numel(
+    const c10::Device& device,
+    const int64_t tensor_numel,
+    const at::Tensor& tensor) {
+  if (!tensor.defined())
+    return;
+  TORCH_CHECK(tensor.device() == device, "Device need be same.");
+  TORCH_CHECK(tensor.numel() == tensor_numel, "Tensor element need be same.");
+}
 
-// DEBUG=-1, INFO=0, WARNING=1, ERROR=2, FATAL=3
-const std::vector<std::string> LOG_LEVEL =
-    {"DEBUG", "INFO", "WARNING", "ERROR", "FATAL"};
+static inline void check_device_and_numel(
+    const c10::Device& device,
+    const int64_t tensor_numel,
+    const std::optional<at::Tensor>& tensor) {
+  if (!tensor.has_value())
+    return;
+  check_device_and_numel(device, tensor_numel, tensor.value());
+}
 
-namespace torch_mlu {
-int64_t MinCNLogLevelFromEnv();
-int64_t MinCNLogLevel();
-int64_t LogLevelStrToInt(const char* log_level_ptr);
+template <
+    typename T,
+    std::enable_if_t<
+        std::is_same_v<T, at::Tensor> ||
+            std::is_same_v<T, std::optional<at::Tensor>>,
+        int> = 1,
+    typename... ARGS>
+static inline void check_device_and_numel(
+    const c10::Device& device,
+    const int64_t tensor_numel,
+    const T& tensor,
+    ARGS... args) {
+  check_device_and_numel(device, tensor_numel, tensor);
+  check_device_and_numel(device, tensor_numel, args...);
+}
 
-class TORCH_MLU_API CNLogMessage {
- public:
-  CNLogMessage(const char* file, int line, const char* func, int severity);
-  ~CNLogMessage();
-
-  std::stringstream& stream() {
-    return stream_;
-  }
-
-  static int64_t MinCNLogLevel();
-
- private:
-  std::stringstream stream_;
-  int severity_;
-};
-} // namespace torch_mlu
-
-#define CNLOG_IS_ON(lvl) ((lvl) >= torch_mlu::CNLogMessage::MinCNLogLevel())
-
-#define CNLOG(lvl)      \
-  if (CNLOG_IS_ON(lvl)) \
-  torch_mlu::CNLogMessage(__FILE__, __LINE__, __FUNCTION__, lvl).stream()
+} // end of namespace torch_mlu::ops
