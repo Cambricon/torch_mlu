@@ -12,7 +12,7 @@ if [ -z ${PYTORCH_HOME} ]; then
     exit 1
 fi
 
-# NEUWARE_HOME Env should be set before building Catch
+# NEUWARE_HOME Env should be set before building torch_mlu
 if [ -z ${NEUWARE_HOME} ]; then
     echo "Error: please set environment variable NEUWARE_HOME, export NEUWARE_HOME=your Cambricon neuware package dir!"
     exit 1
