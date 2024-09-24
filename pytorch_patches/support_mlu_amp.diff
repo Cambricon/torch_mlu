@@ -19,10 +19,10 @@ index 8d291e255a..e41848cda3 100644
          Tensor.ipu: lambda self, memory_format=torch.preserve_format: -1,
          Tensor.data_ptr: lambda self: -1,
 diff --git a/torch/utils/_foreach_utils.py b/torch/utils/_foreach_utils.py
-index 534e9ff24e..dc65b6d622 100644
+index 534e9ff24e..8c48b2fb35 100644
 --- a/torch/utils/_foreach_utils.py
 +++ b/torch/utils/_foreach_utils.py
-@@ -9,13 +9,13 @@ def _get_foreach_kernels_supported_devices() -> List[str]:
+@@ -9,7 +9,7 @@ def _get_foreach_kernels_supported_devices() -> List[str]:
      r"""
      Return the device type list that supports foreach kernels.
      """
@@ -31,10 +31,3 @@ index 534e9ff24e..dc65b6d622 100644
  
  def _get_fused_kernels_supported_devices() -> List[str]:
      r"""
-     Return the device type list that supports fused kernels in optimizer.
-     """
--    return ["cuda", "xpu", torch._C._get_privateuse1_backend_name()]
-+    return ["cuda", "xpu"]
- 
- TensorListList: TypeAlias = List[List[Optional[Tensor]]]
- Indices: TypeAlias = List[int]

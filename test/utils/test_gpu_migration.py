@@ -484,7 +484,7 @@ class TestGpuMigration(TestCase):
         # torch.autograd.profiler.profile()
         self.assertRaisesRegex(
             TypeError,
-            "profile.__init__\(\) takes from 1 to 2 positional arguments but 3 were given",
+            "__init__\(\) takes from 1 to 2 positional arguments but 3 were given",
             lambda: torch.autograd.profiler.profile(True, True),
         )
         prof = torch.autograd.profiler.profile(use_cuda=True)

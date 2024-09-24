@@ -67,8 +67,15 @@ class FusedAdam(torch.optim.Optimizer):
         super(FusedAdam, self).__init__(params, defaults)
         self.adam_w_mode = 1 if adam_w_mode else 0
         self.set_grad_none = set_grad_none
-        # Skip buffer
-        self._dummy_overflow_buf = torch.tensor([0], dtype=torch.int).to("mlu")
+        # find the device of the first parameter
+        # MLU side is different with GPU-APEX, apex is third party lib, and don't check the device
+        # of _dummy_overflow_buf when dispatch to kernel in non-capture mode.
+        device = "mlu:0"
+        for group in self.param_groups:
+            if len(group["params"]) == 0:
+                continue
+            device = group['params'][0].device
+        self._dummy_overflow_buf = torch.tensor([0], dtype=torch.int).to(device)
 
     def zero_grad(self):
         if self.set_grad_none:

@@ -82,7 +82,7 @@ if (USE_BANG)
     	message(FATAL_ERROR "BANG cannot be found !!!!!")
     endif()
 	# cncc gflags
-    set(BANG_CNCC_FLAGS "-Wall -Werror -fPIC -std=c++11 -pthread")
+    set(BANG_CNCC_FLAGS "-Wall -Werror -fPIC -std=c++17 -pthread")
 
     set(cmake_build_type "")
     string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type)

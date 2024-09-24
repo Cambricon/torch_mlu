@@ -11,507 +11,337 @@
  *************************************************************************/
 
 #include "bang_internal.h"
+#include "aten/operators/bang/internal/multi_tensor_apply.h"
 
 namespace torch_mlu {
 namespace ops {
 
-#define NRAM_SPLIT_SIZE 5  // split nram to grad_nram,m_nram,v_nram,variable_nram and tmp_nram
-#define PING_PONG_SIZE 2
+#define ADAM_NRAM_SIZE (MAX_NRAM_SIZE + REM_FOR_STACK - 32 * 1024)
+#define NRAM_SPLIT_NUM 8  // split nram to grad_nram,m_nram,v_nram,variable_nram
 #define ALIGN_SIZE 128
-#define PING_PONG_INDEX (0x1)
 #define PAD_DOWN(X, Y) (((X) / (Y)) * (Y))
-#define SIZE_PER_REGION MAX_NRAM_SIZE / (NRAM_SPLIT_SIZE * PING_PONG_SIZE)
+#define SIZE_PER_REGION ADAM_NRAM_SIZE / NRAM_SPLIT_NUM
 #define SIZE_PER_REGION_ADAM PAD_DOWN(SIZE_PER_REGION, ALIGN_SIZE)
 
 // Use half of the max nram size for ping-pong
-__nram__ char total_nram[SIZE_PER_REGION_ADAM * (NRAM_SPLIT_SIZE * PING_PONG_SIZE)];
+__nram__ char total_nram[SIZE_PER_REGION_ADAM * (NRAM_SPLIT_NUM)];
 
-__mlu_func__ inline void Rsqrt(float* output,
-                               float* input,
-                               int num_align,
-                               float epsilon_correction) {
-  __bang_sqrt(output, input, num_align);
-  __bang_add_scalar(output, output, epsilon_correction, num_align);
-  __bang_recip(output, output, num_align);
-}
-
-__mlu_func__ inline void ComputeInternalStage1(
-                                 int num_align,
-                                 float* grad_nram,
-                                 float* m_nram,
-                                 float* v_nram,
-                                 float* variable_nram,
-                                 float* tmp_nram,
-                                 float beta1,
-                                 float beta2,
-                                 float beta1_minus,
-                                 float beta2_minus,
-                                 int adam_mode,
-                                 float decay) {
-  if (adam_mode == 0) {
-    // scaled_grad = scaled_grad + decay * variable
-    __bang_mul_scalar(tmp_nram, variable_nram, decay, num_align);
-    __bang_add(grad_nram, grad_nram, tmp_nram, num_align);
-  }
-  // mt = beta1 * mt-1 + (1 - beta1) * grad
-  __bang_mul_scalar(tmp_nram, grad_nram, beta1_minus, num_align);
-  __bang_fusion(FUSION_FMA, m_nram, m_nram, beta1, tmp_nram, num_align, num_align);
-
-  // vt = beta2 * vt-1 + (1 - beta2) * grad ^ 2
-  __bang_mul(grad_nram, grad_nram, grad_nram, num_align);
-  __bang_mul_scalar(grad_nram, grad_nram, beta2_minus, num_align);
-  __bang_fusion(FUSION_FMA, v_nram, v_nram, beta2, grad_nram, num_align, num_align);
-}
-
-__mlu_func__ inline void ComputeInternalStage2(
-                                 int num_align,
-                                 float* grad_nram,
-                                 float* m_nram,
-                                 float* v_nram,
-                                 float* variable_nram,
-                                 float* tmp_nram,
-				 float beta1,
-				 float beta2,
-				 float beta1_correction_recip,
-				 float beta2_correction_recip,
-                                 float learning_rate,
-                                 float learning_rate_correction,
-                                 float epsilon,
-                                 float epsilon_correction,
-                                 int adam_mode,
-                                 float decay,
-                                 float decay_correction) {
-  // mt = mt / (1 - beta1 ^ t) && vt = vt / (1 - beta2 ^ t)
-  // var = var - learning_rate * mt / (sqrt(vt) + epsilon) 
-  // use grad_nram as temp buffer
-  Rsqrt(grad_nram, v_nram, num_align, epsilon_correction);
-  __bang_mul(grad_nram, m_nram, grad_nram, num_align);
-  if (adam_mode == 1) {
-    __bang_mul_scalar(tmp_nram, variable_nram, decay_correction, num_align);
-    __bang_add(grad_nram, tmp_nram, grad_nram, num_align);
-  }
-  __bang_mul_scalar(grad_nram, grad_nram, learning_rate_correction, num_align);
-  __bang_sub(variable_nram, variable_nram, grad_nram, num_align);
-}
-
-template <typename T, typename FULL_T>
-__mlu_func__ inline void ComputeStage1(int num_align,
-                                       T* grad_nram,
-                                       FULL_T* m_nram,
-                                       FULL_T* v_nram,
-                                       T* variable_nram,
-                                       T* tmp_nram,
-                                       float beta1,
-                                       float beta2,
-                                       float beta1_minus,
-                                       float beta2_minus,
-                                       int adam_mode,
-                                       float decay,
-                                       int load_offset) {
-  ComputeInternalStage1(num_align, grad_nram, m_nram, v_nram, variable_nram,
-    tmp_nram, beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay);
-}
-
-template <>
-__mlu_func__ inline void ComputeStage1<half, float>(int num_align,
-                                                    half* grad_nram,
-                                                    float* m_nram,
-                                                    float* v_nram,
-                                                    half* variable_nram,
-                                                    half* tmp_nram,
-                                                    float beta1,
-                                                    float beta2,
-                                                    float beta1_minus,
-                                                    float beta2_minus,
-                                                    int adam_mode,
-                                                    float decay,
-                                                    int load_offset) {
-  __bang_half2float((float*)grad_nram, grad_nram + load_offset, num_align);
-  __bang_half2float((float*)variable_nram, variable_nram + load_offset, num_align);
-
-  ComputeInternalStage1(num_align, (float*)grad_nram, (float*)m_nram, (float*)v_nram, (float*)variable_nram,
-    (float*)tmp_nram, beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay);
-}
-
-template <>
-__mlu_func__ inline void ComputeStage1<bfloat16_t, float>(int num_align,
-                                                          bfloat16_t* grad_nram,
-                                                          float* m_nram,
-                                                          float* v_nram,
-                                                          bfloat16_t* variable_nram,
-                                                          bfloat16_t* tmp_nram,
-                                                          float beta1,
-                                                          float beta2,
-                                                          float beta1_minus,
-                                                          float beta2_minus,
-                                                          int adam_mode,
-                                                          float decay,
-                                                          int load_offset) {
-  __bang_bfloat162float((float*)grad_nram, grad_nram + load_offset, num_align);
-  __bang_bfloat162float((float*)variable_nram, variable_nram + load_offset, num_align);
-
-  ComputeInternalStage1(num_align, (float*)grad_nram, (float*)m_nram, (float*)v_nram, (float*)variable_nram,
-    (float*)tmp_nram, beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay);
-}
-
-template <typename T, typename FULL_T>
-__mlu_func__ inline void ComputeStage2(int num_align,
-                                       T* grad_nram,
-                                       FULL_T* m_nram,
-                                       FULL_T* v_nram,
-                                       T* variable_nram,
-                                       T* tmp_nram,
-				       float beta1,
-				       float beta2,
-				       float beta1_correction_recip,
-				       float beta2_correction_recip,
-                                       float learning_rate,
-                                       float learning_rate_correction,
-                                       float epsilon,
-                                       float epsilon_correction,
-                                       int adam_mode,
-                                       float decay,
-                                       float decay_correction) {
-  ComputeInternalStage2(num_align, grad_nram, m_nram, v_nram, variable_nram, tmp_nram, beta1, beta2,
-                        beta1_correction_recip, beta2_correction_recip, learning_rate,
-			learning_rate_correction, epsilon, epsilon_correction, adam_mode,
-			decay, decay_correction);
-}
-
-template <>
-__mlu_func__ inline void ComputeStage2<half, float>(int num_align,
-                                                     half* grad_nram,
-                                                     float* m_nram,
-                                                     float* v_nram,
-                                                     half* variable_nram,
-                                                     half* tmp_nram,
-				                     float beta1,
-				                     float beta2,
-				                     float beta1_correction_recip,
-				                     float beta2_correction_recip,
-                                                     float learning_rate,
-                                                     float learning_rate_correction,
-                                                     float epsilon,
-                                                     float epsilon_correction,
-                                                     int adam_mode,
-                                                     float decay,
-                                                     float decay_correction) {
-  ComputeInternalStage2(num_align, (float*)grad_nram, (float*)m_nram,
-                        (float*)v_nram, (float*)variable_nram, (float*)tmp_nram, beta1, beta2,
-                        beta1_correction_recip, beta2_correction_recip, learning_rate,
-			learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
-  __bang_float2half_rn(variable_nram, (float*)variable_nram, num_align);
-}
-
-template <>
-__mlu_func__ inline void ComputeStage2<bfloat16_t, float>(int num_align,
-                                                         bfloat16_t* grad_nram,
-                                                         float* m_nram,
-                                                         float* v_nram,
-                                                         bfloat16_t* variable_nram,
-                                                         bfloat16_t* tmp_nram,
-				                         float beta1,
-				                         float beta2,
-				                         float beta1_correction_recip,
-				                         float beta2_correction_recip,
-                                                         float learning_rate,
-                                                         float learning_rate_correction,
-                                                         float epsilon,
-                                                         float epsilon_correction,
-                                                         int adam_mode,
-                                                         float decay,
-                                                         float decay_correction) {
-  ComputeInternalStage2(num_align, (float*)grad_nram, (float*)m_nram,
-                        (float*)v_nram, (float*)variable_nram, (float*)tmp_nram, beta1, beta2,
-                        beta1_correction_recip, beta2_correction_recip, learning_rate,
-			learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
-  __bang_float2bfloat16_rn(variable_nram, (float*)variable_nram, num_align);
-}
-
-template <typename T>
-__mlu_func__ void ApplyAdam(AddressList& grad,
-                            AddressList& m,
-                            AddressList& v,
-                            AddressList& variable,
-                            SizeList& sizes,
-                            int tensor_num,
-                            float beta1,
-                            float beta2,
-                            float beta1_correction_recip,
-                            float beta2_correction_recip,
-                            float epsilon,
-                            float epsilon_correction,
-                            float learning_rate,
-                            float learning_rate_correction,
-                            int adam_mode,
-                            float decay,
-                            float decay_correction) {
-  float beta1_minus = 1 - beta1;
-  float beta2_minus = 1 - beta2;
-
-  // Data
-  // |                             nram                                 |
-  // |--grad_nram--|--m_nram--|--v_nram--|--variable_nram--|--tmp_nram--|
-  T* grad_nram = (T*)total_nram;
-  float* m_nram = (float*)(total_nram + SIZE_PER_REGION_ADAM * 2);
-  float* v_nram = (float*)(total_nram + SIZE_PER_REGION_ADAM * 4);
-  T* variable_nram = (T*)(total_nram + SIZE_PER_REGION_ADAM * 6);
-  T* tmp_nram = (T*)(total_nram + SIZE_PER_REGION_ADAM * 8);
-  int load_offset = sizeof(T) == sizeof(half) ? SIZE_PER_REGION_ADAM / sizeof(float) : 0;
-
-  // compute type is fixed as float
-  int num_per_region = SIZE_PER_REGION_ADAM / sizeof(float);
-  int remains_chunck_num = 0; // assign each task average chuncks as possible
-  int tensor_size, chunck_num, last_chunck_size;
-  int repeat_per_task, last_loop_chunck_num;
-  int chunck_id; // chunck_id maybe minus
-  // int element_num;
-  int count = 0;
-  int last_id        = 0; // tensor ids
-  int current_id     = 0; 
-  int next_id        = 0; 
-  int last_offset    = 0; // address offset 
-  int current_offset = 0; 
-  int next_offset    = 0; 
-  int last_num       = 0; // element number
-  int current_num    = 0; 
-  int next_num       = 0;
-  for (int tensor_id = 0; tensor_id < tensor_num; ++tensor_id) {
-    tensor_size = sizes.sizes[tensor_id];
-
-    chunck_num = ALIGN_UP_DIV(tensor_size, num_per_region);
-    last_chunck_size = (tensor_size - 1) % num_per_region + 1;
-
-    repeat_per_task = ALIGN_UP_DIV(chunck_num + remains_chunck_num, taskDim);
-    last_loop_chunck_num = chunck_num % taskDim;
-
-    for (int iter = 0; iter < repeat_per_task; ++iter) {
-      chunck_id = iter * taskDim + taskId - remains_chunck_num;
-
-      if (chunck_id > -1 && chunck_id < chunck_num) {
-        // get address id and offset
-        last_id = current_id;
-        current_id = next_id;
-        next_id = tensor_id;
-        last_offset = current_offset;
-        current_offset = next_offset;
-        next_offset = chunck_id * num_per_region; 
-        // get deal num
-        last_num = current_num;
-        current_num = next_num;
-        next_num = chunck_id == chunck_num - 1 ? last_chunck_size : num_per_region;
-        int num_align = current_num;
-
-        if (last_num > 0) {
-          ComputeStage1<T, float>(num_align,
-                        grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                        v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                        variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay, load_offset);
-
-          // Save
-          __memcpy_async((float*)m.addresses[last_id] + last_offset,
-                         m_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-			 last_num * sizeof(float), NRAM2GDRAM);
-          __memcpy_async((float*)v.addresses[last_id] + last_offset,
-                         v_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-			 last_num * sizeof(float), NRAM2GDRAM);
-          __memcpy_async((T*)variable.addresses[last_id] + last_offset,
-                        variable_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-			last_num * sizeof(T), NRAM2GDRAM);
-
-          // Load
-          __memcpy_async(grad_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
-                         (T*)grad.addresses[next_id] + next_offset,
-                         next_num * sizeof(T), GDRAM2NRAM);
-          __memcpy_async(m_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                         (float*)m.addresses[next_id] + next_offset,
-                         next_num * sizeof(float), GDRAM2NRAM);
-          __memcpy_async(v_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                         (float*)v.addresses[next_id] + next_offset,
-                         next_num * sizeof(float), GDRAM2NRAM);
-          __memcpy_async(variable_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
-                         (T*)variable.addresses[next_id] + next_offset,
-                         next_num * sizeof(T), GDRAM2NRAM);
-
-          ComputeStage2<T, float>(num_align,
-                        grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                        v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                        variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        beta1, beta2, beta1_correction_recip, beta2_correction_recip, learning_rate,
-			learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
-        } else if (current_num > 0) {
-          ComputeStage1<T, float>(num_align,
-                        grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                        v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                        variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay, load_offset);
-
-          // Load
-          __memcpy_async(grad_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
-                         (T*)grad.addresses[next_id] + next_offset,
-                         next_num * sizeof(T), GDRAM2NRAM);
-          __memcpy_async(m_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                         (float*)m.addresses[next_id] + next_offset,
-                         next_num * sizeof(float), GDRAM2NRAM);
-          __memcpy_async(v_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                         (float*)v.addresses[next_id] + next_offset,
-                         next_num * sizeof(float), GDRAM2NRAM);
-          __memcpy_async(variable_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
-                         (T*)variable.addresses[next_id] + next_offset,
-                         next_num * sizeof(T), GDRAM2NRAM);
-
-          ComputeStage2<T, float>(num_align,
-                        grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                        v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                        variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                        beta1, beta2, beta1_correction_recip, beta2_correction_recip, learning_rate,
-			learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
-        } else {
-          // Load
-          __memcpy_async(grad_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
-                         (T*)grad.addresses[next_id] + next_offset,
-                         next_num * sizeof(T), GDRAM2NRAM);
-          __memcpy_async(m_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                         (float*)m.addresses[next_id] + next_offset,
-                         next_num * sizeof(float), GDRAM2NRAM);
-          __memcpy_async(v_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                         (float*)v.addresses[next_id] + next_offset,
-                         next_num * sizeof(float), GDRAM2NRAM);
-          __memcpy_async(variable_nram + ((count + 1 ) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T) + load_offset,
-                         (T*)variable.addresses[next_id] + next_offset,
-                         next_num * sizeof(T), GDRAM2NRAM);
-        }
-        
-        __asm__ volatile("sync;");
-        count++;
-      }
+template<typename T, typename FULL_T = float,
+         torch_mlu::ops::internal::ADAM_MODE mode = torch_mlu::ops::internal::ADAM_MODE::adamw,
+         std::enable_if_t<std::is_same_v<FULL_T, float>, int> = 1,
+         std::enable_if_t<std::disjunction_v<std::is_same<float, T>,
+                                             std::is_same<bfloat16_t, T>,
+                                             std::is_same<half, T>>, int> = 1>
+struct AdamFunctor {
+  __mlu_func__ inline void operator()(const int& num_align,
+                                      T* variable_nram,
+                                      T* grad_nram,
+                                      FULL_T* m_nram,
+                                      FULL_T* v_nram,
+                                      const float& beta1,
+                                      const float& beta2,
+                                      const float& beta1_minus,
+                                      const float& beta2_minus,
+                                      const float& decay,
+                                      const float& learning_rate_correction,
+                                      const float& epsilon_correction,
+                                      const float& decay_correction,
+                                      const int& load_offset) {
+    FULL_T* grad_nram_f = (FULL_T*)grad_nram;
+    FULL_T* variable_nram_f = (FULL_T*)variable_nram;
+    if constexpr (std::is_same_v<T, bfloat16_t>) {
+      __bang_bfloat162float(grad_nram_f, grad_nram + load_offset, num_align);
+      __bang_bfloat162float(variable_nram_f, variable_nram + load_offset, num_align);
+    } else if constexpr (std::is_same_v<T, half>) {
+      __bang_half2float(grad_nram_f, grad_nram + load_offset, num_align);
+      __bang_half2float(variable_nram_f, variable_nram + load_offset, num_align);
     }
-    remains_chunck_num = (remains_chunck_num + last_loop_chunck_num) % taskDim;
+    if constexpr (mode == torch_mlu::ops::internal::ADAM_MODE::adam) {
+      // scaled_grad = scaled_grad + decay * variable
+      __bang_fusion(FUSION_FMA, grad_nram_f, variable_nram_f, decay, grad_nram_f, num_align, num_align);
+    }
+    // mt = beta1 * mt-1 + (1 - beta1) * grad
+    __bang_mul_scalar(m_nram, m_nram, beta1, num_align);
+    __bang_fusion(FUSION_FMA, m_nram, grad_nram_f, beta1_minus, m_nram, num_align, num_align);
+    // vt = beta2 * vt-1 + (1 - beta2) * grad ^ 2
+    __bang_mul(grad_nram_f, grad_nram_f, grad_nram_f, num_align);
+    __bang_mul_scalar(grad_nram_f, grad_nram_f, beta2_minus, num_align);
+    __bang_fusion(FUSION_FMA, v_nram, v_nram, beta2, grad_nram_f, num_align, num_align);
+    // demo = exp_avg  / (sqrtf(exp_avg_sq) + epsilon_correction)
+    // epsilon_correction = eps * sqrtf(bias_correction2)
+    // use grad_nram as temp buffer
+    __bang_sqrt(grad_nram_f, v_nram, num_align);
+    __bang_add_scalar(grad_nram_f, grad_nram_f, epsilon_correction, num_align);
+    __bang_recip(grad_nram_f, grad_nram_f, num_align);
+    __bang_mul(grad_nram_f, m_nram, grad_nram_f, num_align);
+    if constexpr (mode == torch_mlu::ops::internal::ADAM_MODE::adamw) {
+      // demo = demo + decay_correction * param
+      // decay_correction = bias_correction1 / sqrtf(bias_correction2) * decay
+      __bang_fusion(FUSION_FMA, grad_nram_f, variable_nram_f, decay_correction, grad_nram_f,
+                    num_align, num_align);
+    }
+    // param = param + learning_rate_correction * demo
+    // learning_rate_correction = -1 * lr*sqrtf(bias_correction2)/bias_correction1
+    __bang_fusion(FUSION_FMA, variable_nram_f, grad_nram_f, learning_rate_correction,
+                  variable_nram_f, num_align, num_align);
+    if constexpr (std::is_same_v<T, bfloat16_t>) {
+      __bang_float2bfloat16_rn(variable_nram, (FULL_T*)variable_nram_f, num_align);
+    } else if constexpr (std::is_same_v<T, half>) {
+      __bang_float2half_rn(variable_nram, (FULL_T*)variable_nram_f, num_align);
+    }
+  }
+};  // struct AdamFunctor
+
+template<typename tupleTypeList, int maxBlockNum, int depth>
+struct ApplyAdam {
+template<typename AdamFunctor>
+__mlu_func__ static void const call_internal(const torch_mlu::bangcommon::BlockInfoContainer<maxBlockNum, depth>& block_info_container,
+                                             const float& beta1,
+                                             const float& beta1_minus,
+                                             const float& beta2,
+                                             const float& beta2_minus,
+                                             const float& epsilon_correction,
+                                             const float& learning_rate_correction,
+                                             AdamFunctor&& compute_func,
+                                             const float& decay,
+                                             const float& decay_correction) {
+  using T = std::tuple_element_t<0, tupleTypeList>;
+  using FULL_T = std::tuple_element_t<2, tupleTypeList>;
+  torch_mlu::bangcommon::MemoryPolicy<tupleTypeList, maxBlockNum, depth>
+    data_handler(block_info_container);
+  const int circle_num = data_handler.get_circle_num();
+  const int element_num = data_handler.get_each_block_element_num();
+  // params--grads--exp_avg--exp_avg_sq
+  T* param_nram_start = (T*)total_nram;
+  T* param_nram_load_start = param_nram_start;
+  T* grad_nram_start = (T*)(total_nram + 2 * SIZE_PER_REGION_ADAM);
+  T* grad_nram_load_start = grad_nram_start;
+  // load_offset for half and bfloat16, and copy data to last part of nram,
+  // for using same nram space to convert from half/bfloat16 to float.
+  // This is not need for store data back to gdram.
+  // SIZE_PER_REGION_ADAM size: |-----------------|-----------------|
+  //                        float start    half/bfloat16 start
+  constexpr int load_offset = sizeof(T) == 2 ? SIZE_PER_REGION_ADAM / sizeof(FULL_T) : 0;
+  if constexpr (sizeof(T) == 2) {
+    param_nram_load_start = param_nram_start + load_offset;
+    grad_nram_load_start = grad_nram_start + load_offset;
+  }
+  FULL_T* exp_avg_nram_start = (FULL_T*)(total_nram + 4 * SIZE_PER_REGION_ADAM);
+  FULL_T* exp_avg_sq_nram_start = (FULL_T*)(total_nram + 6 * SIZE_PER_REGION_ADAM);
+  const int full_t_ping_pong_size = element_num;
+  const int t_ping_pong_size = sizeof(T) == 2 ? element_num * 2 : element_num;
+  int ping_size = 0;
+  int pong_size = 0;
+  void* load_ping_nram_array[depth] = {
+    (void*)param_nram_load_start, (void*)grad_nram_load_start,
+    (void*)exp_avg_nram_start, (void*)exp_avg_sq_nram_start
+  };
+  void* load_pong_nram_array[depth] = {
+    (void*)(param_nram_load_start + t_ping_pong_size),
+    (void*)(grad_nram_load_start + t_ping_pong_size),
+    (void*)(exp_avg_nram_start + full_t_ping_pong_size),
+    (void*)(exp_avg_sq_nram_start + full_t_ping_pong_size)
+  };
+  void* store_ping_nram_array[depth] = {
+    (void*)param_nram_start, nullptr,
+    (void*)exp_avg_nram_start, (void*)exp_avg_sq_nram_start
+  };
+  void* store_pong_nram_array[depth] = {
+    (void*)(param_nram_start + t_ping_pong_size),
+    nullptr,
+    (void*)(exp_avg_nram_start + full_t_ping_pong_size),
+    (void*)(exp_avg_sq_nram_start + full_t_ping_pong_size)
+  };
+
+  if (circle_num > 0) {
+    data_handler.multi_data_load_same_size(0, load_ping_nram_array, ping_size);
+    __sync_io();
+  }
+  if (circle_num > 1) {
+    // pong and compute
+    data_handler.multi_data_load_same_size(1, load_pong_nram_array, pong_size);
+    // compute ping
+    std::forward<AdamFunctor>(compute_func)(ping_size, param_nram_start, grad_nram_start, exp_avg_nram_start,
+                 exp_avg_sq_nram_start, beta1, beta2, beta1_minus, beta2_minus, decay,
+                 learning_rate_correction, epsilon_correction, decay_correction, load_offset);
+    __sync_io_move_compute(false, false, true, true, false, false);
+    __sync_io_move_compute(true, false, false, false, false, true);
+  }
+  int load_index = 0;
+  int store_index = 0;
+  for (int i = 0; i < circle_num - 2; i++) {
+    // store data
+    load_index = i + 2;
+    store_index = i;
+    int ping_pong = i % 2;
+    data_handler.multi_data_store_same_size(store_index, ping_pong ? store_pong_nram_array : store_ping_nram_array,
+                                            ping_pong ? pong_size : ping_size);
+    data_handler.multi_data_load_same_size(load_index, ping_pong ? load_pong_nram_array : load_ping_nram_array,
+                                            ping_pong ? pong_size : ping_size);
+    // compute data date order is different with load and store data.
+    ping_pong = (i + 1) % 2;
+    std::forward<AdamFunctor>(compute_func)(ping_pong ? pong_size : ping_size,
+                 param_nram_start + ping_pong * t_ping_pong_size,
+                 grad_nram_start + ping_pong * t_ping_pong_size,
+                 exp_avg_nram_start + ping_pong * full_t_ping_pong_size,
+                 exp_avg_sq_nram_start + ping_pong * full_t_ping_pong_size,
+                 beta1, beta2, beta1_minus, beta2_minus,
+                 decay, learning_rate_correction, epsilon_correction,
+                 decay_correction, load_offset);
+    __sync_io_move_compute(false, false, true, true, false, false);
+    __sync_io_move_compute(true, false, false, false, false, true);
   }
 
-  if (current_num > 0) {
-    // save
-    __memcpy_async((float*)m.addresses[current_id] + current_offset,
-                   m_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                   current_num * sizeof(float), NRAM2GDRAM);
-    __memcpy_async((float*)v.addresses[current_id] + current_offset,
-                   v_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                   current_num * sizeof(float), NRAM2GDRAM);
-    __memcpy_async((T*)variable.addresses[current_id] + current_offset,
-                   variable_nram + ((count + 1) & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                   current_num * sizeof(T), NRAM2GDRAM);
-  } 
-
-  if (next_num > 0) {
-    int num_align = next_num;
-    ComputeStage1<T, float>(num_align,
-                  grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                  m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                  v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                  variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                  tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                  beta1, beta2, beta1_minus, beta2_minus, adam_mode, decay, load_offset);
-    ComputeStage2<T, float>(num_align,
-                  grad_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                  m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                  v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                  variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                  tmp_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                  beta1, beta2, beta1_correction_recip, beta2_correction_recip, learning_rate,
-		  learning_rate_correction, epsilon, epsilon_correction, adam_mode, decay, decay_correction);
-    __asm__ volatile("sync;");
+  // store circle - 1 data
+  int ping_pong = circle_num % 2;
+  if (circle_num > 1) {
+    store_index = circle_num - 2;
+    data_handler.multi_data_store_same_size(store_index,
+                                            ping_pong ? store_pong_nram_array : store_ping_nram_array,
+                                            ping_pong ? pong_size : ping_size);
   }
 
-  if (next_num > 0) {
-    // save
-    __memcpy_async((float*)m.addresses[next_id] + next_offset,
-                   m_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                   next_num * sizeof(float), NRAM2GDRAM);
-    __memcpy_async((float*)v.addresses[next_id] + next_offset,
-                   v_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(float),
-                   next_num * sizeof(float), NRAM2GDRAM);
-    __memcpy_async((T*)variable.addresses[next_id] + next_offset,
-                   variable_nram + (count & PING_PONG_INDEX) * SIZE_PER_REGION_ADAM / sizeof(T),
-                   next_num * sizeof(T), NRAM2GDRAM);
-  } 
-} 
+  ping_pong = (circle_num + 1) % 2;
+  if (circle_num > 0) {
+    // compute last circle
+    std::forward<AdamFunctor>(compute_func)(ping_pong ? pong_size : ping_size,
+                 param_nram_start + ping_pong * t_ping_pong_size,
+                 grad_nram_start + ping_pong * t_ping_pong_size,
+                 exp_avg_nram_start + ping_pong * full_t_ping_pong_size,
+                 exp_avg_sq_nram_start + ping_pong * full_t_ping_pong_size,
+                 beta1, beta2, beta1_minus, beta2_minus,
+                 decay, learning_rate_correction, epsilon_correction,
+                 decay_correction, load_offset);
+    __sync_compute();
+    // store last circle data
+    store_index = circle_num - 1;
+    data_handler.multi_data_store_same_size(store_index,
+                                            ping_pong ? store_pong_nram_array : store_ping_nram_array,
+                                            ping_pong ? pong_size : ping_size);
+  }
+}
 
-__mlu_global__ void MLUMultiTensorAdam(AddressList grad,
-                                       AddressList m,
-                                       AddressList v,
-                                       AddressList variable,
-                                       SizeList sizes,
-                                       int tensor_num,
-                                       float beta1,
-                                       float beta2,
-                                       float beta1_correction_recip,
-                                       float beta2_correction_recip,
-                                       float epsilon,
-                                       float epsilon_correction,
-                                       float learning_rate,
-                                       float learning_rate_correction,
-                                       int adam_mode,
-                                       float decay,
-                                       float decay_correction,
-                                       cnrtDataType_V2_t cnrt_type) {
-  switch(cnrt_type) {
-    case (cnrtDataType_V2_t)cnrtFloat:
-      ApplyAdam<float>(grad, m, v, variable, sizes, tensor_num, 
-                       beta1, beta2, beta1_correction_recip, beta2_correction_recip, epsilon, epsilon_correction,
-                       learning_rate, learning_rate_correction, adam_mode, decay, decay_correction);
+__mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<maxBlockNum, depth> block_info_container,
+                                float beta1,
+                                float beta1_minus,
+                                float beta2,
+                                float beta2_minus,
+                                float epsilon_correction,
+                                float learning_rate_correction,
+                                internal::ADAM_MODE adam_mode,
+                                float decay,
+                                float decay_correction) {
+  if (__is_mpu()) return;
+  using T = std::tuple_element_t<0, tupleTypeList>;
+  using FULL_T = std::tuple_element_t<2, tupleTypeList>;
+  switch (adam_mode) {
+    case torch_mlu::ops::internal::ADAM_MODE::adam:
+      call_internal(block_info_container, beta1, beta1_minus, beta2, beta2_minus,
+                    epsilon_correction, learning_rate_correction,
+                    AdamFunctor<T, FULL_T, torch_mlu::ops::internal::ADAM_MODE::adam>(),
+                    decay, decay_correction);
       break;
-    case (cnrtDataType_V2_t)cnrtHalf:
-      ApplyAdam<half>(grad, m, v, variable, sizes, tensor_num,
-                      beta1, beta2, beta1_correction_recip, beta2_correction_recip, epsilon, epsilon_correction,
-                      learning_rate, learning_rate_correction, adam_mode, decay, decay_correction);
-      break;
-    case (cnrtDataType_V2_t)cnrtBfloat:
-      ApplyAdam<bfloat16_t>(grad, m, v, variable, sizes, tensor_num,
-                      beta1, beta2, beta1_correction_recip, beta2_correction_recip, epsilon, epsilon_correction,
-                      learning_rate, learning_rate_correction, adam_mode, decay, decay_correction);
+    case torch_mlu::ops::internal::ADAM_MODE::adamw:
+      call_internal(block_info_container, beta1, beta1_minus, beta2, beta2_minus,
+                    epsilon_correction, learning_rate_correction,
+                    AdamFunctor<T, FULL_T, torch_mlu::ops::internal::ADAM_MODE::adamw>(),
+                    decay, decay_correction);
       break;
     default:
       break;
   }
 }
 
-void bang_fused_adam_internal(AddressList grad,
-                              AddressList exp_avg,
-                              AddressList exp_avg_sq,
-                              AddressList param,
-                              SizeList sizes,
-                              int tensor_num,
+};  // struct ApplyAdam
+
+template<cnrtDataType_V2_t value, int depth>
+void apex_fused_adam_internal(const std::vector<std::array<void*, depth>>& data_ptr_list,
+                              const std::vector<int64_t>& sizes,
                               float beta1,
+                              float beta1_minus,
                               float beta2,
-			      float beta1_correction_recip,
-			      float beta2_correction_recip,
-			      float epsilon,
+                              float beta2_minus,
                               float epsilon_correction,
-			      float learning_rate,
                               float learning_rate_correction,
-                              int adam_mode,
+                              internal::ADAM_MODE mode,
                               float decay,
                               float decay_correction,
-                              cnrtDim3_t k_dim,
-                              cnrtFunctionType_t k_type,
                               cnrtQueue_t queue,
-                              cnrtDataType_V2_t cnrt_type) {
-  MLUMultiTensorAdam<<<k_dim, k_type, queue>>>(
-    grad, exp_avg, exp_avg_sq, param,
-    sizes, tensor_num, beta1, beta2,
-    beta1_correction_recip, beta2_correction_recip, epsilon,
-    epsilon_correction, learning_rate, learning_rate_correction,
-    adam_mode, decay, decay_correction, cnrt_type);
+                              cnrtFunctionType_t k_type,
+                              cnrtDim3_t k_dim) {
+  // Load fix num data to nram each time per tensor.
+  // Data order in nram:
+  // variable_nram, grad_nram, m_nram, v_nram
+  // and grad_nram space is reused as temp buffer, so can't restore
+  // grad_nram data to gdram. After each iterator, m_nram, v_nram,
+  // variable_nram data will be saved back to gdram.
+  // Restrict and Note:
+  // 1) Exp_avg_ptr and exp_avg_sq_ptr are float type, grad_ptr,
+  //    param_ptr are support bfloat16, float16 and float32 type;
+  // 2) All data on nram compute are float type, so need to convert
+  //    grad_ptr and param_ptr to float type before compute;
+  // 3) Grad_nram space is reused as temp buffer, so can't restore
+  //    grad_nram data to gdram;
+  // 4) Load variable_nram, grad_nram, m_nram, v_nram to nram each time per block,
+  //    After compute, variable_nram, m_nram, v_nram data will be saved back to gdram;
+  // 5) Each block contains element_num is less or equal to SIZE_PER_REGION_ADAM / sizeof(float);
+  constexpr int element_num = SIZE_PER_REGION_ADAM / sizeof(float);
+  constexpr int maxBlockNum = torch_mlu::bangcommon::depth_to_max_blockinfo[depth - 1];
+  using T = CNRTTypeValueToBangcCppType_t<value>;
+  using FULL_T = float;
+  using tupleTypeList = std::tuple<T, T, FULL_T, FULL_T>;
+  torch_mlu::bangcommon::multi_tensor_apply<maxBlockNum, depth, tupleTypeList>(
+              data_ptr_list, sizes, element_num, queue, k_type, k_dim,
+              ApplyAdam<tupleTypeList, maxBlockNum, depth>(),
+              beta1, beta1_minus, beta2, beta2_minus, epsilon_correction,
+              learning_rate_correction, mode, decay, decay_correction);
 }
+
+// add explicit instantiation for float, half, bfloat16_t
+template void apex_fused_adam_internal<cnrtDataType_V2_t::cnrtFloat, 4>(const std::vector<std::array<void*, 4>>& data_ptr_list,
+                              const std::vector<int64_t>& sizes,
+                              float beta1,
+                              float beta1_minus,
+                              float beta2,
+                              float beta2_minus,
+                              float epsilon_correction,
+                              float learning_rate_correction,
+                              internal::ADAM_MODE mode,
+                              float decay,
+                              float decay_correction,
+                              cnrtQueue_t queue,
+                              cnrtFunctionType_t k_type,
+                              cnrtDim3_t k_dim);
+
+template void apex_fused_adam_internal<cnrtDataType_V2_t::cnrtHalf, 4>(const std::vector<std::array<void*, 4>>& data_ptr_list,
+                              const std::vector<int64_t>& sizes,
+                              float beta1,
+                              float beta1_minus,
+                              float beta2,
+                              float beta2_minus,
+                              float epsilon_correction,
+                              float learning_rate_correction,
+                              internal::ADAM_MODE mode,
+                              float decay,
+                              float decay_correction,
+                              cnrtQueue_t queue,
+                              cnrtFunctionType_t k_type,
+                              cnrtDim3_t k_dim);
+
+template void apex_fused_adam_internal<cnrtDataType_V2_t::cnrtBfloat, 4>(const std::vector<std::array<void*, 4>>& data_ptr_list,
+                              const std::vector<int64_t>& sizes,
+                              float beta1,
+                              float beta1_minus,
+                              float beta2,
+                              float beta2_minus,
+                              float epsilon_correction,
+                              float learning_rate_correction,
+                              internal::ADAM_MODE mode,
+                              float decay,
+                              float decay_correction,
+                              cnrtQueue_t queue,
+                              cnrtFunctionType_t k_type,
+                              cnrtDim3_t k_dim);
 
 } // namespace ops
 } // namespace torch_mlu

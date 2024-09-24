@@ -170,6 +170,21 @@ torch_cuda_fn_list = [
     "reset_peak_memory_stats",
 ]
 
+torch_cuda_memory_fn_list = [
+    "mem_get_info",
+    "memory_stats",
+    "memory_summary",
+    "memory_allocated",
+    "max_memory_allocated",
+    "reset_max_memory_allocated",
+    "memory_reserved",
+    "max_memory_reserved",
+    "set_per_process_memory_fraction",
+    "memory_cached",
+    "max_memory_cached",
+    "reset_max_memory_cached",
+    "reset_peak_memory_stats",
+]
 
 # torch.Tensor.* that needs to replace device, selected from torch/_tensor_docs.py
 tensor_fn_list = [
@@ -189,10 +204,10 @@ module_fn_list = [
     "to_empty",
 ]
 
+
 default_cuda_args_list = [
     "torch.random.fork_rng",
 ]
-
 
 # handle profiler, set use_cuda=False
 def prepare_trace(self):
@@ -284,7 +299,6 @@ def replace_nccl_with_cncl(fn):
 
     return wrapper_fn
 
-
 # profiler
 # sort_by='*cuda*' -> sort_by='*mlu*'
 # use_cuda=True  ->  use_mlu=True
@@ -333,7 +347,6 @@ def replace_profiler_legacy(module, fn_name):
     fn = getattr(module, fn_name, None)
     if fn:
         setattr(module, fn_name, replace_profiler_legacy_args(fn))
-
 
 # dataloader
 # pin_memory_device=''->pin_memory_device='mlu'
@@ -388,7 +401,6 @@ def original_device_constructors():
     global old_device_constructors_
     return old_device_constructors_
 
-
 def replace_default_cuda_args_with_mlu(fn):
     @wraps(fn)
     def warp_fn(*args, **kwargs):
@@ -408,7 +420,6 @@ def replace_default_cuda_args_with_mlu(fn):
 
     return warp_fn
 
-
 def replace_default_cuda_args(func_name):
     components = func_name.split(".")
     module = torch
@@ -420,7 +431,6 @@ def replace_default_cuda_args(func_name):
     fn = getattr(module, fn_name, None)
     if fn is not None:
         setattr(module, fn_name, replace_default_cuda_args_with_mlu(fn))
-
 
 def apply_monkey_patches():
     # replace order MATTERS, this functions need to be replaced before torch_fn_list
@@ -438,6 +448,8 @@ def apply_monkey_patches():
     torch.cuda.nccl = torch.mlu.cncl
     torch.cuda.CUDAGraph = torch.mlu.MLUGraph
     replace_device(torch.cuda, torch_cuda_fn_list)
+    # TODO(PYTORCH-12705) : need to conside other api like: torch.cuda.memory.xxx
+    replace_device(torch.cuda.memory, torch_cuda_memory_fn_list)
 
     # torch.Tensor.*
     replace_device(torch.Tensor, tensor_fn_list)

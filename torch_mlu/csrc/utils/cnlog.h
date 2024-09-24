@@ -30,8 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <ATen/Tensor.h>
-#include <ATen/core/List.h>
+#include <vector>
+#include <string>
+#include <sstream>
 #include "utils/Export.h"
 
 const int FATAL = 3;

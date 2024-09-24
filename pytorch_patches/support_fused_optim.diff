@@ -1,0 +1,32 @@
+diff --git a/aten/src/ATen/native/ForeachUtils.h b/aten/src/ATen/native/ForeachUtils.h
+index c8139f0466..a825d429e5 100644
+--- a/aten/src/ATen/native/ForeachUtils.h
++++ b/aten/src/ATen/native/ForeachUtils.h
+@@ -126,6 +126,18 @@ bool check_fast_path_restrictions(
+     }
+   }
+ 
++  auto is_same_stride = [](const IntArrayRef& size,
++                           const IntArrayRef& left_stride,
++                           const IntArrayRef& right_stride) -> bool {
++    const size_t size_size = size.size();
++    for (const auto dim : c10::irange(size_size)) {
++      if (size[dim] == 1) continue;
++      if (left_stride[dim] != right_stride[dim]) {
++        return true;
++      }
++    }
++    return false;
++  };
+   // Check if corresponding tensors in tensor lists have the same sizes and
+   // strides.
+   for (const auto& tensor_list : tensorLists) {
+@@ -133,7 +145,7 @@ bool check_fast_path_restrictions(
+       if (tensorLists[0][j].sizes() != tensor_list[j].sizes()) {
+         return false;
+       }
+-      if (tensorLists[0][j].strides() != tensor_list[j].strides()) {
++      if (is_same_stride(tensorLists[0][j].sizes(), tensorLists[0][j].strides(), tensor_list[j].strides())) {
+         return false;
+       }
+     }
