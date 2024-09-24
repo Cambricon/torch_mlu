@@ -27,7 +27,8 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include <ATen/native/ForeachUtils.h>
+
+#include "aten/utils/foreach_check_utils.h"
 #include "aten/operators/cnnl/cnnl_kernel.h"
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 
@@ -40,7 +41,7 @@ void cnnl__foreach_copy_(
     const bool non_blocking) {
   // slow path
   at::native::check_foreach_api_restrictions(self, src);
-  if (!at::native::can_use_fast_route(
+  if (!torch_mlu::can_use_fast_route(
           self, src, /* does_op_promote_integer_inputs_to_float */ false)) {
     for (const auto i : c10::irange(self.size())) {
       self[i].copy_(src[i], non_blocking);

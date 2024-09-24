@@ -28,7 +28,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "ATen/native/ForeachUtils.h"
+#include "aten/utils/foreach_check_utils.h"
 #include "aten/operators/bang/common_utils.h"
 
 namespace torch_mlu {

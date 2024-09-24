@@ -51,7 +51,7 @@ void bang__fused_adam_(
     const std::optional<at::Tensor>& found_inf) {
   if (amsgrad) {
     TORCH_CHECK(
-        at::native::check_fast_path_restrictions(
+        torch_mlu::check_fast_path_restrictions(
             {params, grads, exp_avgs, exp_avg_sqs, max_exp_avg_sqs}),
         "params, grads, exp_avgs, exp_avg_sqs, and max_exp_avg_sqs must have same dtype, device, and layout");
     _fused_adam_common_mlu_impl_<internal::ADAM_MODE::adam, true>(
@@ -72,7 +72,7 @@ void bang__fused_adam_(
         found_inf);
   } else {
     TORCH_CHECK(
-        at::native::check_fast_path_restrictions(
+        torch_mlu::check_fast_path_restrictions(
             {params, grads, exp_avgs, exp_avg_sqs}),
         "params, grads, exp_avgs, and exp_avg_sqs must have same dtype, device, and layout");
     _fused_adam_common_mlu_impl_<internal::ADAM_MODE::adam, false>(
@@ -150,7 +150,7 @@ void bang__fused_adam_(
 
   if (amsgrad) {
     TORCH_CHECK(
-        at::native::check_fast_path_restrictions(
+        torch_mlu::check_fast_path_restrictions(
             {params, grads, exp_avgs, exp_avg_sqs, max_exp_avg_sqs}),
         "params, grads, exp_avgs, exp_avg_sqs, and max_exp_avg_sqs must have same dtype, device, and layout");
     _fused_adam_common_mlu_impl_<internal::ADAM_MODE::adam, true>(
@@ -171,7 +171,7 @@ void bang__fused_adam_(
         found_inf);
   } else {
     TORCH_CHECK(
-        at::native::check_fast_path_restrictions(
+        torch_mlu::check_fast_path_restrictions(
             {params, grads, exp_avgs, exp_avg_sqs}),
         "params, grads, exp_avgs, and exp_avg_sqs must have same dtype, device, and layout");
     _fused_adam_common_mlu_impl_<internal::ADAM_MODE::adam, false>(
