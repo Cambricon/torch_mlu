@@ -1,8 +1,8 @@
 diff --git a/torch/_inductor/triton_helpers.py b/torch/_inductor/triton_helpers.py
-index 4f7f3145542..5abb83e4eb6 100644
+index 4f7f3145542..fb697df85b3 100644
 --- a/torch/_inductor/triton_helpers.py
 +++ b/torch/_inductor/triton_helpers.py
-@@ -1,14 +1,24 @@
+@@ -1,14 +1,27 @@
  import triton
  import triton.language as tl
  
@@ -20,7 +20,10 @@ index 4f7f3145542..5abb83e4eb6 100644
 -    libdevice = tl.math
 -    math = tl
 +except ImportError:
-+    if hasattr(tl.extra, "cuda") and hasattr(tl.extra.cuda, "libdevice"):
++    if hasattr(tl.extra, "mlu") and hasattr(tl.extra.mlu, "libdevice"):
++        libdevice = tl.extra.mlu.libdevice
++        math = tl.math
++    elif hasattr(tl.extra, "cuda") and hasattr(tl.extra.cuda, "libdevice"):
 +        libdevice = tl.extra.cuda.libdevice
 +        math = tl.math
 +    elif hasattr(tl.extra, "intel") and hasattr(tl.extra.intel, "libdevice"):
