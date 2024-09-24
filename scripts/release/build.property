@@ -9,6 +9,10 @@
     "cndali": ["release", "0.10.0"],
     "cnnlextra": ["release", "1.10.3-1"],
     "mluops": ["release", "1.2.3-1"],
-    "benchmark": ["release", "0.7.1-torch1.13.1"]},
+    "benchmark": ["release", "0.7.1-torch1.13.1"]
+  },
+  "python_wheel_requires": {
+    "genesis": ["daily", "1.1.2-20240910_144533-e0b1744", "3.0.0"]
+  },
   "package_type": ["whl", "docker"]
 }

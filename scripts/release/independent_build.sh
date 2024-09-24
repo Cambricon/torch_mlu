@@ -18,6 +18,9 @@ CNNLExtra_VERSION=NULL
 CNCL_VERSION=NULL
 CNDALI_VERSION=NULL
 CNCV_VERSION=NULL
+GENESIS_TAG=NULL
+GENESIS_VERSION=NULL
+TRITON_VERSION=NULL
 MAGICMIND_VERSION=NULL
 OS_TYPE=NULL
 OS_VERSION=NULL
@@ -114,6 +117,13 @@ fetch_neuware_ver_func() {
   CNDALI_VERSION=$(cat "$ABS_DIR_PATH/build.property" | grep "cndali" | awk -F '"' '{print $6}')
   MLUOP_VERSION=$(cat "$ABS_DIR_PATH/build.property" | grep -w "mluop" | awk -F '"' '{print $6}')
   BENCHMARK_VERSION=benchmark_$(cat "$ABS_DIR_PATH/build.property" | grep "benchmark" | awk -F '"' '{print $6}')
+  GENESIS_VERSION=$(cat "$ABS_DIR_PATH/build.property" | grep "genesis" | awk -F '"' '{print $6}')
+  GENESIS_TAG=$(cat "$ABS_DIR_PATH/build.property" | grep "genesis" | awk -F '"' '{print $4}')
+  TRITON_VERSION=$(cat "$ABS_DIR_PATH/build.property" | grep "genesis" | awk -F '"' '{print $8}')
+  if [ $GENESIS_TAG != "release" ] ; then
+      GENESIS_TAG=$GENESIS_VERSION
+      GENESIS_VERSION=$(echo $GENESIS_TAG | cut -d '-' -f1)
+  fi
   # MAGICMIND_VERSION=$(cat "$ABS_DIR_PATH/build.property" | grep "magicmind" | awk -F '"' '{print $6}')
 }
 
@@ -367,6 +377,7 @@ install_docker_func(){
                       --build-arg cndali_version=${CNDALI_VERSION}                \
                       --build-arg python_version=${PYTHON_VERSION}                \
                       --build-arg py_suffix=${PY_SUFFIX}                          \
+		      --build-arg genesis_version=${GENESIS_VERSION}              \
                       -t ${IMAGE_DOCKER_NAME}:${TAG} -f ${DOCKER_FILE} ."
   echo "install_docker_func command: "$install_docker_cmd
   eval $install_docker_cmd

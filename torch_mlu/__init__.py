@@ -93,3 +93,5 @@ torch.version.mlu = None
 
 apply_storage_patch()
 apply_reductions_patch()
+
+from . import triton_kernel
