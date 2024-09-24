@@ -74,7 +74,7 @@ at::Tensor& cnnl_nonzero_internal(at::Tensor& out, const at::Tensor& self) {
   // call cnnlWhere to output the index of nonzero elements
   auto stream = getCurrentMLUStream();
   uint32_t num_nonzeros = 0;
-  TORCH_CNRT_CHECK(cnrtMemcpyAsync_V3(
+  TORCH_CNRT_CHECK(cnrtMemcpyAsync_V2(
       &num_nonzeros,
       num_true_ptr,
       sizeof(uint32_t),

@@ -93,7 +93,7 @@ void copy_to_cpu(at::Tensor& dst, const at::Tensor& src, bool non_blocking) {
   auto stream = getCurrentMLUStream();
   if (src_on_chip_type == dst.dtype()) {
     output_ptr = dst.data_ptr();
-    TORCH_CNRT_CHECK(cnrtMemcpyAsync_V3(
+    TORCH_CNRT_CHECK(cnrtMemcpyAsync_V2(
         output_ptr,
         src_impl->mlu_data_ptr(),
         descriptor_size,
@@ -107,7 +107,7 @@ void copy_to_cpu(at::Tensor& dst, const at::Tensor& src, bool non_blocking) {
     cast_src_cpu_tensor._set_conj(src.is_conj());
     cast_src_cpu_tensor._set_neg(src.is_neg());
     output_ptr = cast_src_cpu_tensor.data_ptr();
-    TORCH_CNRT_CHECK(cnrtMemcpyAsync_V3(
+    TORCH_CNRT_CHECK(cnrtMemcpyAsync_V2(
         output_ptr,
         src_impl->mlu_data_ptr(),
         descriptor_size,
@@ -186,7 +186,7 @@ void copy_from_cpu(at::Tensor& dst, const at::Tensor& src, bool non_blocking) {
     auto dst_impl = getMluTensorImpl(dst);
     void* dst_ptr = dst_impl->mlu_data_ptr();
     auto stream = getCurrentMLUStream(dst.device().index());
-    CNRT_CHECK(cnrtMemcpyAsync_V3(
+    CNRT_CHECK(cnrtMemcpyAsync_V2(
         dst_ptr,
         cast_cpu_ptr,
         cast_cpu_tensor.nbytes(),

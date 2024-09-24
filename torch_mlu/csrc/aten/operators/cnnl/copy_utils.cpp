@@ -18,10 +18,7 @@ void neg_conj_mlu_kernel(at::TensorIteratorBase& iter) {
   neg_mlu_kernel(iter);
 }
 
-void copy_device_to_device(
-    at::TensorIterator& iter,
-    bool non_blocking,
-    bool p2p_enabled) {
+void copy_device_to_device(at::TensorIterator& iter, bool non_blocking) {
   int64_t numel = iter.numel();
   // we can memcpy ther memory if both tensors have the same type AND both
   // tensors are contiguous after dimension coalescing and reordering.
@@ -33,7 +30,6 @@ void copy_device_to_device(
   c10::Device dst_device = iter.device(0);
   c10::Device src_device = iter.device(1);
   torch_mlu::mlu::MLUGuard device_guard(src_device);
-  auto copy_stream = getCurrentMLUStream(src_device.index());
   if (dst_device == src_device) {
     if (same_neg) {
       if (!same_conj) {
@@ -51,23 +47,26 @@ void copy_device_to_device(
     return;
   }
   if (memcpy_eligible && src_device != dst_device) {
-    void* dst = iter.data_ptr(0);
-    void* src = iter.data_ptr(1);
-    size_t size = numel * iter.element_size(0);
-    if (src != dst || src_device != dst_device) {
-      // Allocator implement the correct call
-      // (either cnrtMemcpyAsync or cnrtMemcpyPeerAsync)
-      TORCH_CNRT_CHECK(MLUCachingAllocator::memcpyAsync(
-          dst,
-          dst_device.index(),
-          src,
-          src_device.index(),
-          size,
-          copy_stream,
-          p2p_enabled));
-    }
-    if (!non_blocking)
-      copy_stream.synchronize();
+    // TODO(sifengyang): d2d copy is diffrent from native pytorch.
+    // 1. when MLUEvent and stream are not on the same device.
+    //    Wait and place operation can't be performed. See CNTOOLKIT-3871.
+    // 2. cnrtMemcpyAsync can't cross-card copy. See CNTOOLKIT-3872.
+    // 3. CNRT doesn't implement the same functions as
+    // cudaDeviceEnablePeerAccess.
+    //    See CNTOOLKIT-3873.
+    auto stream = getCurrentMLUStream();
+    stream.synchronize();
+    device_guard.set_device(dst_device);
+    stream = getCurrentMLUStream();
+    stream.synchronize();
+    auto dst_impl = getMluTensorImpl(iter.tensor(0));
+    void* dst = dst_impl->mlu_data_ptr();
+    void* src = getMluTensorImpl(iter.tensor(1))->mlu_data_ptr();
+    auto dst_dtype_onchip =
+        c10::scalarTypeToTypeMeta(cnnlType2ScalarType(getCnnlType(dst_impl)));
+    size_t size = iter.tensor(0).numel() * dst_dtype_onchip.itemsize();
+    // Perform the copy
+    TORCH_CNRT_CHECK(cnrtMemcpy(dst, src, size, cnrtMemcpyDevToDev));
     return;
   }
   auto dst_tensor = iter.tensor(0);

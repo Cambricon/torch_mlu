@@ -229,29 +229,6 @@ class TestCopyOp(TestCase):
 
     # @unittest.skip("not test")
     @testinfo()
-    def test_D2D_non_blocking(self):
-        shape = (64, 3, 1080, 129)
-        x = torch.randn(shape, dtype=torch.float)
-        mlu0 = x.to(device="mlu:0")
-        self.assertEqual(mlu0.device, torch.device("mlu:0"))
-        self.assertTensorsEqual(x, mlu0.cpu(), 0.0, use_MSE=True)
-        if torch.mlu.device_count() < 2:
-            return
-        y = torch.randn(shape, dtype=torch.float)
-        mlu1 = y.to(device="mlu:1")
-        mlu0[:, :, 3:128, :].copy_(mlu1[:, :, 3:128, :], non_blocking=True)
-        self.assertTensorsEqual(
-            mlu0[:, :, 3:128, :].cpu(), mlu1[:, :, 3:128, :].cpu(), 0.0, use_MSE=True
-        )
-
-        z_mlu1 = mlu0[:, :, 3:128, :].to(device="mlu:1", non_blocking=True)
-        self.assertEqual(z_mlu1.device, torch.device("mlu:1"))
-        self.assertTensorsEqual(
-            z_mlu1.cpu(), mlu0[:, :, 3:128, :].cpu(), 0.0, use_MSE=True
-        )
-
-    # @unittest.skip("not test")
-    @testinfo()
     def test_copy_stride_H2D(self):
         N = 1
         C = 3

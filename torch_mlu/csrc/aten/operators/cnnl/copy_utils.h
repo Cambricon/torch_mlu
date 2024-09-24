@@ -43,10 +43,7 @@ namespace torch_mlu {
 namespace ops {
 
 void direct_copy_kernel_mlu(at::TensorIterator& iter);
-void copy_device_to_device(
-    at::TensorIterator& iter,
-    bool non_blocking,
-    bool p2p_enabled);
+void copy_device_to_device(at::TensorIterator& iter, bool non_blocking);
 void conj_mlu_kernel(at::TensorIteratorBase& iter);
 void neg_mlu_kernel(at::TensorIteratorBase& iter);
 void neg_conj_mlu_kernel(at::TensorIteratorBase& iter);

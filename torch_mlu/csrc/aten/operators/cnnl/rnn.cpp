@@ -551,7 +551,7 @@ cnnl__cudnn_rnn_backward(
         input.options().dtype(at::kInt));
     int* dev_seq_lengths_ptr = dev_batch_sizes.data_ptr<int>();
     auto stream = getCurrentMLUStream();
-    CNRT_CHECK(cnrtMemcpyAsync_V3(
+    CNRT_CHECK(cnrtMemcpyAsync_V2(
         (void*)dev_seq_lengths_ptr,
         (void*)batch_sizes_int_ptr,
         copy_size,
