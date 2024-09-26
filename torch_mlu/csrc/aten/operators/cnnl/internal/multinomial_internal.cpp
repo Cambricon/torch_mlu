@@ -65,15 +65,16 @@ void cnnl_multinomial_internal(
   auto gen_impl = at::get_generator_or_default<MLUGeneratorImpl>(
       gen, getDefaultMLUGenerator());
   const int64_t nelem = output.numel();
+  cnnlRandRngType_t rng_type = CNNL_RAND_RNG_PHILOX;
   PhiloxMLUState rng_engine_inputs;
   int thread_num = 0;
-  TORCH_CNNL_CHECK(cnnlRandGetSimulateThreadNum(handle, &thread_num));
+  TORCH_CNNL_CHECK(
+      cnnlGetRandSimulateThreadNum_v2(handle, rng_type, &thread_num));
   auto counter_offset = calc_counter_offset(nelem, (int64_t)thread_num);
   {
     std::lock_guard<std::mutex> lock(gen_impl->mutex_);
     rng_engine_inputs = gen_impl->philox_mlu_state(counter_offset);
   }
-  cnnlRandRngType_t rng_type = CNNL_RAND_RNG_PHILOX;
 
   // The rows of input do not need to sum to one (in which case we use the
   // values as weights), but must be non-negative, finite and have a non-zero
