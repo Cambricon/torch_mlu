@@ -20,7 +20,7 @@ bool can_use_flash_attention(const sdp_params& params, bool debug) {
           check_all_tensors_on_device,
           check_tensor_shapes,
           check_for_attn_mask,
-          check_head_dim_size_flash,
+          check_head_dim_size,
           check_flash_causal_non_square_seqlens);
   for (auto& constraint : general_constraints) {
     if (!constraint(params, debug)) {
@@ -64,7 +64,7 @@ bool can_use_mem_efficient_attention(const sdp_params& params, bool debug) {
           check_runtime_disabled_mem_efficient,
           check_all_tensors_on_device,
           check_tensor_shapes,
-          check_head_dim_size_mem_efficient);
+          check_head_dim_size);
   for (auto& constraint : general_constraints) {
     if (!constraint(params, debug)) {
       return false;
