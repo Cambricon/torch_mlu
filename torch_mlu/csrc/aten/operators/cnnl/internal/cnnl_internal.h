@@ -1316,7 +1316,8 @@ at::Tensor& cnnl_masked_softmax_internal(
     at::Tensor& output,
     const at::Tensor& input,
     const at::Tensor& mask,
-    const int axis);
+    const int axis,
+    cnnlMaskedSoftmaxOp_t mode = CNNL_MASKED_SOFTMAX_ADD_MASK);
 
 at::Tensor& cnnl_masked_softmax_dropout_backward_internal(
     at::Tensor& diff_x,
