@@ -610,5 +610,6 @@ def apply_monkey_patches():
     torch.TypedStorage._share_cuda_ = torch.TypedStorage._share_mlu_
     torch.TypedStorage._new_shared_cuda = torch.TypedStorage._new_shared_mlu
 
+    torch.cuda.memory.CUDAPluggableAllocator = torch.mlu.memory.MLUPluggableAllocator
     for func_name in default_cuda_args_list:
         replace_default_cuda_args(func_name)

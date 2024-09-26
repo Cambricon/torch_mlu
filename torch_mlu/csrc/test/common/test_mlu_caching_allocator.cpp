@@ -5,12 +5,14 @@
 #include <thread>
 
 #include <ATen/Context.h>
+#include "ATen/ATen.h"
 #include "c10/util/Optional.h"
 #include "framework/core/caching_allocator.h"
 #include "framework/core/caching_allocator_config.h"
 #include "framework/core/device.h"
 #include "framework/core/device_utils.h"
 #include "framework/core/MLUStream.h"
+#include "python/MLUPluggableAllocator.h"
 
 namespace torch_mlu {
 
@@ -302,6 +304,55 @@ TEST(MLUCachingAllocatorTest, set_memory_fraction) {
   if (!exception_flag) {
     ASSERT_GE(1, 0); // True
   }
+}
+
+static int called_dummy_free_0 = 0;
+static int called_dummy_free_1 = 0;
+
+void* dummy_alloc_0(size_t size, int device, void* stream) {
+  return nullptr;
+}
+void dummy_free_0(void* data, size_t size, int device, void* stream) {
+  called_dummy_free_0++;
+}
+void dummy_free_1(void* data, size_t size, int device, void* stream) {
+  called_dummy_free_1++;
+}
+
+// Tests that data_ptrs have their respective deleters
+// when mixing allocators
+TEST(AllocatorTestMLU, test_pluggable_allocator_deleters) {
+  // Create a tensor with dummy_allocator_0, where dummy_free_0 is the deleter
+  auto dummy_allocator_0 =
+      torch_mlu::MLUPluggableAllocator::createCustomAllocator(
+          dummy_alloc_0, dummy_free_0);
+  torch_mlu::MLUCachingAllocator::allocator.store(dummy_allocator_0.get());
+  at::Tensor a = at::empty({0}, at::TensorOptions().device(at::kPrivateUse1));
+
+  // Create a tensor with dummy_allocator_1, where dummy_free_1 is the deleter
+  auto dummy_allocator_1 =
+      torch_mlu::MLUPluggableAllocator::createCustomAllocator(
+          dummy_alloc_0, dummy_free_1);
+  torch_mlu::MLUCachingAllocator::allocator.store(dummy_allocator_1.get());
+  at::Tensor b = at::empty({0}, at::TensorOptions().device(at::kPrivateUse1));
+
+  // Manually use a's deleter
+  auto* ctx = a.storage().data_ptr().get_context();
+  a.storage().data_ptr().get_deleter()(ctx);
+  a.storage().mutable_data_ptr().release_context();
+
+  // a's deleter is dummy_free_0
+  // dummy_free_0 should be called above, so called_dummy_free_0 should be 1
+  ASSERT_TRUE(called_dummy_free_0 == 1);
+
+  // Manually use b's deleter
+  ctx = b.storage().data_ptr().get_context();
+  b.storage().data_ptr().get_deleter()(ctx);
+  b.storage().mutable_data_ptr().release_context();
+
+  // b's deleter is dummy_free_1
+  // dummy_free_1 should be called above, so called_dummy_free_1 should be 1
+  ASSERT_TRUE(called_dummy_free_1 == 1);
 }
 
 } // namespace torch_mlu

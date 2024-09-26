@@ -70,6 +70,7 @@ void PythonVariableMethods(py::module& m) {
   THMPModule_methods(m.ptr());
   registerMLUDeviceProperties(m.ptr());
   registerMluAllocator(m.ptr());
+  registerMluPluggableAllocator(m.ptr());
   initCnpxBindings(m.ptr());
   THMPStorage_Sharing_methods(m.ptr());
   initC10dMlu(m.ptr());

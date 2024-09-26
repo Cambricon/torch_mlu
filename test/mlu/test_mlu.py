@@ -3,6 +3,7 @@ import sys
 import os
 import numpy as np
 import subprocess
+import ctypes
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")

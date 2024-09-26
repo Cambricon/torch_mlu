@@ -85,10 +85,10 @@ foreach(test_src ${GTEST_SRCS})
   add_executable(${test_name}  ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
                                ${test_src})
   if(USE_PYTHON)
-    target_link_libraries(${test_name} torch_mlu gtest_shared
+    target_link_libraries(${test_name} torch_mlu torch_mlu_python gtest_shared
                           torch_cpu c10 torch torch_python pthread ${DEPENDENT_LIBRARIES} ${PYTHON_LIBRARIES} dl util)
   else()
-    target_link_libraries(${test_name} torch_mlu gtest_shared
+    target_link_libraries(${test_name} torch_mlu torch_mlu_python gtest_shared
                           torch_cpu c10 torch pthread ${DEPENDENT_LIBRARIES} dl util)
   endif()
 endforeach()

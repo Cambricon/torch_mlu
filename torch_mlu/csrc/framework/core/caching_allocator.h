@@ -78,7 +78,7 @@ enum struct StatType : uint64_t {
 typedef std::array<Stat, static_cast<size_t>(StatType::NUM_TYPES)> StatArray;
 
 // Struct containing memory allocator summary statistics for a device.
-struct MemoryStats {
+struct DeviceStats {
   // COUNT: allocations requested by client code
   StatArray allocation;
   // COUNT: number of allocated segments from cnrtMalloc().
@@ -233,7 +233,18 @@ enum struct RecordContext {
 // Size pretty-printer
 TORCH_MLU_API std::string format_size(uint64_t size);
 
+using OutOfMemoryObserver = std::function<void(
+    int64_t device,
+    size_t allocated,
+    size_t device_total,
+    size_t device_free)>;
+
 using AllocatorTraceTracker = std::function<void(const TraceEntry&)>;
+
+struct ShareableHandle {
+  ptrdiff_t offset;
+  std::string handle;
+};
 
 class TORCH_MLU_API MLUAllocator : public c10::Allocator {
  public:
@@ -242,21 +253,23 @@ class TORCH_MLU_API MLUAllocator : public c10::Allocator {
   virtual void raw_delete(void* ptr) = 0;
   virtual void init(int device_count) = 0;
   virtual bool initialized() = 0;
-  virtual void setMemoryFraction(double fraction, int device) = 0;
+  virtual void setMemoryFraction(double fraction, c10::DeviceIndex device) = 0;
   virtual void emptyCache() = 0;
-  virtual void cacheInfo(int dev_id, size_t* largestChunk) = 0;
+  virtual void cacheInfo(c10::DeviceIndex dev_id, size_t* largestChunk) = 0;
   virtual void* getBaseAllocation(void* ptr, size_t* size) = 0;
   virtual void recordStream(const c10::DataPtr& ptr, MLUStream stream) = 0;
-  virtual MemoryStats getMemoryStats(int device) = 0;
-  virtual void resetAccumulatedStats(int device) = 0;
-  virtual void resetPeakStats(int device) = 0;
+  virtual DeviceStats getDeviceStats(c10::DeviceIndex device) = 0;
+  virtual void resetAccumulatedStats(c10::DeviceIndex device) = 0;
+  virtual void resetPeakStats(c10::DeviceIndex device) = 0;
   virtual SnapshotInfo snapshot() = 0;
   virtual void beginAllocateToPool(
-      int device,
+      c10::DeviceIndex device,
       MempoolId_t mempool_id,
       std::function<bool(cnrtQueue_t)> filter) = 0;
-  virtual void endAllocateToPool(int device, MempoolId_t mempool_id) = 0;
-  virtual void releasePool(int device, MempoolId_t mempool_id) = 0;
+  virtual void endAllocateToPool(
+      c10::DeviceIndex device,
+      MempoolId_t mempool_id) = 0;
+  virtual void releasePool(c10::DeviceIndex device, MempoolId_t mempool_id) = 0;
   // returns true if the allocated blocks are equal to expected live allocations
   virtual bool checkPoolLiveAllocations(
       int device,
@@ -290,7 +303,9 @@ class TORCH_MLU_API MLUAllocator : public c10::Allocator {
   // callback.
   virtual void attachAllocatorTraceTracker(AllocatorTraceTracker tracker) = 0;
 
-  virtual void enablePeerAccess(int dev, int dev_to_access) = 0;
+  virtual void enablePeerAccess(
+      c10::DeviceIndex dev,
+      c10::DeviceIndex dev_to_access) = 0;
 
   // memory not allocated from cnrtMalloc cannot be copied
   // across devices using cnrtMemcpyAsync if peer to peer access is disabled.
@@ -312,10 +327,10 @@ class TORCH_MLU_API MLUAllocator : public c10::Allocator {
       cnrtQueue_t stream,
       bool p2p_enabled) = 0;
   virtual std::shared_ptr<AllocatorState> getCheckpointState(
-      int device,
+      c10::DeviceIndex device,
       MempoolId_t id) = 0;
   virtual CheckpointDelta setCheckpointPoolState(
-      int device,
+      c10::DeviceIndex device,
       std::shared_ptr<AllocatorState> pps) = 0;
   virtual std::string name() = 0;
 };
@@ -325,7 +340,7 @@ class TORCH_MLU_API MLUAllocator : public c10::Allocator {
 // Atomic loads on x86 are just normal loads,
 // (atomic stores are different), so reading this value
 // is no different than loading a pointer.
-// extern std::atomic<MLUAllocator*> allocator;
+TORCH_MLU_API extern std::atomic<MLUAllocator*> allocator;
 
 TORCH_MLU_API MLUAllocator* get();
 
@@ -366,8 +381,8 @@ inline void recordStream(const c10::DataPtr& dataPtr, MLUStream stream) {
   return get()->recordStream(dataPtr, stream);
 }
 
-inline MemoryStats getMemoryStats(int device) {
-  return get()->getMemoryStats(device);
+inline DeviceStats getDeviceStats(int device) {
+  return get()->getDeviceStats(device);
 }
 
 inline void resetAccumulatedStats(int device) {

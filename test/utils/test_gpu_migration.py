@@ -564,6 +564,13 @@ class TestGpuMigration(expecttest.TestCase):
         prof = torch.autograd.profiler_legacy.profile(use_cuda=True)
         self.assertEqual(prof.profiler_kind, torch.autograd.ProfilerState.PRIVATEUSE1)
 
+    @testinfo()
+    def test_pluggable_alloc(self):
+        self.assertEqual(
+            torch.cuda.memory.CUDAPluggableAllocator,
+            torch.mlu.memory.MLUPluggableAllocator,
+        )
+
 
 if __name__ == "__main__":
     run_tests()
