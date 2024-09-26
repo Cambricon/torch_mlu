@@ -32,7 +32,8 @@ void fused_dropout_internal(
   cnnlRandRngType_t rng_type = CNNL_RAND_RNG_PHILOX;
   PhiloxMLUState rng_engine_inputs;
   int thread_num = 0;
-  TORCH_CNNL_CHECK(cnnlRandGetSimulateThreadNum(handle, &thread_num));
+  TORCH_CNNL_CHECK(
+      cnnlGetRandSimulateThreadNum_v2(handle, rng_type, &thread_num));
   auto counter_offset = calc_counter_offset(nelem, (int64_t)thread_num);
   {
     std::lock_guard<std::mutex> lock(gen_impl->mutex_);

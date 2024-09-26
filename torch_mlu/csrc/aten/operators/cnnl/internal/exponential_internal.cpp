@@ -55,15 +55,16 @@ void cnnl_exponential_internal(
   auto gen_impl = at::get_generator_or_default<MLUGeneratorImpl>(
       generator, getDefaultMLUGenerator());
   const int64_t nelem = output.numel();
+  cnnlRandRngType_t rng_type = CNNL_RAND_RNG_PHILOX;
   PhiloxMLUState rng_engine_inputs;
   int thread_num = 0;
-  TORCH_CNNL_CHECK(cnnlRandGetSimulateThreadNum(handle, &thread_num));
+  TORCH_CNNL_CHECK(
+      cnnlGetRandSimulateThreadNum_v2(handle, rng_type, &thread_num));
   auto counter_offset = calc_counter_offset(nelem, (int64_t)thread_num);
   {
     std::lock_guard<std::mutex> lock(gen_impl->mutex_);
     rng_engine_inputs = gen_impl->philox_mlu_state(counter_offset);
   }
-  const cnnlRandRngType_t rng_type = CNNL_RAND_RNG_PHILOX;
 
   if (rng_engine_inputs.captured_) {
     // TODO(PYTORCH-9647): support bf16 and use accumulation type like cuda
