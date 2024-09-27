@@ -6,7 +6,7 @@ import torch_mlu
 
 import triton
 import triton.language as tl
-from .libentry import libentry, get_total_core_num
+from .utils import get_total_core_num
 
 
 # The split is done on the lowest dimension, so there is no limit on the qkv size.
@@ -48,7 +48,6 @@ def config_prune(configs, named_args, **kwargs):
     return pruned_configs
 
 
-@libentry()
 @triton.autotune(
     configs=get_autotune_config(),
     key=["T", "D", "num_heads", "dim_per_head"],
