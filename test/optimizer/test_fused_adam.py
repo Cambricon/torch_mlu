@@ -353,18 +353,66 @@ class TestFusedAdam(TestFusedOptimizer):
     @unittest.skipIf(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
-    @largeTensorTest("44GB")
+    @largeTensorTest("78GB")
     def test_fused_adam_large(self):
-        tensor = torch.clamp(
-            torch.rand(2147483660).to(dtype=torch.float, device="mlu"),
-            min=0.01,
-            max=100.0,
-        )
-        ref_param = [torch.nn.Parameter(tensor.clone())]
-        fused_optim = self.fused_optim(ref_param, **self.options_list[0])
-        for i in range(self.iters):
-            ref_param[0].grad = torch.rand_like(ref_param[0])
-            fused_optim.step()
+        # add custom cases
+        size_list = [
+            (
+                23986176,
+                10214400,
+                12278784,
+                11993088,
+                23986176,
+                44445696,
+                11983872,
+                47972352,
+                11003088,
+                23986176,
+                10214400,
+                11983872,
+                23986176,
+                10214400,
+                12278784,
+                11993088,
+                23986176,
+                44445696,
+                11983872,
+                47972352,
+                11003088,
+                23986176,
+                10214400,
+                11983872,
+                11003088,
+                23986176,
+                10214400,
+            ),
+            (11003088, 23986176, 10214400, 11983872),
+            (16100, 12288),
+            (12288),
+            (2147483660),
+        ]
+        num_list = [27, 4, 26, 89, 1]
+        repeat_list = [False, False, True, True]
+        for size, num, repeat in zip(size_list, num_list, repeat_list):
+            tensors = []
+            for i in range(num):
+                if repeat is True:
+                    tensors.append(
+                        torch.nn.Parameter(
+                            torch.rand(size, dtype=torch.float, device="mlu")
+                        )
+                    )
+                else:
+                    tensors.append(
+                        torch.nn.Parameter(
+                            torch.rand(size[i], dtype=torch.float, device="mlu")
+                        )
+                    )
+            fused_optim = self.fused_optim(tensors, **self.options_list[0])
+            for i in range(self.iters):
+                for tensor in tensors:
+                    tensor.grad = torch.rand_like(tensor)
+                fused_optim.step()
 
 
 if __name__ == "__main__":
