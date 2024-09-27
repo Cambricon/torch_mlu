@@ -115,6 +115,7 @@ class KernelEvent(DurationEvent):
         )
         self.tasktopo = self.args.get("tasktopo")
         self.tasktopo_node = self.args.get("tasktopo_node")
+        self.tasktopo_external_id = self.args.get("tasktopo_external_id")
         self.tasktopo_external_op = self.args.get("tasktopo_external_op")
         self.pmus = self.args.get("pmus", {})
 

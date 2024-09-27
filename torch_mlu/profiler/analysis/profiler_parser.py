@@ -88,9 +88,9 @@ class ProfileData:
         PathManager.make_dir_safety(output_dir)
         return output_dir
 
-    def process(self):
+    def process(self, id2opinfo: Dict = {}):
         parser = EventParser()
-        self.tid2tree, self.pl_tid2tree = parser.parse(self.events)
+        self.tid2tree, self.pl_tid2tree = parser.parse(self.events, id2opinfo)
         ops_details = []
         kerners_details = []
         l2_cache = []

@@ -67,6 +67,7 @@ TESTS = [
     "profiler/test_profiler_with_config",
     "profiler/test_profiler_record_all",
     "profiler/test_profiler_with_mlugraph",
+    "profiler/test_profiler_with_mlugraph_and_record_shapes.py",
     "profiler/test_profiler_with_pmu_and_mlugraph",
     "mlu/test_caching_allocator",
     "cpp_extension/test_mlu_extension",

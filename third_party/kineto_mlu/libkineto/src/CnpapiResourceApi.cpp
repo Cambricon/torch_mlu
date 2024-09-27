@@ -56,9 +56,9 @@ void CnpapiResourceApi::processTaskTopoData(
     const std::unordered_map<int64_t, const ITraceActivity*>& cpu_activities) {
   if (enabled_) {
     for (const auto& node_to_ext_id : tasktopo_node_to_external_id_) {
-      tasktopo_entity_to_op_name_.emplace(
+      tasktopo_entity_to_external_op_.emplace(
           getEntityNodeId(node_to_ext_id.first),
-          cpu_activities.at(node_to_ext_id.second)->name());
+          std::make_pair(node_to_ext_id.second, cpu_activities.at(node_to_ext_id.second)->name()));
     }
     tasktopo_node_to_external_id_.clear();
     tasktopo_to_entity_.clear();

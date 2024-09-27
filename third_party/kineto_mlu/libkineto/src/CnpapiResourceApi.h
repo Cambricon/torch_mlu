@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <string>
 #include <stack>
@@ -36,12 +37,12 @@ class CnpapiResourceApi {
     void processTaskTopoData(
       const std::unordered_map<int64_t, const ITraceActivity*>& cpu_activities);
 
-    std::string getExternalOpName(uint64_t entity_node_id) {
-        if (enabled_ && tasktopo_entity_to_op_name_.find(entity_node_id)
-                        != tasktopo_entity_to_op_name_.end()) {
-          return tasktopo_entity_to_op_name_.at(entity_node_id);
+    std::pair<int64_t, std::string> getExternalIdAndName(uint64_t entity_node_id) {
+        if (enabled_ && tasktopo_entity_to_external_op_.find(entity_node_id)
+                        != tasktopo_entity_to_external_op_.end()) {
+          return tasktopo_entity_to_external_op_.at(entity_node_id);
         } else {
-          return std::string();
+          return std::make_pair(int64_t(0), std::string());
         }
     }
 
@@ -68,7 +69,8 @@ class CnpapiResourceApi {
     std::stack<int64_t> external_id_stack_;
     std::unordered_map<uint64_t, int64_t> tasktopo_node_to_external_id_;
     std::unordered_map<uint32_t, uint32_t> tasktopo_to_entity_;
-    std::unordered_map<uint64_t, std::string> tasktopo_entity_to_op_name_;
+    // tasktopo entity node id -> (external id, external op name)
+    std::unordered_map<uint64_t, std::pair<int64_t, std::string>> tasktopo_entity_to_external_op_;
 };
 
 struct CnpapiResourceCallbackRegistration {

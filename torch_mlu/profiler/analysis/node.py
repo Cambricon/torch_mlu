@@ -152,7 +152,7 @@ class OperatorNode(HostNode):
                     merged_runtimes.append(rt)
         return merged_runtimes
 
-    def fill_stats(self):
+    def fill_stats(self, id2opinfo: Dict = {}):
         # TODO: Replace recursive by using a stack, in case of too deep callstack.
         self.children.sort(key=lambda x: (x.start_time, -x.end_time))
         self.runtimes.sort(
@@ -162,9 +162,9 @@ class OperatorNode(HostNode):
         )
 
         for child in self.children:
-            child.fill_stats()
+            child.fill_stats(id2opinfo)
         for rt in self.runtimes:
-            rt.fill_stats(self)
+            rt.fill_stats(self, id2opinfo)
 
         self.self_host_duration = self.end_time - self.start_time
         for child in self.children:
@@ -305,7 +305,7 @@ class RuntimeNode(HostNode):
         # show kernel's op_node name by the topmost rt_node name rather than 'CallTreeRoot'.
         self.parent_rt_node = parent_rt_node
 
-    def fill_stats(self, op_node: OperatorNode = None):
+    def fill_stats(self, op_node: OperatorNode = None, id2opinfo: Dict = {}):
         if self.device_nodes:
             for device_node in self.device_nodes:
                 if op_node:
@@ -313,6 +313,16 @@ class RuntimeNode(HostNode):
                         if device_node.tasktopo_external_op:
                             # for MLUGraph kernels, use op name in capture stage
                             device_node.op_name = device_node.tasktopo_external_op
+                            # set op's input information to device node
+                            linked_op_info = id2opinfo.get(
+                                device_node.tasktopo_external_id, None
+                            )
+                            if linked_op_info is not None:
+                                device_node.op_input_shape = linked_op_info[0]
+                                device_node.op_input_type = linked_op_info[1]
+                            else:
+                                # Setting shape to '[]' other None is to align with OperatorEvent's behavior
+                                device_node.op_input_shape = []
                         else:
                             # use the topmost runtime node's name to instead 'CallTreeRoot'
                             device_node.op_name = self.name
@@ -324,6 +334,8 @@ class RuntimeNode(HostNode):
                                 parent = parent.parent_rt_node
                     else:
                         device_node.op_name = op_node.name
+                        device_node.op_input_shape = op_node.input_shape
+                        device_node.op_input_type = op_node.input_type
                 device_duration = device_node.end_time - device_node.start_time
                 self.device_duration += device_duration
 
@@ -374,12 +386,15 @@ class DeviceNode(BaseNode):
         dim: Optional[List[int]] = None,
         tasktopo: int = None,
         tasktopo_node: int = None,
+        tasktopo_external_id: int = None,
         tasktopo_external_op: str = None,
         pmus: Dict = {},
         **kwargs
     ):
         super().__init__(**kwargs)
         self.op_name = None
+        self.op_input_shape = None
+        self.op_input_type = None
         self.device_id = device_id
         self.stream_id = stream_id
         self.context_id = context_id
@@ -387,6 +402,7 @@ class DeviceNode(BaseNode):
         self.dim = dim
         self.tasktopo = tasktopo
         self.tasktopo_node = tasktopo_node
+        self.tasktopo_external_id = tasktopo_external_id
         self.tasktopo_external_op = tasktopo_external_op
         self.pmus_data = []
         self.utils_data = []
@@ -498,6 +514,8 @@ class DeviceNode(BaseNode):
                 "Correlation Id",
                 "Kernel Name",
                 "Operator",
+                "Operator Input Shapes",
+                "Operator Input Type",
                 "Start Time",
                 "Duration(us)",
                 "External Id",
@@ -521,6 +539,8 @@ class DeviceNode(BaseNode):
                 self.correlation_id,
                 self.name,
                 self.op_name,
+                self.op_input_shape,
+                self.op_input_type,
                 self.start_time,
                 round(self.end_time - self.start_time, 3),
                 self.external_id,
@@ -569,6 +589,7 @@ class DeviceNode(BaseNode):
             kwargs["dim"] = event.dim
             kwargs["tasktopo"] = event.tasktopo
             kwargs["tasktopo_node"] = event.tasktopo_node
+            kwargs["tasktopo_external_id"] = event.tasktopo_external_id
             kwargs["tasktopo_external_op"] = event.tasktopo_external_op
             kwargs["pmus"] = event.pmus
         return cls(**kwargs)

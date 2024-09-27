@@ -579,7 +579,7 @@ class TestProfiler(TestCase):
                         dname, "cambricon_output", csv_dir, kernel_details_csv_file
                     )
                 )
-                self.assertEqual(header_csv1[5], "Duration(us)")
+                self.assertEqual(header_csv1[7], "Duration(us)")
                 kernel_statistic_csv_file = "kernel_statistic.csv"
                 self.assertTrue(kernel_statistic_csv_file in csv_file_list)
                 (
@@ -764,6 +764,89 @@ class TestProfiler(TestCase):
                         )
                     if header[i] == "Operator":
                         self.assertTrue(line1[i] == "cnnlMultiTensorScale")
+
+    @testinfo()
+    def test_profiler_generate_csv_files_with_record_shapes(self):
+        with TemporaryDirectoryName() as dname:
+            with profile(
+                activities=[
+                    torch.profiler.ProfilerActivity.CPU,
+                    torch.profiler.ProfilerActivity.MLU,
+                ],
+                record_shapes=True,
+                on_trace_ready=torch_mlu.profiler.tensorboard_trace_handler(dname),
+            ) as p:
+                self.payload(use_mlu=True)
+
+            self.assertTrue(os.path.exists(dname))
+
+            for csv_dir in os.listdir(os.path.join(dname, "cambricon_output")):
+                csv_file_list = []
+                for csv_file in os.listdir(
+                    os.path.join(dname, "cambricon_output", csv_dir)
+                ):
+                    self.assertTrue(csv_file.endswith("csv"))
+                    self.assertTrue(
+                        self.check_csv_file(
+                            os.path.join(dname, "cambricon_output", csv_dir, csv_file)
+                        )
+                    )
+                    csv_file_list.append(csv_file)
+
+                # check 'Input Shapes' and 'Input Type' in operator_details.csv
+                operator_details_csv_file = "operator_details.csv"
+                self.assertTrue(operator_details_csv_file in csv_file_list)
+                with open(
+                    os.path.join(
+                        dname, "cambricon_output", csv_dir, operator_details_csv_file
+                    ),
+                    "r",
+                    newline="",
+                ) as csvfile1:
+                    reader = csv.reader(csvfile1)
+                    # ['Thread Id', 'Name', 'Input Shapes', 'Input Type', ... ]
+                    header = next(reader)
+                    self.assertEqual(header[1], "Name")
+                    self.assertEqual(header[2], "Input Shapes")
+                    self.assertEqual(header[3], "Input Type")
+                    for row in reader:
+                        if row[1] == "aten::mm":
+                            self.assertEqual(row[2], "[[10, 10], [10, 10]]")
+                            self.assertEqual(row[3], "['float', 'float']")
+                        elif row[1] == "aten::add":
+                            self.assertEqual(row[2], "[[10, 10], [10, 10], []]")
+                            self.assertEqual(row[3], "['float', 'float', 'Scalar']")
+                        else:
+                            assert row[2] != "[]", "Input Shapes empty!"
+                            assert row[3] != "", "Input Type empty!"
+
+                # check 'Operator Input Shapes' and 'Operator Input Type' in kernel_details.csv
+                kernel_details_csv_file = "kernel_details.csv"
+                self.assertTrue(kernel_details_csv_file in csv_file_list)
+                with open(
+                    os.path.join(
+                        dname, "cambricon_output", csv_dir, kernel_details_csv_file
+                    ),
+                    "r",
+                    newline="",
+                ) as csvfile2:
+                    reader = csv.reader(csvfile2)
+                    # ['Thread Id', 'Correlation Id', 'Kernel Name', 'Operator',
+                    # 'Operator Input Shapes', 'Operator Input Type', ... ]
+                    header = next(reader)
+                    self.assertEqual(header[3], "Operator")
+                    self.assertEqual(header[4], "Operator Input Shapes")
+                    self.assertEqual(header[5], "Operator Input Type")
+                    for row in reader:
+                        if row[3] == "aten::mm":
+                            self.assertEqual(row[4], "[[10, 10], [10, 10]]")
+                            self.assertEqual(row[5], "['float', 'float']")
+                        elif row[3] == "aten::add":
+                            self.assertEqual(row[4], "[[10, 10], [10, 10], []]")
+                            self.assertEqual(row[5], "['float', 'float', 'Scalar']")
+                        else:
+                            assert row[4] != "[]", "Operator Input Shapes empty!"
+                            assert row[5] != "", "Operator Input Type empty!"
 
 
 if __name__ == "__main__":

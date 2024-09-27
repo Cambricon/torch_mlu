@@ -29,9 +29,10 @@ class OpTreeBuilder:
         tid2list: Dict[int, List[OperatorNode]],
         tid2zero_rt_list: Dict[int, List[RuntimeNode]],
         staled_device_nodes: List[DeviceNode],
+        id2opinfo: Dict = {},
     ):
         self.tid2tree = self._build_tree(
-            tid2list, tid2zero_rt_list, staled_device_nodes
+            tid2list, tid2zero_rt_list, staled_device_nodes, id2opinfo
         )
         return self.tid2tree
 
@@ -40,6 +41,7 @@ class OpTreeBuilder:
         tid2list: Dict[int, List[OperatorNode]],
         tid2zero_rt_list,
         staled_device_nodes,
+        id2opinfo: Dict = {},
     ):
         tid2tree = {}
 
@@ -47,14 +49,18 @@ class OpTreeBuilder:
             zero_rt_list = tid2zero_rt_list[tid] if tid in tid2zero_rt_list else []
             # Note that when 2 start_time are equal, the one with bigger end_time should be ahead of the other.
             op_list.sort(key=lambda x: (x.start_time, -x.end_time))
-            root_node = self._build_tree_internal(op_list, zero_rt_list, tid, [])
+            root_node = self._build_tree_internal(
+                op_list, zero_rt_list, tid, [], id2opinfo
+            )
             tid2tree[int(tid)] = root_node
 
         # Some threads not created by PyTorch, link their runtime events to a new
         # CallTreeRoot to gather their kernels.
         for tid, op_list in tid2zero_rt_list.items():
             if tid not in tid2tree:
-                tid2tree[int(tid)] = self._build_tree_internal([], op_list, tid, [])
+                tid2tree[int(tid)] = self._build_tree_internal(
+                    [], op_list, tid, [], id2opinfo
+                )
 
         # The staled_device_nodes contain kernels that cannot find the launch api, usually the kernel of the previous step.
         # Set condition always to False to skip saving staled device nodes to csv file. They are not launched by current step.
@@ -66,13 +72,21 @@ class OpTreeBuilder:
         return tid2tree
 
     def _build_tree_internal(
-        self, host_node_list, zero_rt_list, tid, staled_device_nodes
+        self,
+        host_node_list,
+        zero_rt_list,
+        tid,
+        staled_device_nodes,
+        id2opinfo: Dict = {},
     ):
         """host_node_list: list of OperatorNode and ProfilerStepNode.
         zero_rt_list: list of RuntimeNode with external_id=0."""
 
         def build_tree_relationship(
-            host_node_list: Iterable[OperatorNode], zero_rt_list, staled_device_nodes
+            host_node_list: Iterable[OperatorNode],
+            zero_rt_list,
+            staled_device_nodes,
+            id2opinfo: Dict = {},
         ):
             dummpy_rt: List[RuntimeNode] = []
             if staled_device_nodes:
@@ -89,7 +103,7 @@ class OpTreeBuilder:
                         device_nodes=staled_device_nodes,
                     )
                 )
-                dummpy_rt[0].fill_stats()
+                dummpy_rt[0].fill_stats(id2opinfo)
 
             # We build tree relationship also for runtime nodes with external_id=0, in order to
             # show kernel's op_node name by the topmost rt_node name rather than 'CallTreeRoot'.
@@ -189,10 +203,10 @@ class OpTreeBuilder:
                 remove_dup_nodes(child)
 
         root_node = build_tree_relationship(
-            host_node_list, zero_rt_list, staled_device_nodes
+            host_node_list, zero_rt_list, staled_device_nodes, id2opinfo
         )
         remove_dup_nodes(root_node)
-        root_node.fill_stats()
+        root_node.fill_stats(id2opinfo)
 
         # replace the root_node start_time/end_time
         root_node.start_time = next(

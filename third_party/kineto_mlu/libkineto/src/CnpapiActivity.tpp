@@ -8,6 +8,7 @@
 #include "CnpapiActivity.h"
 
 #include <algorithm>
+#include <utility>
 
 #include "ApiListCommon.h"
 #include "MluDeviceProperties.h"
@@ -34,21 +35,23 @@ inline void MluActivity<T>::log(ActivityLogger& logger) const {
 }
 
 template<>
-inline const std::string MluActivity<KernelRecord>::appendTasktopoOpNameMetadataJson() const {
-  std::string op_name;
+inline const std::string MluActivity<KernelRecord>::appendTasktopoExternalOpMetadataJson() const {
+  std::pair<int64_t, std::string> id_name;
   if (linked_ == nullptr && raw().tasktopo_node_id > 0) {
-    op_name = CnpapiResourceApi::singleton()
-        .getExternalOpName(raw().tasktopo_node_id);
+    id_name = CnpapiResourceApi::singleton()
+        .getExternalIdAndName(raw().tasktopo_node_id);
   }
-  if (op_name.empty()) {
+  if (id_name.second.empty()) {
     return "";
   }
-  std::ostringstream op_name_meta_data;
+  std::ostringstream op_id_name_meta_data;
   // need 6 spaces for indentation to align with other metadata
-  op_name_meta_data << ",\n      \"tasktopo_external_op\": \""
-                    << op_name
+  op_id_name_meta_data << ",\n      \"tasktopo_external_id\": "
+                    << id_name.first
+                    << ",\n      \"tasktopo_external_op\": \""
+                    << id_name.second
                     << "\"";
-  return op_name_meta_data.str();
+  return op_id_name_meta_data.str();
 }
 
 template<>
@@ -68,7 +71,7 @@ inline const std::string MluActivity<KernelRecord>::metadataJson() const {
       kernel.dimx, kernel.dimy, kernel.dimz,
       kernel.tasktopo_id,
       kernel.tasktopo_node_id,
-      appendTasktopoOpNameMetadataJson(),
+      appendTasktopoExternalOpMetadataJson(),
       appendPmuMetadataJson());
   // clang-format on
 }

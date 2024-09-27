@@ -3,6 +3,7 @@
 # -------------------------------------------------------------------------
 from collections import defaultdict
 from enum import IntEnum
+import os
 from typing import Dict, Iterable, List
 
 from .node import (
@@ -198,14 +199,18 @@ class EventParser(NodeParserMixin):
     def __init__(self):
         super().__init__()
 
-    def parse(self, events: Iterable[BaseEvent]) -> Dict[int, List[OperatorNode]]:
+    def parse(
+        self, events: Iterable[BaseEvent], id2opinfo: Dict = {}
+    ) -> Dict[int, List[OperatorNode]]:
         tid2list, tid2zero_rt_list, staled_device_nodes, pl_tid2list = self.parse_nodes(
             events
         )
 
         builder = OpTreeBuilder()
-        tid2tree = builder.build_tree(tid2list, tid2zero_rt_list, staled_device_nodes)
-        pl_tid2tree = builder.build_tree(pl_tid2list, {}, [])
+        tid2tree = builder.build_tree(
+            tid2list, tid2zero_rt_list, staled_device_nodes, id2opinfo
+        )
+        pl_tid2tree = builder.build_tree(pl_tid2list, {}, [], {})
 
         return tid2tree, pl_tid2tree
 

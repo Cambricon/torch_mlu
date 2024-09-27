@@ -20,10 +20,11 @@ def get_kernel_total_info_from_kernel_details_csv(csv_file):
     kernel_count = 0
     with open(csv_file, "r", newline="") as csvfile:
         reader = csv.reader(csvfile)
-        # ['Thread Id', 'Correlation Id', 'Kernel Name', 'Operator', 'Start Time', 'Duration(us)', ... ]
+        # ['Thread Id', 'Correlation Id', 'Kernel Name', 'Operator',
+        # 'Operator Input Shapes', 'Operator Input Type', 'Start Time', 'Duration(us)', ... ]
         header = next(reader)
         for row in reader:
-            device_time += float(row[5])
+            device_time += float(row[7])
             kernel_count += 1
 
     return device_time, kernel_count, header

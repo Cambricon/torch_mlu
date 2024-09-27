@@ -136,7 +136,7 @@ struct MluActivity : public CnpapiActivity<T> {
     fmt_pmu_data << "\n      }";
     return fmt_pmu_data.str();
   }
-  const std::string appendTasktopoOpNameMetadataJson() const;
+  const std::string appendTasktopoExternalOpMetadataJson() const;
   std::vector<CnpapiPmuData>* pmuData_;
 };
 

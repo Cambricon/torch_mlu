@@ -10,7 +10,7 @@ from ._pattern_matcher import (
     MatMulDimInFP16Pattern,
     report_all_anti_patterns
 )
-from .profiler import emit_cnpx, tensorboard_trace_handler
+from .profiler import emit_cnpx, insert_hook_for_profiler, tensorboard_trace_handler
 
 torch.autograd.profiler.__setattr__("EventList", EventList)
 torch.autograd.profiler.__setattr__("FunctionEvent", FunctionEvent)
@@ -22,3 +22,5 @@ torch.profiler._pattern_matcher.__setattr__("ExtraMLUCopyPattern", ExtraMLUCopyP
 torch.profiler._pattern_matcher.__setattr__("FP32MatMulPattern", FP32MatMulPattern)
 torch.profiler._pattern_matcher.__setattr__("MatMulDimInFP16Pattern", MatMulDimInFP16Pattern)
 torch.profiler._pattern_matcher.__setattr__("report_all_anti_patterns", report_all_anti_patterns)
+
+insert_hook_for_profiler()

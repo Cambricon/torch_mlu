@@ -1,7 +1,9 @@
+import os
+
 import torch
 import torch_mlu
 
-from typing import Optional
+from typing import Optional, Dict
 from torch._C._profiler import _ExperimentalConfig
 
 from torch.autograd import (
@@ -9,9 +11,57 @@ from torch.autograd import (
     _enable_profiler,
     ProfilerConfig,
     ProfilerState,
+    DeviceType,
 )
 
 from .analysis.api import analyze_data
+
+
+# A global dict (external id -> tuple(shapes, dtypes)) used for
+# saving CPU-op's info, so that we can lookup it (of capturing
+# stage) in mlu graph replay stage.
+_id2opinfo: Dict[int, tuple] = {}
+
+
+def _mlu_graph_saver_fn(prof):
+    # only save info when record_shapes=True and enabled catching mlu graph
+    if prof.record_shapes and os.environ.get(
+        "TORCH_MLU_ENABLE_CATCHING_MLUGRAPH_OP", "FALSE"
+    ).upper() in ["1", "TRUE", "ON"]:
+        for evt in prof.profiler.kineto_results.events():
+            # Since we cannot get evt.activityType(), we need to handle runtime case
+            # that id > 0 but linked_id = 0, e.g.,cnTaskTopoEntityInvoke, cnrtSyncDevice.
+            # At present, filter these non-cpu-op cases by using shapes and dtypes.
+            if (
+                evt.device_type() != DeviceType.CPU
+                or evt.linked_correlation_id() > 0
+                or (evt.shapes() == [] and evt.dtypes() == [])
+            ):
+                continue
+            op_id = evt.correlation_id()
+            if op_id != 0:
+                assert (
+                    op_id not in _id2opinfo
+                ), f"CPU event with id {op_id} has been in dict!"
+                _id2opinfo[op_id] = (evt.shapes(), evt.dtypes())
+
+
+def insert_hook_for_profiler():
+    """
+    hijack _trace_ready method of torch.profiler.profiler.profiler
+    and insert a pre hook to save cpu-op event's info in global dict.
+    """
+
+    def _hijack_method_of_cls(cls, method_name):
+        orig_method = getattr(cls, method_name)
+
+        def wrapped_method(*args, **kwargs):
+            _mlu_graph_saver_fn(*args, **kwargs)
+            return orig_method(*args, **kwargs)
+
+        setattr(cls, method_name, wrapped_method)
+
+    _hijack_method_of_cls(torch.profiler.profiler.profile, "_trace_ready")
 
 
 def tensorboard_trace_handler(
@@ -35,7 +85,7 @@ def tensorboard_trace_handler(
         if use_gzip:
             file_name = file_name + ".gz"
         prof.export_chrome_trace(os.path.join(dir_name, file_name))
-        analyze_data(os.path.join(dir_name, file_name))
+        analyze_data(os.path.join(dir_name, file_name), _id2opinfo)
 
     return handler_fn
 
