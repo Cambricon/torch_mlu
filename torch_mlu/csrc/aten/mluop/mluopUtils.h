@@ -38,7 +38,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace torch_mlu {
 
-mluOpDataType_t getMluOpDataType(const caffe2::TypeMeta& data_type);
+TORCH_MLU_API mluOpDataType_t
+getMluOpDataType(const caffe2::TypeMeta& data_type);
 
 }
 

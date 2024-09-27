@@ -36,10 +36,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace torch_mlu {
 
-class MluOpTensorDescriptor : public MluOpDescriptor<
-                                  mluOpTensorStruct,
-                                  &mluOpCreateTensorDescriptor,
-                                  &mluOpDestroyTensorDescriptor> {
+class TORCH_MLU_API MluOpTensorDescriptor : public MluOpDescriptor<
+                                                mluOpTensorStruct,
+                                                &mluOpCreateTensorDescriptor,
+                                                &mluOpDestroyTensorDescriptor> {
  public:
   MluOpTensorDescriptor() = default;
 
