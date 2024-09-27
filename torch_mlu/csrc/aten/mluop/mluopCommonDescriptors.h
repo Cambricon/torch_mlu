@@ -34,12 +34,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ATen/ATen.h>
 #include <vector>
 #include "mlu_op.h"
+#include "utils/Export.h"
 #include "aten/utils/exceptions.h"
 
 namespace torch_mlu {
 
 template <typename T, mluOpStatus_t (*dtor)(T*)>
-struct MluOpDescriptorDeleter {
+struct TORCH_MLU_API MluOpDescriptorDeleter {
   void operator()(T* ptr) {
     if (ptr != nullptr) {
       TORCH_MLUOP_CHECK(dtor(ptr));
@@ -48,7 +49,7 @@ struct MluOpDescriptorDeleter {
 };
 
 template <typename T, mluOpStatus_t (*ctor)(T**), mluOpStatus_t (*dtor)(T*)>
-class MluOpDescriptor {
+class TORCH_MLU_API MluOpDescriptor {
  public:
   MluOpDescriptor() = default;
 

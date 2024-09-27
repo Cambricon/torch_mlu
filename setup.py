@@ -371,6 +371,11 @@ setup(
             "csrc/framework/generator/generator_impl.h",
             "csrc/framework/distributed/process_group_cncl.hpp",
             "csrc/utils/Export.h",
+            "csrc/aten/mluop/mluopHandle.h",
+            "csrc/aten/mluop/mluopUtils.h",
+            "csrc/aten/mluop/mluopCommonDescriptors.h",
+            "csrc/aten/mluop/mluopTensorDescriptors.h",
+            "csrc/aten/mluop/mluopDescriptors.h",
         ],
     },
     cmdclass={

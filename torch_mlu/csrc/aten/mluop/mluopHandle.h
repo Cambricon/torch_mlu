@@ -37,7 +37,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace torch_mlu {
 
-struct MluOpHandle {
+struct TORCH_MLU_API MluOpHandle {
   MluOpHandle() : handle(nullptr) {
     TORCH_MLUOP_CHECK(mluOpCreate(&handle));
   }
@@ -56,7 +56,8 @@ struct MluOpHandle {
   mluOpHandle_t handle;
 };
 
-mluOpHandle_t getCurrentMluOpHandle(c10::DeviceIndex device_index = -1);
+TORCH_MLU_API mluOpHandle_t
+getCurrentMluOpHandle(c10::DeviceIndex device_index = -1);
 
 } // namespace torch_mlu
 
