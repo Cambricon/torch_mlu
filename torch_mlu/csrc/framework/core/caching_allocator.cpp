@@ -247,27 +247,181 @@ struct SegmentRange {
   SegmentRange(void* p, size_t s) : ptr(static_cast<char*>(p)), size(s) {}
 };
 
+// See Note [Expandable Segments]
+// (https://github.com/pytorch/pytorch/blob/main/c10/cuda/CUDACachingAllocator.cpp)
 struct ExpandableSegment {
   ExpandableSegment(
       int device,
       cnrtQueue_t stream,
       size_t size,
-      const std::vector<int>& peers) {
-    TORCH_INTERNAL_ASSERT(false, "expandable segment not supported");
+      std::vector<int> peers)
+      : device_(device),
+        stream_(stream),
+        // 32MB for small pool, 64MB for large pool
+        segment_size_(size),
+        peers_(std::move(peers)) {
+    cnrtDeviceProp_t prop;
+    TORCH_CNRT_CHECK(cnrtGetDeviceProperties(&prop, device_));
+    // we allocate enough address space for 1 + 1/8 the total memory on the MLU.
+    // This allows for some cases where we have to unmap pages earlier in the
+    // segment to put them at the end.
+    max_handles_ =
+        numSegments(prop.totalGlobalMemSize + prop.totalGlobalMemSize / 8);
+
+    TORCH_CNDRV_CHECK(cnMemAddressReserve(
+        &ptr_, segment_size_ * max_handles_, 0ULL, 0, 0ULL));
   }
+  // begin must be aligned to segment_size_.
+  // returns the actual range mapped, which may be
+  // greater than requested if size is not aligned to segment_size_.
+  // return size of 0 indicates OOM
   SegmentRange map(SegmentRange range) {
-    return SegmentRange(nullptr, 0);
+    auto begin = segmentLeft(range.ptr);
+    auto end = segmentRight(range.ptr + range.size);
+    TORCH_INTERNAL_ASSERT(ptr() + begin * segment_size_ == range.ptr);
+    if (begin == end) {
+      return rangeFromHandles(begin, end);
+    }
+    while (end > handles_.size()) {
+      handles_.emplace_back(c10::nullopt);
+    }
+    for (auto i : c10::irange(begin, end)) {
+      TORCH_INTERNAL_ASSERT(!handles_.at(i));
+      CNmemGenericAllocationHandle handle = 0;
+      CNmemAllocationProp prop = {};
+      prop.type = CN_MEM_ALLOCATION_TYPE_DEFAULT;
+      prop.location.type = CN_MEM_LOCATION_TYPE_DEVICE;
+      prop.location.id = static_cast<uint32_t>(device_);
+      auto status = cnMemCreate(&handle, segment_size_, &prop, 0);
+      if (status == CN_MEMORY_ERROR_OUT_OF_MEMORY) {
+        for (auto j : c10::irange(begin, i)) {
+          auto h = handles_.at(j).value();
+          handles_.at(j) = c10::nullopt;
+          TORCH_CNDRV_CHECK(cnMemRelease(h));
+        }
+        trimHandles();
+        return rangeFromHandles(begin, begin);
+      }
+      TORCH_CNDRV_CHECK(status);
+      handles_.at(i) = handle;
+    }
+    for (auto i : c10::irange(begin, end)) {
+      TORCH_CNDRV_CHECK(cnMemMap(
+          ptr_ + i * segment_size_,
+          segment_size_,
+          0,
+          handles_.at(i).value(),
+          0ULL));
+    }
+
+    setAccess(device_, begin, end);
+    for (auto p : peers_) {
+      setAccess(p, begin, end);
+    }
+    return rangeFromHandles(begin, end);
   }
+
+  // unmaps all the completely empty segment_size_ segments between
+  // [begin, begin + size), returns the offset where the range begin,
+  // and the actual size unmapped (multiple of segment_size_)
   SegmentRange unmap(SegmentRange range) {
-    return SegmentRange(nullptr, 0);
+    auto begin = segmentRight(range.ptr);
+    auto end = segmentLeft(range.ptr + range.size);
+    if (begin >= end) {
+      return SegmentRange{range.ptr, 0};
+    }
+    unmapHandles(begin, end);
+    return rangeFromHandles(begin, end);
   }
+
   char* ptr() const {
-    return nullptr;
+    return reinterpret_cast<char*>(ptr_);
   }
   size_t size() const {
-    return 0;
+    return max_handles_ * segment_size_;
   }
-  void addPeer(int device) {}
+
+  void addPeer(int device) {
+    peers_.push_back(device);
+    forEachAllocatedRange(
+        [&](size_t begin, size_t end) { setAccess(device, begin, end); });
+  }
+
+  ~ExpandableSegment() {
+    forEachAllocatedRange(
+        [&](size_t begin, size_t end) { unmapHandles(begin, end); });
+    TORCH_CNDRV_CHECK(cnMemAddressFree(ptr_, segment_size_ * max_handles_));
+  }
+
+ private:
+  void setAccess(int device, size_t begin, size_t end) {
+    CNmemAccessDesc desc;
+    desc.location.type = CN_MEM_LOCATION_TYPE_DEVICE;
+    desc.location.id = static_cast<uint32_t>(device);
+    desc.accessFlags = CN_MEM_ACCESS_FLAGS_PROT_READWRITE;
+    TORCH_CNDRV_CHECK(cnMemSetAccess(
+        ptr_ + begin * segment_size_, (end - begin) * segment_size_, &desc, 1));
+  }
+
+  void unmapHandles(size_t begin, size_t end) {
+    // note: unlike cnrtFree, MemUnmap and MemRelease do
+    // not appear to synchronize in all cases, so we have to wait for the
+    // stream to finish before this memory is truly free.
+
+    // cannot call stream_synchronize because
+    // it might grab the GIL which can lead to a deadlock
+    // Locking order must be GIL -> Allocator Lock
+
+    TORCH_CNRT_CHECK(cnrtQueueSync(stream_));
+
+    for (auto i : c10::irange(begin, end)) {
+      CNmemGenericAllocationHandle h = handles_.at(i).value();
+      handles_.at(i) = c10::nullopt;
+      TORCH_CNDRV_CHECK(cnMemUnmap(ptr_ + segment_size_ * i, segment_size_));
+      TORCH_CNDRV_CHECK(cnMemRelease(h));
+    }
+    trimHandles();
+  }
+  void trimHandles() {
+    while (!handles_.empty() && !handles_.back()) {
+      handles_.pop_back();
+    }
+  }
+  void forEachAllocatedRange(const std::function<void(size_t, size_t)>& fn) {
+    size_t start = 0;
+    for (auto i : c10::irange(handles_.size())) {
+      if (handles_.at(i) && (i == 0 || !handles_.at(i - 1))) {
+        start = i;
+      }
+      if (handles_.at(i) && (i + 1 == handles_.size() || !handles_.at(i + 1))) {
+        fn(start, i + 1);
+      }
+    }
+  }
+  size_t numSegments(size_t size) {
+    return (size + segment_size_ - 1) / segment_size_;
+  }
+  size_t segmentLeft(char* p) {
+    auto size = p - ptr();
+    return size / segment_size_;
+  }
+  size_t segmentRight(char* p) {
+    auto size = p - ptr();
+    return numSegments(size);
+  }
+  SegmentRange rangeFromHandles(size_t begin, size_t end) {
+    return SegmentRange(
+        ptr() + segment_size_ * begin, segment_size_ * (end - begin));
+  }
+  int device_;
+  cnrtQueue_t stream_;
+  CNaddr ptr_{};
+  size_t max_handles_{0};
+  size_t segment_size_;
+  std::vector<c10::optional<CNmemGenericAllocationHandle>> handles_;
+  // devices on which this memory should be mapped in addition
+  // to the device where the physical memory lives (device_).
+  std::vector<int> peers_;
 };
 
 // ChunkState, ChunkPoolState, and PrivatePoolState contain the information
@@ -541,8 +695,10 @@ class DeviceCachingAllocator {
     context_recorder_.store(record_history ? context_recorder : nullptr);
     alloc_trace_max_entries_ = std::max(size_t(1), alloc_trace_max_entries);
     record_context_ = enabled ? when : RecordContext::NEVER;
-    alloc_trace_next = 0;
-    alloc_trace->clear();
+    if (!enabled) {
+      alloc_trace_next = 0;
+      alloc_trace->clear();
+    }
   }
 
   bool isHistoryEnabled() {
@@ -727,7 +883,7 @@ class DeviceCachingAllocator {
           format_size(device_total),
           " of which ",
           format_size(device_free),
-          "is free. ",
+          " is free. ",
           proc_info,
           "Of the allocated memory ",
           format_size(allocated_bytes),
@@ -1049,8 +1205,6 @@ class DeviceCachingAllocator {
   }
 
   void freeChunksAllocatedToPool(PrivatePool* private_pool, RestoreResult& rr) {
-    std::unordered_map<void*, Chunk*> orig_ptrs_to_chunks;
-
     auto pool_chunks = get_private_pool_head_chunks(private_pool);
 
     std::vector<Chunk*> head_chunks;
@@ -1489,16 +1643,107 @@ class DeviceCachingAllocator {
       cnrtQueue_t stream,
       ChunkPool* pool,
       size_t size) {
-    // TODO(lipenghui): add expandable segment support.
-    return nullptr;
+    Chunk key(device, stream, 0);
+
+    auto allocatable = [](Chunk* b) {
+      return b && !b->allocated && b->event_count == 0 &&
+          b->stream_uses.empty();
+    };
+    auto has_available_address_space = [&](Chunk* b) {
+      size_t bytes = 0;
+      while (bytes < size && allocatable(b)) {
+        bytes += b->size;
+        b = b->next;
+      }
+      return bytes >= size;
+    };
+    for (auto it = pool->unmapped.lower_bound(&key);
+         it != pool->unmapped.end() && (*it)->stream == stream;
+         ++it) {
+      Chunk* c = *it;
+      // we found the lowest address of an unmapped segment
+      // but there might be a free segment we can also use
+      // right before it
+      if (allocatable(c->prev)) {
+        c = c->prev;
+      }
+      if (has_available_address_space(c)) {
+        return c;
+      }
+    }
+    auto segment_size =
+        pool->is_small ? small_buffer_size_mlu : large_buffer_size_mlu;
+    expandable_segments_.emplace_back(new ExpandableSegment(
+        device, stream, segment_size, devices_with_peer_access_));
+
+    ExpandableSegment* es = expandable_segments_.back();
+    Chunk* candidate = new Chunk(device, stream, es->size(), pool, es->ptr());
+    candidate->mapped = false;
+    candidate->expandable_segment_ = es;
+    pool->unmapped.insert(candidate);
+    return candidate;
   }
 
   bool map_chunk(
       Chunk* to_map,
       size_t size,
       const std::shared_ptr<c10::GatheredContext>& ctx) {
-    // TODO(lipenghui): add expandable segment support.
-    return false;
+    TORCH_INTERNAL_ASSERT(!to_map->mapped && size <= to_map->size);
+    TORCH_INTERNAL_ASSERT(
+        !to_map->context_when_allocated); // unmapped chunks should not keep
+                                          // history
+    auto mapped_range =
+        to_map->expandable_segment_->map(SegmentRange{to_map->ptr, size});
+    // failed to map the memory
+    if (mapped_range.size == 0) {
+      return false;
+    }
+    TORCH_INTERNAL_ASSERT(
+        mapped_range.ptr == to_map->ptr && mapped_range.size >= size);
+
+    ChunkPool& pool = *to_map->pool;
+    pool.unmapped.erase(to_map);
+    to_map->mapped = true;
+
+    if (mapped_range.size < to_map->size) {
+      // to_map -> remaining -> to_map->next(?)
+      Chunk* remaining = new Chunk(
+          to_map->device,
+          to_map->stream,
+          to_map->size - mapped_range.size,
+          &pool,
+          static_cast<char*>(to_map->ptr) + mapped_range.size);
+      remaining->mapped = false;
+      remaining->expandable_segment_ = to_map->expandable_segment_;
+      remaining->splice(to_map, to_map->next);
+      pool.unmapped.insert(remaining);
+      to_map->size = mapped_range.size;
+    }
+
+    mergeChunks(to_map, to_map->prev, pool);
+    mergeChunks(to_map, to_map->next, pool);
+
+    pool.insert_into_chunks(to_map);
+
+    // update statistics
+    total_allocated_memory += mapped_range.size;
+    StatTypes stat_types = get_stat_types_for_pool(*to_map->pool);
+    for_each_selected_stat_type(stat_types, [&](size_t stat_type) {
+      update_stat(stats.reserved_bytes[stat_type], mapped_range.size);
+    });
+
+    record_trace(
+        TraceEntry::SEGMENT_MAP,
+        int64_t(mapped_range.ptr),
+        mapped_range.size,
+        to_map->stream,
+        to_map->device,
+        ctx);
+    if (!to_map->prev && !to_map->context_when_segment_allocated) {
+      to_map->context_when_segment_allocated = ctx;
+    }
+
+    return true;
   }
 
   Chunk* try_allocate_expandable_chunk(
@@ -1507,8 +1752,31 @@ class DeviceCachingAllocator {
       ChunkPool* pool,
       size_t size,
       const std::shared_ptr<c10::GatheredContext>& ctx) {
-    // TODO(lipenghui): add expandable segment support.
-    return nullptr;
+    Chunk* candidate = find_expandable_chunk(device, stream, pool, size);
+    // Candidate is now a list free/unmapped chunks with at least size room:
+    // unmapped -> null
+    // unmapped -> free -> *
+    // free -> unmapped -> *
+
+    if (!candidate->mapped &&
+        !map_chunk(candidate, std::min(candidate->size, size), ctx)) {
+      return nullptr;
+    }
+    TORCH_INTERNAL_ASSERT(candidate->mapped);
+
+    while (candidate->size < size) {
+      // invariant: free -> unmapped -> *
+      // map_chunk will map some of unmapped and merge with free
+      auto remaining = size - candidate->size;
+      auto new_candidate = candidate->next;
+      if (!map_chunk(
+              new_candidate, std::min(remaining, candidate->next->size), ctx)) {
+        return nullptr;
+      }
+      candidate = new_candidate;
+    }
+    pool->chunks.erase(candidate);
+    return candidate;
   }
 
   /** moves a chunk into a pool of cached free chunks */
@@ -1691,7 +1959,36 @@ class DeviceCachingAllocator {
       return false;
 
     if ((*it)->expandable_segment_) {
-      // TODO(lipenghui): add expandable segment support.
+      if (MLUAllocatorConfig::expandable_segments()) {
+        // if we are allocated to the part of the chunk that is expandable
+        // for the purposes of "best fit" we consider its size to be the size it
+        // can expand to, not the size it currently is. This means that we
+        // sometimes have to search for chunks with bigger 'size' before
+        // choosing this segment.
+        auto expandable_size = [](Chunk* b) {
+          return b->size + (b->next && !b->next->mapped ? b->next->size : 0);
+        };
+        auto next = it;
+        next++;
+        while ((*it)->expandable_segment_ && next != pool.chunks.end() &&
+               (*next)->stream == p.stream() &&
+               expandable_size(*next) < expandable_size(*it)) {
+          it = next++;
+        }
+      } else {
+        // Rarely expandable segments has been turned off after we have
+        // already allocated some chunks as expandable. For instance,
+        // since we cannot share expandable memory via IPC, someone might
+        // temporarily disable it. In this case we need to honor this request
+        // by only finding non-expandable chunks
+        do {
+          it++;
+        } while (it != pool.chunks.end() && (*it)->expandable_segment_ &&
+                 (*it)->stream == p.stream());
+        if (it == pool.chunks.end() || (*it)->stream != p.stream()) {
+          return false;
+        }
+      }
     }
 
     // Do not return an oversized chunk for a large request
@@ -1780,7 +2077,7 @@ class DeviceCachingAllocator {
     TORCH_CNRT_CHECK(cnrtGetLastError());
 
     size_t alloc_size = p.alloc_size;
-    void* ptr;
+    void* ptr = nullptr;
 
     if (isRetry) {
       stats.num_alloc_retries += 1;
@@ -1790,8 +2087,19 @@ class DeviceCachingAllocator {
         total_allocated_memory + alloc_size > allowed_memory_maximum) {
       p.err = cnrtErrorNoMem;
       return false;
-    } else if (MLUAllocatorConfig::expandable_segments()) {
-      // TODO(lipenghui): add expandable segments support.
+    } else if (
+        MLUAllocatorConfig::expandable_segments() &&
+        // our checkpointing logic for private pools doesn't support
+        // the expandable_segments_ structure yet
+        !p.pool->owner_PrivatePool) {
+      p.chunk = try_allocate_expandable_chunk(
+          p.device(), p.stream(), p.pool, p.size(), ctx);
+      if (p.chunk) {
+        p.err = cnrtSuccess;
+      } else {
+        p.err = cnrtErrorNoMem;
+      }
+      return bool(p.chunk);
     } else {
       p.err = cnrtMallocMaybeCapturing(&ptr, alloc_size);
       if (p.err != cnrtSuccess) {
@@ -1909,7 +2217,19 @@ class DeviceCachingAllocator {
   }
 
   void release_expandable_segment(Chunk* chunk) {
-    // TODO(lipenghui): add expandable segments support.
+    TORCH_INTERNAL_ASSERT(
+        chunk->size == chunk->expandable_segment_->size(),
+        "chunk disagrees with segment");
+    TORCH_INTERNAL_ASSERT(!chunk->mapped);
+    auto it = std::find(
+        expandable_segments_.begin(),
+        expandable_segments_.end(),
+        chunk->expandable_segment_);
+    TORCH_INTERNAL_ASSERT(it != expandable_segments_.end());
+    expandable_segments_.erase(it);
+    chunk->pool->unmapped.erase(chunk);
+    delete chunk->expandable_segment_;
+    delete chunk;
   }
 
   void releaseChunk(
@@ -1953,7 +2273,60 @@ class DeviceCachingAllocator {
   }
 
   void unmap_chunk(Chunk* chunk) {
-    // TODO(lipenghui): add expandable segments support.
+    auto unmapped = chunk->expandable_segment_->unmap(
+        SegmentRange{chunk->ptr, chunk->size});
+    if (unmapped.size == 0) {
+      return;
+    }
+    chunk->pool->chunks.erase(chunk);
+
+    ptrdiff_t before_size =
+        static_cast<char*>(unmapped.ptr) - static_cast<char*>(chunk->ptr);
+    if (before_size > 0) {
+      // prev? -> before_free -> chunk
+      Chunk* before_free = new Chunk(
+          chunk->device, chunk->stream, before_size, chunk->pool, chunk->ptr);
+      before_free->expandable_segment_ = chunk->expandable_segment_;
+      before_free->splice(chunk->prev, chunk);
+      chunk->pool->insert_into_chunks(before_free);
+    }
+
+    auto after_size = chunk->size - (before_size + unmapped.size);
+    if (after_size > 0) {
+      // chunk -> after_free -> next?
+      Chunk* after_free = new Chunk(
+          chunk->device,
+          chunk->stream,
+          after_size,
+          chunk->pool,
+          static_cast<char*>(unmapped.ptr) + unmapped.size);
+      after_free->expandable_segment_ = chunk->expandable_segment_;
+      after_free->splice(chunk, chunk->next);
+      chunk->pool->insert_into_chunks(after_free);
+    }
+
+    chunk->ptr = unmapped.ptr;
+    chunk->size = unmapped.size;
+    chunk->mapped = false;
+
+    mergeChunks(chunk, chunk->prev, *chunk->pool);
+    mergeChunks(chunk, chunk->next, *chunk->pool);
+    chunk->pool->unmapped.insert(chunk);
+
+    // update statistics
+    total_allocated_memory -= unmapped.size;
+    StatTypes stat_types = get_stat_types_for_pool(*chunk->pool);
+    for_each_selected_stat_type(stat_types, [&](size_t stat_type) {
+      update_stat(stats.reserved_bytes[stat_type], -unmapped.size);
+    });
+
+    record_trace(
+        TraceEntry::SEGMENT_UNMAP,
+        int64_t(unmapped.ptr),
+        unmapped.size,
+        chunk->stream,
+        chunk->device,
+        nullptr);
   }
 
   void releaseChunks(
@@ -2511,7 +2884,7 @@ class NativeCachingAllocator : public MLUAllocator {
         // memcpy ok because both dst and src must have come from cnrtMalloc
         (!device_allocator[dstDevice]->hasAllocatedExpandableSegments() &&
          !device_allocator[srcDevice]->hasAllocatedExpandableSegments())) {
-      return cnrtMemcpyAsync(
+      return cnrtMemcpyAsync_V2(
           dst, const_cast<void*>(src), count, stream, cnrtMemcpyDevToDev);
     }
     // when p2p is not enabled, only cnrtMemcpyPeerAsync correctly handles

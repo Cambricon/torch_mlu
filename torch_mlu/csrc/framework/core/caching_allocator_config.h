@@ -20,11 +20,7 @@ class MLUAllocatorConfig {
   }
 
   static bool expandable_segments() {
-    if (instance().m_expandable_segments) {
-      TORCH_WARN_ONCE("expandable_segments currently not supported on MLU.")
-    }
-    return false;
-    // return instance().m_expandable_segments;
+    return instance().m_expandable_segments;
   }
 
   static bool use_linear_memory() {
