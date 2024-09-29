@@ -219,8 +219,8 @@ class ModuleNode(OperatorNode):
         self.python_id = python_id
         self.python_parent_id = python_parent_id
 
-    def fill_stats(self):
-        super().fill_stats()
+    def fill_stats(self, id2opinfo: Dict = {}):
+        super().fill_stats(id2opinfo)
         self.self_device_duration += get_chilren_self_device_time(self)
 
     @classmethod
@@ -239,7 +239,7 @@ class BackwardNode(OperatorNode):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def fill_stats(self):
+    def fill_stats(self, id2opinfo: Dict = {}):
         """Override the timestamps and duration for BackwardNode only"""
         self.children.sort(key=lambda x: (x.start_time, -x.end_time))
         self.start_time = self.children[0].start_time
@@ -266,8 +266,8 @@ class PLModuleNode(OperatorNode):
         super().__init__(**kwargs)
         self.module_id = module_id
 
-    def fill_stats(self):
-        super().fill_stats()
+    def fill_stats(self, id2opinfo: Dict = {}):
+        super().fill_stats(id2opinfo)
         self.self_device_duration += get_chilren_self_device_time(self)
 
     @classmethod
