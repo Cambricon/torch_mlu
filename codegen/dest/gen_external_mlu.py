@@ -466,7 +466,7 @@ return wrapper_{sig.name()}({', '.join(e.expr for e in translate(cpp_sig.argumen
                 if symint:
                     assert (
                         f.func.has_symint()
-                    ), f"attempted to define symint kernel for {SparseMLU} without SymInt in schema"
+                    ), f"attempted to define symint kernel for {dispatch} without SymInt in schema"
 
             kernel_sig = NativeSignature(f.func, prefix='', symint=symint)
             args_exprs_str = ", ".join(

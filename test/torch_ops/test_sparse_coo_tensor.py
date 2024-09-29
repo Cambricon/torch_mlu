@@ -12,8 +12,6 @@ from common_utils import (
     testinfo,
     run_tests,
     TestCase,
-    TEST_LARGETENSOR,
-    largeTensorTest,
 )  # pylint: disable=C0413,C0411
 from numbers import Number
 
