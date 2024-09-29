@@ -163,6 +163,137 @@ output_mlu = m(x_mlu)
                 0,
             )
 
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_sparse_ops_not_implemented_with_fallback_on(self):
+        # remove when sparse_sparse_matmul is supported
+        def gen_sparse(sparse_dim, nnz, size, dtype):
+            v_size = [nnz] + list(size[sparse_dim:])
+            v = torch.randn(v_size)
+            i = torch.rand(sparse_dim, nnz)
+            i.mul_(torch.tensor(size[:sparse_dim]).unsqueeze(1).to(i))
+            i = i.to(torch.long)
+            return torch.sparse_coo_tensor(i, v, torch.Size(size), dtype=dtype)
+
+        m1 = gen_sparse(2, 10, (5, 6), torch.float)
+        m2 = gen_sparse(2, 5, (6, 3), torch.float)
+        output_cpu = torch.matmul(m1, m2)
+        output_mlu = torch.matmul(m1.to("mlu"), m2.to("mlu"))
+        self.assertEqual(output_cpu, output_mlu.cpu())
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_sparse_ops_not_implemented_with_fallback_off(self):
+        script = f"""
+import os
+os.environ["ENABLE_FALLBACK_TO_CPU"] = "0"
+
+import torch
+import torch_mlu
+
+def gen_sparse(sparse_dim, nnz, size, dtype):
+    v_size = [nnz] + list(size[sparse_dim:])
+    v = torch.randn(v_size)
+    i = torch.rand(sparse_dim, nnz)
+    i.mul_(torch.tensor(size[:sparse_dim]).unsqueeze(1).to(i))
+    i = i.to(torch.long)
+    return torch.sparse_coo_tensor(i, v, torch.Size(size), dtype=dtype)
+
+m1 = gen_sparse(2, 10, (5, 6), torch.float)
+m2 = gen_sparse(2, 5, (6, 3), torch.float)
+output_mlu = torch.matmul(m1.to('mlu'), m2.to('mlu'))
+"""
+        try:
+            subprocess.check_output(
+                [sys.executable, "-W", "all", "-c", script],
+                stderr=subprocess.STDOUT,
+                # Opening the subprocess with the default CWD makes `import torch` or `import torch_mlu`
+                # fail, so just set CWD to this script's directory
+                cwd=os.path.dirname(os.path.realpath(__file__)),
+            )
+            self.assertTrue(
+                False,
+                "Unimplemented sparse ops should not pass when fallback is turned off.",
+            )
+        except subprocess.CalledProcessError as e:
+            msg = f"The operator 'aten::_sparse_sparse_matmul' is not currently implemented for the MLU device."
+            self.assertTrue(msg in e.stdout.decode("utf-8"))
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_sparse_ops_fail_on_mlu_with_fallback_on(self):
+        script = f"""
+import os
+os.environ["ENABLE_MLU_FAIL_FALLBACK"] = "1"
+
+import torch
+import torch_mlu
+
+dims = (5, 5, 2, 2)
+def gen_sparse(nnz):
+    i = torch.cat([torch.randint(0, dims[0], size=(nnz,)),
+                   torch.randint(0, dims[1], size=(nnz,))], 0).reshape(2, nnz)
+    v = torch.randn(nnz, dims[2], dims[3])
+    return torch.sparse_coo_tensor(i, v, dims).coalesce()
+
+s = gen_sparse(15)
+mask = gen_sparse(5)
+s_mlu = s.to('mlu')
+mask_mlu = mask.to('mlu')
+
+output_cpu = s.sparse_mask(mask)
+output_mlu = s_mlu.sparse_mask(mask_mlu)
+not_equal = torch.any(output_cpu - output_mlu.cpu())
+if not_equal:
+    raise ValueError("The cpu result and fallback result are not equal.")
+
+"""
+        subprocess.check_output(
+            [sys.executable, "-W", "all", "-c", script],
+            stderr=subprocess.STDOUT,
+            # Opening the subprocess with the default CWD makes `import torch` or `import torch_mlu`
+            # fail, so just set CWD to this script's directory
+            cwd=os.path.dirname(os.path.realpath(__file__)),
+        )
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_sparse_ops_fail_on_mlu_with_fallback_off(self):
+        script = f"""
+import os
+os.environ["ENABLE_MLU_FAIL_FALLBACK"] = "0"
+
+import torch
+import torch_mlu
+
+dims = (5, 5, 2, 2)
+def gen_sparse(nnz):
+    i = torch.cat([torch.randint(0, dims[0], size=(nnz,)),
+                   torch.randint(0, dims[1], size=(nnz,))], 0).reshape(2, nnz)
+    v = torch.randn(nnz, dims[2], dims[3])
+    return torch.sparse_coo_tensor(i, v, dims).coalesce()
+
+s = gen_sparse(15)
+mask = gen_sparse(5)
+
+output_mlu = s.to('mlu').sparse_mask(mask.to('mlu'))
+"""
+        try:
+            subprocess.check_output(
+                [sys.executable, "-W", "all", "-c", script],
+                stderr=subprocess.STDOUT,
+                # Opening the subprocess with the default CWD makes `import torch` or `import torch_mlu`
+                # fail, so just set CWD to this script's directory
+                cwd=os.path.dirname(os.path.realpath(__file__)),
+            )
+            self.assertTrue(
+                False,
+                "Failed sparse ops should not pass when fail_fallback is turned off.",
+            )
+        except subprocess.CalledProcessError as e:
+            msg = f"DispatchStub: missing PrivateUse1 kernel"
+            self.assertTrue(msg in e.stdout.decode("utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()

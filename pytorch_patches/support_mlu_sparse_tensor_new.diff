@@ -1,0 +1,12 @@
+diff --git a/torch/csrc/utils/tensor_new.cpp b/torch/csrc/utils/tensor_new.cpp
+index 820212459b..cafc9ee521 100644
+--- a/torch/csrc/utils/tensor_new.cpp
++++ b/torch/csrc/utils/tensor_new.cpp
+@@ -519,6 +519,7 @@ void check_base_legacy_new(
+         c10::DispatchKey::SparseCUDA,
+         c10::DispatchKey::SparseHIP,
+         c10::DispatchKey::SparseXPU,
++        c10::DispatchKey::SparsePrivateUse1,
+     });
+     TORCH_CHECK(
+         expected_key_set.has(dispatch_key),

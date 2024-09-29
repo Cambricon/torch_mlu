@@ -28,8 +28,10 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <ATen/native/CPUFallback.h>
 #include <set>
+
+#include <ATen/native/CPUFallback.h>
+#include "utils/common.h"
 
 namespace torch_mlu {
 
@@ -45,4 +47,12 @@ bool getFallbackEnabledEnvVar();
 
 bool getFailFallbackEnabledEnvVar();
 
+void mlu_sparse_fallback(
+    const c10::OperatorHandle& op,
+    torch::jit::Stack* stack);
+
+// To expose the interface for test_mlu_sparse_fail_fallback.cpp
+TORCH_MLU_API void mlu_sparse_fail_fallback(
+    const c10::OperatorHandle& op,
+    torch::jit::Stack* stack);
 } // namespace torch_mlu

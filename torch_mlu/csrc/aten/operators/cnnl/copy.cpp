@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ATen/ExpandUtils.h>
 #include <ATen/MemoryOverlap.h>
+#include <ATen/native/SparseTensorUtils.h>
 #include "framework/core/tensor_impl.h"
 #include "aten/operators/cnnl/cnnl_kernel.h"
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
@@ -202,6 +203,32 @@ at::Tensor cnnl__copy_from_and_resize(
     dst.resize_as_(self);
   }
   cnnl_copy_(const_cast<at::Tensor&>(dst), self);
+  return dst;
+}
+
+// _copy_from_and_resize_sparse is used for fallback and we only need copy from
+// cpu to mlu
+at::Tensor cnnl__copy_from_and_resize_sparse(
+    const at::sparse::SparseTensor& self,
+    const at::sparse::SparseTensor& dst) {
+  TORCH_CHECK(dst.defined(), "dst is undefined");
+  TORCH_CHECK(self.defined(), "self is undefined");
+  TORCH_CHECK(dst.is_sparse(), "dst is not SparseTensor");
+  TORCH_CHECK(self.is_sparse(), "self is not SparseTensor");
+  TORCH_CHECK(
+      self.is_cpu() && dst.device().is_privateuseone(),
+      "_copy_from_and_resize_sparse now only support copy from cpu tensor to mlu tensor");
+
+  dst.resize_as_(self);
+  dst._values().resize_as_(self._values());
+  dst._indices().resize_as_(self._indices());
+  at::Tensor cpu_values = self._values();
+  at::Tensor cpu_indices = self._indices();
+  at::Tensor mlu_values = dst._values();
+  at::Tensor mlu_indices = dst._indices();
+  cnnl__copy_from_and_resize(cpu_values, mlu_values);
+  cnnl__copy_from_and_resize(cpu_indices, mlu_indices);
+  dst._coalesced_(self.is_coalesced());
   return dst;
 }
 
