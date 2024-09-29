@@ -1308,7 +1308,8 @@
     supported: false
 
   - api: torch.sparse_coo_tensor
-    supported: false
+    supported: true
+    limitations: 不支持check_invariants和is_coalesced同时为True。
 
   - api: torch.sparse_csc_tensor
     supported: false
@@ -3785,7 +3786,7 @@
     supported: true
 
   - api: torch.Tensor.is_sparse
-    supported: false
+    supported: true
 
   - api: torch.Tensor.isclose
     supported: true
@@ -12268,7 +12269,7 @@
     supported: false
 
   - api: torch.Tensor.is_coalesced
-    supported: false
+    supported: true
 
   - api: torch.Tensor.is_sparse_csr
     supported: false

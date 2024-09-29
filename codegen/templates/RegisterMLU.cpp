@@ -43,7 +43,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "aten/operators/mluop/mluop_kernel.h"
 #include "aten/TensorIteratorBridge.h"
 
+${headers}
+
 namespace torch_mlu {
+namespace {
 
 static bool enable_mlu_fallback = getFailFallbackEnabledEnvVar();
 
@@ -176,53 +179,45 @@ static Return op_call2(F impl_call, Args&&... args) {
   return impl_call(std::forward<Args>(args)...);
 }
 
-namespace {
-
 // wrapper definition
 ${dispatch_anonymous_definitions}
 
 // pytorch aten op registration
-TORCH_LIBRARY_IMPL(aten, PrivateUse1, m) {
+TORCH_LIBRARY_IMPL(aten, ${dispatch_key}, m) {
   ${dispatch_aten_registrations}
 }
 
 // pytorch aten op registration that need to write
 // custom autograd impl
-TORCH_LIBRARY_IMPL(aten, AutogradPrivateUse1, m) {
-  ${dispatch_aten_autograd_registrations}
-}
+${dispatch_aten_autograd_registrations}
 
 // torchvision op registration
-TORCH_LIBRARY_IMPL(torchvision, PrivateUse1, m) {
+TORCH_LIBRARY_IMPL(torchvision, ${dispatch_key}, m) {
   ${dispatch_vision_registrations}
 }
 
 // torchaudio op registration
-TORCH_LIBRARY_IMPL(torchaudio, PrivateUse1, m) {
+TORCH_LIBRARY_IMPL(torchaudio, ${dispatch_key}, m) {
   ${dispatch_audio_registrations}
 }
 
 // MLU custom op registration
-TORCH_LIBRARY(torch_mlu, m) {
-  ${custom_schema_registrations}
-}
+${custom_schema_registrations}
 
 // MLU custom ops that need create backward graph node
-TORCH_LIBRARY_IMPL(torch_mlu, AutogradPrivateUse1, m) {
-  ${dispatch_custom_autograd_registrations}
-}
+${dispatch_custom_autograd_registrations}
 
 // MLU custom ops that do not need backward node
-TORCH_LIBRARY_IMPL(torch_mlu, PrivateUse1, m) {
+TORCH_LIBRARY_IMPL(torch_mlu, ${dispatch_key}, m) {
   ${dispatch_custom_registrations}
 }
 
 }  // anonymous namespace
 
-namespace mlu {
+namespace ${dispatch_namespace} {
 
 ${dispatch_namespaced_definitions}
 
-}  // mlu
+}  // namespace ${dispatch_namespace}
 
 }  // namespace torch_mlu

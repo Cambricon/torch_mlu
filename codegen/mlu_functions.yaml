@@ -21,6 +21,22 @@
 # override_meta: True, write your own meta func for structured kernel
 # override_impl: True, write your own impl func for structured kernel
 
+# dispatch: PrivateUse1 and SparsePrivateUse1, if not set, the default is PrivateUse1.
+# This keyword tells codegen which DispatchKey the func will be registered to.
+# If set 'dispatch: PrivateUse1' or not set, we only register the func to PrivateUse1.
+# If set 'dispatch: SparsePrivateUse1', we only register the func to SparsePrivateUse1.
+# If set 'dispatch: Privateuse1, SparsePrivateUse1', we register the func to PrivateUse1 and SparsePrivateUse1.
+
+# Note: [SparsePrivateUse1]
+# 1) If an aten op is registered to both SparseCUDA and SparseCPU with the same kernel,
+#    we will consider this kernel to be common to backends and automatically register it to SparsePrivateUse1.
+#    For example 'abs' in pytorch/aten/src/ATen/native/native_functions.yaml
+# 2) If you want to implement a mlu sparse kernel for an op and register it to SparsePrivateUse1,
+#    you need to explicitly add SparsePrivateUse1 to the dispatch keyword and implement torch_mlu::{derived_type}_{op_name}_sparse kernel.
+# 3) If you set 'custom_autograd: True' and 'dispatch: PrivateUse1, SparsePrivateUse1' for an op,
+#    you need to make sure that the custom_autograd kernel supports both PrivateUse1 and SparsePrivateUse1,
+#    if it does not support both, it is best to add checks and error messages.
+
 aten:
   - func: _linalg_svd
     structured_delegate: _linalg_svd.U
@@ -814,7 +830,7 @@ aten:
     structured: True
     structured_inherits: TensorIteratorBase
   - func: logaddexp2
-    structured_delegate: logaddexp2.out     
+    structured_delegate: logaddexp2.out
   - func: logical_or.out
   - func: masked_fill_.Scalar
   - func: masked_fill_.Tensor
@@ -1144,7 +1160,7 @@ aten:
     override_meta: True
   - func: replication_pad2d
     structured_delegate: replication_pad2d.out
-  - func: replication_pad1d_backward 
+  - func: replication_pad1d_backward
     structured_delegate: replication_pad1d_backward.grad_input
   - func: replication_pad1d_backward.grad_input
     structured: True
@@ -1387,9 +1403,9 @@ custom:
   - func: mask_softmax_dropout_bprop_(Tensor input, Tensor(a!) self, Tensor dropout_mask, int batch, Tensor seq_len, int heads, float dropout_prob, bool enable_stream, bool sync) -> Tensor(a!)
     tags: nondeterministic_seeded
 
-  - func: warp_ctc_loss(Tensor probs, Tensor targets, Tensor input_lengths, Tensor target_lengths, int blank, int reduction, bool zero_infinity, int normalization) -> Tensor 
+  - func: warp_ctc_loss(Tensor probs, Tensor targets, Tensor input_lengths, Tensor target_lengths, int blank, int reduction, bool zero_infinity, int normalization) -> Tensor
     custom_autograd: True
-  - func: ctc_loss_forward(Tensor probs, Tensor targets, Tensor? input_lengths, Tensor? target_lengths, int[] il, int[] tl, int blank, int reduction, bool zero_infinity, int normalization) -> (Tensor, Tensor) 
+  - func: ctc_loss_forward(Tensor probs, Tensor targets, Tensor? input_lengths, Tensor? target_lengths, int[] il, int[] tl, int blank, int reduction, bool zero_infinity, int normalization) -> (Tensor, Tensor)
     custom_autograd: True
   - func: ctc_loss_backward(Tensor grad_out, Tensor raw_grad) -> Tensor
   - func: points_in_boxes_mlu(Tensor boxes, Tensor points) -> Tensor

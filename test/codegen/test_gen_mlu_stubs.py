@@ -175,6 +175,38 @@ custom:
             """derived_type support cnnl, bang or mluop, but got: xxx""",
         )
 
+    def test_valid_dispatch(self) -> None:
+        yaml_str = """\
+aten:
+  - func: abs
+  - func: _copy_from_and_resize
+    dispatch: PrivateUse1, SparsePrivateUse1
+  - func: _coalesce
+    dispatch: SparsePrivateUse1
+  - func: add.Tensor
+    dispatch: PrivateUse1, SparsePrivateUse1
+    custom_autograd: True
+custom:
+  - func: my_op1(Tensor a) -> Tensor
+  - func: my_op2(Tensor a) -> Tensor
+    derived_type: bang
+    custom_autograd: True
+    dispatch: PrivateUse1, SparsePrivateUse1"""
+        self.assert_success_from_gen_backend_stubs(yaml_str)
+
+    def test_invalid_dispatch(self) -> None:
+        yaml_str = """\
+aten:
+  - func: abs
+    dispatch: PrivateUse1, TestDispatch
+  - func: add.Tensor
+    dispatch: TestDispatch"""
+        output_error = self.get_errors_from_gen_backend_stubs(yaml_str)
+        self.assertExpectedInline(
+            output_error,
+            """dispatch only support PrivateUse1 and SparsePrivateUse1, but got: TestDispatch""",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

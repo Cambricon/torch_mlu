@@ -123,6 +123,9 @@ class GenExternalMLU:
         args = sig.arguments()
         args_str = ', '.join(a.decl() for a in args)
         derived_type = self.aux[f.func.name].get('derived_type')
+        dispatch = self.aux[f.func.name].get('dispatch')
+        if dispatch == 'SparsePrivateUse1':
+            impl_name = impl_name + '_sparse'
 
         # autograd kernel declaration
         has_autograd = self.aux[f.func.name].get('custom_autograd', False)
@@ -419,6 +422,10 @@ class RegisterMLU:
 
             impl_name = cpp.name(f.func)
             derived_type = self.aux[f.func.name].get('derived_type')
+            dispatch = self.aux[f.func.name].get('dispatch')
+            if dispatch == 'SparsePrivateUse1' and self.target is not Target.AUTOGRAD_REGISTRATION:
+                impl_name = impl_name + '_sparse'
+            metadata = self.aux[f.func.name].get('metadata', None)
 
         if self.target is Target.REGISTRATION:
             if f.manual_kernel_registration:
@@ -456,8 +463,16 @@ return wrapper_{sig.name()}({', '.join(e.expr for e in translate(cpp_sig.argumen
 
         elif self.target is Target.ANONYMOUS_DEFINITION:
             impl_name = f"torch_mlu::ops::{derived_type}_{impl_name}"
+            symint = False
+            if dispatch == "SparsePrivateUse1" and metadata is not None:
+                impl_name = f"{metadata.cpp_namespace}::{metadata.kernel}"
+                symint = metadata.supports_symint()
+                if symint:
+                    assert (
+                        f.func.has_symint()
+                    ), f"attempted to define symint kernel for {dispatch} without SymInt in schema"
 
-            kernel_sig = NativeSignature(f.func, prefix='', symint=False)
+            kernel_sig = NativeSignature(f.func, prefix='', symint=symint)
             args_exprs_str = ", ".join(
                 e.expr
                 for e in translate(
@@ -469,12 +484,13 @@ return wrapper_{sig.name()}({', '.join(e.expr for e in translate(cpp_sig.argumen
 
             impl_fn = f"auto impl_fn = {name};"
             # add fallback str, only support aten fallback
-            if self.aux[f.func.name].get('ns', None) == 'aten' and str(f.func.name) not in SKIP_FALLBACK_OPS:
+            # TODO(PYTORCH-12760): support fallback to SparseCPU
+            if self.aux[f.func.name].get('ns', None) == 'aten' and str(f.func.name) not in SKIP_FALLBACK_OPS \
+               and dispatch != "SparsePrivateUse1":
                 if len(f.func.name.overload_name):
                     aten_op_str = f"ATEN_OP2({f.func.name.name}, {f.func.name.overload_name})"
                 else:
                     aten_op_str = f"ATEN_OP({f.func.name.name})"
-
                 fallback_str = f"at::native::call_fallback_fn_symint<&mlu_fail_fallback, {aten_op_str}>::call"
                 fallback_fn = f"auto fallback_fn = {fallback_str};"
                 param_str = ', '.join(['impl_fn', 'fallback_fn', f"{sig_args_expr_str}"])
