@@ -253,7 +253,7 @@ inline bool isPinnedPtr(T* ptr) {
   cnrtPointerAttributes_t attr;
   cnrtRet_t status = cnrtPointerGetAttributes(&attr, const_cast<void*>(ptr));
   if (status == cnrtErrorArgsInvalid) {
-    cnrtGetErrorStr(status);
+    (void)cnrtGetLastError(); // clear cnrt error
     return false;
   }
   TORCH_CNRT_CHECK(status);
