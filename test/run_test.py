@@ -209,7 +209,14 @@ def test_with_stdout(test_module, test_directory, options):
 def run_test_with_subprocess_for_mlu(test_module, test_directory, options):
     options_copy = copy.deepcopy(options)
     options_copy.pytest = False
-    return run_test(test_module, test_directory, options_copy, "--subprocess")
+    return run_test(
+        test_module,
+        test_directory,
+        options_copy,
+        "--subprocess",
+        "--result_dir",
+        options.result_dir,
+    )
 
 
 CUSTOM_HANDLERS = {

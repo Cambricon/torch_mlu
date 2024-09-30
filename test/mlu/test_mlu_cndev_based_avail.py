@@ -13,11 +13,12 @@ import torch_mlu
 with patch.dict(os.environ, {"PYTORCH_CNDEV_BASED_MLU_CHECK": "1"}):
     # Before executing the desired tests, we need to disable MLU initialization and fork_handler additions that would
     # otherwise be triggered by the `torch.testing._internal.common_utils` module import
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.append(cur_dir + "/../")
+    from common_utils import TestCase, run_tests  # pylint: disable=C0413
     from torch.testing._internal.common_utils import (
         instantiate_parametrized_tests,
         parametrize,
-        run_tests,
-        TestCase,
     )
 
     # NOTE: Because `remove_device_and_dtype_suffixes` initializes MLU context (triggered via the import of
