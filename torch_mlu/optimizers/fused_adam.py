@@ -70,12 +70,16 @@ class FusedAdam(torch.optim.Optimizer):
         # find the device of the first parameter
         # MLU side is different with GPU-APEX, apex is third party lib, and don't check the device
         # of _dummy_overflow_buf when dispatch to kernel in non-capture mode.
-        device = "mlu:0"
+        device = torch.device("mlu:0")
         for group in self.param_groups:
             if len(group["params"]) == 0:
                 continue
             device = group["params"][0].device
-        self._dummy_overflow_buf = torch.tensor([0], dtype=torch.int).to(device)
+            break
+        if device.type == "cpu":
+            self._dummy_overflow_buf = torch.tensor([0], dtype=torch.int).to("mlu")
+        else:
+            self._dummy_overflow_buf = torch.tensor([0], dtype=torch.int).to(device)
 
     def zero_grad(self):
         if self.set_grad_none:
@@ -121,6 +125,7 @@ class FusedAdam(torch.optim.Optimizer):
             g_32, p_32, m_32, v_32 = [], [], [], []
             g_64, p_64, m_64, v_64 = [], [], [], []
 
+            check_buffer_device = True
             for p in group["params"]:
                 if p.grad is None:
                     continue
@@ -129,6 +134,9 @@ class FusedAdam(torch.optim.Optimizer):
                         "FusedAdam does not support sparse gradients, please consider SparseAdam instead"
                     )
 
+                if check_buffer_device and self._dummy_overflow_buf.device != p.device:
+                    self._dummy_overflow_buf = self._dummy_overflow_buf.to(p.device)
+                    check_buffer_device = False
                 state = self.state[p]
                 # State initialization
                 if len(state) == 0:
