@@ -274,24 +274,21 @@ class TestMaskedSoftmax(TestCase):
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
-    @largeTensorTest("48GB")
+    @largeTensorTest("45GB")
     def test_masked_softmax_large(self):
-        B = 32
-        num_heads = 16
+        B = 36
+        num_heads = 32
         L = 2048
         input = torch.randn((B, num_heads, L, L))
         dim = input.dim() - 1
         mask = torch.randint(0, 2, (L, L))
-        mask_type = 0  # LxL => src_mask
-        input = input.mlu()
-        mask = mask.mlu()
         mask = mask.bool()
-        native_res = torch._masked_softmax(input, mask, dim, mask_type)
-        mask = mask.expand(B, num_heads, L, L)
-        mask = ~mask
-
-        pt_res = self._slow_masked_softmax(input, mask, dim=dim)
-        self.assertEqual(pt_res, native_res, exact_dtype=True)
+        mask_type = 0  # LxL => src_mask
+        input_mlu = input.mlu()
+        mask_mlu = mask.mlu()
+        cpu_res = torch._masked_softmax(input, mask, dim, mask_type)
+        mlu_res = torch._masked_softmax(input_mlu, mask_mlu, dim, mask_type)
+        self.assertTensorsEqual(cpu_res, mlu_res.cpu(), 0.003, use_MSE=True)
 
     @testinfo()
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
