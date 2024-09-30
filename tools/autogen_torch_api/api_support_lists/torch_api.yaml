@@ -2954,7 +2954,7 @@
 
   - api: torch.nn.functional.scaled_dot_product_attention
     supported: true
-    limitations: 不支持nested_tensor输入。Memory-Efficient Attention不能对attn_mask求导。Memory-Efficient Attention不支持sequence_length_k!=sequence_length_q且is_causal=True。 MLU300系列板卡不支持融合attention算子。
+    limitations: 不支持nested_tensor输入。Memory-Efficient Attention不能对attn_mask求导。MLU300系列板卡不支持融合attention算子。
 
   - api: torch.nn.functional.selu
     supported: true
