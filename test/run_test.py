@@ -200,7 +200,14 @@ def test_executable_file(test_module, test_directory, options):
 def run_test_with_subprocess_for_mlu(test_module, test_directory, options):
     options_copy = copy.deepcopy(options)
     options_copy.pytest = False
-    return run_test(test_module, test_directory, options_copy, "--subprocess")
+    return run_test(
+        test_module,
+        test_directory,
+        options_copy,
+        "--subprocess",
+        "--result_dir",
+        options.result_dir,
+    )
 
 
 CUSTOM_HANDLERS = {
@@ -334,8 +341,6 @@ def get_executable_command(options, allow_pytest):
             print_to_stderr(
                 "Pytest cannot be used for this test. Falling back to unittest."
             )
-    if hasattr(options, "subprocess") and options.subprocess:
-        executable += ["-m", "torch_mlu_overrides.run"]
     return executable
 
 

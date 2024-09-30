@@ -47,6 +47,16 @@ parser.add_argument(
 )
 parser.add_argument("--seed", type=int, default=1234)
 parser.add_argument("--accept", action="store_true")
+parser.add_argument(
+    "--save-xml",
+    action="store_true",
+    help="If true, save xml result in result_dir",
+)
+parser.add_argument(
+    "--result_dir",
+    default="",
+    help="If result_dir is not empty, generate xml results to the specified directory.",
+)
 args, remaining = parser.parse_known_args()
 TEST_IN_SUBPROCESS = args.subprocess
 TEST_LARGETENSOR = args.large or os.environ.get(
@@ -248,6 +258,11 @@ def shell(command, cwd=None, env=None, fail_log=None):
         p.wait()
 
 
+def _get_test_report_path():
+    test_source = "python-unittest" if args.result_dir == "" else args.result_dir
+    return test_source
+
+
 def run_tests(argv=UNITTEST_ARGS):
     if TEST_IN_SUBPROCESS:
         suite = unittest.TestLoader().loadTestsFromModule(__main__)
@@ -264,7 +279,13 @@ def run_tests(argv=UNITTEST_ARGS):
         failed_tests = []
         for case in test_cases:
             test_case_full_name = case.id().split(".", 1)[1]
-            exitcode = shell([sys.executable] + argv + [test_case_full_name])
+            exitcode = shell(
+                [sys.executable]
+                + argv
+                + ["--save-xml"]
+                + ["--result_dir", args.result_dir]
+                + [test_case_full_name]
+            )
             if exitcode != 0:
                 failed_tests.append(test_case_full_name)
 
@@ -272,7 +293,51 @@ def run_tests(argv=UNITTEST_ARGS):
             len(failed_tests), "\n\t".join(failed_tests)
         )
     else:
-        unittest.main(argv=argv)
+        if args.save_xml and args.result_dir != "":
+            import xmlrunner  # type: ignore[import]
+            from xmlrunner.result import _XMLTestResult  # type: ignore[import]
+
+            class XMLTestResultVerbose(_XMLTestResult):
+                """
+                Adding verbosity to test outputs:
+                by default test summary prints 'skip',
+                but we want to also print the skip reason.
+                GH issue: https://github.com/pytorch/pytorch/issues/69014
+
+                This works with unittest_xml_reporting<=3.2.0,>=2.0.0
+                (3.2.0 is latest at the moment)
+                """
+
+                def __init__(self, *args, **kwargs):
+                    super().__init__(*args, **kwargs)
+
+                def addSkip(self, test, reason):
+                    super().addSkip(test, reason)
+                    for c in self.callback.__closure__:
+                        if (
+                            isinstance(c.cell_contents, str)
+                            and c.cell_contents == "skip"
+                        ):
+                            # this message is printed in test summary;
+                            # it stands for `verbose_str` captured in the closure
+                            c.cell_contents = f"skip: {reason}"
+
+                def printErrors(self) -> None:
+                    super().printErrors()
+                    self.printErrorList("XPASS", self.unexpectedSuccesses)
+
+            test_report_path = _get_test_report_path()
+            print(f"test_report_path {test_report_path}")
+            unittest.main(
+                argv=argv,
+                testRunner=xmlrunner.XMLTestRunner(
+                    output=test_report_path,
+                    verbosity=2,
+                    resultclass=XMLTestResultVerbose,
+                ),
+            )
+        else:
+            unittest.main(argv=argv)
 
 
 def setup_seed(seed=1234):
