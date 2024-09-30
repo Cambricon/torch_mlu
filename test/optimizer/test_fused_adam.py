@@ -312,6 +312,42 @@ class TestFusedAdam(TestFusedOptimizer):
         grad_size = [16, 1024]
         self.run_net_and_compare_weight(model, model_, input_size, grad_size)
 
+    def test_opti_init_before_model_copy_to_device(self):
+        model = Model()
+        input_size = [32, 1, 28, 28]
+        grad_size = [32, 10]
+        opti = self.fused_optim(model.parameters(), **self.options_list[0])
+        model = model.mlu()
+        for i in range(3):
+            x = torch.rand(input_size).mlu()
+            gt = torch.rand(grad_size).mlu()
+            # Reference
+            y = model(x)
+            loss = ((gt - y) ** 2).mean()
+            loss.backward()
+            opti.step()
+        torch.mlu.synchronize()
+
+    @unittest.skipIf(torch.mlu.device_count() < 2, "more than 1 GPU required")
+    def test_opti_init_before_model_copy_to_device_one(self):
+        model = Model()
+        input_size = [32, 1, 28, 28]
+        grad_size = [32, 10]
+        # buffer is on mlu:0
+        opti = self.fused_optim(model.parameters(), **self.options_list[0])
+        with torch.mlu.device("mlu:1"):
+            # parameters on mlu:1
+            model = model.mlu()
+            for i in range(3):
+                x = torch.rand(input_size).mlu()
+                gt = torch.rand(grad_size).mlu()
+                # Reference
+                y = model(x)
+                loss = ((gt - y) ** 2).mean()
+                loss.backward()
+                opti.step()
+            torch.mlu.synchronize()
+
     def test_frozen_model(self):
         nelem = 1
         options_list = [
