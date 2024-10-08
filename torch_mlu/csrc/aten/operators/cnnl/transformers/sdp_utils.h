@@ -230,52 +230,22 @@ inline bool check_for_attn_mask(const sdp_params& params, bool debug) {
 
 inline bool check_head_dim_size(const sdp_params& params, bool debug) {
   const auto query_size_last = params.query.sym_size(-1);
-  const auto key_size_last = params.key.sym_size(-1);
-  const auto value_size_last = params.value.sym_size(-1);
-  bool same_head_dim_size =
-      query_size_last == key_size_last && query_size_last == value_size_last;
-  if (!(same_head_dim_size && (c10::SymInt(256) >= query_size_last) &&
-        (query_size_last >= c10::SymInt(64)) && (query_size_last % 8 == 0))) {
-    if (debug) {
-      TORCH_WARN(
-          "Flash attention requires q,k,v to have the same last dimension.",
-          "256>=query.size(-1)>=64.",
-          "Flash attention requires last dimension of inputs to be divisible by 8.",
-          " Got Query.size(-1): ",
-          query_size_last,
-          ", Key.size(-1): ",
-          key_size_last,
-          ", Value.size(-1): ",
-          value_size_last,
-          " instead.");
-    }
-    return false;
-  }
-  return true;
-}
-
-inline bool check_head_dim_size_mem_efficient(
-    const sdp_params& params,
-    bool debug) {
-  const auto query_size_last = params.query.sym_size(-1);
   const auto value_size_last = params.value.sym_size(-1);
   if (!(query_size_last == params.key.sym_size(-1) &&
-        (c10::SymInt(256) >= query_size_last) &&
-        (query_size_last >= c10::SymInt(64)) &&
-        (c10::SymInt(256) >= value_size_last) &&
-        (value_size_last >= c10::SymInt(64)) && (query_size_last % 8 == 0) &&
-        (value_size_last % 8 == 0))) {
+        (c10::SymInt(512) >= query_size_last) &&
+        (query_size_last >= c10::SymInt(1)) &&
+        (c10::SymInt(512) >= value_size_last) &&
+        (value_size_last >= c10::SymInt(1)))) {
     if (debug) {
       TORCH_WARN(
-          "Mem efficient attention requires query.size(-1)==key.size(-1),",
-          "256>=query.size(-1)>=64 and 256>=value.size(-1)>=64.",
-          "Mem efficient attention requires last dimension of Q/V to be divisible by 8.",
+          "Fused attention requires query.size(-1)==key.size(-1),",
+          "512>=query.size(-1)>=1 and 512>=value.size(-1)>=1.",
           "Got Query.size(-1): ",
           query_size_last,
           ", Key.size(-1): ",
           params.key.sym_size(-1),
           ", Value.size(-1): ",
-          params.value.sym_size(-1));
+          value_size_last);
     }
     return false;
   }
@@ -499,9 +469,6 @@ inline bool check_for_seq_len_1_nested_tensor(sdp_params params, bool debug) {
   return true;
 }
 
-inline double ceiling(double number, double significance) {
-  return ceil(number / significance) * significance;
-}
 
 inline bool check_fused_kernel_mlu_support(
     sdp_params const& params,
@@ -513,35 +480,6 @@ inline bool check_fused_kernel_mlu_support(
           "Both fused kernels only supports specified MLU series.",
           "Attempting to run on ",
           (*prop).name,
-          ".");
-    }
-    return false;
-  }
-
-  auto batch_size = params.query.size(0);
-  auto num_heads = params.query.size(1);
-  auto seq_len_q = params.query.size(-2);
-  auto seq_len_k = params.key.size(-2);
-  auto split_cond = batch_size * num_heads * ceil(((float)seq_len_k) / 256);
-  if (!(split_cond > 12)) {
-    if (debug) {
-      TORCH_WARN(
-          "Both fused kernels require split condition greater than 12.",
-          "Got ",
-          split_cond,
-          ".");
-    }
-    return false;
-  }
-
-  auto valid_data_ratio_cond = seq_len_q * seq_len_k /
-      (ceiling(seq_len_q, 512) * ceiling(seq_len_k, 256));
-  if (!(valid_data_ratio_cond >= 0.6)) {
-    if (debug) {
-      TORCH_WARN(
-          "Both fused kernels require valid data ratio greater than or equal 0.6.",
-          "Got ",
-          valid_data_ratio_cond,
           ".");
     }
     return false;

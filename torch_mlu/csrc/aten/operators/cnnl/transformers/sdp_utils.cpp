@@ -78,7 +78,7 @@ bool use_mem_efficient_attention(sdp_params params, bool debug) {
       check_requires_grad_and_nested,
       check_tensor_shapes,
       check_batch_size_and_num_heads,
-      check_head_dim_size_mem_efficient,
+      check_head_dim_size,
       check_for_seq_len_0_nested_tensor,
       check_nonzero_sequence_lengths,
       check_last_dim_stride_equals_1,
