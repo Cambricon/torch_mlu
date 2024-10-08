@@ -5162,7 +5162,8 @@
     supported: true
 
   - api: torch.cuda.CUDAPluggableAllocator
-    supported: false
+    corresponding MLU api: torch.mlu.MLUPluggableAllocator
+    supported: true
 
   - api: torch.cuda.Event
     corresponding MLU api: torch.mlu.Event
@@ -5269,7 +5270,8 @@
     supported: true
 
   - api: torch.cuda.change_current_allocator
-    supported: false
+    corresponding MLU api: torch.mlu.change_current_allocator
+    supported: true
 
   - api: torch.cuda.clock_rate
     supported: false
