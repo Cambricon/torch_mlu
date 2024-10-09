@@ -7,3 +7,4 @@ rm -rf torch_mlu/docs &>/dev/null
 rm -rf torch_mlu/pytorch_patches &>/dev/null
 rm -rf torch_mlu/scripts/apply_patches_to_pytorch.sh &>/dev/null
 rm -rf torch_mlu/scripts/build_torch_mlu.sh &>/dev/null
+rm -rf torchaudio_mlu/docs &>/dev/null

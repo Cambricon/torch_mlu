@@ -13,6 +13,7 @@ fi
 
 export PYTORCH_HOME=${SRC_PACKAGES}/pytorch
 export TORCH_MLU_HOME=${SRC_PACKAGES}/torch_mlu
+export TORCHAUDIO_MLU_HOME=${SRC_PACKAGES}/torchaudio_mlu
 
 if [ x"${NEUWARE_HOME}" == "x" ]; then
   export NEUWARE_HOME=usr/local/neuware

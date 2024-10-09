@@ -18,6 +18,10 @@ function checkEnv() {
         echo "ERROR : TORCH_MLU_COMMIT_ID is not set"
         exit 1
     fi
+    if [[ -z "${TORCHAUDIO_MLU_BRANCH}" ]]; then
+        echo "ERROR : TORCH_MLU_BRANCH is not set"
+        exit 1
+    fi
     if [[ -z "${VISION_VERSION}" ]]; then
         echo "ERROR : VISION_VERSION is not set"
         exit 1
@@ -329,6 +333,25 @@ mv /tmp/$WHEELHOUSE_DIR/torch_mlu*linux*.whl /$WHEELHOUSE_DIR/
 popd
 pip install /$WHEELHOUSE_DIR/torch_mlu*linux*.whl
 
+########################################################
+# Compile torchaudio_mlu wheels
+#######################################################
+git clone http://gitlab.software.cambricon.com/neuware/oss/pytorch/torchaudio_mlu.git -b "${TORCHAUDIO_MLU_BRANCH}" --single-branch
+ffmpeg_mlu_version=`cat ./torchaudio_mlu/version.info | grep ffmpeg_mlu | awk -F '\"' '{print $4}'`
+wget "http://daily.software.cambricon.com/release/ffmpeg-mlu/${ffmpeg_mlu_version}/src/ffmpeg-mlu-${ffmpeg_mlu_version}.tar.gz"
+tar xvzf "ffmpeg-mlu-${ffmpeg_mlu_version}.tar.gz" -C ./
+ln -sf "ffmpeg-mlu-${ffmpeg_mlu_version}" ffmpeg_mlu
+pushd ffmpeg_mlu
+bash build_ffmpeg.sh
+popd
+pushd torchaudio_mlu
+pip install ninja
+FFMPEG_DIR=/ffmpeg_mlu/install python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
+mv /tmp/$WHEELHOUSE_DIR/torchaudio_mlu*linux*.whl /$WHEELHOUSE_DIR/
+popd
+pip install /$WHEELHOUSE_DIR/torchaudio_mlu*linux*.whl
+export LD_LIBRARY_PATH=/ffmpeg_mlu/install/lib:${LD_LIBRARY_PATH}
+
 if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null; then
     if [[ "$PYTORCH_VERSION" == "main" ]] || [[ "$PYTORCH_VERSION" == "release"* ]]; then
         unset PYTORCH_VERSION    # This env may influence the deps of vision/audio
@@ -368,3 +391,8 @@ else
     #######################################################
     python -c 'import torch; import torch_mlu; import torchvision; import torchaudio; print(torch.randn(3))'
 fi
+
+########################################################
+# Smoke test torchaudio_mlu
+#######################################################
+python -c "import torchaudio; import torchaudio_mlu; print(torchaudio.utils.ffmpeg_utils.get_video_decoders()['h264_mludec'])"
