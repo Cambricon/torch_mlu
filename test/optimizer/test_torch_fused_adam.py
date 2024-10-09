@@ -158,7 +158,7 @@ class TestFusedOptimizer(unittest.TestCase):
             tst_options["fused"] = True
             ref_optim = torch.optim.Adam(model.parameters(), **options)
             tst_optim = torch.optim.Adam(model_.parameters(), **tst_options)
-            if gradScalar is not None:
+            if gradScalar is True:
                 ref_scalar = torch.mlu.amp.GradScaler()
                 tst_scalar = torch.mlu.amp.GradScaler()
             memory_format = torch.contiguous_format
@@ -175,7 +175,7 @@ class TestFusedOptimizer(unittest.TestCase):
                 y = model(x)
                 loss = ((gt - y) ** 2).mean()
 
-                if gradScalar is not None:
+                if gradScalar is True:
                     ref_scalar.scale(loss).backward()
                     ref_scalar.step(ref_optim)
                     ref_scalar.update()
@@ -187,7 +187,7 @@ class TestFusedOptimizer(unittest.TestCase):
                 y = model_(x_)
                 loss_mlu = ((gt_ - y) ** 2).mean()
 
-                if gradScalar is not None:
+                if gradScalar is True:
                     tst_scalar.scale(loss_mlu).backward()
                     tst_scalar.step(tst_optim)
                     tst_scalar.update()

@@ -1,0 +1,495 @@
+/*************************************************************************
+ * Copyright (C) [2019-2023] by Cambricon, Inc.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+#include "bang_internal.h"
+#include "aten/operators/bang/internal/multi_tensor_apply.h"
+
+namespace torch_mlu {
+namespace ops {
+
+#define ADAM_NRAM_SIZE (MAX_NRAM_SIZE + REM_FOR_STACK - 32 * 1024)
+#define ALIGN_SIZE 128
+
+using FULL_T = float;
+// Use half of the max nram size for ping-pong
+__nram__ char total_nram[ADAM_NRAM_SIZE];
+
+__mlu_func__ __mlu_host__ inline int get_element_num(const int& split_num) {
+  int SIZE_PER_REGION_UNPAD = ADAM_NRAM_SIZE / split_num;
+  return SIZE_PER_REGION_UNPAD / ALIGN_SIZE * ALIGN_SIZE;
+}
+
+template<int depth>
+__mlu_func__ inline void torch_fused_sgd_internal(const int& num_align,
+                                                  FULL_T* variable_nram,
+                                                  FULL_T* grad_nram,
+                                                  FULL_T* moment_buffer_nram,
+                                                  FULL_T* temp_nram_1,
+                                                  FULL_T* temp_nram_2,
+                                                  const float& learning_rate_neg,
+                                                  const float& weight_decay,
+                                                  const float& momentum,
+                                                  const float& dampening_sub,
+                                                  const bool& nesterov,
+                                                  const bool& maximize,
+                                                  const bool& is_first_step) {
+  FULL_T* temp_nram_t = grad_nram;
+  if (maximize) {
+    __bang_mul_scalar(temp_nram_1, grad_nram, -1.0f, num_align);
+    // __bang_neg(temp_nram, temp_nram_t, num_align);
+    temp_nram_t = temp_nram_1;
+  }
+  // g += weight_decay * p;
+  if (weight_decay != 0) {
+    __bang_fusion(FUSION_FMA, temp_nram_1, variable_nram, weight_decay, temp_nram_t, num_align, num_align);
+    temp_nram_t = temp_nram_1;
+  }
+
+  if constexpr (depth == 3) {
+    if (is_first_step) {
+      // copy grad to moment_buffer, and using compute instruct instead memcpy.
+      __bang_move(moment_buffer_nram, temp_nram_t, num_align * sizeof(FULL_T));
+    } else {
+      // (momentum * static_cast<opmath_t>(r_args[2][ii]) + (1 - dampening) * g)
+      __bang_mul_scalar(temp_nram_2, temp_nram_t, dampening_sub, num_align);
+      __bang_fusion(FUSION_FMA, moment_buffer_nram, moment_buffer_nram, momentum, temp_nram_2, num_align, num_align);
+    }
+    if (nesterov) {
+      // g = g + momentum * momentum_buffer;
+      __bang_fusion(FUSION_FMA, temp_nram_2, moment_buffer_nram, momentum, temp_nram_t, num_align, num_align);
+      temp_nram_t = temp_nram_2;
+    } else {
+      temp_nram_t = moment_buffer_nram;
+    }
+  }
+  // p -= double_lr * g;
+  __bang_fusion(FUSION_FMA, variable_nram, temp_nram_t, learning_rate_neg, variable_nram, num_align, num_align);
+}
+
+template<typename T, int depth>
+using torch_fused_sgd_func_ptr_type = void (*)(T* variable_nram,
+                                               T* grad_nram,
+                                               T* moment_buffer_nram,
+                                               T* temp_nram_1,
+                                               T* temp_nram_2,
+                                               const int& num_align,
+                                               const float& learning_rate_neg,
+                                               const float& weight_decay,
+                                               const float& dampening_sub,
+                                               const float& dampening,
+                                               const bool& nesterov,
+                                               const bool& maximize,
+                                               const bool& is_first_step,
+                                               const bool& is_grad_scale,
+                                               const float& grad_scale,
+                                               const int& load_offset);
+
+// If is_grad_scale is True, grad need write back to gdram, so need another nram to as temp buffer.
+// otherwise grad_nram can be reused as temp buffer, and temp_nram is nullptr.
+template<typename T, int depth,
+         std::enable_if_t<std::disjunction_v<std::is_same<float, T>,
+                                             std::is_same<bfloat16_t, T>,
+                                             std::is_same<half, T>>, int> = 1>
+__mlu_func__ inline void torch_fused_sgd(T* variable_nram,
+                                         T* grad_nram,
+                                         T* moment_buffer_nram,
+                                         T* temp_nram_1,
+                                         T* temp_nram_2,
+                                         const int& num_align,
+                                         const float& learning_rate_neg,
+                                         const float& weight_decay,
+                                         const float& momentum,
+                                         const float& dampening_sub,
+                                         const bool& nesterov,
+                                         const bool& maximize,
+                                         const bool& is_first_step,
+                                         const bool& is_grad_scale,
+                                         const float& grad_scale,
+                                         const int& load_offset) {
+  using FULL_T = float;
+  FULL_T* grad_nram_f = (FULL_T*)grad_nram;
+  FULL_T* variable_nram_f = (FULL_T*)variable_nram;
+  FULL_T* moment_buffer_nram_f = (FULL_T*)moment_buffer_nram;
+  if constexpr (std::is_same_v<T, bfloat16_t>) {
+    __bang_bfloat162float(grad_nram_f, grad_nram + load_offset, num_align);
+    __bang_bfloat162float(variable_nram_f, variable_nram + load_offset, num_align);
+    if constexpr (depth == 3) {
+      __bang_bfloat162float(moment_buffer_nram_f, moment_buffer_nram + load_offset, num_align);
+    }
+  } else if constexpr (std::is_same_v<T, half>) {
+    __bang_half2float(grad_nram_f, grad_nram + load_offset, num_align);
+    __bang_half2float(variable_nram_f, variable_nram + load_offset, num_align);
+    if constexpr (depth == 3) {
+      __bang_half2float(moment_buffer_nram_f, moment_buffer_nram + load_offset, num_align);
+    }
+  }
+
+  if (is_grad_scale == true) {
+    // grad_nram need store back, so can't reuse this nram.
+    __bang_mul_scalar(grad_nram_f, grad_nram_f, grad_scale, num_align);
+    torch_fused_sgd_internal<depth>(num_align, variable_nram_f,
+        grad_nram_f, moment_buffer_nram_f, (FULL_T*)temp_nram_1,
+        (FULL_T*)temp_nram_2, learning_rate_neg, weight_decay,
+        momentum, dampening_sub, nesterov, maximize, is_first_step);
+  } else {
+    // grad_nram can be reused as temp buffer, and temp_nram is nullptr.
+    torch_fused_sgd_internal<depth>(num_align, variable_nram_f,
+        grad_nram_f, moment_buffer_nram_f, grad_nram_f, (FULL_T*)temp_nram_1,
+        learning_rate_neg, weight_decay, momentum, dampening_sub, nesterov,
+        maximize, is_first_step);
+  }
+  if constexpr (std::is_same_v<T, bfloat16_t>) {
+    __bang_float2bfloat16_rn(variable_nram, variable_nram_f, num_align);
+    if constexpr (depth == 3) {
+      __bang_float2bfloat16_rn(moment_buffer_nram, moment_buffer_nram_f, num_align);
+    }
+    if (is_grad_scale == true) {
+      __bang_float2bfloat16_rn(grad_nram, grad_nram_f, num_align);
+    }
+  } else if constexpr (std::is_same_v<T, half>) {
+    __bang_float2half_rn(variable_nram, variable_nram_f, num_align);
+    if constexpr (depth == 3) {
+      __bang_float2half_rn(moment_buffer_nram, moment_buffer_nram_f, num_align);
+    }
+    if (is_grad_scale == true) {
+      __bang_float2half_rn(grad_nram, grad_nram_f, num_align);
+    }
+  }
+}
+
+template<typename tupleTypeList, int maxBlockNum, int depth>
+struct TorchFusedSGD {
+
+using FULL_T = float;
+
+__mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<maxBlockNum, depth> container,
+                                const float* lr_ptr,
+                                const float learning_rate,
+                                const float weight_decay,
+                                const float momentum,
+                                const float dampening,
+                                const bool nesterov,
+                                const bool maximize,
+                                const bool is_first_step,
+                                const float* grad_scale_ptr,
+                                const float* found_inf_ptr,
+                                const int char_element_num) {
+  if (__is_mpu()) return;
+  if (found_inf_ptr && *found_inf_ptr == 1) return;
+  using T = std::tuple_element_t<0, tupleTypeList>;
+  // variable_nram, grad_nram, moment_buffer_nram.
+  // Why need to using Load and Store nram array?
+  // Answer: save nram num is not equal with load nram num;
+  constexpr int array_depth = std::tuple_size_v<tupleTypeList>;
+  void* load_ping_nram_array[array_depth] = {nullptr};
+  void* load_pong_nram_array[array_depth] = {nullptr};
+  void* store_ping_nram_array[array_depth] = {nullptr};
+  void* store_pong_nram_array[array_depth] = {nullptr};
+  int char_ping_pong_offset = char_element_num * depth;
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    load_ping_nram_array, &(total_nram[0]), char_element_num);
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    load_pong_nram_array, &(total_nram[char_ping_pong_offset]), char_element_num);
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    store_ping_nram_array, &(total_nram[0]), char_element_num);
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    store_pong_nram_array, &(total_nram[char_ping_pong_offset]), char_element_num);
+  // More details in Note [FusedSGD Nram space split]
+  const bool is_grad_scale = grad_scale_ptr != nullptr;
+  T* temp_nram_1 = nullptr;
+  T* temp_nram_2 = nullptr;
+  if constexpr (depth == 3) {
+    temp_nram_1 = (T*)(total_nram + 2 * char_ping_pong_offset);
+    temp_nram_2 = is_grad_scale ? (T*)((char*)temp_nram_1 + char_element_num) : nullptr;
+  } else {
+    temp_nram_1 = is_grad_scale ? (T*)(total_nram + 2 * char_ping_pong_offset) : nullptr;
+  }
+
+  // no need to write grad back
+  if (is_grad_scale == false) {
+    store_ping_nram_array[1] = nullptr;
+    store_pong_nram_array[1] = nullptr;
+  }
+
+  torch_fused_sgd_func_ptr_type<T, depth> compute_func = &torch_fused_sgd<T, depth>;
+
+  torch_mlu::bangcommon::MemoryPolicy<tupleTypeList, maxBlockNum, depth>
+    data_handler(container);
+  const int circle_num = data_handler.get_circle_num();
+  int pong_size = 0;
+  int ping_size = 0;
+
+  // load_offset for half and bfloat16_t, and copy data to last part of nram,
+  // for using same nram space to convert from half/bfloat16_t to float.
+  // This is not need for store data back to gdram.
+  // char_element_num size: |-----------------|-----------------|
+  //                    float start    half/bfloat16_t start
+  int load_offset = sizeof(T) == 2 ? char_element_num / sizeof(FULL_T) : 0;
+  const float dampening_sub = 1.0f - dampening;
+
+  // caculate decay and grad_scale
+  float gpr_lr = lr_ptr != nullptr ? __load_gdram(lr_ptr) : learning_rate;
+  float gpr_grad_scale = grad_scale_ptr != nullptr ? __load_gdram(grad_scale_ptr) : 1.0f;
+  if (circle_num > 0) {
+    data_handler.multi_data_load_same_size_with_offset(0, load_ping_nram_array, ping_size, load_offset);
+    __sync_io();
+  }
+
+  // for __load_gdram async after __sync_io.
+  gpr_lr = -1 * gpr_lr;
+  gpr_grad_scale = 1.0f / gpr_grad_scale;
+
+  if (circle_num > 1) {
+    // pong and compute
+    data_handler.multi_data_load_same_size_with_offset(1, load_pong_nram_array, pong_size, load_offset);
+    // compute ping
+    torch_mlu::bangcommon::invoke<array_depth, tupleTypeList>(compute_func, load_ping_nram_array,
+                             temp_nram_1, temp_nram_2, ping_size, gpr_lr, weight_decay, momentum,
+                             dampening_sub, nesterov, maximize, is_first_step, is_grad_scale,
+                             gpr_grad_scale, load_offset);
+    __sync_io_move_compute(false, false, true, true, false, false);
+    __sync_io_move_compute(true, false, false, false, false, true);
+  }
+  for (int i = 0; i < circle_num - 2; i++) {
+    // store data
+    int ping_pong = i % 2;
+    // compute data date order is different with load and store data.
+    if (ping_pong) {
+      data_handler.multi_data_store_same_size(i, store_pong_nram_array, pong_size);
+      data_handler.multi_data_load_same_size_with_offset(i + 2, load_pong_nram_array,
+                                                         pong_size, load_offset);
+      torch_mlu::bangcommon::invoke<array_depth, tupleTypeList>(
+                    compute_func, load_ping_nram_array,
+                    temp_nram_1, temp_nram_2, ping_size, gpr_lr, weight_decay, momentum,
+                    dampening_sub, nesterov, maximize, is_first_step, is_grad_scale,
+                    gpr_grad_scale, load_offset);
+    } else {
+      data_handler.multi_data_store_same_size(i, store_ping_nram_array, ping_size);
+      data_handler.multi_data_load_same_size_with_offset(i + 2, load_ping_nram_array,
+                                                         ping_size, load_offset);
+      torch_mlu::bangcommon::invoke<array_depth, tupleTypeList>(
+                    compute_func, load_pong_nram_array,
+                    temp_nram_1, temp_nram_2, pong_size, gpr_lr, weight_decay, momentum,
+                    dampening_sub, nesterov, maximize, is_first_step, is_grad_scale,
+                    gpr_grad_scale, load_offset);
+    }
+    __sync_io_move_compute(false, false, true, true, false, false);
+    __sync_io_move_compute(true, false, false, false, false, true);
+  }
+
+  // store circle - 1 data
+  int ping_pong = circle_num % 2;
+  if (circle_num > 1) {
+    data_handler.multi_data_store_same_size(circle_num - 2,
+                                            ping_pong ? store_pong_nram_array : store_ping_nram_array,
+                                            ping_pong ? pong_size : ping_size);
+  }
+
+  // ping_pong = (circle_num + 1) % 2;
+  if (circle_num > 0) {
+    // compute last circle
+    torch_mlu::bangcommon::invoke<array_depth, tupleTypeList>(compute_func,
+                  ping_pong ? load_ping_nram_array : load_pong_nram_array,
+                  temp_nram_1, temp_nram_2, ping_pong ? ping_size : pong_size,
+                  gpr_lr, weight_decay, momentum, dampening_sub,
+                  nesterov, maximize, is_first_step, is_grad_scale,
+                  gpr_grad_scale, load_offset);
+    __sync_compute();
+    // store last circle data
+    data_handler.multi_data_store_same_size(circle_num - 1,
+                                            ping_pong ? store_ping_nram_array : store_pong_nram_array,
+                                            ping_pong ? ping_size : pong_size);
+  }
+}
+
+};  // struct ApplyAdam
+
+/**
+ * Note [FusedSGD Nram space split]
+ * Load fix num data to nram each time per tensor.
+ * Data order in nram: variable_nram, grad_nram, moment_buffer_nram.
+ * Each iteator, only a block of each tensor will be computed, and then
+ * variable_nram, grad_nram(only when grad_scale_ptr is not nullptr),
+ * moment_buffer_nram data need to write back to gdram.
+ * Restrict and Note:
+ * 1) grad_ptr, param_ptr and moment_buffer_ptr
+ *    are support bfloat16_t, float16 and float32 type;
+ * 2) All data on nram compute are float type, so need to convert
+ *    to float type before compute;
+ * 3) Each block contains element_num is less or equal to char_element_num / sizeof(float);
+ *
+ * Nram split rule:
+ * 1) For momentum situation, and it's mean depth's value is 3.
+ *   1.1) grad_scale_ptr is not nullptr:
+ *        param_ping, param_pong, grad_ping, grad_pong, momentum_buffer_ping, momentum_buffer_pong
+ *        temp_buffer_1 and temp_buffer2.
+ *        temp_buffer_1 is used to store weight_decay result;
+ *        temp_buffer_1 is used to store momentum buffer middle result;
+ *   1.2) grad_scale_ptr is nullptr:
+ *        param_ping, param_pong, grad_ping, grad_pong, momentum_buffer_ping, momentum_buffer_pong
+ *        temp_buffer_1.
+ *        grad_ping/grad_pong is used to store weight_decay result;
+ *        temp_buffer_1 is used to store momentum buffer middle result;
+ * 2) For no momentum situation, and it's mean depth's value is 2.
+ *   2.1) grad_scale_ptr is not nullptr:
+ *        param_ping, param_pong, grad_ping, grad_pong, temp_buffer_1.
+ *        temp_buffer_1 is used to store weight_decay result;
+ *   2.2) grad_scale_ptr is nullptr:
+ *        param_ping, param_pong, grad_ping, grad_pong, momentum_buffer_ping, momentum_buffer_pong
+ *        temp_buffer_1.
+ *        grad_ping/grad_pong is used to store weight_decay result;
+ */
+
+template <cnrtDataType_V2_t value, int depth>
+void bang_torch_fused_sgd_internal(
+    const std::vector<std::array<void*, depth>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const float* lr_ptr,
+    const float learning_rate,
+    const float weight_decay,
+    const float momentum,
+    const float dampening,
+    const bool nesterov,
+    const bool maximize,
+    const bool is_first_step,
+    const float* grad_scale_ptr,
+    const float* found_inf_ptr,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim) {
+  int char_element_num = 0;
+  // More details in Note [FusedSGD Nram space split]
+  if constexpr (depth == 3) {
+    char_element_num = get_element_num(2 * depth + (grad_scale_ptr != nullptr ? 2 : 1));
+  } else {
+    char_element_num = get_element_num(2 * depth + (grad_scale_ptr != nullptr ? 1 : 0));
+  }
+  int element_num = char_element_num / sizeof(float);
+  using T = CNRTTypeValueToBangcCppType_t<value>;
+  // Why need to using max depth to generate tuple_t?
+  // Answer: This op has three inputs when moment_buffer is not empty, otherwise only two inputs.
+  //         For support those two situations, torch_fused_sgd api is designed to accept
+  //         three inputs, and pass nullptr as moment_buffer_nram when moment_buffer is empty.
+  using tuple_t = std::tuple<T, T, T>;
+  constexpr int maxBlockNum = torch_mlu::bangcommon::depth_to_max_blockinfo[depth - 1];
+  torch_mlu::bangcommon::multi_tensor_apply<maxBlockNum, depth, tuple_t>(
+                data_ptr_list, sizes, element_num, stream, k_type, k_dim,
+                TorchFusedSGD<tuple_t, maxBlockNum, depth>(),
+                lr_ptr, learning_rate, weight_decay, momentum, dampening, nesterov,
+                maximize, is_first_step, grad_scale_ptr, found_inf_ptr, char_element_num);
+}
+
+// add explicit instantiation for float, half, bfloat16_t
+template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtFloat, 3>(
+    const std::vector<std::array<void*, 3>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const float* lr_ptr,
+    const float learning_rate,
+    const float weight_decay,
+    const float momentum,
+    const float dampening,
+    const bool nesterov,
+    const bool maximize,
+    const bool is_first_step,
+    const float* grad_scale_ptr,
+    const float* found_inf_ptr,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
+
+template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtHalf, 3>(
+    const std::vector<std::array<void*, 3>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const float* lr_ptr,
+    const float learning_rate,
+    const float weight_decay,
+    const float momentum,
+    const float dampening,
+    const bool nesterov,
+    const bool maximize,
+    const bool is_first_step,
+    const float* grad_scale_ptr,
+    const float* found_inf_ptr,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
+
+template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtBfloat, 3>(
+    const std::vector<std::array<void*, 3>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const float* lr_ptr,
+    const float learning_rate,
+    const float weight_decay,
+    const float momentum,
+    const float dampening,
+    const bool nesterov,
+    const bool maximize,
+    const bool is_first_step,
+    const float* grad_scale_ptr,
+    const float* found_inf_ptr,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
+
+template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtFloat, 2>(
+    const std::vector<std::array<void*, 2>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const float* lr_ptr,
+    const float learning_rate,
+    const float weight_decay,
+    const float momentum,
+    const float dampening,
+    const bool nesterov,
+    const bool maximize,
+    const bool is_first_step,
+    const float* grad_scale_ptr,
+    const float* found_inf_ptr,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
+
+template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtHalf, 2>(
+    const std::vector<std::array<void*, 2>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const float* lr_ptr,
+    const float learning_rate,
+    const float weight_decay,
+    const float momentum,
+    const float dampening,
+    const bool nesterov,
+    const bool maximize,
+    const bool is_first_step,
+    const float* grad_scale_ptr,
+    const float* found_inf_ptr,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
+
+template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtBfloat, 2>(
+    const std::vector<std::array<void*, 2>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const float* lr_ptr,
+    const float learning_rate,
+    const float weight_decay,
+    const float momentum,
+    const float dampening,
+    const bool nesterov,
+    const bool maximize,
+    const bool is_first_step,
+    const float* grad_scale_ptr,
+    const float* found_inf_ptr,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
+
+} // namespace ops
+} // namespace torch_mlu

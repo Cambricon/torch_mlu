@@ -68,11 +68,7 @@ __mlu_func__ inline void torch_fused_adam_internal(const int& num_align,
   __bang_fusion(FUSION_FMA, v_nram, v_nram, beta2, temp_nram, num_align, num_align);
   if (amsgrad == true) {
     // max_exp_avg_sq = std::max(max_exp_avg_sq, exp_avg_sq);
-    #if __BANG_ARCH__ > 500
-      __bang_nan_maximum(max_v_nram, max_v_nram, v_nram, num_align);
-    #else
-      __bang_maximum(max_v_nram, max_v_nram, v_nram, num_align);
-    #endif
+    __bang_nan_maximum(max_v_nram, max_v_nram, v_nram, num_align);
     // demo = sqrtf(exp_max_avg_sq)
     __bang_sqrt(temp_nram, max_v_nram, num_align);
   } else {

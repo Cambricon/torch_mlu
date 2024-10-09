@@ -59,7 +59,6 @@ void _fused_adam_common_mlu_impl_(
   double beta1_minus = 1 - beta1;
   double beta2_minus = 1 - beta2;
   const int tensor_num = grads.size();
-  TORCH_CHECK(tensor_num > 0, "tensor num need be greater than zero.");
 
   auto stream = getCurMLUStream();
   // compute kernel dim

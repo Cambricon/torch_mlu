@@ -88,8 +88,8 @@ class TestFusedOptimizer(unittest.TestCase):
         options["foreach"] = False
         tst_options = copy.deepcopy(options)
         tst_options["fused"] = True
-        ref_optim = torch.optim.AdamW(ref_param, **options)
-        tst_optim = torch.optim.AdamW(tst_param, **tst_options)
+        ref_optim = torch.optim.SGD(ref_param, **options)
+        tst_optim = torch.optim.SGD(tst_param, **tst_options)
         return (ref_param, tst_param, ref_optim, tst_optim)
 
     def gen_grad(self, ref_param, tst_param):
@@ -156,8 +156,8 @@ class TestFusedOptimizer(unittest.TestCase):
             options["foreach"] = False
             tst_options = copy.deepcopy(options)
             tst_options["fused"] = True
-            ref_optim = torch.optim.AdamW(model.parameters(), **options)
-            tst_optim = torch.optim.AdamW(model_.parameters(), **tst_options)
+            ref_optim = torch.optim.SGD(model.parameters(), **options)
+            tst_optim = torch.optim.SGD(model_.parameters(), **tst_options)
             if gradScalar is True:
                 ref_scalar = torch.mlu.amp.GradScaler()
                 tst_scalar = torch.mlu.amp.GradScaler()
@@ -228,26 +228,42 @@ class TestFusedAdam(TestFusedOptimizer):
         self.options_list = [
             {
                 "lr": 0.001,
-                "betas": (0.6, 0.9),
-                "eps": 3e-06,
-                "weight_decay": 0.1,
-                "amsgrad": False,
-                "maximize": False,
-            },
-            {
-                "lr": 0.01,
-                "betas": (0.9, 0.95),
-                "eps": 3e-06,
-                "weight_decay": 0.12,
-                "amsgrad": True,
-                "maximize": False,
-            },
-            {
-                "lr": 0.1,
-                "betas": (0.9, 0.99),
-                "eps": 3e-06,
+                "momentum": 0,
+                "dampening": 0.1,
                 "weight_decay": 0,
-                "amsgrad": True,
+                "nesterov": False,
+                "maximize": False,
+            },
+            {
+                "lr": 0.001,
+                "momentum": 0,
+                "dampening": 0.1,
+                "weight_decay": 0.1,
+                "nesterov": False,
+                "maximize": False,
+            },
+            {
+                "lr": 0.02,
+                "momentum": 0.125,
+                "dampening": 0,
+                "weight_decay": 0,
+                "nesterov": True,
+                "maximize": False,
+            },
+            {
+                "lr": 0.25,
+                "momentum": 0.125,
+                "dampening": 0,
+                "weight_decay": 0.01,
+                "nesterov": True,
+                "maximize": True,
+            },
+            {
+                "lr": 0.25,
+                "momentum": 0.2,
+                "dampening": 0,
+                "weight_decay": 0,
+                "nesterov": True,
                 "maximize": True,
             },
         ]
@@ -295,10 +311,10 @@ class TestFusedAdam(TestFusedOptimizer):
 
     def test_frozen_model(self):
         nelem = 1
-        for adam_option in self.options_list:
+        for sgd_option in self.options_list:
             tensor = torch.rand(nelem, dtype=torch.float, device="mlu")
             ref_param, tst_param, ref_optim, tst_optim = self.gen_param_optim(
-                [tensor], adam_option
+                [tensor], sgd_option
             )
 
             # Add an empty param group which may occur for pipeline parallel p-tuning
@@ -326,15 +342,15 @@ class TestFusedAdam(TestFusedOptimizer):
         ref_param = [torch.nn.Parameter(tensor.clone())]
         options = {
             "lr": 0.001,
-            "betas": (0.6, 0.9),
-            "eps": 3e-06,
+            "momentum": 0.1,
+            "dampening": 0,
             "weight_decay": 0.1,
-            "amsgrad": False,
-            "maximize": False,
+            "nesterov": True,
+            "maximize": True,
             "fused": True,
             "foreach": False,
         }
-        fused_optim = torch.optim.AdamW(ref_param, **options)
+        fused_optim = torch.optim.SGD(ref_param, **options)
         for i in range(self.iters):
             ref_param[0].grad = torch.rand_like(ref_param[0])
             fused_optim.step()

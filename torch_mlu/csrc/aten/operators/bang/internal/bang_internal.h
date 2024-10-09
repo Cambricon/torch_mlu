@@ -124,6 +124,24 @@ void bang_torch_fused_adamw_internal(
     cnrtFunctionType_t k_type,
     cnrtDim3_t k_dim);
 
+template <cnrtDataType_V2_t value, int depth>
+void bang_torch_fused_sgd_internal(
+    const std::vector<std::array<void*, depth>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const float* lr_ptr,
+    const float learning_rate,
+    const float weight_decay,
+    const float momentum,
+    const float dampening,
+    const bool nesterov,
+    const bool maximize,
+    const bool is_first_step,
+    const float* grad_scale_ptr,
+    const float* found_inf_ptr,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim);
+
 void bang_fused_sgd_internal(
     AddressList g,
     AddressList i,

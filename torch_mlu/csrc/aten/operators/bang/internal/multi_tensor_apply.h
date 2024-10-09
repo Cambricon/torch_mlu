@@ -580,7 +580,7 @@ class MemoryPolicy {
  public:
   __mlu_func__ MemoryPolicy(
       const BlockInfoContainer<maxBlockNum, depth>& block_info_container)
-      : container_(block_info_container), with_step_(false) {
+      : container_(block_info_container) {
     this->block_total_repeat_num_ = this->container_.block_num == 0
         ? 0
         : this->container_.block_repeat_and_segment_element_num
@@ -806,7 +806,6 @@ class MemoryPolicy {
   int block_total_repeat_num_ = 0;
   int segment_block_offset_ = 0;
   int circle_ = 0;
-  bool with_step_ = false;
 };
 
 // function invoke
