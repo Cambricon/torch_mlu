@@ -5,7 +5,7 @@
     "cnnl": ["release", "1.27.0-1"],
     "cntoolkit": ["release","3.14.1-1"],
     "cncl": ["release", "1.21.1-1"],
-    "cncv": ["release", "2.7.3-1"],
+    "cncv": ["release", "2.7.4-1"],
     "cndali": ["release", "0.10.0"],
     "cnnlextra": ["release", "1.10.3-1"],
     "mluops": ["release", "1.3.0-1"],

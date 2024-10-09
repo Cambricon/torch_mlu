@@ -7,6 +7,7 @@ RELEASE_TYPE=NULL
 BRANCH=NULL   # resolve for future use
 PYTORCH_BRANCH="v2.1.0"
 TORCH_MLU_BRANCH='r2.1_develop'
+TORCHAUDIO_MLU_BRANCH='r2.1_develop'
 PYTORCH_MODELS_BRANCH="pytorch_models_2.1.0_develop"
 DRIVER_VERSION=NULL
 CNTOOLKIT_VERSION=NULL
@@ -33,7 +34,7 @@ PY_SUFFIX="py310"
 PYTHON_VERSION="3.10"
 TORCH_MLU_COMMIT_ID=NULL
 
-while getopts "r:b:c:p:n:x:y:z:o:v:w:d:t:f:a:m:" opt
+while getopts "r:b:c:e:p:n:x:y:z:o:v:w:d:t:f:a:m:" opt
 do
   case $opt in
     r)
@@ -42,6 +43,8 @@ do
         BRANCH=$OPTARG;;
     c)
         TORCH_MLU_BRANCH=$OPTARG;;
+    e)
+        TORCHAUDIO_MLU_BRANCH=$OPTARG;;
     l)
         CNDALI_VERSION=$OPTARG;;
     p)
@@ -360,6 +363,7 @@ build_wheel_func(){
   build_wheel_cmd="docker build --no-cache --pull --network=host --rm          \
                    --build-arg pytorch_branch=$PYTORCH_BRANCH                  \
                    --build-arg torch_mlu_branch=${TORCH_MLU_BRANCH}                    \
+                   --build-arg torchaudio_mlu_branch=${TORCHAUDIO_MLU_BRANCH}          \
                    --build-arg torch_mlu_commit_id=${TORCH_MLU_COMMIT_ID}              \
                    --build-arg driver_version=${DRIVER_VERSION}                \
                    --build-arg cntoolkit_version=${CNTOOLKIT_VERSION}          \
@@ -380,6 +384,7 @@ install_docker_func(){
   install_docker_cmd="docker build --no-cache --pull --network=host --rm          \
                       --build-arg pytorch_branch=${PYTORCH_BRANCH}                \
                       --build-arg torch_mlu_branch=${TORCH_MLU_BRANCH}                    \
+                      --build-arg torchaudio_mlu_branch=${TORCHAUDIO_MLU_BRANCH}          \
                       --build-arg torch_mlu_commit_id=${TORCH_MLU_COMMIT_ID}              \
                       --build-arg pytorch_models_branch=${PYTORCH_MODELS_BRANCH}  \
                       --build-arg benchmark_version=${BENCHMARK_VERSION}          \
@@ -419,6 +424,7 @@ pack_src_func(){
   pushd torch_mlu
   git checkout "${TORCH_MLU_COMMIT_ID}"
   popd
+  git clone http://gitlab.software.cambricon.com/neuware/oss/pytorch/torchaudio_mlu.git -b $TORCHAUDIO_MLU_BRANCH --single-branch
   bash $TORCH_MLU_PATH/.jenkins/pipeline/enable_git_url_cache.sh
   git clone --recursive https://github.com/pytorch/pytorch.git -b $PYTORCH_BRANCH
   popd
