@@ -52,7 +52,7 @@ using DimnameList = c10::ArrayRef<at::Dimname>;
 namespace torch_mlu {
 namespace ops {
 
-#define MAXPOOL2D_KERNEL_MAX 1535
+#define MAXPOOL2D_KERNEL_MAX 65535
 
 TORCH_PRECOMPUTE_META_FUNC(avg_pool2d_out_mlu)
 (const Tensor& input,
@@ -1018,7 +1018,7 @@ TORCH_IMPL_FUNC(max_pool2d_with_indices_out_mlu)
   }
   TORCH_CHECK(
       kernel_size_prod < MAXPOOL2D_KERNEL_MAX,
-      "max_pool2d: The kernel size should be smaller than 1535, while this kernel size is ",
+      "max_pool2d: The kernel size should be smaller than 65535, while this kernel size is ",
       kernel_size_prod);
 
   at::TensorArg output_arg{output_, "output_", 1};
@@ -1123,7 +1123,7 @@ TORCH_IMPL_FUNC(max_pool2d_with_indices_backward_out_mlu)
   }
   TORCH_CHECK(
       kernel_size_prod < MAXPOOL2D_KERNEL_MAX,
-      "max_pool2d: The kernel size should be smaller than 1535, while this kernel size is ",
+      "max_pool2d: The kernel size should be smaller than 65535, while this kernel size is ",
       kernel_size_prod);
 
   at::TensorArg gradInput_arg{gradInput_, "gradInput_", 1};
@@ -1292,7 +1292,7 @@ max_pool3d_with_indices_pre_compute(
   }
   TORCH_CHECK(
       kernel_size_prod < MAXPOOL2D_KERNEL_MAX,
-      "max_pool3d: The kernel size should be smaller than 1535, while this kernel size is ",
+      "max_pool3d: The kernel size should be smaller than 65535, while this kernel size is ",
       kernel_size_prod);
   const int kT = safe_downcast<int, int64_t>(kernel_size[0]);
   const int kH = kernel_size.size() == 1
@@ -1598,7 +1598,7 @@ at::Tensor& cnnl_max_pool3d_with_indices_backward_out(
   }
   TORCH_CHECK(
       kernel_size_prod < MAXPOOL2D_KERNEL_MAX,
-      "max_pool3d: The kernel size should be smaller than 1535, while this kernel size is ",
+      "max_pool3d: The kernel size should be smaller than 65535, while this kernel size is ",
       kernel_size_prod);
   const int kT = safe_downcast<int, int64_t>(kernel_size[0]);
   const int kH = kernel_size.size() == 1
