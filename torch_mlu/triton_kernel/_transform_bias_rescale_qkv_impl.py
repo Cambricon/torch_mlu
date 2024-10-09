@@ -167,6 +167,10 @@ def _transform_bias_rescale_qkv_mlu(
         qkv = qkv.clone()
     if not qkv_bias.is_contiguous():
         qkv_bias = qkv_bias.clone()
+    orig_dtype = qkv.dtype
+    if orig_dtype == torch.float64:
+        qkv = qkv.to(torch.float32)
+        qkv_bias = qkv_bias.to(torch.float32)
     dtype = qkv.dtype
     out_q = torch.empty((B, num_heads, T, dim_per_head), device=qkv.device, dtype=dtype)
     out_k = torch.empty((B, num_heads, T, dim_per_head), device=qkv.device, dtype=dtype)
@@ -206,4 +210,8 @@ def _transform_bias_rescale_qkv_mlu(
             num_heads,
             dim_per_head,
         )
+    if dtype != orig_dtype:
+        out_q = out_q.to(orig_dtype)
+        out_k = out_k.to(orig_dtype)
+        out_v = out_v.to(orig_dtype)
     return out_q, out_k, out_v
