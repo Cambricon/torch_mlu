@@ -1150,11 +1150,11 @@ class TestPoolingOp(TestCase):
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             m(input)
 
-        input = torch.randn((2, 3, 80, 80), dtype=torch.float).to("mlu")
-        m = nn.MaxPool2d(kernel_size=(40, 40), stride=(2, 2))
+        input = torch.randn((2, 512, 512, 512), dtype=torch.float).to("mlu")
+        m = nn.MaxPool2d(kernel_size=(400, 400), stride=(2, 2))
         m = m.to("mlu")
         ref_msg = r"^max_pool2d: The kernel size should be"
-        ref_msg = ref_msg + r" smaller than 1535, while this kernel size is 1600"
+        ref_msg = ref_msg + r" smaller than 65535, while this kernel size is 160000"
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             m(input)
 
@@ -1232,10 +1232,10 @@ class TestPoolingOp(TestCase):
             m(input)
 
         input = torch.randn((2, 2, 3, 80, 80), dtype=torch.float).to("mlu")
-        m = nn.MaxPool3d(kernel_size=(10, 10, 16), stride=(2, 2, 2))
+        m = nn.MaxPool3d(kernel_size=(100, 100, 16), stride=(2, 2, 2))
         m = m.to("mlu")
         ref_msg = r"^max_pool3d: The kernel size should be"
-        ref_msg = ref_msg + r" smaller than 1535, while this kernel size is 1600"
+        ref_msg = ref_msg + r" smaller than 65535, while this kernel size is 160000"
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             m(input)
 
