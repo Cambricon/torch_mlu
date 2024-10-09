@@ -11001,7 +11001,7 @@
     supported: false
 
   - api: torch.Tensor.coalesce
-    supported: false
+    supported: true
 
   - api: torch.Tensor.col_indices
     supported: false
