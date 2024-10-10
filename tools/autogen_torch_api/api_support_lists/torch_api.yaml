@@ -1817,7 +1817,7 @@
     supported: false
 
   - api: torch.nn.Mish
-    supported: false
+    supported: true
 
   - api: torch.nn.Module
     supported: true
@@ -2785,7 +2785,7 @@
     supported: false
 
   - api: torch.nn.functional.mish
-    supported: false
+    supported: true
 
   - api: torch.nn.functional.mse_loss
     supported: true
