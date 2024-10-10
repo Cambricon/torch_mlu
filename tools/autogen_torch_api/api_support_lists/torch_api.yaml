@@ -12251,6 +12251,9 @@
   - api: torch.Size.index
     supported: false
 
+  - api: torch.Tensor.coalesce
+    supported: true
+
   - api: torch.Size.numel
     supported: false
 
