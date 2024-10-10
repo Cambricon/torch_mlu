@@ -424,4 +424,16 @@ class CnnlEmbeddingBagDescriptor : public CnnlDescriptor<
       const bool include_last_offset);
 };
 
+class CnnlSparseDenseMatmulDescriptor : public CnnlDescriptor<
+                                            cnnlSparseDenseMatmulStruct,
+                                            &cnnlSparseDenseMatmulDescCreate,
+                                            &cnnlSparseDenseMatmulDescDestroy> {
+ public:
+  CnnlSparseDenseMatmulDescriptor() {}
+  void set_attr(
+      const cnnlSparseDenseMatmulDescAttribute_t attr,
+      const void* buf,
+      size_t size_in_bytes);
+};
+
 } // end of namespace torch_mlu

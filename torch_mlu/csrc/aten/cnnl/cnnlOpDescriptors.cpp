@@ -473,4 +473,13 @@ void CnnlEmbeddingBagDescriptor::set(
       scale_grad_by_freq,
       include_last_offset));
 }
+
+void CnnlSparseDenseMatmulDescriptor::set_attr(
+    const cnnlSparseDenseMatmulDescAttribute_t attr,
+    const void* buf,
+    size_t size_in_bytes) {
+  TORCH_CNNL_CHECK(cnnlSetSparseDenseMatmulDescAttr(
+      this->mut_desc(), attr, buf, size_in_bytes));
+};
+
 } // end of namespace torch_mlu
