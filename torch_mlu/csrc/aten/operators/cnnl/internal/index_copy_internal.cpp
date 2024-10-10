@@ -66,8 +66,14 @@ void cnnl_index_copy_internal(
   size_t workspace_size = 0;
   // get current handle
   auto handle = getCurrentHandle();
-  TORCH_CNNL_CHECK(
-      cnnlGetIndexCopyWorkspaceSize(handle, index_desc.get(), &workspace_size));
+  TORCH_CNNL_CHECK(cnnlGetIndexCopyWorkspaceSize_v2(
+      handle,
+      static_cast<int32_t>(dim),
+      input_desc.get(),
+      source_desc.get(),
+      index_desc.get(),
+      output_desc.get(),
+      &workspace_size));
 
   auto workspace_ptr =
       torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);

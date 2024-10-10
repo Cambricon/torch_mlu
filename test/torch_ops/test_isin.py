@@ -151,7 +151,15 @@ class TestIsinOp(TestCase):
     def test_isin_scalar(self):
         type_list = [torch.float, torch.int, torch.long, torch.double]
         for t in type_list:
-            for shape in [(), (256, 144, 7), (1), (256, 7), (2, 3, 4)]:
+            for shape in [
+                (),
+                (256, 144, 7, 15, 2, 1),
+                (1),
+                (256, 7),
+                (2, 3, 4),
+                (117, 1, 5, 1, 5, 1, 3, 1),
+                (256, 144, 7, 15, 2, 1, 1, 1),
+            ]:
                 x = torch.randn(shape).to(t)
                 y = torch.randn(()).to(t).item()
                 out_cpu = torch.isin(x, y)
@@ -159,15 +167,14 @@ class TestIsinOp(TestCase):
                 self.assertTensorsEqual(
                     out_cpu.float(), out_mlu.cpu().float(), 0.0, use_MSE=True
                 )
-                if (x.numel() + 3) < 49152:  # CNNLCORE-4671
-                    out_cpu_new = torch.isin(y, x)
-                    out_mlu_new = torch.isin(y, self.to_mlu(x))
-                    self.assertTensorsEqual(
-                        out_cpu_new.float(),
-                        out_mlu_new.cpu().float(),
-                        0.0,
-                        use_MSE=True,
-                    )
+                out_cpu_new = torch.isin(y, x)
+                out_mlu_new = torch.isin(y, self.to_mlu(x))
+                self.assertTensorsEqual(
+                    out_cpu_new.float(),
+                    out_mlu_new.cpu().float(),
+                    0.0,
+                    use_MSE=True,
+                )
 
     # @unittest.skip("not test")
     @testinfo()
