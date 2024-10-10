@@ -40,8 +40,6 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> unique_mlu_template(
     const bool return_inverse,
     const bool return_counts) {
   auto num_inp = self.numel();
-  TORCH_CHECK(
-      num_inp <= INT_MAX, "Large tensors are not supported by cnnl_unique");
   if (num_inp == 0) {
     at::Tensor output = at::empty({0}, self.options());
     at::Tensor inverse_indices =
@@ -67,8 +65,6 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> unique_dim_mlu_template(
     const bool return_inverse,
     const bool return_counts) {
   auto num_inp = self.numel();
-  TORCH_CHECK(
-      num_inp <= INT_MAX, "Large tensors are not supported by cnnl_unique");
   auto sizes = self.sizes().vec();
   // check how many zero dimensions exist
   auto num_zero_dims = std::count(sizes.begin(), sizes.end(), 0);
