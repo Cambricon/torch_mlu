@@ -170,4 +170,26 @@ tensorDescPtr_t getCpuTensorDesc(
     cnnlDataType_t data_type,
     cnnlPointerMode_t pointer_mode = CNNL_POINTER_MODE_DEVICE);
 
+struct CnnlSparseTensorDescriptorDeleter {
+  void operator()(cnnlSparseTensorStruct* ptr) {
+    if (ptr != nullptr) {
+      TORCH_CNNL_CHECK(cnnlDestroySparseTensorDescriptor(ptr));
+    }
+  }
+};
+
+using sparseTensorDescPtr_t =
+    std::unique_ptr<cnnlSparseTensorStruct, CnnlSparseTensorDescriptorDeleter>;
+
+sparseTensorDescPtr_t getSparseCOOTensorDesc(
+    const int m,
+    const int k,
+    const int nnz,
+    const cnnlTensorDescriptor_t row_indices_desc,
+    void* row_indices_ptr,
+    const cnnlTensorDescriptor_t col_indices_desc,
+    void* col_indices_ptr,
+    const cnnlTensorDescriptor_t values_desc,
+    void* values_ptr);
+
 } // namespace torch_mlu::ops

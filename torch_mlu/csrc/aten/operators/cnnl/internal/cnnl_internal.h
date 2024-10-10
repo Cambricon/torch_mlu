@@ -365,6 +365,22 @@ void cnnl_addmm_bias_out_internal(
     cnnlActivationMode_t mode,
     bool allow_tf32_);
 
+void cnnl_addmm_sparse_out_internal(
+    at::Tensor& result,
+    const at::Tensor& mat1_row_indices,
+    const at::Tensor& mat1_col_indices,
+    const at::Tensor& mat1_values,
+    const at::Tensor& mat2,
+    int nnz,
+    int m,
+    int n,
+    int k,
+    bool is_trans_mat1_,
+    bool is_trans_mat2_,
+    const at::Scalar& beta_,
+    const at::Scalar& alpha_,
+    bool allow_tf32_);
+
 void cnnl_baddbmm_out_internal(
     bool transa,
     bool transb,

@@ -233,10 +233,13 @@ aten:
     structured: True
   - func: addmm
     structured_delegate: addmm.out
+    dispatch: PrivateUse1, SparsePrivateUse1
   - func: addmm_
     structured_delegate: addmm.out
+    dispatch: PrivateUse1, SparsePrivateUse1
   - func: addmm.out
     structured: True
+    dispatch: PrivateUse1, SparsePrivateUse1
   - func: _addmm_activation
     structured_delegate: _addmm_activation.out
   - func: _addmm_activation.out

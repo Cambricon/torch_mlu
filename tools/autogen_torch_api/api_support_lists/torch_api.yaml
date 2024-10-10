@@ -11033,7 +11033,8 @@
     supported: false
 
   - api: torch.sparse.addmm
-    supported: false
+    supported: true
+    limitations: 数据类型只支持float
 
   - api: torch.sparse.as_sparse_gradcheck
     supported: false
@@ -11054,7 +11055,8 @@
     supported: false
 
   - api: torch.sparse.mm
-    supported: false
+    supported: true
+    limitations: 只支持sparse x dense -> dense的情况；reduce参数只支持'sum'；数据类型只支持float
 
   - api: torch.sparse.sampled_addmm
     supported: false

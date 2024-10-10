@@ -269,4 +269,33 @@ tensorDescPtr_t getCpuTensorDesc(
   return ptr;
 }
 
+sparseTensorDescPtr_t getSparseCOOTensorDesc(
+    const int m,
+    const int k,
+    const int nnz,
+    const cnnlTensorDescriptor_t row_indices_desc,
+    void* row_indices_ptr,
+    const cnnlTensorDescriptor_t col_indices_desc,
+    void* col_indices_ptr,
+    const cnnlTensorDescriptor_t values_desc,
+    void* values_ptr) {
+  cnnlSparseTensorDescriptor_t sparse_desc;
+  TORCH_CNNL_CHECK(cnnlCreateSparseTensorDescriptor(
+      &sparse_desc, CNNL_SPARSE_FORMAT_COO, m, k, nnz, nullptr));
+  sparseTensorDescPtr_t ptr(sparse_desc);
+  TORCH_CNNL_CHECK(cnnlSetSparseTensorDescAttr(
+      sparse_desc,
+      CNNL_SPARSE_TENSOR_DESC_ROW_INDEX,
+      row_indices_ptr,
+      row_indices_desc));
+  TORCH_CNNL_CHECK(cnnlSetSparseTensorDescAttr(
+      sparse_desc,
+      CNNL_SPARSE_TENSOR_DESC_COL_INDEX,
+      col_indices_ptr,
+      col_indices_desc));
+  TORCH_CNNL_CHECK(cnnlSetSparseTensorDescAttr(
+      sparse_desc, CNNL_SPARSE_TENSOR_DESC_VALUES, values_ptr, values_desc));
+  return ptr;
+}
+
 } // namespace torch_mlu::ops
