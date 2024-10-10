@@ -134,30 +134,26 @@ class TestUpsampleBicubic2dOp(TestCase):
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
-    @largeTensorTest("26GB")
+    @largeTensorTest("67GB")
     def test_upsample_bicubic2d_large(self):
-        # [CNNL] [Error]:[cnnlInterp_v3] overflow max supported tensor num 2147483647,
-        # now tensor's total num is 4299161600.
-        ref_msg = "CNNL error: CNNL_STATUS_NOT_SUPPORTED"
-        with self.assertRaisesRegex(RuntimeError, ref_msg):
-            shape = (4, 1025, 512, 512)
-            dtype = torch.float
-            m = nn.Upsample(scale_factor=2, mode="bicubic", align_corners=True)
-            x = torch.randn(shape, requires_grad=True, dtype=dtype)
-            x_mlu = copy.deepcopy(x)
-            out_cpu = m(x.float())
-            out_mlu = m(x_mlu.mlu())
-            grad = torch.randn(out_cpu.shape, dtype=dtype)
-            out_cpu.backward(grad.float())
-            grad_cpu = x.grad
-            out_mlu.backward(grad.mlu())
-            grad_mlu = x_mlu.grad
-            self.assertTensorsEqual(
-                out_cpu.float(), out_mlu.cpu().float(), 0.003, use_MSE=True
-            )
-            self.assertTensorsEqual(
-                grad_cpu.float(), grad_mlu.cpu().float(), 0.003, use_MSE=True
-            )
+        shape = (2, 1025, 1024, 1024)
+        dtype = torch.float
+        m = nn.Upsample(scale_factor=1.5, mode="bicubic", align_corners=True)
+        x = torch.randn(shape, requires_grad=True, dtype=dtype)
+        x_mlu = copy.deepcopy(x)
+        out_cpu = m(x.float())
+        out_mlu = m(x_mlu.mlu())
+        grad = torch.randn(out_cpu.shape, dtype=dtype)
+        out_cpu.backward(grad.float())
+        grad_cpu = x.grad
+        out_mlu.backward(grad.mlu())
+        grad_mlu = x_mlu.grad
+        self.assertTensorsEqual(
+            out_cpu.float(), out_mlu.cpu().float(), 0.003, use_MSE=True
+        )
+        self.assertTensorsEqual(
+            grad_cpu.float(), grad_mlu.cpu().float(), 0.003, use_MSE=True
+        )
 
 
 if __name__ == "__main__":
