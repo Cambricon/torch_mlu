@@ -227,6 +227,50 @@ class TestCastOp(TestCase):
                 out_cpu.float(), out_mlu.cpu().float(), 3e-3, use_MSE=True
             )
 
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_int16_cast(self):
+        shape = (2, 3, 4)
+        dtype_list = [
+            (torch.int16, torch.int64, 0),
+        ]
+        for dtype_err in dtype_list:
+            x = torch.testing.make_tensor(shape, dtype=dtype_err[0], device="cpu")
+            out_cpu = x.to(dtype_err[1])
+            out_mlu = x.mlu().to(dtype_err[1])
+            self.assertTensorsEqual(
+                out_cpu.float(), out_mlu.cpu().float(), dtype_err[2], use_MSE=True
+            )
+            # test inverse datatype cast
+            x = torch.testing.make_tensor(shape, dtype=dtype_err[1], device="cpu")
+            out_cpu = x.to(dtype_err[0])
+            out_mlu = x.mlu().to(dtype_err[0])
+            self.assertTensorsEqual(
+                out_cpu.float(), out_mlu.cpu().float(), dtype_err[2], use_MSE=True
+            )
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_bool_cast(self):
+        shape = (2, 3, 4)
+        dtype_list = [
+            (torch.bool, torch.int64, 0),
+        ]
+        for dtype_err in dtype_list:
+            x = torch.testing.make_tensor(shape, dtype=dtype_err[0], device="cpu")
+            out_cpu = x.to(dtype_err[1])
+            out_mlu = x.mlu().to(dtype_err[1])
+            self.assertTensorsEqual(
+                out_cpu.float(), out_mlu.cpu().float(), dtype_err[2], use_MSE=True
+            )
+            # test inverse datatype cast
+            x = torch.testing.make_tensor(shape, dtype=dtype_err[1], device="cpu")
+            out_cpu = x.to(dtype_err[0])
+            out_mlu = x.mlu().to(dtype_err[0])
+            self.assertTensorsEqual(
+                out_cpu.float(), out_mlu.cpu().float(), dtype_err[2], use_MSE=True
+            )
+
 
 if __name__ == "__main__":
     run_tests()
