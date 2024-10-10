@@ -2259,10 +2259,10 @@
 
   - api: torch.nn.TransformerEncoderLayer
     supported: true
-    limitations: forward的输入参数src_mask和src_key_padding_mask不支持值全为True。
 
   - api: torch.nn.TransformerEncoderLayer.forward
-    supported: false
+    supported: true
+    limitations: forward的输入参数src_mask和src_key_padding_mask不支持值全为True。
 
   - api: torch.nn.TripletMarginLoss
     supported: false
