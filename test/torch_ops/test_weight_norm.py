@@ -11,7 +11,13 @@ import torch_mlu
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
 logging.basicConfig(level=logging.DEBUG)
-from common_utils import testinfo, TestCase  # pylint: disable=C0413,C0411
+from common_utils import (
+    testinfo,
+    TestCase,
+    read_card_info,
+)  # pylint: disable=C0413,C0411
+
+TEST_BFLOAT16 = read_card_info()
 
 shape_3D_list = [
     (128, 128, 1),

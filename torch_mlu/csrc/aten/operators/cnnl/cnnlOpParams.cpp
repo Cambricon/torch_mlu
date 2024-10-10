@@ -256,9 +256,10 @@ static const std::vector<at::ScalarType> all_support_types_without_complex(
      at::kDouble,
      at::kLong});
 
-static const std::vector<at::ScalarType> all_support_types_without_chalf_bf_bool(
+static const std::vector<at::ScalarType> all_support_types_without_chalf_bool(
     {at::kFloat,
      at::kHalf,
+     at::kBFloat16,
      at::kChar,
      at::kShort,
      at::kByte,
@@ -423,7 +424,7 @@ SUGGEST_MEMORY_FORMAT_SOFT_OP_REGISTER(
 #undef SUGGEST_MEMORY_FORMAT_SOFT_OP_REGISTER
 
 #define SUGGEST_MEMORY_FORMAT_HARD_OP_REGISTER(_) \
-  _(cross, all_support_types_without_chalf_bf_bool, false, false)
+  _(cross, all_support_types_without_chalf_bool, false, false)
 
 SUGGEST_MEMORY_FORMAT_HARD_OP_REGISTER(
     REGISTER_WITH_SUGGEST_MEMORY_FORMAT_HARD_OP_PARAM)

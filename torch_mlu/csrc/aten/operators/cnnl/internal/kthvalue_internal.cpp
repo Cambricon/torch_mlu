@@ -51,13 +51,21 @@ void cnnl_kthvalue_internal(
   auto values_ptr = values_impl->mlu_data_ptr();
   auto indices_ptr = indices_impl->mlu_data_ptr();
 
+  size_t workspace_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetKthValueWorkspaceSize(
+      handle, self_desc.desc(), indices_desc.desc(), k, dim, &workspace_size));
+  auto workspace_ptr =
+      torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+
   // calculate
-  TORCH_CNNL_CHECK(cnnlKthValue(
+  TORCH_CNNL_CHECK(cnnlKthValue_v2(
       handle,
-      self_desc.desc(),
-      self_ptr,
       k,
       dim,
+      self_desc.desc(),
+      self_ptr,
+      workspace_ptr.get(),
+      workspace_size,
       values_desc.desc(),
       values_ptr,
       indices_desc.desc(),

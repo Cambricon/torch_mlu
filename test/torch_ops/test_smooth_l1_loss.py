@@ -19,8 +19,10 @@ from common_utils import (
     TestCase,
     TEST_LARGETENSOR,
     largeTensorTest,
-    skipBFloat16IfNotSupport,
+    read_card_info,
 )
+
+TEST_BFLOAT16 = read_card_info()
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -311,6 +313,41 @@ class TestSmoothL1LossOps(TestCase):
                 0.003,
                 use_MSE=True,
                 message=str(item[1] + " " + str(item[2])),
+            )
+
+    # @unittest.skip("not test")
+    @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
+    @testinfo()
+    def test_smooth_l1_loss_bfloat16(self):
+        reduct_list = ["none", "mean", "sum"]
+        dtype_list = [torch.bfloat16]
+        for dtype, reduct in product(dtype_list, reduct_list):
+            x = torch.randn((2, 3, 4, 5, 6), dtype=dtype)
+            target = torch.randn((2, 3, 4, 5, 6), dtype=dtype)
+            x_mlu, target_mlu = x.mlu(), target.mlu()
+            x.requires_grad = True
+            x_mlu.requires_grad = True
+            layer = torch.nn.SmoothL1Loss(reduction=reduct)
+            output = layer(x, target)
+            grad_cpu = torch.ones(output.shape, dtype=dtype)
+            grad_mlu = grad_cpu.to(dtype).mlu()
+            output.backward(grad_cpu)
+            grad_input = copy.deepcopy(x.grad)
+            x.grad.zero_()
+            output_mlu = layer(x_mlu, target_mlu)
+            self.assertTrue(dtype == output_mlu.dtype)
+            output_mlu.backward(grad_mlu)
+            grad_input_mlu = copy.deepcopy(x_mlu.grad)
+            self.assertTensorsEqual(
+                output.float(), output_mlu.cpu().float(), 0.003, use_MSE=True
+            )
+            self.assertTrue(dtype == grad_input_mlu.dtype)
+            self.assertTensorsEqual(
+                grad_input.float(),
+                grad_input_mlu.float().cpu(),
+                0.003,
+                use_MSE=True,
+                message=str(dtype) + " " + str(reduct),
             )
 
     # @unittest.skip("not test")
