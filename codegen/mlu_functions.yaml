@@ -1392,6 +1392,19 @@ aten:
     derived_type: bang
   - func: _fused_sgd_.tensor_lr
     derived_type: bang
+  - func: _foreach_add.Scalar
+  - func: _foreach_add_.Scalar
+  - func: _foreach_add.List
+  - func: _foreach_add_.List
+  - func: _foreach_add.ScalarList
+  - func: _foreach_add_.ScalarList
+  - func: _foreach_sub.Scalar
+  - func: _foreach_sub_.Scalar
+  - func: _foreach_sub.List
+  - func: _foreach_sub_.List
+  - func: _foreach_sub.ScalarList
+  - func: _foreach_sub_.ScalarList
+  - func: _foreach_zero_
 
   - func: _coalesce
     dispatch: SparsePrivateUse1

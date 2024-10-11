@@ -29,6 +29,8 @@ TESTS = [
     "mlu/test_pluggable_allocator",
     "torch_ops/",
     "custom_ops/",
+    "test_foreach_op/test_foreach_binary",
+    "test_foreach_op/test_foreach_unary",
     "torch/test_save_and_load",
     "torch/test_random",
     "distributed/test_distributed",
