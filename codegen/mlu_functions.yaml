@@ -734,6 +734,8 @@ aten:
     structured_delegate: le.Tensor_out
   - func: grid_sampler_2d
   - func: grid_sampler_2d_backward
+  - func: grid_sampler_3d
+  - func: grid_sampler_3d_backward
   - func: gt.Scalar_out
     structured: true
     structured_inherits: TensorIteratorBase

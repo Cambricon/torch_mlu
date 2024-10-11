@@ -70,6 +70,41 @@ class TestGridSamplerOp(TestCase):
             self.assertTensorsEqual(
                 input.grad, input_mlu.grad.cpu(), 3e-3, use_MSE=True
             )
+    
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_grid_sampler_3d(self):
+        shape_list = [
+            ((12, 3, 6, 6, 6), (12, 6, 6, 6, 3)),
+            ((22, 4, 16, 64, 64), (22, 16, 64, 64, 3)),
+        ]
+        interp_mode = ["bilinear"]
+        padding_mode = ["zeros"]
+        align_corners = [False]
+        type_list = [torch.float32, torch.float16]
+        func_x_list = [lambda x: x, self.convert_to_channel_last, lambda x: x[..., ::2]]
+        func_g_list = [lambda x: x, self.convert_to_channel_last]
+        param_list = [
+            shape_list,
+            type_list,
+            interp_mode,
+            padding_mode,
+            align_corners,
+            func_x_list,
+            func_g_list,
+        ]
+        for shape, type, im, pm, ac, func_x, func_g in itertools.product(*param_list):
+            input = torch.randn(shape[0], dtype=type)
+            input.requires_grad = True
+            input_mlu = copy.deepcopy(input)
+            grid = torch.randn(shape[1], dtype=type)
+            out_mlu = grid_sample(
+                func_x(input_mlu.mlu()), func_g(grid.mlu()), im, pm, ac
+            )
+            assert out_mlu.size() == input_mlu.size()
+            grad = torch.ones_like(out_mlu)
+            func_x(out_mlu).backward(func_x(grad.mlu()))
+            assert grad.size() == input_mlu.size()
 
     # @unittest.skip("not test")
     @testinfo()

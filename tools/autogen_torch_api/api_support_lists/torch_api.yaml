@@ -2689,7 +2689,7 @@
 
   - api: torch.nn.functional.grid_sample
     supported: true
-    limitations: 不支持5D输入;mode参数仅支持bilinear和nearest，为bilinear时仅支持padding_mode参数为zeros和reflection，为nearest时仅支持padding_mode为zeros。
+    limitations: 输入为5D时仅支持mode参数为bilinear且padding_mode参数为zeros;其他情况mode参数仅支持bilinear和nearest，为bilinear时仅支持padding_mode参数为zeros和reflection，为nearest时仅支持padding_mode为zeros。
 
   - api: torch.nn.functional.group_norm
     supported: true
