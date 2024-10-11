@@ -197,6 +197,8 @@ tensor_fn_list = [
     "to",
     "is_pinned",
     "pin_memory",
+    "mlu",
+    "new",
 ]
 
 module_fn_list = [
