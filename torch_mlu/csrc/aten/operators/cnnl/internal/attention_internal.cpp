@@ -49,6 +49,64 @@ inline int64_t getCounterOffset(size_t nelem, int64_t thread_num) {
 
 } // anonymous namespace
 
+struct MaskParamsFwd {
+  bool is_causal;
+  int left_size = -1;
+  int right_size = -1;
+  cnnlAttentionMaskMode_t attn_mask_mode;
+  MaskParamsFwd(
+      const int64_t ori_left_size,
+      const int64_t ori_right_size,
+      const int64_t max_seq_q,
+      const int64_t max_seq_k,
+      int input_causal) {
+    left_size = ori_left_size;
+    right_size = input_causal == 1 ? 0 : ori_right_size;
+
+    is_causal = (right_size == 0 && left_size < 0);
+    int max_seq = std::max(max_seq_q, max_seq_k);
+    if (left_size < 0 && right_size >= 0) {
+      left_size = max_seq;
+    }
+    if (left_size >= 0 && right_size < 0) {
+      right_size = max_seq;
+    }
+    attn_mask_mode =
+        is_causal ? CNNL_ATTN_MASK_CAUSAL_TOP_LEFT : CNNL_ATTN_MASK_NONE;
+  }
+};
+
+struct MaskParamsBwd {
+  bool is_causal;
+  int left_size = -1;
+  int right_size = -1;
+  cnnlAttentionMaskMode_t attn_mask_mode;
+  MaskParamsBwd(
+      const int64_t ori_left_size,
+      const int64_t ori_right_size,
+      const int64_t max_seq_q,
+      const int64_t max_seq_k,
+      int input_causal) {
+    left_size = ori_left_size;
+    right_size = input_causal == 1 ? 0 : ori_right_size;
+
+    is_causal = (right_size == 0 && left_size < 0);
+    int max_seq = std::max(max_seq_q, max_seq_k);
+    if (left_size < 0 && right_size >= 0) {
+      left_size = max_seq;
+    }
+    if (left_size >= 0 && right_size < 0) {
+      right_size = max_seq;
+    }
+    if (left_size < 0 && right_size < 0) {
+      left_size = max_seq;
+      right_size = max_seq;
+    }
+    attn_mask_mode = is_causal ? CNNL_ATTN_MASK_CAUSAL_TOP_LEFT
+                               : CNNL_ATTN_MASK_LOCAL_TOP_LEFT;
+  }
+};
+
 std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_fwd_internal(
     const at::Tensor& q,
     const at::Tensor& k,
@@ -116,17 +174,24 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_fwd_internal(
   int32_t dilation = 1;
   int window_size_left = -1;
   int window_size_right = -1;
-  TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
-      fa_desc, window_size_left, window_size_right, dilation));
 
   auto compute_dtype = CNNL_DTYPE_FLOAT;
   auto prefer = CNNL_ACTIVATION_HIGH_PRECISION;
-  auto attn_mask_mode = is_causal ? CNNL_ATTN_MASK_CAUSAL : CNNL_ATTN_MASK_NONE;
+
+  MaskParamsFwd mask_params{
+      window_size_left,
+      window_size_right,
+      max_seqlen_q,
+      max_seqlen_k,
+      (int)is_causal};
+
+  TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
+      fa_desc, mask_params.left_size, mask_params.right_size, dilation));
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionDescriptor(
       fa_desc,
       compute_dtype,
       prefer,
-      attn_mask_mode,
+      mask_params.attn_mask_mode,
       /*is_pack_mode = */ true,
       zero_tensors,
       return_softmax,
@@ -352,9 +417,6 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_bwd_internal(
 
   int window_size_right = -1;
   int window_size_left = -1;
-  if (is_causal) {
-    window_size_right = 0;
-  }
 
   at::Tensor softmax_lse_tmp = cnnl_contiguous(
       softmax_lse.slice_symint(-1, 0, max_seqlen_q).transpose(0, 1));
@@ -376,16 +438,24 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_bwd_internal(
   cnnlFlashAttentionDescriptor_t fa_desc;
   TORCH_CNNL_CHECK(cnnlCreateFlashAttentionDescriptor(&fa_desc));
   int32_t dilation = 1;
-  TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
-      fa_desc, window_size_left, window_size_right, dilation));
+
   auto compute_dtype = CNNL_DTYPE_FLOAT;
   auto prefer = CNNL_ACTIVATION_HIGH_PRECISION;
-  auto attn_mask_mode = is_causal ? CNNL_ATTN_MASK_CAUSAL : CNNL_ATTN_MASK_NONE;
+
+  MaskParamsBwd mask_params{
+      window_size_left,
+      window_size_right,
+      max_seqlen_q,
+      max_seqlen_k,
+      (int)is_causal};
+  TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
+      fa_desc, mask_params.left_size, mask_params.right_size, dilation));
+
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionBackwardDescriptor(
       fa_desc,
       compute_dtype,
       prefer,
-      attn_mask_mode,
+      mask_params.attn_mask_mode,
       /*is_pack_mode = */ true,
       /*is_out_zero = */ false,
       /*is_store_softmax_d = */ false,
@@ -544,26 +614,20 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_fwd_internal(
   auto compute_dtype = CNNL_DTYPE_FLOAT;
   auto prefer = CNNL_ACTIVATION_HIGH_PRECISION;
 
-  cnnlAttentionMaskMode_t attn_mask_mode;
-  if (custom_mask_type == 1) {
-    if (max_seqlen_q <= max_seqlen_k) {
-      attn_mask_mode = CNNL_ATTN_MASK_CAUSAL_TOP_LEFT;
-    } else {
-      attn_mask_mode = CNNL_ATTN_MASK_NONE;
-      window_size_left = max_seqlen_k;
-      window_size_right = max_seqlen_q - max_seqlen_k;
-    }
-  } else {
-    attn_mask_mode = CNNL_ATTN_MASK_NONE;
-  }
+  MaskParamsFwd mask_params{
+      window_size_left,
+      window_size_right,
+      max_seqlen_q,
+      max_seqlen_k,
+      (int)custom_mask_type};
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
-      me_desc, window_size_left, window_size_right, dilation));
+      me_desc, mask_params.left_size, mask_params.right_size, dilation));
 
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionDescriptor(
       me_desc,
       compute_dtype,
       prefer,
-      attn_mask_mode,
+      mask_params.attn_mask_mode,
       /*is_pack_mode = */ true,
       false,
       false,
@@ -802,26 +866,20 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_bwd_internal(
 
   auto compute_dtype = CNNL_DTYPE_FLOAT;
   auto prefer = CNNL_ACTIVATION_HIGH_PRECISION;
-  cnnlAttentionMaskMode_t attn_mask_mode;
-  if (custom_mask_type == 1) {
-    if (max_seqlen_q <= max_seqlen_k) {
-      attn_mask_mode = CNNL_ATTN_MASK_CAUSAL_TOP_LEFT;
-    } else {
-      attn_mask_mode = CNNL_ATTN_MASK_NONE;
-      window_size_left = max_seqlen_k;
-      window_size_right = max_seqlen_q - max_seqlen_k;
-    }
-  } else {
-    attn_mask_mode = CNNL_ATTN_MASK_NONE;
-  }
+  MaskParamsBwd mask_params{
+      window_size_left,
+      window_size_right,
+      max_seqlen_q,
+      max_seqlen_k,
+      (int)custom_mask_type};
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
-      me_desc, window_size_left, window_size_right, dilation));
+      me_desc, mask_params.left_size, mask_params.right_size, dilation));
 
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionBackwardDescriptor(
       me_desc,
       compute_dtype,
       prefer,
-      attn_mask_mode,
+      mask_params.attn_mask_mode,
       /*is_pack_mode = */ true,
       /*is_out_zero = */ false,
       /*is_store_softmax_d = */ false,

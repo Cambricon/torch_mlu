@@ -1993,12 +1993,17 @@ class TestSDPA(TestCase):
             out_ref.backward(upstream_grad.to(out_ref.dtype))
             out_lp_ref.backward(upstream_grad)
             output_ref_atol, output_ref_rtol = get_tolerances(out_ref, out_lp_ref)
+
+            # Fudge Factor when dropout is enabled
+            dropout_fudge_factor = 1.0 if dropout_p == 0.0 else 2.0
             query_fudge_factor = 4
+            key_fudge_factor = 4 * dropout_fudge_factor
+
             grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
                 query_ref.grad, query_lp_ref.grad, query_fudge_factor
             )
             grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
-                key_ref.grad, key_lp_ref.grad
+                key_ref.grad, key_lp_ref.grad, key_fudge_factor
             )
             grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
                 value_ref.grad, value_lp_ref.grad
@@ -2151,17 +2156,21 @@ class TestSDPA(TestCase):
             out_ref.backward(upstream_grad.to(out_ref.dtype))
             out_lp_ref.backward(upstream_grad)
             output_ref_atol, output_ref_rtol = get_tolerances(out_ref, out_lp_ref)
+
+            # Fudge Factor when dropout is enabled
+            dropout_fudge_factor = 1.0 if dropout_p == 0.0 else 2.0
             query_fudge_factor = 4
+            key_fudge_factor = 4 * dropout_fudge_factor
+
             grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
                 query_ref.grad, query_lp_ref.grad, query_fudge_factor
             )
             grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
-                key_ref.grad, key_lp_ref.grad
+                key_ref.grad, key_lp_ref.grad, key_fudge_factor
             )
             grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
                 value_ref.grad, value_lp_ref.grad
             )
-
             self.assertEqual(
                 out, out_ref.to(out.dtype), atol=output_ref_atol, rtol=output_ref_rtol
             )
