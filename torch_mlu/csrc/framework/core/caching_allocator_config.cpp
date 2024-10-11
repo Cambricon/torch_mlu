@@ -71,16 +71,15 @@ size_t MLUAllocatorConfig::parseMaxSplitSize(
     const std::vector<std::string>& config,
     size_t i) {
   consumeToken(config, ++i, ':');
-  constexpr int mb = 1024 * 1024;
   if (++i < config.size()) {
     size_t val1 = stoi(config[i]);
     TORCH_CHECK(
-        val1 > large_buffer_size_mlu / mb,
+        val1 > large_buffer_size_mlu / (1024 * 1024),
         "CachingAllocator option max_split_size_mb too small, must be > ",
-        large_buffer_size_mlu / mb,
+        large_buffer_size_mlu / (1024 * 1024),
         "");
-    val1 = std::max(val1, large_buffer_size_mlu / mb);
-    val1 = std::min(val1, (std::numeric_limits<size_t>::max() / mb));
+    val1 = std::max(val1, large_buffer_size_mlu / (1024 * 1024));
+    val1 = std::min(val1, (std::numeric_limits<size_t>::max() / (1024 * 1024)));
     m_max_split_size = val1 * 1024 * 1024;
   } else {
     TORCH_CHECK(false, "Error, expecting max_split_size_mb value", "");
@@ -113,9 +112,9 @@ size_t MLUAllocatorConfig::parseRoundUpPower2Divisions(
   bool first_value = true;
 
   if (++i < config.size()) {
-    if (std::string_view(config[i]) == "[") {
+    if (config[i].compare("[") == 0) {
       size_t last_index = 0;
-      while (++i < config.size() && std::string_view(config[i]) != "]") {
+      while (++i < config.size() && config[i].compare("]") != 0) {
         const std::string& val1 = config[i];
         size_t val2 = 0;
 
@@ -131,7 +130,7 @@ size_t MLUAllocatorConfig::parseRoundUpPower2Divisions(
             "For roundups, the divisons has to be power of 2 or 0 to disable roundup ",
             "");
 
-        if (std::string_view(val1) == ">") {
+        if (val1.compare(">") == 0) {
           std::fill(
               std::next(
                   m_roundup_power2_divisions.begin(),
@@ -143,7 +142,7 @@ size_t MLUAllocatorConfig::parseRoundUpPower2Divisions(
           size_t val1_long = stoul(val1);
           TORCH_CHECK(
               c10::llvm::isPowerOf2_64(val1_long),
-              "For roundups, the intervals have to be power of 2 ",
+              "For roundups, the divisons has to be power of 2 ",
               "");
 
           size_t index = 63 - c10::llvm::countLeadingZeros(val1_long);
@@ -166,7 +165,7 @@ size_t MLUAllocatorConfig::parseRoundUpPower2Divisions(
           last_index = index;
         }
 
-        if (std::string_view(config[i + 1]) != "]") {
+        if (config[i + 1].compare("]") != 0) {
           consumeToken(config, ++i, ',');
         }
       }
@@ -220,43 +219,33 @@ void MLUAllocatorConfig::parseArgs(const char* env) {
   lexArgs(env, config);
 
   for (size_t i = 0; i < config.size(); i++) {
-    std::string_view config_item_view(config[i]);
-    if (config_item_view == "max_split_size_mb") {
+    if (config[i].compare("max_split_size_mb") == 0) {
       i = parseMaxSplitSize(config, i);
-    } else if (config_item_view == "garbage_collection_threshold") {
+    } else if (config[i].compare("garbage_collection_threshold") == 0) {
       i = parseGarbageCollectionThreshold(config, i);
-    } else if (config_item_view == "roundup_power2_divisions") {
+    } else if (config[i].compare("roundup_power2_divisions") == 0) {
       i = parseRoundUpPower2Divisions(config, i);
-    } else if (config_item_view == "expandable_segments") {
+    } else if (config[i] == "expandable_segments") {
       consumeToken(config, ++i, ':');
       ++i;
       TORCH_CHECK(
-          i < config.size() &&
-              (std::string_view(config[i]) == "True" ||
-               std::string_view(config[i]) == "False"),
+          i < config.size() && (config[i] == "True" || config[i] == "False"),
           "Expected a single True/False argument for expandable_segments");
-      config_item_view = config[i];
-      m_expandable_segments = (config_item_view == "True");
-    } else if (config_item_view == "release_lock_on_cnrtmalloc") {
+      m_expandable_segments = (config[i] == "True");
+    } else if (config[i].compare("release_lock_on_cnrtmalloc") == 0) {
       consumeToken(config, ++i, ':');
       ++i;
       TORCH_CHECK(
-          i < config.size() &&
-              (std::string_view(config[i]) == "True" ||
-               std::string_view(config[i]) == "False"),
+          i < config.size() && (config[i] == "True" || config[i] == "False"),
           "Expected a single True/False argument for release_lock_on_cnrtmalloc");
-      config_item_view = config[i];
-      m_release_lock_on_cnrtmalloc = (config_item_view == "True");
-    } else if (config_item_view == "use_linear_memory") {
+      m_release_lock_on_cnrtmalloc = (config[i] == "True");
+    } else if (config[i].compare("use_linear_memory") == 0) {
       consumeToken(config, ++i, ':');
       ++i;
       TORCH_CHECK(
-          i < config.size() &&
-              (std::string_view(config[i]) == "True" ||
-               std::string_view(config[i]) == "False"),
+          i < config.size() && (config[i] == "True" || config[i] == "False"),
           "Expected a single True/False argument for use_linear_memory");
-      config_item_view = config[i];
-      m_use_linear_memory = (config_item_view == "True");
+      m_use_linear_memory = (config[i] == "True");
     } else {
       TORCH_CHECK(false, "Unrecognized CachingAllocator option: ", config[i]);
     }
