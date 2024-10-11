@@ -414,6 +414,40 @@ void sigmoid_backward_mlu_kernel(at::TensorIteratorBase& iter) {
   cnnl_activation_backward_internal(
       output, iter.input(1), iter.input(0), CNNL_ACTIVATION_SIGMOID);
 }
+/***************************************mish****************************************/
+void mish_mlu_kernel(at::TensorIteratorBase& iter) {
+  auto out = iter.output(0);
+  auto input = iter.input(0);
+  AT_DISPATCH_FLOATING_TYPES_AND2(
+      at::ScalarType::Half,
+      at::ScalarType::BFloat16,
+      iter.dtype(),
+      "mish_mlu",
+      [&]() { cnnl_activation_internal(out, input, CNNL_ACTIVATION_MISH); });
+}
+
+at::Tensor cnnl_mish_backward(
+    const at::Tensor& grad_output,
+    const at::Tensor& self) {
+  return at::native::mish_backward(grad_output, self);
+}
+
+void mish_backward_mlu_kernel(at::TensorIterator& iter) {
+  TensorIteratorBridge iter_bridge;
+  iter_bridge.to_build(iter, "mish_backward");
+  auto grad_input = iter.output(0);
+  auto input = iter.input(1);
+  auto grad_out = iter.input(0);
+  AT_DISPATCH_FLOATING_TYPES_AND2(
+      at::ScalarType::Half,
+      at::ScalarType::BFloat16,
+      iter.dtype(),
+      "mish_backward_mlu",
+      [&]() {
+        cnnl_activation_backward_internal(
+            grad_input, input, grad_out, CNNL_ACTIVATION_MISH);
+      });
+}
 /***************************************elu****************************************/
 void elu_mlu_kernel(
     at::TensorIteratorBase& iter,
@@ -660,6 +694,7 @@ REGISTER_PRIVATEUSE1_DISPATCH(
     shrink_backward_stub,
     &shrink_backward_mlu_kernel);
 REGISTER_PRIVATEUSE1_DISPATCH(hardshrink_stub, &hardshrink_mlu_kernel);
-
+REGISTER_PRIVATEUSE1_DISPATCH(mish_stub, &mish_mlu_kernel);
+REGISTER_PRIVATEUSE1_DISPATCH(mish_backward_stub, &mish_backward_mlu_kernel);
 } // namespace ops
 } // namespace torch_mlu

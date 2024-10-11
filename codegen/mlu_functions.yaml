@@ -598,6 +598,14 @@ aten:
     structured_inherits: TensorIteratorBase
   - func: sigmoid_backward
     structured_delegate: sigmoid_backward.grad_input
+  - func: mish
+    structured_delegate: mish.out
+  - func: mish_
+    structured_delegate: mish.out
+  - func: mish.out
+    structured: True
+    structured_inherits: TensorIteratorBase
+  - func: mish_backward
   - func: elu.out
     structured: True
     structured_inherits: TensorIteratorBase
