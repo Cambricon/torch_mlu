@@ -79,6 +79,38 @@ at::Tensor cnnl_pool2d_internal(
       /*pad left */ padW,
       /*pad right*/ padW,
       ceil_mode);
+
+  // extra input
+  auto output_size = output.sizes().vec();
+  size_t extra_input_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetPoolingExtraInputSize(
+      handle, mode, output_size[2], output_size[3], &extra_input_size));
+
+  auto extra_device_input =
+      torch_mlu::MLUCachingAllocator::get()->allocate(extra_input_size);
+  void* extra_host_input = nullptr;
+  // TODO(CNNLCORE-21073): put the calculation of amend coefficient on device,
+  // extra_input_size is always 0.
+  if (extra_input_size > 0) {
+    // dtype of extra input is float
+    std::vector<float> extra_input_vec(extra_input_size / sizeof(float));
+    extra_host_input = extra_input_vec.data();
+    TORCH_CNNL_CHECK(cnnlInitPoolingExtraInput(
+        handle,
+        pooling_desc.desc(),
+        input_desc.get(),
+        output_desc.get(),
+        extra_host_input));
+    auto stream = getCurrentMLUStream();
+    TORCH_CNRT_CHECK(cnrtMemcpyAsync_V2(
+        extra_device_input.get(),
+        extra_host_input,
+        extra_input_size,
+        stream.stream(),
+        CNRT_MEM_TRANS_DIR_HOST2DEV));
+    stream.synchronize();
+  }
+
   // workspace
   size_t space_size = 0;
   TORCH_CNNL_CHECK(cnnlGetPoolingWorkspaceSize_v2(
@@ -90,13 +122,14 @@ at::Tensor cnnl_pool2d_internal(
   auto temp_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(space_size);
   const void* alpha = nullptr;
   const void* beta = nullptr;
-  TORCH_CNNL_CHECK(cnnlPoolingForward(
+  TORCH_CNNL_CHECK(cnnlPoolingForward_v2(
       /* handle         */ handle,
       /* pooling_desc   */ pooling_desc.desc(),
       /* alpha          */ alpha,
       /* x_desc         */ input_desc.get(),
       /* x              */ input_ptr,
       /* beta           */ beta,
+      /* extra_device_input*/ extra_device_input.get(),
       /* y_desc         */ output_desc.get(),
       /* y              */ output_ptr,
       /* workspace      */ temp_ptr.get(),
@@ -155,19 +188,33 @@ at::Tensor cnnl_pool2d_backward_internal(
   // PoolingBackward
   CnnlPoolingDescriptor pooling_desc;
   pooling_desc.set(mode, kH, kW, dH, dW, padH, padH, padW, padW, ceil_mode);
-  TORCH_CNNL_CHECK(cnnlPoolingBackward(
-      /* handle       */ handle,
-      /* pooling_desc */ pooling_desc.desc(),
-      /* alpha        */ alpha,
-      /* y_desc       */ index_desc.get(),
-      /* y            */ index_ptr,
-      /* diff_y_desc  */ gradOutput_desc.get(),
-      /* diff_y       */ gradOutput_ptr,
-      /* x_desc       */ input_desc.get(),
-      /* x            */ input_ptr,
-      /* beta         */ beta,
-      /* diff_x_desc  */ output_desc.get(),
-      /* diff_x       */ output_ptr));
+  // workspace
+  size_t space_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetPoolingBackwardWorkspaceSize(
+      handle,
+      pooling_desc.desc(),
+      index_desc.get(),
+      gradOutput_desc.get(),
+      input_desc.get(),
+      output_desc.get(),
+      &space_size));
+  auto temp_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(space_size);
+
+  TORCH_CNNL_CHECK(cnnlPoolingBackward_v2(
+      /* handle         */ handle,
+      /* pooling_desc   */ pooling_desc.desc(),
+      /* alpha          */ alpha,
+      /* y_desc         */ index_desc.get(),
+      /* y              */ index_ptr,
+      /* diff_y_desc    */ gradOutput_desc.get(),
+      /* diff_y         */ gradOutput_ptr,
+      /* x_desc         */ input_desc.get(),
+      /* x              */ input_ptr,
+      /* beta           */ beta,
+      /* diff_x_desc    */ output_desc.get(),
+      /* diff_x         */ output_ptr,
+      /* workspace      */ temp_ptr.get(),
+      /* workspace_size */ space_size));
   return gradInput;
 }
 
@@ -231,13 +278,15 @@ at::Tensor cnnl_pool3d_internal(
   auto temp_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(space_size);
   void* alpha = nullptr;
   void* beta = nullptr;
-  TORCH_CNNL_CHECK(cnnlPoolingForward(
+  void* extra_device_input = nullptr;
+  TORCH_CNNL_CHECK(cnnlPoolingForward_v2(
       /* handle         */ handle,
       /* pooling_desc   */ pooling_desc.desc(),
       /* alpha          */ alpha,
       /* x_desc         */ input_desc.get(),
       /* x              */ input_ptr,
       /* beta           */ beta,
+      /* extra_device_input*/ extra_device_input,
       /* y_desc         */ output_desc.get(),
       /* y              */ output_ptr,
       /* workspace      */ temp_ptr.get(),
@@ -312,23 +361,36 @@ at::Tensor cnnl_pool3d_backward_internal(
   CnnlPoolingDescriptor pooling_desc;
   pooling_desc.set(
       mode, self.dim(), arrKernel, arrStride, arrPadding, dilation, ceil_mode);
+  // workspace
+  size_t space_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetPoolingBackwardWorkspaceSize(
+      handle,
+      pooling_desc.desc(),
+      index_desc.get(),
+      grad_desc.get(),
+      input_desc.get(),
+      output_desc.get(),
+      &space_size));
+  auto temp_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(space_size);
 
   const void* alpha = nullptr;
   const void* beta = nullptr;
 
-  TORCH_CNNL_CHECK(cnnlPoolingBackward(
-      /* handle       */ handle,
-      /* pooling_desc */ pooling_desc.desc(),
-      /* alpha        */ alpha,
-      /* y_desc       */ index_desc.get(),
-      /* y            */ index_ptr,
-      /* diff_y_desc  */ grad_desc.get(),
-      /* diff_y       */ grad_ptr,
-      /* x_desc       */ input_desc.get(),
-      /* x            */ input_ptr,
-      /* beta         */ beta,
-      /* diff_x_desc  */ output_desc.get(),
-      /* diff_x       */ output_ptr));
+  TORCH_CNNL_CHECK(cnnlPoolingBackward_v2(
+      /* handle         */ handle,
+      /* pooling_desc   */ pooling_desc.desc(),
+      /* alpha          */ alpha,
+      /* y_desc         */ index_desc.get(),
+      /* y              */ index_ptr,
+      /* diff_y_desc    */ grad_desc.get(),
+      /* diff_y         */ grad_ptr,
+      /* x_desc         */ input_desc.get(),
+      /* x              */ input_ptr,
+      /* beta           */ beta,
+      /* diff_x_desc    */ output_desc.get(),
+      /* diff_x         */ output_ptr,
+      /* workspace      */ temp_ptr.get(),
+      /* workspace_size */ space_size));
 
   return gradInput;
 }
