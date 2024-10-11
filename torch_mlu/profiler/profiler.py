@@ -1,5 +1,6 @@
 import torch
-import torch_mlu
+
+# import torch_mlu
 
 from torch._C._profiler import _ExperimentalConfig
 

@@ -5,6 +5,12 @@ import logging
 import warnings
 import expecttest
 import functools
+import types
+import importlib
+from pathlib import Path
+import yaml
+import re
+
 import torch
 import torch.distributed as dist
 import torch.distributed.distributed_c10d as c10d
@@ -43,6 +49,52 @@ def process_ipc(
         event_sync_required,
     )
     outq.put((storage.tolist(), storage.device.type))
+
+
+def get_docstring_from_key(key):
+    try:
+        parts = key.split(".")
+        obj = importlib.import_module(parts[0])
+
+        for attr in parts[1:]:
+            obj = getattr(obj, attr)
+
+        return obj.__doc__ or f"No docstring found for {key}"
+    except ModuleNotFoundError as e:
+        return f"Module '{parts[0]}' not found: {e}"
+    except AttributeError as e:
+        return f"Attribute '{attr}' not found in '{key}': {e}"
+    except Exception as e:
+        return f"An error occurred while accessing {key}: {e}"
+
+
+# This func is used to check whether 'device' arg is in Args/Kwargs in a torch native func
+def contains_device_parameter(text):
+    args_pattern = re.compile(
+        r"(?<=Args:\n)([\s\S]*?)(?=\n\s*\n|Keyword args:|\Z)", re.DOTALL
+    )
+
+    keyword_args_pattern = re.compile(
+        r"(?<=Keyword args:\n)([\s\S]*?)(?=\n\n\s*\w+:|\Z)", re.DOTALL
+    )
+
+    args_match = args_pattern.search(text)
+    if args_match:
+        args_text = args_match.group(0)
+        if (
+            "device" in args_text and "device_id" not in args_text
+        ) or "use_cuda" in args_text:
+            return True
+
+    keyword_args_match = keyword_args_pattern.search(text)
+    if keyword_args_match:
+        keyword_args_text = keyword_args_match.group(0)
+        if (
+            "device" in keyword_args_text and "device_id" not in keyword_args_text
+        ) or "use_cuda" in keyword_args_text:
+            return True
+
+    return False
 
 
 # If you directly inherit common_utils.TestCase, you will encounter some device-related
@@ -545,6 +597,46 @@ class TestGpuMigration(expecttest.TestCase):
         self.assertTrue(not torch.equal(before_fork_rng, fork_rng))
 
     @testinfo()
+    def test_profiler(self):
+        model = torch.nn.Sequential(
+            torch.nn.Conv2d(16, 33, 18),
+            torch.nn.ReLU(),
+            torch.nn.Linear(243, 243),
+            torch.nn.ReLU(),
+        )
+        test_apis = [
+            torch.profiler.profile(
+                activities=[
+                    torch.profiler.ProfilerActivity.CPU,
+                    torch.profiler.ProfilerActivity.CUDA,
+                ],
+                record_shapes=True,
+                profile_memory=True,
+                with_flops=True,
+            ),
+            torch.profiler.profile(
+                use_cuda=True, record_shapes=True, profile_memory=True, with_flops=True
+            ),
+            torch.autograd.profiler.profile(
+                use_cuda=True, record_shapes=True, profile_memory=True, with_flops=True
+            ),
+        ]
+        for profiler_api in test_apis:
+            with profiler_api as prof:
+                x = torch.randn(40, 16, 18, 260).cuda()
+                model.cuda()
+                model(x)
+            output = prof.key_averages().table(
+                sort_by="self_cuda_time_total", row_limit=-1
+            )
+            self.assertIn("MLU Mem", output)
+            output = prof.key_averages().table(
+                sort_by="self_cuda_memory_usage", row_limit=-1
+            )
+            self.assertIn("MLU Mem", output)
+
+
+    @testinfo()
     def test_cuda_default_profiler(self):
         # torch.autograd.profiler.profile()
         self.assertRaisesRegex(
@@ -570,6 +662,104 @@ class TestGpuMigration(expecttest.TestCase):
             torch.cuda.memory.CUDAPluggableAllocator,
             torch.mlu.memory.MLUPluggableAllocator,
         )
+
+    # Remove/modify the following cases after supported APIs used in below cases
+    @testinfo()
+    def test_update_dict_warnings(self):
+        with warnings.catch_warnings(record=True) as w:
+            try:
+                torch.cuda.memory_usage()
+            except:
+                pass
+        self.assertRegex(
+            str(w[-1].message),
+            r"gpu_migration: memory_usage is not yet suppoorted on MLU",
+        )
+        with warnings.catch_warnings(record=True) as w:
+            try:
+                tmp = torch.cuda.DeferredCudaCallError()
+            except:
+                pass
+        self.assertRegex(
+            str(w[-1].message),
+            r"gpu_migration: DeferredCudaCallError is not yet suppoorted on MLU",
+        )
+
+    # Use this test to check whether lists in gpu_migration contains all supported functions in api_support_list and require device
+    # Notice: This func cannot cover all funcs reqire 'device' arg, funcs without native
+    # doc will not be covered, therefore the lists in gpu_migration are still necessary
+    @testinfo()
+    def test_gpu_migration_lists(self):
+        torch_fn_list = torch_mlu.utils.gpu_migration.migration.torch_fn_list
+        tensor_fn_list = torch_mlu.utils.gpu_migration.migration.tensor_fn_list
+        module_fn_list = torch_mlu.utils.gpu_migration.migration.module_fn_list
+        default_cuda_args_list = (
+            torch_mlu.utils.gpu_migration.migration.default_cuda_args_list
+        )
+        class_list = torch_mlu.utils.gpu_migration.migration.class_list
+        distributed_fn_list = (
+            torch_mlu.utils.gpu_migration.migration.distributed_fn_list
+        )
+        other_fn_list = torch_mlu.utils.gpu_migration.migration.other_fn_list
+
+        # api_names here whose docstrings contain "device" but not has device arg/kwarg
+        # or classes whose names are different from its full dir
+        white_list = [
+            "torch.nn.parallel.DistributedDataParallel",
+            "torch.testing.assert_close",
+            "torch.utils.checkpoint.checkpoint",
+            "torch.utils.data.DataLoader",
+            "torch.nn.utils.clip_grad_norm_",
+        ]
+        torch_mlu_path = Path(__file__).resolve().parent.parent.parent
+        torch_api_path = (
+            str(torch_mlu_path)
+            + "/tools/autogen_torch_api/api_support_lists/torch_api.yaml"
+        )
+        with open(torch_api_path, "r", encoding="utf-8") as f:
+            api_support_data = yaml.safe_load(f)
+        for i, module in enumerate(api_support_data):
+            module_name = list(module.keys())[0]
+            for j, api in enumerate(module[module_name]):
+                api_name = api[list(api.keys())[0]]
+                supported = False
+                for k in api:
+                    if k == "supported":
+                        supported = api[k]
+                if (
+                    supported
+                    and not api_name.startswith("torch.cuda")
+                    and not api_name.startswith("torch.backends.cuda")
+                    and not api_name.startswith("torch.Tensor.cuda")
+                    and not api_name.startswith("torch.profiler")
+                ):
+                    docstring = get_docstring_from_key(api_name)
+                    requires_device = contains_device_parameter(docstring)
+                    if requires_device:
+                        inList = False
+                        for l in [
+                            torch_fn_list,
+                            tensor_fn_list,
+                            module_fn_list,
+                            default_cuda_args_list,
+                            distributed_fn_list,
+                        ]:
+                            if api_name.rsplit(".", 1)[-1] in l:
+                                inList = True
+                        for fn in other_fn_list:
+                            if api_name == fn["name"]:
+                                inList = True
+                        for cls in class_list:
+                            if (
+                                f"{cls.__module__}.{cls.__name__}" == api_name
+                                or api_name in white_list
+                            ):
+                                inList = True
+                        self.assertEqual(
+                            inList,
+                            True,
+                            msg=f"GPU Migration: {api_name} has a device arg/kwargs but not in func list, please add it to gpu migration manually.",
+                        )
 
 
 if __name__ == "__main__":

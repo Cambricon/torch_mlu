@@ -5,12 +5,17 @@ import warnings
 import functools
 import sys
 import inspect
+import os
+import importlib
+import types
 
 import torch
 import torch.autograd.profiler as prof
 import torch.distributed.distributed_c10d as c10d
 import torch.distributed.fsdp
 import torch.utils._device
+from torch._prims.context import torch_to_refs_map as native_torch_to_refs_map
+
 
 import torch_mlu
 
@@ -75,6 +80,9 @@ class_list = [
     # fsdp
     torch.distributed.fsdp.fully_sharded_data_parallel.FullyShardedDataParallel,
     torch.utils._device.DeviceContext,
+    # TP
+    torch.distributed.DeviceMesh,
+    torch.utils.data.DataLoader,
 ]
 
 
@@ -83,6 +91,7 @@ torch_fn_list = [
     "set_default_device",
     "as_tensor",
     "asarray",
+    "autocast",
     "eye",
     "linspace",
     "logspace",
@@ -198,9 +207,76 @@ tensor_fn_list = [
     "mlu",
 ]
 
+distributed_fn_list = [
+    "broadcast_object_list",
+    "init_device_mesh",
+]
+
 module_fn_list = [
     "to",
     "to_empty",
+]
+
+
+# this list is for functions whose modules are not in torch, torch.distributed and torch.module
+# TODO: Merge all fn lists into one list
+other_fn_list = [
+    {
+        "name": "torch.random.fork_rng",
+        "mod": torch.random,
+        "fn_list": [
+            "fork_rng",
+        ],
+    },
+    {
+        "name": "torch.utils.cpp_extension.include_paths",
+        "mod": torch.utils.cpp_extension,
+        "fn_list": [
+            "include_paths",
+        ],
+    },
+    {
+        "name": "torch.distributed.Backend.register_backend",
+        "mod": torch.distributed.Backend,
+        "fn_list": [
+            "register_backend",
+        ],
+    },
+    {
+        "name": "torch.distributed.tensor.parallel.parallelize_module",
+        "mod": torch.distributed.tensor.parallel,
+        "fn_list": [
+            "parallelize_module",
+        ],
+    },
+    {
+        "name": "torch.testing.make_tensor",
+        "mod": torch.testing,
+        "fn_list": [
+            "make_tensor",
+        ],
+    },
+    {
+        "name": "torch.amp.autocast_mode.is_autocast_available",
+        "mod": torch.amp.autocast_mode,
+        "fn_list": [
+            "is_autocast_available",
+        ],
+    },
+    {
+        "name": "torch.amp.custom_bwd",
+        "mod": torch.amp,
+        "fn_list": [
+            "custom_bwd",
+        ],
+    },
+    {
+        "name": "torch.amp.custom_fwd",
+        "mod": torch.amp,
+        "fn_list": [
+            "custom_fwd",
+        ],
+    },
 ]
 
 torch_mlu_memory_fn_list = [
@@ -213,6 +289,31 @@ default_cuda_args_list = [
     "torch.amp.GradScaler.__init__",
     "torch.random.fork_rng",
 ]
+
+
+# add new tuples here to adapt new substitution
+substitution_list = [
+    ("nccl", "cncl"),
+    ("nvtx", "cnpx"),
+    ("CUDAGraph", "MLUGraph"),
+    ("is_available", "is_cncl_available"),
+    ("CUDAPluggableAllocator", "MLUPluggableAllocator"),
+]
+
+
+def exec_only_once(func):
+    """A decorator that limits the decorated function to be executed only once."""
+    # use variable obj as a flag because of shallow copy in closure
+    flag = [False]
+
+    def inner(*args, **kwargs):
+        if flag[0]:
+            pass
+        else:
+            flag[0] = True
+            func(*args, **kwargs)
+
+    return inner
 
 
 class Generator(torch.Generator):
@@ -314,10 +415,6 @@ def replace_profiler_args(fn):
                 args[i] = replace_cuda_with_mlu(arg)
 
         if kwargs:
-            activities = kwargs.get("activities", None)
-            if activities and torch.profiler.ProfilerActivity.CUDA in activities:
-                activities.remove(torch.profiler.ProfilerActivity.CUDA)
-                activities.append(torch.profiler.ProfilerActivity.PrivateUse1)
             sort_by = kwargs.get("sort_by", None)
             if sort_by:
                 kwargs["sort_by"] = replace_cuda_with_mlu(sort_by)
@@ -403,44 +500,6 @@ def replace_autocast(fn):
     return warp_fn
 
 
-def script(
-    obj,
-    optimize=None,
-    _frames_up=0,
-    _rcb=None,
-    example_inputs: Union[List[Tuple], Dict[Callable, List[Tuple]], None] = None,
-):
-    warnings.warn(
-        f"The model-transfer tool does not support torch.jit.script and use eager mode instead."
-    )
-    return obj
-
-
-old_device_constructors_ = torch.utils._device._device_constructors()
-
-
-@functools.lru_cache(1)
-def original_device_constructors():
-    global old_device_constructors_
-    return old_device_constructors_
-
-
-def _new_privateuse1_deserialize(obj, location):
-    if location.startswith("cuda"):
-        location = location.replace("cuda", "mlu")
-    origin_privateuse1_deserialize = functools.partial(
-        torch.serialization._deserialize, "privateuse1"
-    )
-    return origin_privateuse1_deserialize(obj, location)
-
-
-torch.serialization.register_package(
-    11,
-    functools.partial(torch.serialization._backend_tag, "privateuse1"),
-    _new_privateuse1_deserialize,
-)
-
-
 def replace_default_cuda_args_with_mlu(fn):
     @wraps(fn)
     def warp_fn(*args, **kwargs):
@@ -472,6 +531,238 @@ def replace_default_cuda_args(func_name):
     fn = getattr(module, fn_name, None)
     if fn is not None:
         setattr(module, fn_name, replace_default_cuda_args_with_mlu(fn))
+
+
+def script(
+    obj,
+    optimize=None,
+    _frames_up=0,
+    _rcb=None,
+    example_inputs: Union[List[Tuple], Dict[Callable, List[Tuple]], None] = None,
+):
+    warnings.warn(
+        f"The model-transfer tool does not support torch.jit.script and use eager mode instead."
+    )
+    return obj
+
+
+@functools.lru_cache(None)
+def torch_to_refs_map():
+    """
+    Mapping of torch API functions to torch._refs functions.
+    E.g. torch_to_refs_map()[torch.add] == torch._refs.add
+    """
+    r = native_torch_to_refs_map()
+
+    # Recover mapping relation of native API hijacked by model tranfer.
+    for fn in torch_fn_list:
+        if fn in torch._refs.__all__:
+            r[getattr(torch._C._VariableFunctions, fn)] = torch._refs.__dict__.get(fn)
+
+    for fn in tensor_fn_list:
+        if fn in torch._refs.__all__:
+            r[getattr(torch._C.TensorBase, fn)] = torch._refs.__dict__.get(fn)
+
+    return r
+
+
+# This function is used to check whether an object needs to be patched (called by `update_dict``)
+def needs_skip(obj, module):
+    # filter out functions which are not defined in current module
+    if isinstance(obj, (types.FunctionType, type)) and (
+        obj.__module__.startswith(module.__name__) or obj.__module__.startswith("torch")
+    ):
+        return False
+    # filter out modules like os, List, Union
+    elif isinstance(obj, types.ModuleType) and (
+        ".".join(obj.__name__.split(".")[:-1]).startswith(module.__name__)
+        or ".".join(obj.__name__.split(".")[:-1]).startswith("torch")
+    ):
+        return False
+    return True
+
+
+# Here we only need to ensure that the two input obj are both a class/func rether than
+# both of the two inputs have exactly the same type
+def rough_type_comparison(obj1, obj2):
+    if isinstance(obj1, types.ModuleType) and isinstance(obj2, types.ModuleType):
+        return True
+    elif inspect.isclass(obj2) and inspect.isclass(obj2):
+        return True
+    elif (inspect.isfunction(obj1) or isinstance(obj1, types.BuiltinFunctionType)) and (
+        inspect.isfunction(obj2) or isinstance(obj2, types.BuiltinFunctionType)
+    ):
+        return True
+    elif inspect.ismethod(obj1) and inspect.ismethod(obj2):
+        return True
+    return False
+
+
+# Check whether all of the modules in __all__ have been wrapped/ patched. If not, a warning will be provided
+def check_patch_succeeded(source_module, dest_module):
+    if hasattr(source_module, "__all__"):
+        for attr in source_module.__all__:
+            # process substitution list
+            attr_dst = attr
+            for dst_sub, src_sub in substitution_list:
+                if attr == src_sub:
+                    attr_dst = dst_sub
+            try:
+                if not isinstance(dest_module.__dict__[attr], types.ModuleType):
+                    if dest_module.__dict__[attr_dst] != source_module.__dict__[attr]:
+                        warnings.warn(
+                            f"{source_module.__dict__[attr].__name__} is supported in {source_module.__name__} and not patched"
+                            f" in {dest_module.__name__}. Please check whether {source_module.__dict__[attr].__name__} needs to be migrated."
+                        )
+            except:
+                pass
+
+
+# for unsupported funcs/classes/modules, we add wrappers.
+def warning_wrapper(obj, obj_name):
+    warning_message = "gpu_migration: " + obj_name + " is not yet suppoorted on MLU"
+
+    def decorator(obj):
+        # decorate func
+        if isinstance(obj, types.FunctionType):
+
+            def wrapped_function(*args, **kwargs):
+                warnings.warn(warning_message, UserWarning)
+                return obj(*args, **kwargs)
+
+            return wrapped_function
+
+        # decorate classes
+        elif isinstance(obj, type):
+
+            class WrappedClass(obj):
+                def __init__(self, *args, **kwargs):
+                    warnings.warn(warning_message, UserWarning)
+                    super().__init__(*args, **kwargs)
+
+                # for callable classes
+                def __call__(self, *args, **kwargs):
+                    warnings.warn(warning_message, UserWarning)
+                    return super().__call__(*args, **kwargs)
+
+            return WrappedClass
+
+        # decorate callable obj (e.g. an instance of a callable class)
+        elif callable(obj):
+
+            class WrappedCallable:
+                def __init__(self, callable_obj):
+                    self._callable_obj = callable_obj
+
+                def __call__(self, *args, **kwargs):
+                    warnings.warn(warning_message, UserWarning)
+                    return self._callable_obj(*args, **kwargs)
+
+                def __getattr__(self, name):
+                    return getattr(self._callable_obj, name)
+
+            return WrappedCallable(obj)
+
+        # return original module
+        else:
+            return obj
+
+    return decorator(obj)
+
+
+# This func is used to apply monkey patches and update sys.modules and module.__dict__
+# All attrs that are in dest_module.__dict__ but not in source_module.__dict__ will be
+# wrapped(warning added) and added to source_module.__dict__. In addition, sys.modules[dest_module]
+# will be set to source_module.
+def update_dict(source_module, dest_module):
+    source_dict = source_module.__dict__
+    dest_dict = dest_module.__dict__
+    # torch.cuda
+    updates = {}
+    for dest_key in dest_dict.copy():
+        patched = False
+        # filter out all attrs that not begins with "__" and not defined in current module
+        if dest_key.startswith("__") or needs_skip(dest_dict[dest_key], dest_module):
+            continue
+        # torch_mlu.mlu
+        for source_key in source_dict:
+            if source_key == dest_key or (dest_key, source_key) in substitution_list:
+                # Report a warning and skip the current substitution when two eponymous have different types
+                if not rough_type_comparison(
+                    source_dict[source_key], dest_dict[dest_key]
+                ):
+                    warnings.warn(
+                        f"Warning: The object {source_dict[source_key]} in source_module {source_module.__name__} is a {type(source_dict[source_key])}, "
+                        f"but in dest_module {dest_module.__name__}, it is a {type(dest_dict[dest_key])}. Please align the types."
+                        f" This substitution will be skipped"
+                    )
+                    # Add a warning msg and process the next obj
+                    break
+                else:
+                    # process modules
+                    if isinstance(source_dict[source_key], types.ModuleType):
+                        update_dict(source_dict[source_key], dest_dict[dest_key])
+                        updates[dest_key] = source_dict[source_key]
+                        patched = True
+                        break
+                    # process classes and funcs
+                    else:
+                        # Do nothing when dest_key equals source_key
+                        updates[dest_key] = source_dict[source_key]
+                        patched = True
+                        break
+
+        if not patched:
+            updates[dest_key] = warning_wrapper(dest_dict[dest_key], dest_key)
+    # update __dict__
+    source_dict.update(updates)
+
+    # get relative module name and parent module
+    parent_module_name = ".".join(dest_module.__name__.split(".")[:-1])
+
+    # for 'root' modules, will not be run
+    if not parent_module_name:
+        sys.modules[dest_module.__name__] = source_module
+        return
+
+    parent_module = sys.modules[parent_module_name]
+    dest_module_name = dest_module.__name__.removeprefix(parent_module.__name__ + ".")
+
+    # monkey patches for modules
+    setattr(parent_module, dest_module_name.split(".")[-1], source_module)
+    parent_module.__dict__[dest_module_name.split(".")[-1]] = source_module
+    sys.modules[dest_module.__name__] = source_module
+
+
+def _get_available_device_type():
+    if torch.mlu.is_available():
+        return "mlu"
+    return None
+
+
+old_device_constructors_ = torch.utils._device._device_constructors()
+
+
+@functools.lru_cache(1)
+def original_device_constructors():
+    global old_device_constructors_
+    return old_device_constructors_
+
+
+def _new_privateuse1_deserialize(obj, location):
+    if location.startswith("cuda"):
+        location = location.replace("cuda", "mlu")
+    origin_privateuse1_deserialize = functools.partial(
+        torch.serialization._deserialize, "privateuse1"
+    )
+    return origin_privateuse1_deserialize(obj, location)
+
+
+torch.serialization.register_package(
+    11,
+    functools.partial(torch.serialization._backend_tag, "privateuse1"),
+    _new_privateuse1_deserialize,
+)
 
 
 def apply_monkey_patches():
@@ -513,10 +804,8 @@ def apply_monkey_patches():
     torch._C._cuda_releasePool = torch_mlu._MLUC._mlu_releasePool
 
     # torch.cuda.*
-    torch.cuda = torch.mlu
-    sys.modules["torch.cuda"].__dict__["_lazy_call"] = torch.mlu._lazy_call
-    torch.cuda.nccl = torch.mlu.cncl
-    torch.cuda.CUDAGraph = torch.mlu.MLUGraph
+    update_dict(torch.mlu, torch.cuda)
+    check_patch_succeeded(torch_mlu.mlu, torch.cuda)
     replace_device(torch.cuda, torch_cuda_fn_list)
 
     # torch.Tensor.*
@@ -530,6 +819,15 @@ def apply_monkey_patches():
 
     replace_device(torch.mlu.memory, torch_mlu_memory_fn_list)
     replace_device(torch_mlu.mlu.storage, ["_typed_storage_init"])
+
+    # torch.distributed.*
+    replace_device(torch.distributed, distributed_fn_list)
+
+    # Other funcs
+    for item in other_fn_list:
+        mod = item["mod"]
+        fn_list = item["fn_list"]
+        replace_device(mod, fn_list)
 
     for mod in class_list:
         replace_device(mod, ["__init__"])
@@ -577,11 +875,15 @@ def apply_monkey_patches():
     )
 
     # torch.profiler
+    torch.profiler.ProfilerActivity.CUDA = torch.profiler.ProfilerActivity.PrivateUse1
     torch.autograd.ProfilerState.CUDA = torch.autograd.ProfilerState.PRIVATEUSE1
-    replace_profiler(torch.autograd.profiler.profile, "__init__")
     replace_profiler(torch.profiler._KinetoProfile, "__init__")
+    replace_profiler(torch.autograd.profiler.profile, "__init__")
     replace_profiler(torch.autograd.profiler_util, "_build_table")
     replace_profiler(torch.autograd.profiler_util.EventList, "export_stacks")
+    torch.profiler._pattern_matcher.ExtraCUDACopyPattern = (
+        torch_mlu.profiler._pattern_matcher.ExtraMLUCopyPattern
+    )
 
     # storage
     torch.TypedStorage.cuda = torch.TypedStorage.mlu
@@ -589,10 +891,13 @@ def apply_monkey_patches():
 
     torch.jit.script = script
 
-    torch.cuda.nvtx = torch.mlu.cnpx
     torch.autograd.profiler.emit_nvtx = torch.autograd.profiler.emit_cnpx
 
     torch.backends.cuda = torch.backends.mlu
+
+    torch._prims.context.torch_to_refs_map = torch_to_refs_map
+
+    torch._utils._get_available_device_type = _get_available_device_type
 
     # cuda default
     torch.UntypedStorage._release_ipc_counter_cuda = (
@@ -610,6 +915,5 @@ def apply_monkey_patches():
     torch.TypedStorage._share_cuda_ = torch.TypedStorage._share_mlu_
     torch.TypedStorage._new_shared_cuda = torch.TypedStorage._new_shared_mlu
 
-    torch.cuda.memory.CUDAPluggableAllocator = torch.mlu.memory.MLUPluggableAllocator
     for func_name in default_cuda_args_list:
         replace_default_cuda_args(func_name)

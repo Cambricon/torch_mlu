@@ -3,8 +3,7 @@ import torch
 from torch import Tensor
 
 import torch_mlu
-from .device import current_device
-from . import _lazy_call, _lazy_init, device_count
+from . import _lazy_call, _lazy_init, device_count, current_device
 
 __all__ = [
     "get_rng_state",
