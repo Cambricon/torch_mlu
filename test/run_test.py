@@ -45,6 +45,7 @@ TESTS = [
     "utils/test_dumptool",
     "utils/test_collect_env",
     "utils/test_torch_gpu2mlu",
+    "utils/test_monkey_patch_ref_leak.py",
     "optimizer/test_fused_adam",
     "optimizer/test_fused_lamb",
     "optimizer/test_fused_sgd",

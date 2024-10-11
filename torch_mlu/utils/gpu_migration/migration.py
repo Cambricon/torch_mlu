@@ -626,6 +626,7 @@ def warning_wrapper(obj, obj_name):
         # decorate func
         if isinstance(obj, types.FunctionType):
 
+            @wraps(obj)
             def wrapped_function(*args, **kwargs):
                 warnings.warn(warning_message, UserWarning)
                 return obj(*args, **kwargs)
@@ -712,7 +713,7 @@ def update_dict(source_module, dest_module):
                         patched = True
                         break
 
-        if not patched:
+        if not patched and os.getenv("TORCH_MLU_MIGRATION_WITH_WARNING", "1") == "1":
             updates[dest_key] = warning_wrapper(dest_dict[dest_key], dest_key)
     # update __dict__
     source_dict.update(updates)
