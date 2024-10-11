@@ -1467,7 +1467,7 @@ class TestSDPA(TestCase):
 
     @testinfo()
     @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
-    def test_scaled_dot_product_flast_attention_backward(self):
+    def test_scaled_dot_product_flash_attention_backward(self):
         batch_size_list = [1, 8]
         seq_len_q_list = [4, 8, 64, 143, 256, 512, 1024, 2048]
         seq_len_k_list = [4, 8, 64, 128, 256, 587, 1024, 2048]
@@ -1632,7 +1632,7 @@ class TestSDPA(TestCase):
 
     @testinfo()
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
-    def test_scaled_dot_product_flast_attention_backward_bfloat16(self):
+    def test_scaled_dot_product_flash_attention_backward_bfloat16(self):
         batch_size_list = [1, 8]
         seq_len_q_list = [4, 8, 64, 143, 256, 512, 1024, 2048]
         seq_len_k_list = [4, 8, 64, 128, 256, 587, 1024, 2048]

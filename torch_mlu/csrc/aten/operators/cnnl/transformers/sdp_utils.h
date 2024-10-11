@@ -497,14 +497,14 @@ inline bool check_head_dim_size(sdp_params const& params, bool debug) {
   const auto query_size_last = params.query.sym_size(-1);
   const auto value_size_last = params.value.sym_size(-1);
   if (!(query_size_last == params.key.sym_size(-1) &&
-        (c10::SymInt(512) >= query_size_last) &&
+        (c10::SymInt(256) >= query_size_last) &&
         (query_size_last >= c10::SymInt(1)) &&
-        (c10::SymInt(512) >= value_size_last) &&
+        (c10::SymInt(256) >= value_size_last) &&
         (value_size_last >= c10::SymInt(1)))) {
     if (debug) {
       TORCH_WARN(
           "Both fused kernels require query.size(-1)==key.size(-1),",
-          "512>=query.size(-1)>=1 and 512>=value.size(-1)>=1.",
+          "256>=query.size(-1)>=1 and 256>=value.size(-1)>=1.",
           "Got Query.size(-1): ",
           query_size_last,
           ", Key.size(-1): ",
