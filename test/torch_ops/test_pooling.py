@@ -348,6 +348,7 @@ class TestPoolingOp(TestCase):
         padding_v = [0, 1]
         ceil_mode_v = [False, True]
         return_indices_v = [False, True]
+        dilation_v = [1, (1, 1), (1, 2), (2, 3)]
         dtypes = [torch.float, torch.half, torch.double]
 
         loop_var = [
@@ -356,12 +357,20 @@ class TestPoolingOp(TestCase):
             padding_v,
             return_indices_v,
             ceil_mode_v,
+            dilation_v,
             dtypes,
             in_shapes,
         ]
-        for kernel, stride, padding, return_indices, ceil_mode, t, in_shape in product(
-            *loop_var
-        ):
+        for (
+            kernel,
+            stride,
+            padding,
+            return_indices,
+            ceil_mode,
+            d,
+            t,
+            in_shape,
+        ) in product(*loop_var):
             input_t = torch.randn(in_shape, dtype=t)
             input_cpu = input_t if (t != torch.half) else input_t.to(torch.float)
             output_cpu = F.max_pool2d(
@@ -369,7 +378,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -379,7 +388,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -400,7 +409,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -410,7 +419,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -484,6 +493,7 @@ class TestPoolingOp(TestCase):
         padding_v = [0, 1]
         ceil_mode_v = [False, True]
         return_indices_v = [False, True]
+        dilation_v = [1, 2, 3]
         dtypes = [torch.float, torch.half, torch.double]
 
         loop_var = [
@@ -492,12 +502,20 @@ class TestPoolingOp(TestCase):
             padding_v,
             return_indices_v,
             ceil_mode_v,
+            dilation_v,
             dtypes,
             in_shapes,
         ]
-        for kernel, stride, padding, return_indices, ceil_mode, t, in_shape in product(
-            *loop_var
-        ):
+        for (
+            kernel,
+            stride,
+            padding,
+            return_indices,
+            ceil_mode,
+            d,
+            t,
+            in_shape,
+        ) in product(*loop_var):
             input_t = torch.randn(in_shape, dtype=t)
             input_cpu = input_t if (t != torch.half) else input_t.to(torch.float)
             output_cpu = F.max_pool1d(
@@ -505,7 +523,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -515,7 +533,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -536,7 +554,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -546,7 +564,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -571,6 +589,7 @@ class TestPoolingOp(TestCase):
         padding_v = [0, 1]
         ceil_mode_v = [False, True]
         return_indices_v = [False, True]
+        dilation_v = [1, (1, 1), (1, 2), (2, 3)]
         dtypes = [torch.float, torch.half, torch.double]
 
         loop_var = [
@@ -580,6 +599,7 @@ class TestPoolingOp(TestCase):
             padding_v,
             return_indices_v,
             ceil_mode_v,
+            dilation_v,
             dtypes,
             in_shapes,
         ]
@@ -590,6 +610,7 @@ class TestPoolingOp(TestCase):
             padding,
             return_indices,
             ceil_mode,
+            d,
             t,
             in_shape,
         ) in product(*loop_var):
@@ -600,7 +621,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -610,7 +631,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -631,7 +652,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -641,7 +662,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -844,6 +865,7 @@ class TestPoolingOp(TestCase):
         padding_v = [(0, 0, 0), (0, 1, 1)]
         ceil_mode_v = [False, True]
         return_indices_v = [True, False]
+        dilation_v = [1, (1, 1, 1), (1, 1, 2), (2, 2, 2), (1, 2, 3), (3, 2, 1)]
         dtypes = [torch.float, torch.half, torch.double]
 
         loop_var = [
@@ -852,10 +874,11 @@ class TestPoolingOp(TestCase):
             stride_v,
             padding_v,
             ceil_mode_v,
+            dilation_v,
             return_indices_v,
             dtypes,
         ]
-        for in_shape, kernel, stride, padding, ceil_mode, return_indices, t in zip(
+        for in_shape, kernel, stride, padding, ceil_mode, d, return_indices, t in zip(
             *loop_var
         ):
             input_t = torch.randn(in_shape, dtype=t)
@@ -865,7 +888,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 ceil_mode=ceil_mode,
                 return_indices=return_indices,
             )
@@ -901,7 +924,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -910,7 +933,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -919,7 +942,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -928,7 +951,7 @@ class TestPoolingOp(TestCase):
                 kernel,
                 stride=stride,
                 padding=padding,
-                dilation=1,
+                dilation=d,
                 return_indices=return_indices,
                 ceil_mode=ceil_mode,
             )
@@ -1142,13 +1165,6 @@ class TestPoolingOp(TestCase):
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             m(input)
 
-        # input = torch.randn((2, 3, 80, 80), dtype=torch.float).to('mlu')
-        # m = nn.MaxPool2d(kernel_size=(16, 16), stride=(2, 2), dilation = (4, 4))
-        # m = m.to('mlu')
-        # ref_msg = r"CNNL_STATUS_BAD_PARAM"
-        # with self.assertRaisesRegex(RuntimeError, ref_msg):
-        #    m(input)
-
         input = torch.randn((2, 512, 512, 512), dtype=torch.float).to("mlu")
         m = nn.MaxPool2d(kernel_size=(400, 400), stride=(2, 2))
         m = m.to("mlu")
@@ -1221,13 +1237,6 @@ class TestPoolingOp(TestCase):
         ref_msg = ref_msg + r" a single int, or a tuple of three ints$"
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             m(input)
-
-        # input = torch.randn((2, 2, 80, 80, 80), dtype=torch.float).to('mlu')
-        # m = nn.MaxPool3d(kernel_size=(8, 8, 8), stride=(2, 2, 2), dilation=(3, 3, 3))
-        # m = m.to('mlu')
-        # ref_msg = r"CNNL_STATUS_BAD_PARAM"
-        # with self.assertRaisesRegex(RuntimeError, ref_msg):
-        #    m(input)
 
         input = torch.randn((2, 2, 3, 80, 80), dtype=torch.float).to("mlu")
         m = nn.MaxPool3d(kernel_size=(100, 100, 16), stride=(2, 2, 2))
