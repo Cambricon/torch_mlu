@@ -31,10 +31,10 @@ index 4bb6cf6c5a..ceed5f4050 100644
  
      def extra_repr(self) -> Sequence[str]:
 diff --git a/torch/testing/_creation.py b/torch/testing/_creation.py
-index 6ded7ff578..4d8d9b2d8e 100644
+index 6ded7ff578..4b21a9bd39 100644
 --- a/torch/testing/_creation.py
 +++ b/torch/testing/_creation.py
-@@ -156,6 +156,20 @@ def make_tensor(
+@@ -156,6 +156,18 @@ def make_tensor(
              return math.ceil(low), math.ceil(high)
  
          return low, high
@@ -50,20 +50,28 @@ index 6ded7ff578..4d8d9b2d8e 100644
 +    if isinstance(device, torch.device) and device.type == "mlu":
 +        device = 'cpu'
 +        mlu_convert_to_cpu = True
-+
-+
  
      if len(shape) == 1 and isinstance(shape[0], collections.abc.Sequence):
          shape = shape[0]  # type: ignore[assignment]
-@@ -234,6 +248,8 @@ def make_tensor(
-             1 if dtype in _BOOLEAN_OR_INTEGRAL_TYPES else torch.finfo(dtype).tiny
-         )
+@@ -225,12 +237,17 @@ def make_tensor(
+ 
+     if noncontiguous and result.numel() > 1:
+         result = torch.repeat_interleave(result, 2, dim=-1)
++        # TODO(PYTORCH-8723): Copy CPU Tensor to MLU
++        result = result.to(org_device) if mlu_convert_to_cpu else result
+         result = result[..., ::2]
+     elif memory_format is not None:
+         result = result.clone(memory_format=memory_format)
  
 +    # TODO(PYTORCH-8723): Copy CPU Tensor to MLU
 +    result = result.to(org_device) if mlu_convert_to_cpu else result
-     if dtype in _FLOATING_OR_COMPLEX_TYPES:
-         result.requires_grad = requires_grad
- 
++
+     if exclude_zero:
+-        result[result == 0] = (
++        result[result.cpu() == 0] = (
+             1 if dtype in _BOOLEAN_OR_INTEGRAL_TYPES else torch.finfo(dtype).tiny
+         )
+
 diff --git a/torch/testing/_internal/common_device_type.py b/torch/testing/_internal/common_device_type.py
 index dc984e7b4a..5bea75ba39 100644
 --- a/torch/testing/_internal/common_device_type.py

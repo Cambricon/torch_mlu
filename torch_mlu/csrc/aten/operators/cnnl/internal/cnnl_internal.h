@@ -1569,5 +1569,24 @@ void cnnl_rrelu_with_noise_internal(
     c10::optional<at::Generator> gen,
     const float lower,
     const float upper);
+
+template <bool isInplace>
+void cnnl_foreach_unary_op(
+    at::TensorList tensors,
+    at::TensorList outputs,
+    const cnnlForeachOpMode_t& mode);
+
+template <typename scalar_t, bool isInplace>
+void cnnl_foreach_binary_tensors_op(
+    at::TensorList tensors1,
+    at::TensorList tensors2,
+    at::TensorList outputs,
+    const at::ArrayRef<at::Scalar>& scalar_list,
+    const scalar_t& scalar,
+    const at::Tensor& scalar_tensor,
+    const scalar_t& alpha,
+    const cnnlForeachOpMode_t& op_mode,
+    const cnnlForeachBinaryMode_t& mode);
+
 } // namespace ops
 } // namespace torch_mlu
