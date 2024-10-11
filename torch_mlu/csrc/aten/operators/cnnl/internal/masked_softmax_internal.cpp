@@ -7,8 +7,7 @@ at::Tensor& cnnl_masked_softmax_internal(
     at::Tensor& output,
     const at::Tensor& input,
     const at::Tensor& mask,
-    const int axis,
-    cnnlMaskedSoftmaxOp_t mode) {
+    const int axis) {
   // set descriptor config
   CnnlTensorDescriptor desc_input;
   CnnlTensorDescriptor desc_output;
@@ -23,6 +22,8 @@ at::Tensor& cnnl_masked_softmax_internal(
   auto input_ptr = input_impl->mlu_data_ptr();
   auto output_ptr = output_impl->mlu_data_ptr();
   auto mask_ptr = mask_impl->mlu_data_ptr();
+  // apply the ADD mask
+  cnnlMaskedSoftmaxOp_t mode = CNNL_MASKED_SOFTMAX_ADD_MASK;
   auto handle = getCurrentHandle();
   TORCH_CNNL_CHECK(cnnlMaskedSoftmax(
       handle,
