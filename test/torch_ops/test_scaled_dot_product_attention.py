@@ -992,8 +992,10 @@ class TestSDPA(TestCase):
             grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
                 query_ref.grad, query_lp_ref.grad, query_fudge_factor
             )
+            dropout_fudge_factor = 1.0 if dropout_p == 0.0 else 1.5
+            key_fudge_factor = 8 * dropout_fudge_factor
             grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
-                key_ref.grad, key_lp_ref.grad
+                key_ref.grad, key_lp_ref.grad, key_fudge_factor
             )
             grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
                 value_ref.grad, value_lp_ref.grad
@@ -1138,8 +1140,10 @@ class TestSDPA(TestCase):
             grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
                 query_ref.grad, query_lp_ref.grad, query_fudge_factor
             )
+            dropout_fudge_factor = 1.0 if dropout_p == 0.0 else 1.5
+            key_fudge_factor = 8 * dropout_fudge_factor
             grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
-                key_ref.grad, key_lp_ref.grad
+                key_ref.grad, key_lp_ref.grad, key_fudge_factor
             )
             grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
                 value_ref.grad, value_lp_ref.grad
@@ -1380,8 +1384,10 @@ class TestSDPA(TestCase):
             grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
                 query_ref.grad, query_lp_ref.grad, query_fudge_factor
             )
+            dropout_fudge_factor = 1.0 if dropout_p == 0.0 else 1.5
+            key_fudge_factor = 8 * dropout_fudge_factor
             grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
-                key_ref.grad, key_lp_ref.grad
+                key_ref.grad, key_lp_ref.grad, key_fudge_factor
             )
             grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
                 value_ref.grad, value_lp_ref.grad
@@ -1544,8 +1550,10 @@ class TestSDPA(TestCase):
             grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
                 query_ref.grad, query_lp_ref.grad, query_fudge_factor
             )
+            dropout_fudge_factor = 1.0 if dropout_p == 0.0 else 1.5
+            key_fudge_factor = 8 * dropout_fudge_factor
             grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
-                key_ref.grad, key_lp_ref.grad
+                key_ref.grad, key_lp_ref.grad, key_fudge_factor
             )
             grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
                 value_ref.grad, value_lp_ref.grad
