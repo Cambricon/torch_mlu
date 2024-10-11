@@ -200,6 +200,18 @@ inline void cast_cpu_op_imp(
     std::true_type) {
   for (size_t i = 0; i < numel; ++i) {
     SRC& raw = *(pSrc + i);
+    if (std::isinf(raw)) {
+      if (raw > 0) {
+        *(pDst + i) = std::numeric_limits<DST>::infinity();
+      } else {
+        *(pDst + i) = -std::numeric_limits<DST>::infinity();
+      }
+      continue;
+    }
+    if (std::isnan(raw)) {
+      *(pDst + i) = std::numeric_limits<DST>::quiet_NaN();
+      continue;
+    }
     using Checker = downcast_range_checker<DST, SRC>;
     TORCH_CHECK(
         // raw <= std::numeric_limits<DST>::max() && raw >= numeric_min<DST>(),

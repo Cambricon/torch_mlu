@@ -102,7 +102,7 @@ void random_from_to_kernel(
   if (self.scalar_type() == c10::ScalarType::Long) {
     modify_random_range(base, to_value);
   }
-  AT_DISPATCH_MLU_FLOAT_HALF_INT_AND_BFLOAT16(
+  AT_DISPATCH_MLU_FLOAT_HALF_INT_BOOL_AND_BFLOAT16(
       self.scalar_type(), "random_", [&] {
         cnnl_random_internal(self_contiguous, base, to_value, gen);
       });
@@ -127,7 +127,7 @@ void random_full_64_bits_range_kernel(
   if (self.scalar_type() == c10::ScalarType::Long) {
     modify_random_range(from_value, to_value);
   }
-  AT_DISPATCH_MLU_FLOAT_HALF_INT_AND_BFLOAT16(
+  AT_DISPATCH_MLU_FLOAT_HALF_INT_BOOL_AND_BFLOAT16(
       self.scalar_type(), "random_", [&] {
         cnnl_random_internal(self_contiguous, from_value, to_value, gen);
       });
@@ -182,7 +182,7 @@ void random_kernel(
   if (self.scalar_type() == c10::ScalarType::Long) {
     modify_random_range(from_value, to_value);
   }
-  AT_DISPATCH_MLU_FLOAT_HALF_INT_AND_BFLOAT16(
+  AT_DISPATCH_MLU_FLOAT_HALF_INT_BOOL_AND_BFLOAT16(
       self.scalar_type(), "random_", [&] {
         cnnl_random_internal(self_contiguous, from_value, to_value, gen);
       });
