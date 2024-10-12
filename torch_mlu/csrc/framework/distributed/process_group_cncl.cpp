@@ -717,6 +717,31 @@ ProcessGroupCNCL::ProcessGroupCNCL(
 
   cncl_comm_watchdog_thread_ =
       std::thread(&ProcessGroupCNCL::cnclCommWatchdog, this);
+
+  init();
+  const std::string OFF = "OFF";
+  std::string torch_distributed_debug =
+      getCvarString({"TORCH_DISTRIBUTED_DEBUG"}, OFF.c_str());
+  LOG(INFO) << logPrefix() << "ProcessGroupCNCL initialization options: "
+            << "size: " << size << ", global rank: " << globalRank()
+            << ", TIMEOUT(ms): " << options_->timeout.count()
+            << ", USE_HIGH_PRIORITY_STREAM: "
+            << options_->is_high_priority_stream;
+
+  LOG(INFO) << logPrefix() << "ProcessGroupCNCL environments: "
+            << ", TORCH_CNCL_ASYNC_ERROR_HANDLING: " << async_error_handling_
+            << ", TORCH_CNCL_DUMP_ON_TIMEOUT: " << dumpOnTimeout_
+            << ", TORCH_CNCL_WAIT_TIMEOUT_DUMP_MILSEC: "
+            << waitTimeoutDumpInMilSec_
+            << ", TORCH_CNCL_DESYNC_DEBUG: " << desync_debug_
+            << ", TORCH_CNCL_ENABLE_TIMING: " << enableTiming_.load()
+            << ", TORCH_CNCL_BLOCKING_WAIT: " << blockingWait_
+            << ", TORCH_DISTRIBUTED_DEBUG: " << torch_distributed_debug
+            << ", TORCH_CNCL_ENABLE_MONITORING: "
+            << monitorThreadEnabled_.load()
+            << ", TORCH_CNCL_HEARTBEAT_TIMEOUT_SEC: " << heartbeatTimeoutInSec_
+            << ", TORCH_CNCL_TRACE_BUFFER_SIZE: " << cnclTraceBufferSize_
+            << ", TORCH_CNCL_COORD_CHECK_MILSEC: " << coordCheckIntervalMilSec_;
 }
 
 ProcessGroupCNCL::~ProcessGroupCNCL() {
