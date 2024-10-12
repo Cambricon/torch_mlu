@@ -30,13 +30,18 @@ import threading
 import traceback
 import os
 from typing import cast
+import binascii
+from collections import namedtuple
+import functools
+
 import torch
 from torch._utils import classproperty
 import torch_mlu
 from torch_mlu.mlu._utils import _LazySeedTracker
 from .reductions import apply_reductions_patch
+from typing import Union, Tuple, Optional, TypeVar, Any, List
+from torch import device as _device
 
-from .device import *
 from .graphs import (
     MLUGraph,
     graph,
@@ -45,10 +50,11 @@ from .graphs import (
     make_graphed_callables,
 )
 
-from .streams import *
+from .streams import Event, ExternalStream, Stream
 from .cncl import *
 from .autocast_utils import *
 from . import amp
+from ._utils import _get_device_index
 
 _initialized = False
 _tls = threading.local()
@@ -129,6 +135,154 @@ def _lazy_init():
 
 
 default_generators: Tuple[torch._C.Generator] = ()
+
+
+class device:
+    def __init__(self, device):
+        self.idx = _get_device_index(device, optional=True)
+        self.prev_idx = -1
+
+    def __enter__(self):
+        if self.idx == -1:
+            return
+        self.prev_idx = torch.mlu.current_device()
+        if self.idx != self.prev_idx:
+            torch.mlu.set_device(self.idx)
+        if not torch.jit.is_scripting():
+            torch.mlu._lazy_init()
+
+    def __exit__(self, *args):
+        if self.prev_idx != self.idx:
+            torch.mlu.set_device(self.prev_idx)
+        return False
+
+
+Device = device
+_device_t = Union[_device, str, int, None]
+
+
+### Device management
+def set_device(device):
+    r"""Sets the current device.
+
+    Usage of this function is discouraged in favor of :any:`device`. In most
+    cases it's better to use ``MLU_VISIBLE_DEVICES`` environmental variable.
+
+    Args:
+        device (torch.device or int): selected device. This function is a no-op
+            if this argument is negative.
+    """
+    device = _get_device_index(device, optional=True)
+    if device >= 0:
+        torch_mlu._MLUC._mlu_setDevice(device)
+
+
+def current_device():
+    r"""Returns the index of a currently selected device."""
+    torch.mlu._lazy_init()
+    return torch_mlu._MLUC._mlu_getDevice()
+
+
+def get_device_properties(device: _device_t):
+    r"""Gets the properties of a device.
+
+    Args:
+        device (torch.device or int or str): device for which to return the
+            properties of the device.
+
+    Returns:
+        _MLUDeviceProperties: the properties of the device
+    """
+    torch.mlu._lazy_init()
+    device = _get_device_index(device, optional=True)
+    if device < 0 or device >= torch.mlu.device_count():
+        raise AssertionError("Invalid device id")
+    return torch_mlu._MLUC._get_device_properties(device)
+
+
+def get_device_capability(device: Optional[_device_t] = None) -> Tuple[int, int]:
+    r"""Gets the cuda capability of a device.
+
+    Args:
+        device (torch.device or int, optional): device for which to return the
+            device capability. This function is a no-op if this argument is
+            a negative integer. It uses the current device, given by
+            :func:`~torch.mlu.current_device`, if :attr:`device` is ``None``
+            (default).
+
+    Returns:
+        tuple(int, int): the major and minor cuda capability of the device
+    """
+    prop = get_device_properties(device)
+    return prop.major, prop.minor
+
+
+def get_device_name(device: Optional[_device_t] = None) -> str:
+    r"""Gets the name of a device.
+
+    Args:
+        device (torch.device or int, optional): device for which to return the
+            name. This function is a no-op if this argument is a negative
+            integer. It uses the current device, given by :func:`~torch.mlu.current_device`,
+            if :attr:`device` is ``None`` (default).
+
+    Returns:
+        str: the name of the device. eg. MLU370
+    """
+    return get_device_properties(device).name
+
+
+@functools.lru_cache(32)
+def supports_linear_memory(device: Optional[_device_t] = None) -> bool:
+    r"""Returns a boolean indicating if the device supports linear memory.
+    Args:
+        device (torch.device or int, optional): device for which to return the
+            property. It uses the current device, given by :func:`~torch.mlu.current_device`,
+            if :attr:`device` is ``None`` (default).
+    """
+    return get_device_properties(device).supports_linear_memory
+
+
+def synchronize(device: Optional[_device_t] = None):
+    r"""Waits for all kernels in all streams on a MLU device to complete.
+
+    Args:
+        device (torch.device or int, optional): device for which to synchronize.
+            It uses the current device, given by :func:`~torch.mlu.current_device`,
+            if :attr:`device` is ``None`` (default).
+    """
+    torch.mlu._lazy_init()
+    device_index = _get_device_index(device, optional=True)
+    with Device(device_index):
+        torch_mlu._MLUC._synchronize()
+
+
+class device_of(device):
+    r"""Context-manager that changes the current device to that of given object.
+
+    You can use tensors as arguments. If a given object is
+    not allocated on a MLU, this is a no-op.
+
+    Args:
+        obj (Tensor or Storage): object allocated on the selected device.
+    """
+
+    def __init__(self, obj):
+        idx = obj.get_device() if obj.device.type == "mlu" else -1
+        super(device_of, self).__init__(idx)
+
+
+def can_device_access_peer(device: _device_t, peer_device: _device_t) -> bool:
+    r"""Checks if peer access between two devices is possible."""
+    torch.mlu._lazy_init()
+    device = _get_device_index(device, optional=True)
+    peer_device = _get_device_index(peer_device)
+    if device < 0 or device >= torch.mlu.device_count():
+        raise AssertionError("Invalid device id")
+    if peer_device < 0 or peer_device >= torch.mlu.device_count():
+        raise AssertionError("Invalid peer device id")
+    return torch_mlu._MLUC._mlu_canDeviceAccessPeer(device, peer_device)
+
 
 def _parse_visible_devices():
     r"""Parse CN_VISIBLE_DEVICES/MLU_VISIBLE_DEVICES environment variable. Keep align with cnrt"""
@@ -506,3 +660,255 @@ for r in _mlu_storage_classes:
 def ipc_collect():
     _lazy_init()
     return torch_mlu._MLUC._mlu_ipc_collect()
+
+
+def current_stream(device: Optional[_device_t] = None) -> Stream:
+    r"""Returns the currently selected :class:`Stream` for a given device.
+
+    Args:
+        device (torch.device or int, optional): selected device. Returns
+            the currently selected :class:`Stream` for the current device, given
+            by :func:`~torch.mlu.current_device`, if :attr:`device` is ``None``
+            (default).
+    """
+    torch.mlu._lazy_init()
+    streamdata = torch_mlu._MLUC._mlu_getCurrentMLUStream(
+        _get_device_index(device, optional=True)
+    )
+    return Stream(
+        stream_id=streamdata[0], device_index=streamdata[1], device_type=streamdata[2]
+    )
+
+
+def default_stream(device: Optional[_device_t] = None) -> Stream:
+    r"""Returns the default :class:`Stream` for a given device.
+
+    Args:
+        device (torch.device or int, optional): selected device. Returns
+            the default :class:`Stream` for the current device, given by
+            :func:`~torch.mlu.current_device`, if :attr:`device` is ``None``
+            (default).
+    """
+    torch.mlu._lazy_init()
+    streamdata = torch_mlu._MLUC._mlu_getCurrentMLUStream(
+        _get_device_index(device, optional=True)
+    )
+    return Stream(
+        stream_id=streamdata[0], device_index=streamdata[1], device_type=streamdata[2]
+    )
+
+
+StreamInfo = namedtuple("StreamInfo", ["cncl_stream", "clique_id"])
+
+
+def cncl_stream(device: Optional[_device_t] = None) -> List[StreamInfo]:
+    r"""Returns a list of MLU :class:`Stream` used by CNCL for a given device.
+
+    To distinguish between different streams in the list, each stream is
+    bundled with a unique CliqueId into a :namedtuple:`StreamInfo`.
+
+    Args:
+        device (torch.device or int, optional): selected device. Returns
+            a list of  MLU :class:`Stream` used by CNCL for the current device,
+            given by :func:`~torch.mlu.current_device`, if :atta:`device` is
+            ``None``(default)
+
+    Returns:
+        List[StreamInfo]: A list of :namedtuple:`StreamInfo`, each containing:
+            - cncl_stream (Stream): the MLU :class:`Stream` used by CNCL.
+            - clique_id (str): Unique CliqueId bundled with cncl_stream.
+
+    """
+    torch.mlu._lazy_init()
+    streams_data = torch_mlu._MLUC._mlu_getCnclStream(
+        _get_device_index(device, optional=True)
+    )
+    stream_info_list = []
+    for stream_data in streams_data:
+        cncl_stream = Stream(
+            stream_id=stream_data[0],
+            device_index=stream_data[1],
+            device_type=stream_data[2],
+        )
+        clique_id_raw = stream_data[3]
+        clique_id_data = binascii.hexlify(clique_id_raw).decode("utf-8")
+        stream_info_list.append(
+            StreamInfo(cncl_stream=cncl_stream, clique_id=clique_id_data[:16])
+        )
+
+    return stream_info_list
+
+
+def set_stream(stream: Stream):
+    r"""Sets the current stream.This is a wrapper API to set the stream.
+        Usage of this function is discouraged in favor of the ``stream``
+        context manager.
+
+    Args:
+        stream (Stream): selected stream. This function is a no-op
+            if this argument is ``None``.
+    """
+    if stream is None:
+        return
+    torch_mlu._MLUC._mlu_setStream(
+        stream_id=stream.stream_id,
+        device_index=stream.device_index,
+        device_type=stream.device_type,
+    )
+
+
+class StreamContext(object):
+    r"""Context-manager that selects a given stream.
+
+    All MLU kernels queued within its context will be enqueued on a selected
+    stream.
+
+    Args:
+        Stream (Stream): selected stream. This manager is a no-op if it's
+            ``None``.
+    .. note:: Streams are per-device.
+    """
+    cur_stream: Optional["torch.mlu.Stream"]
+
+    def __init__(self, stream: Optional["torch.mlu.Stream"]):
+        self.stream = stream
+        self.idx = _get_device_index(None, True)
+        if not torch.jit.is_scripting():
+            if self.idx is None:
+                self.idx = -1
+
+        self.src_prev_stream = (
+            None if not torch.jit.is_scripting() else torch.mlu.default_stream(None)
+        )
+        self.dst_prev_stream = (
+            None if not torch.jit.is_scripting() else torch.mlu.default_stream(None)
+        )
+
+    def __enter__(self):
+        # Local cur_stream variable for type refinement
+        cur_stream = self.stream
+        # Return if stream is None or MLU device not available
+        if cur_stream is None or self.idx == -1:
+            return
+        self.src_prev_stream = torch.mlu.current_stream(None)
+
+        # If the stream is not on the current device, then
+        # set the current stream on the device
+        if self.src_prev_stream.device != cur_stream.device:
+            with torch.mlu.device(cur_stream.device):
+                self.dst_prev_stream = torch.mlu.current_stream(cur_stream.device)
+        torch.mlu.set_stream(cur_stream)
+
+    def __exit__(self, type: Any, value: Any, traceback: Any):
+        # Local cur_stream variable for type refinement
+        cur_stream = self.stream
+        # If stream is None or no MLU device available, return
+        if cur_stream is None or self.idx == -1:
+            return
+
+        # Reset the stream on the original device
+        # and destination device
+        if self.src_prev_stream.device != cur_stream.device:  # type: ignore[union-attr]
+            torch.mlu.set_stream(self.dst_prev_stream)  # type: ignore[arg-type]
+        torch.mlu.set_stream(self.src_prev_stream)  # type: ignore[arg-type]
+
+
+def stream(stream: Optional["torch.mlu.Stream"]) -> StreamContext:
+    return StreamContext(stream)
+
+
+from . import cnpx, amp
+
+
+__all__ = [
+    # Typed storage and tensors
+    "BFloat16Storage",
+    "BFloat16Tensor",
+    "BoolStorage",
+    "BoolTensor",
+    "ByteStorage",
+    "ByteTensor",
+    "CharStorage",
+    "CharTensor",
+    "ComplexDoubleStorage",
+    "ComplexFloatStorage",
+    "DoubleStorage",
+    "DoubleTensor",
+    "FloatStorage",
+    "FloatTensor",
+    "HalfStorage",
+    "HalfTensor",
+    "IntStorage",
+    "IntTensor",
+    "LongStorage",
+    "LongTensor",
+    "ShortStorage",
+    "ShortTensor",
+    "MLUGraph",
+    "Event",
+    "ExternalStream",
+    "OutOfMemoryError",
+    "Stream",
+    "StreamContext",
+    "amp",
+    "caching_allocator_alloc",
+    "caching_allocator_delete",
+    "can_device_access_peer",
+    "current_device",
+    "current_stream",
+    "default_generators",
+    "default_stream",
+    "device",
+    "device_count",
+    "device_of",
+    "empty_cache",
+    "MLUPluggableAllocator",
+    "change_current_allocator",
+    "get_device_capability",
+    "get_device_name",
+    "get_device_properties",
+    "get_rng_state",
+    "get_rng_state_all",
+    "graph",
+    "graph_pool_handle",
+    "graphs",
+    "init",
+    "initial_seed",
+    "ipc_collect",
+    "is_available",
+    "is_bf16_supported",
+    "is_current_stream_capturing",
+    "is_initialized",
+    "make_graphed_callables",
+    "manual_seed",
+    "manual_seed_all",
+    "max_memory_allocated",
+    "max_memory_cached",
+    "max_memory_reserved",
+    "mem_get_info",
+    "memory",
+    "memory_allocated",
+    "memory_cached",
+    "memory_reserved",
+    "memory_snapshot",
+    "memory_stats",
+    "memory_stats_as_nested_dict",
+    "memory_summary",
+    "cncl",
+    "cnpx",
+    "random",
+    "reset_accumulated_memory_stats",
+    "reset_max_memory_allocated",
+    "reset_max_memory_cached",
+    "reset_peak_memory_stats",
+    "seed",
+    "seed_all",
+    "set_device",
+    "set_per_process_memory_fraction",
+    "set_rng_state",
+    "set_rng_state_all",
+    "set_stream",
+    "stream",
+    "streams",
+    "synchronize",
+]
