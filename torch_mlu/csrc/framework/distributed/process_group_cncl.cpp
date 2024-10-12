@@ -669,6 +669,10 @@ ProcessGroupCNCL::ProcessGroupCNCL(
     work_cleanup_thread_ =
         std::thread(&ProcessGroupCNCL::workCleanupLoop, this);
   }
+
+  // Init global rank
+  globalRank();
+
 }
 
 ProcessGroupCNCL::~ProcessGroupCNCL() {
@@ -2092,7 +2096,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::barrier(
     // Note: it is better to use global rank because the group-local rank can be
     // offset wrt the device id if intra-node MLUs are sharded into multiple
     // dimensions.
-    barDevIdx = static_cast<int16_t>(rank_ % localDeviceCount_);
+    barDevIdx = static_cast<int16_t>(globalRank() % localDeviceCount_);
     LOG(WARNING)
         << c10::str(
                "Rank ",
@@ -2602,6 +2606,12 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::recv(
       "cncl:recv");
   return ret;
 }
+
+const int& ProcessGroupCNCL::globalRank() const {
+  static int globalRank = rank_;
+  return globalRank;
+}
+
 
 c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::recvAnysource(
     std::vector<at::Tensor>& /* unused */,

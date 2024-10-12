@@ -550,7 +550,14 @@ class TORCH_MLU_API ProcessGroupCNCL : public c10d::Backend {
   // in sync. If the returned number is not consistent across the group, it
   // may indicate that there is some sort of collective desynchronization.
   uint64_t getSequenceNumberForGroup() override;
+
   void setSequenceNumberForGroup() override;
+
+  // Returns the global rank of the device. This function assumes that users
+  // always create a default global process group(PG) which includes all
+  // devices. It is called in the constructor of ProcessGroupCNCL, so it always
+  // return the rank_ of the the very first PG created, aka, default global PG.
+  const int& globalRank() const;
 
   // get a cnclComm_t.
   int64_t getCnclComm(int rankid);
