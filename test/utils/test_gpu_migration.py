@@ -564,7 +564,7 @@ class TestGpuMigration(TestCase):
         with self.assertRaisesRegex(NotImplementedError, msg):
             prof = torch.autograd.profiler_legacy.profile(use_cuda=True)
 
-# Remove/modify the following cases after supported APIs used in below cases
+    # Remove/modify the following cases after supported APIs used in below cases
     @testinfo()
     def test_update_dict_warnings(self):
         with warnings.catch_warnings(record=True) as w:
@@ -662,6 +662,19 @@ class TestGpuMigration(TestCase):
                             True,
                             msg=f"GPU Migration: {api_name} has a device arg/kwargs but not in func list, please add it to gpu migration manually.",
                         )
+
+    @testinfo()
+    def test_lazymodule_nn_function(self):
+        a = torch.nn.LazyConvTranspose3d(
+            out_channels=16, kernel_size=3, stride=2, padding=1
+        )
+        a.to(torch.float)
+        a.cuda("cuda:0")
+        a.cpu().mlu()
+        self.assertTrue(
+            torch.Tensor.to
+            in torch.nn.parameter.UninitializedTensorMixin._allowed_methods
+        )
 
 
 if __name__ == "__main__":

@@ -92,3 +92,8 @@ torch.version.mlu = None
 
 apply_reductions_patch()
 
+# add torch.Tensor.mlu in _allowed_methods to align torch.Tensor.cuda
+torch.nn.parameter.UninitializedTensorMixin._allowed_methods.append(
+    torch.Tensor.mlu
+)
+
