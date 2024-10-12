@@ -814,6 +814,16 @@ def apply_monkey_patches():
     torch.Tensor.cuda = torch.Tensor.mlu
     torch.Tensor.is_cuda = torch.Tensor.is_mlu
 
+    # some functions like torch.Tensor.to is first recorded in _allowed_methods
+    # and then wrapped here, so the method in _allowed_methods needs to be updated.
+    for i, method in enumerate(
+        torch.nn.parameter.UninitializedTensorMixin._allowed_methods
+    ):
+        if method.__name__ in tensor_fn_list and method.__name__ != "mlu":
+            torch.nn.parameter.UninitializedTensorMixin._allowed_methods[i] = getattr(
+                torch.Tensor, method.__name__
+            )
+
     # torch.nn.Module.*
     replace_device(torch.nn.Module, module_fn_list)
     torch.nn.Module.cuda = torch.nn.Module.mlu
