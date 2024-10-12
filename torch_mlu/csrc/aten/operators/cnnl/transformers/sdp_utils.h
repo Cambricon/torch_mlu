@@ -442,10 +442,6 @@ inline bool check_requires_grad_and_nested(
   return true;
 }
 
-inline double ceiling(double number, double significance) {
-  return ceil(number / significance) * significance;
-}
-
 inline bool check_fused_kernel_mlu_support(
     sdp_params const& params,
     bool debug) {
@@ -456,35 +452,6 @@ inline bool check_fused_kernel_mlu_support(
           "Both fused kernels only supports specified MLU series.",
           "Attempting to run on ",
           (*prop).name,
-          ".");
-    }
-    return false;
-  }
-
-  auto batch_size = params.query.size(0);
-  auto num_heads = params.query.size(1);
-  auto seq_len_q = params.query.size(-2);
-  auto seq_len_k = params.key.size(-2);
-  auto split_cond = batch_size * num_heads * ceil(((float)seq_len_k) / 256);
-  if (!(split_cond > 12)) {
-    if (debug) {
-      TORCH_WARN(
-          "Both fused kernels require split condition greater than 12.",
-          "Got ",
-          split_cond,
-          ".");
-    }
-    return false;
-  }
-
-  auto valid_data_ratio_cond = seq_len_q * seq_len_k /
-      (ceiling(seq_len_q, 512) * ceiling(seq_len_k, 256));
-  if (!(valid_data_ratio_cond >= 0.6)) {
-    if (debug) {
-      TORCH_WARN(
-          "Both fused kernels require valid data ratio greater than or equal 0.6.",
-          "Got ",
-          valid_data_ratio_cond,
           ".");
     }
     return false;
