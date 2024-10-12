@@ -176,7 +176,6 @@ class TestOps(TestCase):
 
     # @unittest.skip("not test")
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
-    @skipBFloat16IfNotSupport()
     @testinfo()
     def test_kthvalue_bfloat16(self):
         shape = [5, 3]
@@ -184,8 +183,12 @@ class TestOps(TestCase):
         x_mlu = self.to_mlu(x)
         out_mlu, index_mlu = torch.kthvalue(x_mlu, 1, 1, False)
         out_cpu, index_cpu = torch.kthvalue(x, 1, 1, False)
-        self.assertTensorsEqual(out_cpu, out_mlu.cpu(), 0.0, use_MSE=True)
-        self.assertTensorsEqual(index_cpu, index_mlu.cpu(), 0.0, use_MSE=True)
+        self.assertTensorsEqual(
+            out_cpu.float(), out_mlu.cpu().float(), 0.0, use_MSE=True
+        )
+        self.assertTensorsEqual(
+            index_cpu.float(), index_mlu.cpu().float(), 0.0, use_MSE=True
+        )
 
 
 if __name__ == "__main__":

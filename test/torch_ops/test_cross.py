@@ -394,16 +394,15 @@ class TestCrossOp(TestCase):
 
     # @unittest.skip("not test")
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
-    @skipBFloat16IfNotSupport()
     @testinfo()
-    def test_cross_bfloat16(self, type):
+    def test_cross_bfloat16(self):
         a = torch.randn((2, 3, 4, 4))
         b = torch.randn((2, 3, 4, 4))
-        out_cpu = torch.cross(a, b)
-        out_mlu = torch.cross(
-            self.to_mlu_dtype(a, torch.bfloat16), self.to_mlu_dtype(b, torch.bfloat16)
+        out_cpu = torch.cross(a.bfloat16(), b.bfloat16())
+        out_mlu = torch.cross(a.bfloat16().mlu(), b.bfloat16().mlu())
+        self.assertTensorsEqual(
+            out_cpu.float(), out_mlu.cpu().float(), 3e-3, use_MSE=True
         )
-        self.assertTensorsEqual(out_cpu, out_mlu.cpu().float(), 3e-3, use_MSE=True)
 
 
 if __name__ == "__main__":

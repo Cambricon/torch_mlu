@@ -91,8 +91,8 @@ void cross_mlu_kernel(
   auto output = iter.output(0);
   output = create_int_tensor_if_needed(output);
 
-  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND(
-      at::kHalf, iter.common_dtype(), "cross_mlu_kernel", [&] {
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND2(
+      at::kHalf, at::kBFloat16, iter.common_dtype(), "cross_mlu_kernel", [&] {
         cnnl_cross_internal(
             output,
             cast_long_to_int_if_needed(iter.input(0)),

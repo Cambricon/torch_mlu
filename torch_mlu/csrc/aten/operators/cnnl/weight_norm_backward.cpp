@@ -58,8 +58,12 @@ std::tuple<at::Tensor, at::Tensor> cnnl__weight_norm_interface_backward(
   auto saved_norms_contiguous =
       cnnl_contiguous(saved_norms, at::MemoryFormat::Contiguous);
 
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      saved_v.scalar_type(), "cnnl__weight_norm_interface_backward", [&] {
+  AT_DISPATCH_FLOATING_TYPES_AND2(
+      at::kBFloat16,
+      at::kHalf,
+      saved_v.scalar_type(),
+      "cnnl__weight_norm_interface_backward",
+      [&] {
         cnnl_weight_norm_backward_internal(
             grad_v,
             grad_g,

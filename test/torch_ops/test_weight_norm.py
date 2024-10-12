@@ -11,7 +11,13 @@ import torch_mlu
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
 logging.basicConfig(level=logging.DEBUG)
-from common_utils import testinfo, TestCase  # pylint: disable=C0413,C0411
+from common_utils import (
+    testinfo,
+    TestCase,
+    read_card_info,
+)  # pylint: disable=C0413,C0411
+
+TEST_BFLOAT16 = read_card_info()
 
 shape_3D_list = [
     (128, 128, 1),
@@ -225,6 +231,59 @@ class TestWeightNormOp(TestCase):
                 self.assertTensorsEqual(
                     weight_grad_cpu, weight_grad_mlu.cpu(), er, use_MSE=True
                 )
+
+    # @unittest.skip("not test")
+    @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
+    @testinfo()
+    def test_weight_norm_bfloat16(self):
+        m = nn.Linear(20, 30).bfloat16()
+        input_cpu = torch.randn(128, 20, dtype=torch.bfloat16, requires_grad=True)
+        m_cpu = torch.nn.utils.weight_norm(m, name="weight")
+        output_cpu = m_cpu(input_cpu)
+        weight_g_cpu = m_cpu.weight_g.data
+        weight_v_cpu = m_cpu.weight_v.data
+        grad_cpu = torch.randn(output_cpu.shape, dtype=torch.bfloat16)
+        output_cpu.backward(grad_cpu)
+        input_grad_cpu = copy.deepcopy(input_cpu.grad)
+        weight_g_grad_cpu = copy.deepcopy(m_cpu.weight_g.grad)
+        weight_v_grad_cpu = copy.deepcopy(m_cpu.weight_v.grad)
+
+        input_cpu.grad.zero_()
+        m_cpu.weight_g.grad.zero_()
+        m_cpu.weight_v.grad.zero_()
+
+        input_mlu = input_cpu.to("mlu")
+        m_mlu = m_cpu.to("mlu")
+
+        output_mlu = m_mlu(input_mlu)
+        weight_g_mlu = m_mlu.weight_g.data
+        weight_v_mlu = m_mlu.weight_v.data
+        grad_mlu = grad_cpu.to("mlu")
+        output_mlu.backward(grad_mlu)
+        input_grad_mlu = input_cpu.grad
+        weight_g_grad_mlu = m_cpu.weight_g.grad
+        weight_v_grad_mlu = m_cpu.weight_v.grad
+
+        er = 0.003
+        self.assertTensorsEqual(
+            output_cpu.float(), output_mlu.cpu().float(), er, use_MSE=True
+        )
+        self.assertTensorsEqual(
+            weight_g_cpu.float(), weight_g_mlu.cpu().float(), er, use_MSE=True
+        )
+        self.assertTensorsEqual(
+            weight_v_cpu.float(), weight_v_mlu.cpu().float(), er, use_MSE=True
+        )
+
+        self.assertTensorsEqual(
+            input_grad_cpu.float(), input_grad_mlu.cpu().float(), er, use_MSE=True
+        )
+        self.assertTensorsEqual(
+            weight_g_grad_cpu.float(), weight_g_grad_mlu.cpu().float(), er, use_MSE=True
+        )
+        self.assertTensorsEqual(
+            weight_v_grad_cpu.float(), weight_v_grad_mlu.cpu().float(), er, use_MSE=True
+        )
 
 
 if __name__ == "__main__":

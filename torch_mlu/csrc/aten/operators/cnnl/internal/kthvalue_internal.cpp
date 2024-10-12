@@ -28,13 +28,21 @@ void cnnl_kthvalue_internal(
   // get current handle
   auto handle = getCurrentHandle();
 
+  size_t workspace_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetKthValueWorkspaceSize(
+      handle, self_desc.get(), indices_desc.get(), k, dim, &workspace_size));
+  auto workspace_ptr =
+      torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+
   // calculate
-  TORCH_CNNL_CHECK(cnnlKthValue(
+  TORCH_CNNL_CHECK(cnnlKthValue_v2(
       handle,
-      self_desc.get(),
-      self_ptr,
       k,
       dim,
+      self_desc.get(),
+      self_ptr,
+      workspace_ptr.get(),
+      workspace_size,
       values_desc.get(),
       values_ptr,
       indices_desc.get(),

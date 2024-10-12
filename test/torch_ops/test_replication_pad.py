@@ -96,7 +96,6 @@ class TestReplicationPadOp(TestCase):
 
     # @unittest.skip("not test")
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
-    @skipBFloat16IfNotSupport()
     @testinfo()
     def test_replication_pad2d_bfloat16(self):
         shape_list = [
@@ -112,19 +111,23 @@ class TestReplicationPadOp(TestCase):
         loop_list = [shape_list, pad_list, type_list, func_list]
         for shape, pad, (dtype, err), func in product(*loop_list):
             m = torch.nn.ReplicationPad2d(pad)
-            x = torch.randn(shape, dtype=torch.float)
+            x = torch.randn(shape, dtype=torch.bfloat16)
             x_mlu = copy.deepcopy(x)
             x.requires_grad = True
             x_mlu.requires_grad = True
             out_cpu = m(func(x))
-            out_mlu = m(func(x_mlu.to(dtype).mlu()))
-            self.assertTensorsEqual(out_cpu, out_mlu.cpu().float(), err, use_MSE=True)
+            out_mlu = m(func(x_mlu.mlu()))
+            self.assertTensorsEqual(
+                out_cpu.float(), out_mlu.cpu().float(), err, use_MSE=True
+            )
 
             grad = torch.randn(out_cpu.shape)
             grad_mlu = copy.deepcopy(grad).mlu()
             out_cpu.backward(grad)
             out_mlu.backward(grad_mlu)
-            self.assertTensorsEqual(x.grad, x_mlu.grad.float(), err, use_MSE=True)
+            self.assertTensorsEqual(
+                x.grad.float(), x_mlu.grad.float(), err, use_MSE=True
+            )
 
 
 if __name__ == "__main__":

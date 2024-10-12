@@ -38,7 +38,8 @@ std::tuple<at::Tensor, at::Tensor> cnnl__weight_norm_interface(
     const at::Tensor& g,
     int64_t dim) {
   auto w = at::empty_like(v, at::MemoryFormat::Contiguous);
-  at::ScalarType AccType = g.scalar_type() == at::ScalarType::Half
+  at::ScalarType AccType = (g.scalar_type() == at::ScalarType::Half ||
+                            g.scalar_type() == at::ScalarType::BFloat16)
       ? at::ScalarType::Float
       : g.scalar_type();
   auto norms =
@@ -46,8 +47,12 @@ std::tuple<at::Tensor, at::Tensor> cnnl__weight_norm_interface(
   auto v_contiguous = cnnl_contiguous(v, at::MemoryFormat::Contiguous);
   auto g_contiguous = cnnl_contiguous(g, at::MemoryFormat::Contiguous);
 
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      v.scalar_type(), "cnnl__weight_norm_interface", [&] {
+  AT_DISPATCH_FLOATING_TYPES_AND2(
+      at::kBFloat16,
+      at::kHalf,
+      v.scalar_type(),
+      "cnnl__weight_norm_interface",
+      [&] {
         cnnl_weight_norm_internal(w, norms, v_contiguous, g_contiguous, dim);
       });
   return std::tuple<at::Tensor, at::Tensor>{w, norms};

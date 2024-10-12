@@ -78,8 +78,8 @@ void cnnl_smooth_l1_loss_forward_internal(
       torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
 
   // calculate
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      input.scalar_type(), "MLU smooth_l1_loss", [&] {
+  AT_DISPATCH_FLOATING_TYPES_AND2(
+      at::kBFloat16, at::kHalf, input.scalar_type(), "MLU smooth_l1_loss", [&] {
         TORCH_CNNL_CHECK(cnnlSmoothL1LossForward_v2(
             handle,
             input_desc.get(),
@@ -156,8 +156,12 @@ void cnnl_smooth_l1_loss_backward_internal(
       torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
 
   // calculate
-  AT_DISPATCH_FLOATING_TYPES_AND_HALF(
-      input.scalar_type(), "MLU smooth_l1_loss_backward", [&] {
+  AT_DISPATCH_FLOATING_TYPES_AND2(
+      at::kBFloat16,
+      at::kHalf,
+      input.scalar_type(),
+      "MLU smooth_l1_loss_backward",
+      [&] {
         TORCH_CNNL_CHECK(cnnlSmoothL1LossBackward_v2(
             handle,
             input_desc.get(),
