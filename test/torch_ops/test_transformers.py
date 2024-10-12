@@ -1268,6 +1268,103 @@ class TestSDPA(TestCase):
 
     @testinfo()
     @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
+    def test_scaled_dot_product_mem_attention_backward_with_different_head_size(self):
+        head_dims_match_list = [True, False]
+        batch_size, num_heads, seq_len, head_dim = 4, 2, 512, 128
+
+        shape = (batch_size, num_heads, seq_len, head_dim)
+        make_tensor = partial(
+            rand_sdpa_tensor,
+            device=device,
+            dtype=torch.float16,
+            requires_grad=True,
+        )
+
+        for head_dims_match in head_dims_match_list:
+            if head_dims_match:
+                shape_v = shape
+            else:
+                head_dim_v = 96
+                shape_v = (batch_size, num_heads, seq_len, head_dim_v)
+            query_me = make_tensor(shape)
+            key_me = make_tensor(shape)
+            value_me = make_tensor(shape_v)
+
+            query_ref = query_me.detach().clone().to(torch.float32).requires_grad_()
+            key_ref = key_me.detach().clone().to(torch.float32).requires_grad_()
+            value_ref = value_me.detach().clone().to(torch.float32).requires_grad_()
+
+            query_lp_ref = query_me.detach().clone().requires_grad_()
+            key_lp_ref = key_me.detach().clone().requires_grad_()
+            value_lp_ref = value_me.detach().clone().requires_grad_()
+
+            with sdpa_kernel(backends=[SDPBackend.EFFICIENT_ATTENTION]):
+                actual_memory = torch.nn.functional.scaled_dot_product_attention(
+                    query_me,
+                    key_me,
+                    value_me,
+                    attn_mask=None,
+                    dropout_p=0.0,
+                )
+
+            with sdpa_kernel(backends=[SDPBackend.MATH]):
+                out_lp_ref = torch.nn.functional.scaled_dot_product_attention(
+                    query_lp_ref,
+                    key_lp_ref,
+                    value_lp_ref,
+                )
+                out_ref = torch.nn.functional.scaled_dot_product_attention(
+                    query_ref,
+                    key_ref,
+                    value_ref,
+                )
+
+            upstream_grad = torch.rand_like(out_lp_ref, requires_grad=False)
+            actual_memory.backward(upstream_grad)
+
+            out_ref.backward(upstream_grad.to(out_ref.dtype))
+            out_lp_ref.backward(upstream_grad)
+            output_ref_atol, output_ref_rtol = get_tolerances(out_ref, out_lp_ref)
+            query_fudge_factor = 4
+            grad_q_ref_atol, grad_q_ref_rtol = get_tolerances(
+                query_ref.grad, query_lp_ref.grad, query_fudge_factor
+            )
+            grad_k_ref_atol, grad_k_ref_rtol = get_tolerances(
+                key_ref.grad, key_lp_ref.grad
+            )
+            grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
+                value_ref.grad, value_lp_ref.grad
+            )
+
+            self.assertEqual(
+                actual_memory,
+                out_ref.to(actual_memory.dtype),
+                atol=output_ref_atol,
+                rtol=output_ref_rtol,
+            )
+
+            self.assertEqual(
+                query_me.grad,
+                query_ref.grad.to(query_me.grad.dtype),
+                atol=grad_q_ref_atol,
+                rtol=grad_q_ref_rtol,
+            )
+
+            self.assertEqual(
+                key_me.grad,
+                key_ref.grad.to(key_me.grad.dtype),
+                atol=grad_k_ref_atol,
+                rtol=grad_k_ref_rtol,
+            )
+            self.assertEqual(
+                value_me.grad,
+                value_ref.grad.to(value_me.grad.dtype),
+                atol=grad_v_ref_atol,
+                rtol=grad_v_ref_rtol,
+            )
+
+    @testinfo()
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_scaled_dot_product_attention_fused_kernels_backward(self):
         batch_size, seq_len, num_heads, head_dim = 4, 4, 2, 16
         make_tensor = partial(
