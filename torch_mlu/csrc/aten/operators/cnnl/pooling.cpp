@@ -53,6 +53,7 @@ namespace torch_mlu {
 namespace ops {
 
 #define MAXPOOL2D_KERNEL_MAX 65535
+#define MAXPOOL3D_KERNEL_MAX 1535
 
 TORCH_PRECOMPUTE_META_FUNC(avg_pool2d_out_mlu)
 (const Tensor& input,
@@ -1291,8 +1292,8 @@ max_pool3d_with_indices_pre_compute(
     kernel_size_prod = kernel_size[0] * kernel_size[1] * kernel_size[2];
   }
   TORCH_CHECK(
-      kernel_size_prod < MAXPOOL2D_KERNEL_MAX,
-      "max_pool3d: The kernel size should be smaller than 65535, while this kernel size is ",
+      kernel_size_prod < MAXPOOL3D_KERNEL_MAX,
+      "max_pool3d: The kernel size should be smaller than 1535, while this kernel size is ",
       kernel_size_prod);
   const int kT = safe_downcast<int, int64_t>(kernel_size[0]);
   const int kH = kernel_size.size() == 1
@@ -1597,8 +1598,8 @@ at::Tensor& cnnl_max_pool3d_with_indices_backward_out(
     kernel_size_prod = kernel_size[0] * kernel_size[1] * kernel_size[2];
   }
   TORCH_CHECK(
-      kernel_size_prod < MAXPOOL2D_KERNEL_MAX,
-      "max_pool3d: The kernel size should be smaller than 65535, while this kernel size is ",
+      kernel_size_prod < MAXPOOL3D_KERNEL_MAX,
+      "max_pool3d: The kernel size should be smaller than 1535, while this kernel size is ",
       kernel_size_prod);
   const int kT = safe_downcast<int, int64_t>(kernel_size[0]);
   const int kH = kernel_size.size() == 1
