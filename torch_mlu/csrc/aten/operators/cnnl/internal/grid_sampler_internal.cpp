@@ -76,14 +76,17 @@ at::Tensor& cnnl_grid_sampler_internal(
     const at::Tensor& grid,
     int64_t interpolation_mode,
     int64_t padding_mode,
+    bool is_3d,
     bool align_corners) {
   cnnlInterpMode_t interp_mode = get_interp_mode(interpolation_mode);
   cnnlGridSamplePaddingMode_t pad_mode = get_pad_mode(padding_mode);
   CnnlGridSampleDescriptor op_desc;
   op_desc.set(interp_mode, pad_mode, align_corners);
 
+  cnnlTensorLayout_t layout = is_3d ? CNNL_LAYOUT_NDHWC : CNNL_LAYOUT_NHWC;
+
   auto input_impl = getMluTensorImpl(input);
-  auto input_desc = getTensorDesc(input_impl, CNNL_LAYOUT_NHWC);
+  auto input_desc = getTensorDesc(input_impl, layout);
   auto input_ptr = mlu_data_ptr(input_impl);
 
   auto grid_impl = getMluTensorImpl(grid);
@@ -92,10 +95,10 @@ at::Tensor& cnnl_grid_sampler_internal(
       grid.sizes(),
       get_contiguous_strides(grid.sizes()),
       getCnnlType(grid_impl),
-      CNNL_LAYOUT_NHWC);
+      layout);
 
   auto output_impl = getMluTensorImpl(output);
-  auto output_desc = getTensorDesc(output_impl, CNNL_LAYOUT_NHWC);
+  auto output_desc = getTensorDesc(output_impl, layout);
   auto output_ptr = mlu_data_ptr(output_impl);
 
   auto handle = getCurrentHandle();
@@ -123,7 +126,7 @@ at::Tensor& cnnl_grid_sampler_internal(
   return output;
 }
 
-void cnnl_grid_sampler_2d_backward_internal(
+void cnnl_grid_sampler_backward_internal(
     at::Tensor& grad_input,
     at::Tensor& grad_grid,
     const at::Tensor& grad_output,
@@ -131,19 +134,21 @@ void cnnl_grid_sampler_2d_backward_internal(
     const at::Tensor& grid,
     int64_t interpolation_mode,
     int64_t padding_mode,
+    bool is_3d,
     bool align_corners) {
   cnnlInterpMode_t interp_mode = get_interp_mode(interpolation_mode);
   cnnlGridSamplePaddingMode_t pad_mode = get_pad_mode(padding_mode);
   CnnlGridSampleDescriptor op_desc;
   op_desc.set(interp_mode, pad_mode, align_corners);
+  cnnlTensorLayout_t layout = is_3d ? CNNL_LAYOUT_NDHWC : CNNL_LAYOUT_NHWC;
 
   auto grad_output_impl = getMluTensorImpl(grad_output);
   auto grad_output_ptr = mlu_data_ptr(grad_output_impl);
-  auto grad_output_desc = getTensorDesc(grad_output_impl, CNNL_LAYOUT_NHWC);
+  auto grad_output_desc = getTensorDesc(grad_output_impl, layout);
 
   auto input_impl = getMluTensorImpl(input);
   auto input_ptr = mlu_data_ptr(input_impl);
-  auto input_desc = getTensorDesc(input_impl, CNNL_LAYOUT_NHWC);
+  auto input_desc = getTensorDesc(input_impl, layout);
 
   auto grid_impl = getMluTensorImpl(grid);
   auto grid_ptr = mlu_data_ptr(grid_impl);
@@ -151,11 +156,11 @@ void cnnl_grid_sampler_2d_backward_internal(
       grid.sizes(),
       get_contiguous_strides(grid.sizes()),
       getCnnlType(grid_impl),
-      CNNL_LAYOUT_NHWC);
+      layout);
 
   auto grad_input_impl = getMluTensorImpl(grad_input);
   auto grad_input_ptr = mlu_data_ptr(grad_input_impl);
-  auto grad_input_desc = getTensorDesc(grad_input_impl, CNNL_LAYOUT_NHWC);
+  auto grad_input_desc = getTensorDesc(grad_input_impl, layout);
 
   auto grad_grid_impl = getMluTensorImpl(grad_grid);
   auto grad_grid_ptr = mlu_data_ptr(grad_grid_impl);
@@ -163,7 +168,7 @@ void cnnl_grid_sampler_2d_backward_internal(
       grad_grid.sizes(),
       get_contiguous_strides(grad_grid.sizes()),
       getCnnlType(grad_grid_impl),
-      CNNL_LAYOUT_NHWC);
+      layout);
 
   auto handle = getCurrentHandle();
   size_t workspace_size = 0;

@@ -910,9 +910,10 @@ at::Tensor& cnnl_grid_sampler_internal(
     const at::Tensor& grid,
     int64_t interpolation_mode,
     int64_t padding_mode,
+    bool is_3d,
     bool align_corners);
 
-void cnnl_grid_sampler_2d_backward_internal(
+void cnnl_grid_sampler_backward_internal(
     at::Tensor& grad_input,
     at::Tensor& grad_grid,
     const at::Tensor& grad_output,
@@ -920,6 +921,7 @@ void cnnl_grid_sampler_2d_backward_internal(
     const at::Tensor& grid,
     int64_t interpolation_mode,
     int64_t padding_mode,
+    bool is_3d,
     bool align_corners);
 
 void cnnl_native_layer_norm_internal(
