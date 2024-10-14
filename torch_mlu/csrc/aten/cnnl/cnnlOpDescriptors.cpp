@@ -41,7 +41,9 @@ void CnnlPoolingDescriptor::set(
     int pad_d,
     int pad_l,
     int pad_r,
-    bool ceil_mode) {
+    bool ceil_mode,
+    int dilation_h,
+    int dilation_w) {
   TORCH_CNNL_CHECK(cnnlSetPooling2dDescriptor_v2(
       this->mut_desc(),
       mode,
@@ -54,8 +56,8 @@ void CnnlPoolingDescriptor::set(
       pad_r,
       stride_h,
       stride_w,
-      1,
-      1,
+      dilation_h,
+      dilation_w,
       ceil_mode));
 }
 

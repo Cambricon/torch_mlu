@@ -51,7 +51,9 @@ class CnnlPoolingDescriptor : public CnnlDescriptor<
       int pad_d,
       int pad_l,
       int pad_r,
-      bool ceil_mode);
+      bool ceil_mode,
+      int dilation_h = 1,
+      int dilation_w = 1);
 
   void set(
       cnnlPoolingMode_t mode,

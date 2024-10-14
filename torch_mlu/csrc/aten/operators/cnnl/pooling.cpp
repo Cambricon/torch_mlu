@@ -1021,13 +1021,6 @@ TORCH_IMPL_FUNC(max_pool2d_with_indices_out_mlu)
       kernel_size_prod < MAXPOOL2D_KERNEL_MAX,
       "max_pool2d: The kernel size should be smaller than 65535, while this kernel size is ",
       kernel_size_prod);
-  constexpr char dilation_err[] =
-      "max_pool2d: dilation must be either a single int, or a tuple of two ints, "
-      "and cnnl pool2d only supports defalut dilation value";
-  TORCH_CHECK(
-      (dilation.size() == 1 && dilation[0] == 1) ||
-          (dilation.size() == 2 && dilation[0] == 1 && dilation[1] == 1),
-      dilation_err);
 
   at::TensorArg output_arg{output_, "output_", 1};
   at::TensorArg indices_arg{indices_, "indices_", 2};
@@ -1051,6 +1044,11 @@ TORCH_IMPL_FUNC(max_pool2d_with_indices_out_mlu)
   const int padH = safe_downcast<int, int64_t>(padding[0]);
   const int padW =
       padding.size() == 1 ? padH : safe_downcast<int, int64_t>(padding[1]);
+
+  const int dilationH = safe_downcast<int, int64_t>(dilation[0]);
+  const int dilationW = dilation.size() == 1
+      ? dilationH
+      : safe_downcast<int, int64_t>(dilation[1]);
 
   // cnnl only support batch mode.
   at::Tensor input = input_.dim() == 3 ? at::unsqueeze(input_, 0) : input_;
@@ -1088,7 +1086,9 @@ TORCH_IMPL_FUNC(max_pool2d_with_indices_out_mlu)
             dW,
             padH,
             padW,
-            ceil_mode);
+            ceil_mode,
+            dilationH,
+            dilationW);
         if (input_.dim() == 3) { // cnnl only support batch mode.
           output_contiguous.squeeze_(0);
           indices_contiguous.squeeze_(0);
@@ -1126,13 +1126,6 @@ TORCH_IMPL_FUNC(max_pool2d_with_indices_backward_out_mlu)
       kernel_size_prod < MAXPOOL2D_KERNEL_MAX,
       "max_pool2d: The kernel size should be smaller than 65535, while this kernel size is ",
       kernel_size_prod);
-  constexpr char dilation_err[] =
-      "max_pool2d: dilation must be either a single int, or a tuple of two ints, "
-      "and cnnl pool2d only supports defalut dilation value";
-  TORCH_CHECK(
-      (dilation.size() == 1 && dilation[0] == 1) ||
-          (dilation.size() == 2 && dilation[0] == 1 && dilation[1] == 1),
-      dilation_err);
 
   at::TensorArg gradInput_arg{gradInput_, "gradInput_", 1};
   at::TensorArg gradOutput_arg{gradOutput_, "gradOutput_", 2};
@@ -1158,6 +1151,11 @@ TORCH_IMPL_FUNC(max_pool2d_with_indices_backward_out_mlu)
   const int padH = safe_downcast<int, int64_t>(padding[0]);
   const int padW =
       padding.size() == 1 ? padH : safe_downcast<int, int64_t>(padding[1]);
+
+  const int dilationH = safe_downcast<int, int64_t>(dilation[0]);
+  const int dilationW = dilation.size() == 1
+      ? dilationH
+      : safe_downcast<int, int64_t>(dilation[1]);
 
   // cnnl only support batch mode.
   at::Tensor input = input_.dim() == 3 ? at::unsqueeze(input_, 0) : input_;
@@ -1196,7 +1194,9 @@ TORCH_IMPL_FUNC(max_pool2d_with_indices_backward_out_mlu)
             padH,
             padW,
             ceil_mode,
-            0);
+            0,
+            dilationH,
+            dilationW);
 
         if (input_.dim() == 3) { // cnnl only support batch mode.
           gradInput_contiguous.squeeze_(0);
@@ -1445,15 +1445,6 @@ std::tuple<at::Tensor&, at::Tensor&> cnnl_max_pool3d_with_indices_out(
           .memory_format(at::MemoryFormat::ChannelsLast3d)
           .dtype(at::kLong));
 
-  constexpr char dilation_err[] =
-      "max_pool3d: dilation must be either a single int, or a tuple of three ints, "
-      "and cnnl pool3d only supports defalut dilation value";
-  TORCH_CHECK(
-      (dilation.size() == 1 && dilation[0] == 1) ||
-          (dilation.size() == 3 && dilation[0] == 1 && dilation[1] == 1 &&
-           dilation[2] == 1),
-      dilation_err);
-
   at::TensorArg output_arg{output, "output", 1};
   at::TensorArg indices_arg{indices, "indices", 2};
   at::TensorArg input_arg{input, "input", 3};
@@ -1497,7 +1488,10 @@ std::tuple<at::Tensor&, at::Tensor&> cnnl_max_pool3d_with_indices_out(
             pT,
             pH,
             pW,
-            ceil_mode);
+            ceil_mode,
+            dilationT,
+            dilationH,
+            dilationW);
 
         if (is_copy_necessary(output, output_contiguous)) {
           output.copy_(output_contiguous);
@@ -1586,15 +1580,6 @@ at::Tensor& cnnl_max_pool3d_with_indices_backward_out(
     bool ceil_mode,
     const at::Tensor& indices,
     at::Tensor& gradInput) {
-  constexpr char dilation_err[] =
-      "max_pool3d: dilation must be either a single int, or a tuple of three ints, "
-      "and cnnl pool3d only supports defalut dilation value";
-  TORCH_CHECK(
-      (dilation.size() == 1 && dilation[0] == 1) ||
-          (dilation.size() == 3 && dilation[0] == 1 && dilation[1] == 1 &&
-           dilation[2] == 1),
-      dilation_err);
-
   at::TensorArg gradInput_arg{gradInput, "gradInput", 1};
   at::TensorArg gradOutput_arg{gradOutput, "gradOutput", 2};
   at::TensorArg input_arg{input, "input", 3};
@@ -1754,7 +1739,10 @@ at::Tensor& cnnl_max_pool3d_with_indices_backward_out(
             pH,
             pW,
             ceil_mode,
-            false);
+            false,
+            dilationT,
+            dilationH,
+            dilationW);
 
         if (is_copy_necessary(gradInput, grad_input_contiguous)) {
           gradInput.copy_(grad_input_contiguous);

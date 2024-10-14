@@ -734,7 +734,9 @@ at::Tensor cnnl_pool2d_internal(
     int64_t padW,
     bool ceil_mode,
     bool count_include_pad,
-    int64_t pool_mode_row);
+    int64_t pool_mode_row,
+    int dilationH = 1,
+    int dilationW = 1);
 
 at::Tensor cnnl_pool2d_backward_internal(
     const at::Tensor& gradInput,
@@ -748,7 +750,9 @@ at::Tensor cnnl_pool2d_backward_internal(
     const int64_t padH,
     const int64_t padW,
     bool ceil_mode,
-    bool count_include_pad);
+    bool count_include_pad,
+    int dilationH = 1,
+    int dilationW = 1);
 
 at::Tensor cnnl_pool3d_internal(
     const at::Tensor& output,
@@ -764,7 +768,10 @@ at::Tensor cnnl_pool3d_internal(
     int padW,
     bool ceil_mode,
     bool count_include_pad,
-    int64_t pool_mode_row);
+    int64_t pool_mode_row,
+    int dilationT = 1,
+    int dilationH = 1,
+    int dilationW = 1);
 
 at::Tensor cnnl_pool3d_backward_internal(
     const at::Tensor& gradInput,
@@ -781,7 +788,10 @@ at::Tensor cnnl_pool3d_backward_internal(
     int padH,
     int padW,
     bool ceil_mode,
-    bool count_include_pad);
+    bool count_include_pad,
+    int dilaitonT = 1,
+    int dilationH = 1,
+    int dilationW = 1);
 
 std::tuple<at::Tensor, at::Tensor> cnnl_max_pool2d_with_indices_internal(
     at::Tensor& output,
@@ -793,7 +803,9 @@ std::tuple<at::Tensor, at::Tensor> cnnl_max_pool2d_with_indices_internal(
     int dW,
     int padH,
     int padW,
-    bool ceil_mode);
+    bool ceil_mode,
+    int dilationH = 1,
+    int dilationW = 1);
 
 std::tuple<at::Tensor, at::Tensor> cnnl_max_pool3d_with_indices_internal(
     at::Tensor& output,
@@ -808,7 +820,10 @@ std::tuple<at::Tensor, at::Tensor> cnnl_max_pool3d_with_indices_internal(
     int padT,
     int padH,
     int padW,
-    bool ceil_mode);
+    bool ceil_mode,
+    int dilationT = 1,
+    int dilationH = 1,
+    int dilationW = 1);
 
 void cnnl_adaptive_avg_pool_internal(
     at::Tensor& output,

@@ -48,7 +48,9 @@ at::Tensor cnnl_pool2d_internal(
     int64_t padW,
     bool ceil_mode,
     bool count_include_pad,
-    int64_t pool_mode_row) {
+    int64_t pool_mode_row,
+    int dilationH,
+    int dilationW) {
   auto input_impl = getMluTensorImpl(self);
   auto input_desc = getTensorDesc(input_impl, CNNL_LAYOUT_NHWC);
   auto input_ptr = mlu_data_ptr(input_impl);
@@ -78,8 +80,9 @@ at::Tensor cnnl_pool2d_internal(
       /*pad down */ padH,
       /*pad left */ padW,
       /*pad right*/ padW,
-      ceil_mode);
-
+      ceil_mode,
+      dilationH,
+      dilationW);
   // extra input
   auto output_size = output.sizes().vec();
   size_t extra_input_size = 0;
@@ -149,7 +152,9 @@ at::Tensor cnnl_pool2d_backward_internal(
     const int64_t padH,
     const int64_t padW,
     bool ceil_mode,
-    bool count_include_pad) {
+    bool count_include_pad,
+    int dilationH,
+    int dilationW) {
   // get current handle
   auto handle = getCurrentHandle();
 
@@ -187,7 +192,19 @@ at::Tensor cnnl_pool2d_backward_internal(
   const void* beta = nullptr;
   // PoolingBackward
   CnnlPoolingDescriptor pooling_desc;
-  pooling_desc.set(mode, kH, kW, dH, dW, padH, padH, padW, padW, ceil_mode);
+  pooling_desc.set(
+      mode,
+      kH,
+      kW,
+      dH,
+      dW,
+      padH,
+      padH,
+      padW,
+      padW,
+      ceil_mode,
+      dilationH,
+      dilationW);
   // workspace
   size_t space_size = 0;
   TORCH_CNNL_CHECK(cnnlGetPoolingBackwardWorkspaceSize(
@@ -232,9 +249,12 @@ at::Tensor cnnl_pool3d_internal(
     int padW,
     bool ceil_mode,
     bool count_include_pad,
-    int64_t pool_mode_row) {
+    int64_t pool_mode_row,
+    int dilationT,
+    int dilationH,
+    int dilationW) {
   int arrKernel[3], arrStride[3], arrPadding[6];
-  int dilation[3] = {1, 1, 1};
+  int dilation[3] = {dilationT, dilationH, dilationW};
   arrKernel[0] = kT;
   arrKernel[1] = kH;
   arrKernel[2] = kW;
@@ -309,9 +329,12 @@ at::Tensor cnnl_pool3d_backward_internal(
     int padH,
     int padW,
     bool ceil_mode,
-    bool count_include_pad) {
+    bool count_include_pad,
+    int dilationT,
+    int dilationH,
+    int dilationW) {
   int arrKernel[3], arrStride[3], arrPadding[6];
-  int dilation[3] = {1, 1, 1};
+  int dilation[3] = {dilationT, dilationH, dilationW};
   arrKernel[0] = kT;
   arrKernel[1] = kH;
   arrKernel[2] = kW;
@@ -405,7 +428,9 @@ std::tuple<at::Tensor, at::Tensor> cnnl_max_pool2d_with_indices_internal(
     int dW,
     int padH,
     int padW,
-    bool ceil_mode) {
+    bool ceil_mode,
+    int dilationH,
+    int dilationW) {
   auto input_impl = getMluTensorImpl(self);
   auto input_desc = getTensorDesc(input_impl, CNNL_LAYOUT_NHWC);
   auto input_ptr = mlu_data_ptr(input_impl);
@@ -437,7 +462,19 @@ std::tuple<at::Tensor, at::Tensor> cnnl_max_pool2d_with_indices_internal(
 
   // pooling forward
   CnnlPoolingDescriptor pooling_desc;
-  pooling_desc.set(mode, kH, kW, dH, dW, padH, padH, padW, padW, ceil_mode);
+  pooling_desc.set(
+      mode,
+      kH,
+      kW,
+      dH,
+      dW,
+      padH,
+      padH,
+      padW,
+      padW,
+      ceil_mode,
+      dilationH,
+      dilationW);
   const void* alpha = nullptr;
   const void* beta = nullptr;
   TORCH_CNNL_CHECK(cnnlPoolingForwardWithIndex(
@@ -470,9 +507,12 @@ std::tuple<at::Tensor, at::Tensor> cnnl_max_pool3d_with_indices_internal(
     int padT,
     int padH,
     int padW,
-    bool ceil_mode) {
+    bool ceil_mode,
+    int dilationT,
+    int dilationH,
+    int dilationW) {
   int arrKernel[3], arrStride[3], arrPadding[6];
-  int dilation[3] = {1, 1, 1};
+  int dilation[3] = {dilationT, dilationH, dilationW};
   arrKernel[0] = kT;
   arrKernel[1] = kH;
   arrKernel[2] = kW;
