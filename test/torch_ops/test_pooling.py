@@ -1148,6 +1148,23 @@ class TestPoolingOp(TestCase):
 
     # @unittest.skip("not test")
     @testinfo()
+    def test_maxpool_large_kernel_size(self):
+        input = torch.randn((2, 512, 512, 512), dtype=torch.float)
+        m = nn.MaxPool2d(kernel_size=(40, 40), stride=(2, 2))
+        m_mlu = m.to("mlu")
+        res_mlu = m_mlu(input.mlu())
+        res_cpu = m(input)
+        self.assertTensorsEqual(res_cpu, res_mlu.cpu().float(), 3e-3, use_MSE=True)
+
+        input = torch.randn((2, 2, 80, 80, 80), dtype=torch.float)
+        m = nn.MaxPool3d(kernel_size=(10, 10, 15), stride=(2, 2, 2))
+        m_mlu = m.to("mlu")
+        res_mlu = m_mlu(input.mlu())
+        res_cpu = m(input)
+        self.assertTensorsEqual(res_cpu, res_mlu.cpu().float(), 3e-3, use_MSE=True)
+
+    # @unittest.skip("not test")
+    @testinfo()
     def test_maxpool2d_exception(self):
         input = torch.randn((2, 3, 8, 8), dtype=torch.float).to("mlu")
         m = nn.MaxPool2d(kernel_size=(3, 3, 3), stride=2)
@@ -1239,10 +1256,10 @@ class TestPoolingOp(TestCase):
             m(input)
 
         input = torch.randn((2, 2, 3, 80, 80), dtype=torch.float).to("mlu")
-        m = nn.MaxPool3d(kernel_size=(100, 100, 16), stride=(2, 2, 2))
+        m = nn.MaxPool3d(kernel_size=(10, 10, 16), stride=(2, 2, 2))
         m = m.to("mlu")
         ref_msg = r"^max_pool3d: The kernel size should be"
-        ref_msg = ref_msg + r" smaller than 65535, while this kernel size is 160000"
+        ref_msg = ref_msg + r" smaller than 1535, while this kernel size is 1600"
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             m(input)
 
