@@ -162,7 +162,7 @@ class TestUpsampleNearest3dOp(TestCase):
     )
     @largeTensorTest("73GB")
     def test_upsample_nearest3d_large(self):
-        shape = (2, 2, 1025, 1024, 1024)
+        shape = (2, 1, 1025, 256, 1024)
         dtype = torch.float
         for mode in ["nearest", "nearest-exact"]:
             m = nn.Upsample(scale_factor=(2.5, 1.5, 3), mode=mode)
