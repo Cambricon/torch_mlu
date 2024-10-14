@@ -624,6 +624,22 @@ class TestSubOp(TestCase):  # pylint: disable=R0904
             # self.assertTensorsEqual(x_right_cpu.grad.float(), x_right_mlu.grad.cpu().float(), \
             #                         dtype_err[2], use_MSE=True)
 
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_sub_mixed_type(self):
+        input1_types = [torch.long]
+        input2_types = [torch.float]
+        shapes = [((), ()), ((), (1,)), ((2, 3, 4, 6), (3, 4, 6))]
+        product_list = product(input1_types, input2_types, shapes)
+        for input1_type, input2_type, shape in product_list:
+            shape1, shape2 = shape
+            a = torch.randint(low=1, high=10, size=shape1).to(input1_type)
+            b = torch.randn(shape2, dtype=torch.float).to(input2_type)
+
+            ouput = torch.sub(a, b)
+            ouput_mlu = torch.sub(a.mlu(), b.mlu())
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+
 
 if __name__ == "__main__":
     run_tests()

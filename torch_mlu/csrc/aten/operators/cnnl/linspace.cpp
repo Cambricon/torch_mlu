@@ -58,12 +58,10 @@ at::Tensor& cnnl_linspace_out(
   } else {
     AT_DISPATCH_MLU_FLOAT_HALF_INT_AND_BFLOAT16(
         r.scalar_type(), "cnnl_linspace_out", [&]() {
-          auto out = create_int_tensor_if_needed(r);
-          cnnl_linspace_internal(out, start, end, steps);
+          cnnl_linspace_internal(r, start, end, steps);
           // cnnl only support 1-D output.
           if (result.dim() != 1)
-            out.resize_as_(result);
-          cast_int_to_long_if_needed(out, r);
+            r.resize_as_(result);
         });
   }
   if (!is_contiguous) {

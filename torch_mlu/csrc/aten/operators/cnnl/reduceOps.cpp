@@ -165,7 +165,8 @@ void reduce_input_support_int64_stub(
 
 /***************************************sum****************************************/
 static void sum_mlu_kernel(at::TensorIterator& iter) {
-  reduce_stub(iter, CNNL_REDUCE_ADD, CNNL_REDUCE_NO_INDICES, "sum");
+  reduce_input_support_int64_stub(
+      iter, CNNL_REDUCE_ADD, CNNL_REDUCE_NO_INDICES, "sum");
 }
 /***************************************mean****************************************/
 static void mean_mlu_kernel(at::TensorIterator& iter) {
@@ -199,10 +200,10 @@ void max_mlu_kernel(
     bool keepdim) {
   auto iter = at::meta::make_reduction(
       self, result, indice, dim, keepdim, self.scalar_type(), at::kLong);
-  auto input = cast_long_to_int_if_needed(cnnl_contiguous(iter.input(0)));
+  auto input = cnnl_contiguous(iter.input(0));
   auto output = iter.output(0);
   auto index = iter.output(1);
-  auto output_contiguous = create_int_tensor_if_needed(cnnl_contiguous(output));
+  auto output_contiguous = cnnl_contiguous(output);
   auto index_contiguous = cnnl_contiguous(index);
   cnnl_reduce_internal(
       input,
@@ -227,7 +228,8 @@ void max_all_mlu_kernel(Tensor& result, const Tensor& input) {
   auto dtype = input.scalar_type();
   auto iter = at::native::make_reduction(
       "max_all", result, input, IntArrayRef{}, false, dtype);
-  reduce_stub(iter, CNNL_REDUCE_MAX, CNNL_REDUCE_NO_INDICES, "max_all");
+  reduce_input_support_int64_stub(
+      iter, CNNL_REDUCE_MAX, CNNL_REDUCE_NO_INDICES, "max_all");
 }
 /***************************************min****************************************/
 at::Tensor cnnl_min(const at::Tensor& self) {
@@ -242,10 +244,10 @@ void min_mlu_kernel(
     bool keepdim) {
   auto iter = at::meta::make_reduction(
       self, result, indice, dim, keepdim, self.scalar_type(), at::kLong);
-  auto input = cast_long_to_int_if_needed(cnnl_contiguous(iter.input(0)));
+  auto input = cnnl_contiguous(iter.input(0));
   auto output = iter.output(0);
   auto index = iter.output(1);
-  auto output_contiguous = create_int_tensor_if_needed(cnnl_contiguous(output));
+  auto output_contiguous = cnnl_contiguous(output);
   auto index_contiguous = cnnl_contiguous(index);
   cnnl_reduce_internal(
       input,
@@ -266,11 +268,12 @@ void min_all_mlu_kernel(Tensor& result, const Tensor& input) {
   auto dtype = input.scalar_type();
   auto iter = at::native::make_reduction(
       "min_all", result, input, IntArrayRef{}, false, input.scalar_type());
-  reduce_stub(iter, CNNL_REDUCE_MIN, CNNL_REDUCE_NO_INDICES, "min_all");
+  reduce_input_support_int64_stub(
+      iter, CNNL_REDUCE_MIN, CNNL_REDUCE_NO_INDICES, "min_all");
 }
 /***************************************argmax****************************************/
 void argmax_mlu_kernel(at::TensorIterator& iter) {
-  auto input = cast_long_to_int_if_needed(cnnl_contiguous(iter.input(0)));
+  auto input = cnnl_contiguous(iter.input(0));
   auto result = iter.output(0);
   auto index = cnnl_contiguous(result);
   at::Tensor output;
@@ -291,7 +294,7 @@ void argmax_mlu_kernel(at::TensorIterator& iter) {
 }
 /***************************************argmin****************************************/
 void argmin_mlu_kernel(at::TensorIterator& iter) {
-  auto input = cast_long_to_int_if_needed(cnnl_contiguous(iter.input(0)));
+  auto input = cnnl_contiguous(iter.input(0));
   auto result = iter.output(0);
   auto index = cnnl_contiguous(result);
   at::Tensor output;
@@ -312,11 +315,13 @@ void argmin_mlu_kernel(at::TensorIterator& iter) {
 }
 /***************************************amax****************************************/
 void max_values_mlu_kernel(at::TensorIterator& iter) {
-  reduce_stub(iter, CNNL_REDUCE_MAX, CNNL_REDUCE_NO_INDICES, "amax");
+  reduce_input_support_int64_stub(
+      iter, CNNL_REDUCE_MAX, CNNL_REDUCE_NO_INDICES, "amax");
 }
 /***************************************amin****************************************/
 void min_values_mlu_kernel(at::TensorIterator& iter) {
-  reduce_stub(iter, CNNL_REDUCE_MIN, CNNL_REDUCE_NO_INDICES, "amin");
+  reduce_input_support_int64_stub(
+      iter, CNNL_REDUCE_MIN, CNNL_REDUCE_NO_INDICES, "amin");
 }
 /***************************************std/var****************************************/
 void std_var_mlu_kernel(

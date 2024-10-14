@@ -51,8 +51,10 @@ at::Tensor cnnl_nms_internal(
   const int input_layout = 0;
   const bool pad_to_max_output_size = false;
 
-  auto output = at::empty({max_output_size}, dets.options().dtype(at::kInt));
-
+  bool is_nms2d = dets.size(1) == 4;
+  auto output = is_nms2d
+      ? at::empty({max_output_size}, dets.options().dtype(at::kLong))
+      : at::empty({max_output_size}, dets.options().dtype(at::kInt));
   auto dets_impl = getMluTensorImpl(dets);
   auto dets_desc = getTensorDesc(dets_impl);
   auto dets_ptr = mlu_data_ptr(dets_impl);
@@ -117,7 +119,8 @@ at::Tensor cnnl_nms_internal(
         output_size_ptr));
   });
   int output_num = *static_cast<int*>(output_size.cpu().data_ptr());
-  return output.slice(0, 0, output_num).to(at::kLong);
+  return is_nms2d ? output.slice(0, 0, output_num)
+                  : output.slice(0, 0, output_num).to(at::kLong);
 }
 
 } // namespace ops

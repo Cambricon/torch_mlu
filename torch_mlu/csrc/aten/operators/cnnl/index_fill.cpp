@@ -79,10 +79,8 @@ at::Tensor& cnnl_index_fill_(
   // because self_overlap.copy_(self_contiguous) will be error.
   // but iter config contains set_check_mem_overlap(false)
   auto memory_format = c10::MemoryFormat::Contiguous;
-  auto self_contiguous =
-      cast_long_to_int_if_needed(cnnl_contiguous(self, memory_format));
-  auto index_contiguous =
-      cast_long_to_int_if_needed(cnnl_contiguous(index, memory_format));
+  auto self_contiguous = cnnl_contiguous(self, memory_format);
+  auto index_contiguous = cnnl_contiguous(index, memory_format);
   cnnl_index_fill_internal(
       self_contiguous, self_contiguous, dim, index_contiguous, value);
   if (is_copy_necessary(self, self_contiguous)) {

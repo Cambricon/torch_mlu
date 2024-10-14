@@ -141,7 +141,6 @@ std::tuple<at::Tensor, at::Tensor> cnnl_ctc_loss_forward(
   auto targets_contiguous = targets.device().is_privateuseone()
       ? cnnl_contiguous(targets)
       : cnnl_contiguous(targets.to(at::Device(at::kPrivateUse1)));
-  targets_contiguous = cast_long_to_int_if_needed(targets_contiguous);
   auto input_lengths_contiguous = input_lengths.device().is_privateuseone()
       ? cnnl_contiguous(input_lengths)
       : cnnl_contiguous(input_lengths.to(at::Device(at::kPrivateUse1)));

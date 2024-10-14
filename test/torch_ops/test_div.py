@@ -10,6 +10,7 @@ import copy
 import sys
 import os
 import itertools
+from itertools import product
 import numpy
 import random  # pylint: disable=C0411
 import torch
@@ -767,6 +768,23 @@ class TestDivOp(TestCase):
             self.assertTensorsEqual(
                 out_cpu.float(), out_mlu.cpu().float().contiguous(), 3e-3, use_MSE=True
             )
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_div_mixed_type(self):
+        input1_types = [torch.long]
+        input2_types = [torch.float]
+        shapes = [((), ()), ((), (1,)), ((2, 3, 4, 6), (3, 4, 6))]
+        rounding_mode = ["floor", "trunc", None]
+        product_list = product(input1_types, input2_types, shapes, rounding_mode)
+        for input1_type, input2_type, shape, mode in product_list:
+            shape1, shape2 = shape
+            a = torch.randint(low=1, high=10, size=shape1).to(input1_type)
+            b = torch.randn(shape2, dtype=torch.float).to(input2_type)
+
+            ouput = torch.div(a, b, rounding_mode=mode)
+            ouput_mlu = torch.div(a.mlu(), b.mlu(), rounding_mode=mode)
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
 
 
 if __name__ == "__main__":

@@ -57,8 +57,14 @@ void cnnl_index_add_internal(
 
   // get current handle
   auto handle = getCurrentHandle();
+  // get workspace size
+  size_t tmp_size = 0;
+  TORCH_CNNL_CHECK(
+      cnnlGetIndexAddWorkspaceSize(handle, desc_input.get(), &tmp_size));
+  auto workspace_ptr =
+      torch_mlu::MLUCachingAllocator::get()->allocate(tmp_size);
 
-  TORCH_CNNL_CHECK(cnnlIndexAdd(
+  TORCH_CNNL_CHECK(cnnlIndexAdd_v2(
       handle,
       dim,
       desc_input.get(),
@@ -67,6 +73,8 @@ void cnnl_index_add_internal(
       index_ptr,
       desc_source.get(),
       source_ptr,
+      workspace_ptr.get(),
+      tmp_size,
       desc_output.get(),
       output_ptr));
   // return output;

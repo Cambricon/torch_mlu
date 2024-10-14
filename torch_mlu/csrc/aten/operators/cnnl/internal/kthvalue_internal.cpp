@@ -22,7 +22,7 @@ void cnnl_kthvalue_internal(
   auto values_ptr = mlu_data_ptr(values_impl);
 
   auto indices_impl = getMluTensorImpl(indices);
-  auto indices_desc = getTensorDesc(indices_impl, CNNL_DTYPE_INT32);
+  auto indices_desc = getTensorDesc(indices_impl, CNNL_DTYPE_INT64);
   auto indices_ptr = mlu_data_ptr(indices_impl);
 
   // get current handle
