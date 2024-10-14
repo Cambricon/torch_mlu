@@ -710,6 +710,7 @@ def apply_monkey_patches():
     check_patch_succeeded(torch_mlu.mlu, torch.cuda)
     # TODO(PYTORCH-12705) : need to conside other api like: torch.cuda.memory.xxx
     replace_device(torch.cuda.memory, torch_cuda_memory_fn_list)
+    replace_device(torch.cuda, torch_cuda_fn_list)
 
     # torch.Tensor.*
     replace_device(torch.Tensor, tensor_fn_list)
