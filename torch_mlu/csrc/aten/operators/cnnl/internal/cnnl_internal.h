@@ -1268,14 +1268,6 @@ void cnnl_remainder_internal(
     const at::Tensor& self,
     const at::Tensor& other);
 
-const at::Tensor& cnnl_fft_internal(
-    at::Tensor& out,
-    const at::Tensor& self,
-    c10::IntArrayRef out_sizes,
-    c10::IntArrayRef dim,
-    bool forward,
-    const float scale_factor);
-
 void cnnl_cummin_max_internal(
     at::Tensor& input,
     at::Tensor& values,

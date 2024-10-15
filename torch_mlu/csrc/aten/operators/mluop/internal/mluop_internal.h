@@ -27,5 +27,13 @@ void mluop_voxel_pooling_internal(
     at::Tensor& output_features,
     at::Tensor& pos_memo);
 
+const at::Tensor& mluop_fft_internal(
+    at::Tensor& out,
+    const at::Tensor& self,
+    c10::IntArrayRef out_sizes,
+    c10::IntArrayRef dim,
+    bool forward,
+    const float scale_factor);
+
 } // namespace ops
 } // namespace torch_mlu

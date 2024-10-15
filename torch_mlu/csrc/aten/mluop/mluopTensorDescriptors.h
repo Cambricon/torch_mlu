@@ -46,6 +46,12 @@ class TORCH_MLU_API MluOpTensorDescriptor : public MluOpDescriptor<
   // Default Set:
   void set(const at::Tensor& t);
   // Specified Set:
+  // use this api if the strides of tensor need to be set
+  void set(
+      const at::Tensor& t,
+      mluOpTensorLayout_t layout,
+      mluOpDataType_t data_type = MLUOP_DTYPE_INVALID);
+
   // set_dtype, set_layout etc.
 
  protected:

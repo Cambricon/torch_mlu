@@ -1,5 +1,5 @@
-#include "aten/operators/cnnl/internal/cnnl_internal.h"
-#include "aten/operators/cnnl/internal/cnfft_plan_cache.h"
+#include "aten/operators/mluop/internal/mluop_internal.h"
+#include "aten/operators/mluop/internal/cnfft_plan_cache.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -81,7 +81,7 @@ void cnfft_clear_plan_cache_impl(int64_t device_index) {
 // CNNL FFT is different from cuFFT mainly in two ways currently:
 // 1. CNNL FFT needs invokers to malloc and manage reservespace for them.
 // 2. CNNL FFT fuses scaling up into cnnlExecFFT.
-const at::Tensor& cnnl_fft_internal(
+const at::Tensor& mluop_fft_internal(
     at::Tensor& out,
     const at::Tensor& self,
     c10::IntArrayRef out_sizes,
@@ -170,15 +170,15 @@ const at::Tensor& cnnl_fft_internal(
   }
 
   // Set reserve area for plan
-  auto handle = getCurrentHandle();
+  auto handle = getCurrentMluOpHandle();
   auto& plan = config->plan();
-  TORCH_CNNL_CHECK(
-      cnnlSetFFTReserveArea(handle, plan, config->get_reservespace_ptr()));
+  TORCH_MLUOP_CHECK(
+      mluOpSetFFTReserveArea(handle, plan, config->get_reservespace_ptr()));
 
   // run
   auto workspace_ptr =
       torch_mlu::MLUCachingAllocator::get()->allocate(config->workspace_size());
-  TORCH_CNNL_CHECK(cnnlExecFFT(
+  TORCH_MLUOP_CHECK(mluOpExecFFT(
       /* handle       */ handle,
       /* fft_plan     */ plan,
       /* input        */ getMluTensorImpl(input)->mlu_data_ptr(),

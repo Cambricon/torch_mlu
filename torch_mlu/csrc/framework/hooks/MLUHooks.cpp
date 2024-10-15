@@ -5,7 +5,7 @@
 #include "framework/core/device.h"
 #include "framework/hooks/MLUHooks.h"
 #include "framework/core/caching_allocator.h"
-#include "aten/operators/cnnl/internal/cnfft_plan_cache.h"
+#include "aten/operators/mluop/internal/cnfft_plan_cache.h"
 #include "aten/utils/utils.h"
 
 // No need to have this whole header, we can just put it all in
