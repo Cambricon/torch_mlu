@@ -55,18 +55,7 @@ namespace torch_mlu {
 namespace ops {
 using namespace at::sparse;
 
-std::set<at::ScalarType> coalesce_support_dtype{
-    at::ScalarType::Half,
-    at::ScalarType::Float};
-
 SparseTensor cnnl__coalesce_sparse(const SparseTensor& self) {
-  TORCH_CHECK(
-      coalesce_support_dtype.find(self.scalar_type()) !=
-          coalesce_support_dtype.end(),
-      "MLU coalesce op not implemented for '",
-      self.scalar_type(),
-      "'");
-
   if (self.is_coalesced()) {
     return self;
   }
@@ -101,8 +90,8 @@ SparseTensor cnnl__coalesce_sparse(const SparseTensor& self) {
       /*return_inverse*/ true,
       /*return_counts*/ false);
 
-  // step2: call cnnl embedding_backward to accumulate values corresponding to the
-  // same index.
+  // step2: call cnnl embedding_backward to accumulate values corresponding to
+  // the same index.
   at::Tensor grad_data = values_contiguous;
   if (grad_data.dim() == 1) {
     grad_data = grad_data.unsqueeze(1);
@@ -114,9 +103,8 @@ SparseTensor cnnl__coalesce_sparse(const SparseTensor& self) {
     // when indices is empty, coalesce will set nnz to 1 and all values will be
     // accumulated.
     new_nnz = 1;
-    inverse_indices = at::zeros(
-        indices_contiguous.size(dim),
-        indices.options());
+    inverse_indices =
+        at::zeros(indices_contiguous.size(dim), indices.options());
     std::vector<int64_t> indices_shape = indices.sizes().vec();
     indices_shape.back() = new_nnz;
     new_indices.resize_(indices_shape);
