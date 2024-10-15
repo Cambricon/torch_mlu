@@ -1001,6 +1001,50 @@ class TestSDPAThrowException(TestCase):
                         ),
                     )
 
+    # 10.test check_fused_kernel_mlu_support exception in sdp_utils
+    @testinfo()
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
+    def test_split_cond_exception(self):
+        dtype = torch.float16
+        size = (2, 2, 3, 256)
+        make_tensor = partial(rand_sdpa_tensor, device=device, dtype=dtype)
+        q, k, v = make_tensor(size), make_tensor(size), make_tensor(size)
+        backend_list = [SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]
+        for kernel in backend_list:
+            with sdpa_kernel(backends=[kernel]):
+                with self.assertWarnsRegex(
+                    UserWarning,
+                    "Both fused kernels require split condition greater than 12.",
+                ):
+                    self.assertRaises(
+                        RuntimeError,
+                        lambda: torch.nn.functional.scaled_dot_product_attention(
+                            q, k, v, None, 0.0, False
+                        ),
+                    )
+
+    # 11.test check_fused_kernel_mlu_support exception in sdp_utils
+    @testinfo()
+    @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
+    def test_valid_data_ratio_cond_exception(self):
+        dtype = torch.float16
+        size = (4, 16, 3, 256)
+        make_tensor = partial(rand_sdpa_tensor, device=device, dtype=dtype)
+        q, k, v = make_tensor(size), make_tensor(size), make_tensor(size)
+        backend_list = [SDPBackend.FLASH_ATTENTION, SDPBackend.EFFICIENT_ATTENTION]
+        for kernel in backend_list:
+            with sdpa_kernel(backends=[kernel]):
+                with self.assertWarnsRegex(
+                    UserWarning,
+                    "Both fused kernels require valid data ratio greater than or equal 0.6.",
+                ):
+                    self.assertRaises(
+                        RuntimeError,
+                        lambda: torch.nn.functional.scaled_dot_product_attention(
+                            q, k, v, None, 0.0, False
+                        ),
+                    )
+
 
 class TestSDPA(TestCase):
     def query_key_value_clones(
@@ -1366,7 +1410,7 @@ class TestSDPA(TestCase):
     @testinfo()
     @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_scaled_dot_product_attention_fused_kernels_backward(self):
-        batch_size, seq_len, num_heads, head_dim = 4, 4, 2, 16
+        batch_size, seq_len, num_heads, head_dim = 4, 512, 2, 128
         make_tensor = partial(
             rand_sdpa_tensor,
             device=device,
@@ -1465,7 +1509,7 @@ class TestSDPA(TestCase):
     @testinfo()
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     def test_scaled_dot_product_attention_fused_kernels_backward_bfloat16(self):
-        batch_size, seq_len, num_heads, head_dim = 4, 4, 2, 16
+        batch_size, seq_len, num_heads, head_dim = 4, 512, 2, 256
         make_tensor = partial(
             rand_sdpa_tensor,
             device=device,
@@ -1565,10 +1609,10 @@ class TestSDPA(TestCase):
     @testinfo()
     @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_scaled_dot_product_flash_attention_backward(self):
-        batch_size_list = [1, 8]
-        seq_len_q_list = [4, 8, 64, 143, 256, 512, 1024, 2048]
-        seq_len_k_list = [4, 8, 64, 128, 256, 587, 1024, 2048]
-        head_dim_list = [8, 16, 21, 32, 64, 72, 96, 128, 160, 192, 203, 256]
+        batch_size_list = [4, 8]
+        seq_len_q_list = [512, 1024, 2048]
+        seq_len_k_list = [512, 1024, 2048]
+        head_dim_list = [128, 256]
         scale_list = [None, "l1"]
         is_causal_list = [True, False]
         dropout_p_list = [0.0, 0.22, 0.48]
@@ -1730,10 +1774,10 @@ class TestSDPA(TestCase):
     @testinfo()
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     def test_scaled_dot_product_flash_attention_backward_bfloat16(self):
-        batch_size_list = [1, 8]
-        seq_len_q_list = [4, 8, 64, 143, 256, 512, 1024, 2048]
-        seq_len_k_list = [4, 8, 64, 128, 256, 587, 1024, 2048]
-        head_dim_list = [8, 16, 21, 32, 64, 72, 96, 128, 160, 192, 203, 256]
+        batch_size_list = [4, 8]
+        seq_len_q_list = [512, 1024, 2048]
+        seq_len_k_list = [512, 1024, 2048]
+        head_dim_list = [128, 256]
         scale_list = [None, "l1"]
         is_causal_list = [True, False]
         dropout_p_list = [0.0, 0.22, 0.48]
@@ -1866,6 +1910,7 @@ class TestSDPA(TestCase):
             grad_v_ref_atol, grad_v_ref_rtol = get_tolerances(
                 value_ref.grad, value_lp_ref.grad
             )
+            # pdb.set_trace()
             self.assertEqual(
                 out, out_ref.to(out.dtype), atol=output_ref_atol, rtol=output_ref_rtol
             )
@@ -1968,13 +2013,13 @@ class TestSDPA(TestCase):
     @testinfo()
     @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_mem_efficient_attention_vs_math_ref_grads(self):
-        batch_size_list = [1, 8]
-        seq_len_q_list = [4, 8, 64, 128, 256, 512, 1024, 2048]
-        seq_len_k_list = [4, 8, 64, 128, 256, 512, 1024, 2048]
-        head_dim_list = [8, 16, 32, 64, 72, 96, 128]
+        batch_size_list = [4, 8]
+        seq_len_q_list = [512, 1024, 2048]
+        seq_len_k_list = [512, 1024, 2048]
+        head_dim_list = [128, 256]
         scale_list = [None, "l1"]
         is_causal_list = [False, True]
-        dropout_p_list = [0.0, 0.22]
+        dropout_p_list = [0.0, 0.22, 0.48]
         dtype_list = [torch.float16]
 
         seed = 42
@@ -2131,13 +2176,13 @@ class TestSDPA(TestCase):
     @testinfo()
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     def test_mem_efficient_attention_vs_math_ref_grads_bfloat16(self):
-        batch_size_list = [1, 8]
-        seq_len_q_list = [4, 8, 64, 128, 256, 512, 1024, 2048]
-        seq_len_k_list = [4, 8, 64, 128, 256, 512, 1024, 2048]
-        head_dim_list = [8, 16, 32, 64, 72, 96, 128]
+        batch_size_list = [4, 8]
+        seq_len_q_list = [512, 1024, 2048]
+        seq_len_k_list = [512, 1024, 2048]
+        head_dim_list = [128, 256]
         scale_list = [None, "l1"]
         is_causal_list = [False, True]
-        dropout_p_list = [0.0, 0.22]
+        dropout_p_list = [0.0, 0.22, 0.48]
         dtype_list = [torch.bfloat16]
 
         seed = 42
@@ -2293,10 +2338,10 @@ class TestSDPA(TestCase):
     @testinfo()
     @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
     def test_mem_efficient_attention_attn_mask_vs_math_ref_grads(self):
-        batch_size_list = [1, 8]
-        seq_len_q_list = [4, 8, 64, 128, 256, 312, 512, 1024, 2048]
-        seq_len_k_list = [4, 8, 64, 65, 128, 256, 408, 512, 1024, 2048]
-        head_dim_list = [8, 16, 32, 64, 72, 96, 128]
+        batch_size_list = [4, 8]
+        seq_len_q_list = [512, 1024, 2048]
+        seq_len_k_list = [512, 1024, 2048]
+        head_dim_list = [128, 256]
         scale_list = [None, "l1"]
         is_causal_list = [False]
         dropout_p_list = [0.0, 0.22, 0.48]
@@ -2466,10 +2511,10 @@ class TestSDPA(TestCase):
     @testinfo()
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     def test_mem_efficient_attention_attn_mask_vs_math_ref_grads_bfloat16(self):
-        batch_size_list = [1, 8]
-        seq_len_q_list = [4, 8, 64, 128, 256, 312, 512, 1024, 2048]
-        seq_len_k_list = [4, 8, 64, 65, 128, 256, 408, 512, 1024, 2048]
-        head_dim_list = [8, 16, 32, 64, 72, 96, 128]
+        batch_size_list = [4, 8]
+        seq_len_q_list = [512, 1024, 2048]
+        seq_len_k_list = [512, 1024, 2048]
+        head_dim_list = [128, 256]
         scale_list = [None, "l1"]
         is_causal_list = [False]
         dropout_p_list = [0.0, 0.22, 0.48]
