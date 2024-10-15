@@ -214,7 +214,8 @@
     supported: false
 
   - api: torch._foreach_zero_
-    supported: false
+    supported: true
+    limitations: 不支持使能torch.mlu.MLUGraph下运行。
 
   - api: torch.abs
     supported: true

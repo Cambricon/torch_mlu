@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 #include "aten/utils/internal_util.h"
 #include "framework/core/memory_allocator.h"
+#include "framework/graphs/MLUGraphUtils.h"
 
 namespace torch_mlu::ops {
 

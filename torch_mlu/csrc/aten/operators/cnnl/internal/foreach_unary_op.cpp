@@ -56,6 +56,11 @@ void cnnl_foreach_unary_op(
   TORCH_CNNL_CHECK(cnnlGetForeachUnaryOpWorkspaceSize(
       handle, tensor_num, input_desc_array, &workspace_size));
   if (workspace_size != 0) {
+    // TODO(PYTORCH-12852): Foreach op not support graph now.
+    TORCH_CHECK(
+        torch_mlu::currentStreamCaptureStatusMayInitCtx() ==
+            torch_mlu::CaptureStatus::None,
+        "Foreach op not support graph now.");
     workspace_ptr =
         torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
 
