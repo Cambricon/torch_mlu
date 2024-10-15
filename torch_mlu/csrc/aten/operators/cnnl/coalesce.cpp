@@ -55,18 +55,7 @@ namespace torch_mlu {
 namespace ops {
 using namespace at::sparse;
 
-std::set<at::ScalarType> coalesce_support_dtype{
-    at::ScalarType::Half,
-    at::ScalarType::Float};
-
 SparseTensor cnnl__coalesce_sparse(const SparseTensor& self) {
-  TORCH_CHECK(
-      coalesce_support_dtype.find(self.scalar_type()) !=
-          coalesce_support_dtype.end(),
-      "MLU coalesce op not implemented for '",
-      self.scalar_type(),
-      "'");
-
   if (self.is_coalesced()) {
     return self;
   }
