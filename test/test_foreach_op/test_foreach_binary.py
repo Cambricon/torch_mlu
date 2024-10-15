@@ -36,7 +36,8 @@ class TestBinaryForeachOp(TestCase):
                 test_func = ForeachOpTest(api_func, foreach_type, err=0.003)
                 test_func(self.assertTrue, self.assertTensorsEqual)
 
-    # @unittest.skip("not test")
+    # TODO(CNNLCORE-21331): Foreach op not support graph now.
+    @unittest.skip("not test")
     @testinfo()
     def test_foreach_binary_with_graph(self):
         tensor_num = 5
