@@ -127,7 +127,7 @@ class ProfileData:
 
         if self.all_kernels:
             kernel_parser = KernelParser()
-            kernel_parser.parse_events(self.events, self.all_kernels)
+            kernel_parser.parse_events(self.all_kernels)
             FileManager.create_csv_file(
                 self.output_dir,
                 kernel_parser.get_kernel_statistic(),

@@ -68,13 +68,18 @@ class KernelParser:
             "Ratio(%)",
         ]
 
-    def parse_events(self, events, kernels):
-        events = [vars(event) for event in events if event.type == EventTypes.KERNEL]
-        events = pd.DataFrame(events)
-        events = events.astype({"type": "category", "name": "string"}, copy=False)
+    def parse_events(self, kernels: List[DeviceNode]):
+        self.kernel_list_groupby_name_op = aggregate_kernels(kernels)
+
+        kernels = [
+            {**vars(kernel), "duration": kernel.end_time - kernel.start_time}
+            for kernel in kernels
+        ]
+        kernels = pd.DataFrame(kernels)
+        kernels = kernels.astype({"type": "category", "name": "string"}, copy=False)
 
         self.kernel_stat = (
-            events.groupby("name")
+            kernels.groupby("name")
             .agg(
                 count=("duration", "count"),
                 sum=("duration", "sum"),
@@ -88,8 +93,6 @@ class KernelParser:
         self.kernel_stat["ratio"] = (
             self.kernel_stat["sum"] / self.kernel_sum_total * 100.0
         )
-
-        self.kernel_list_groupby_name_op = aggregate_kernels(kernels)
 
     def get_kernel_statistic(self):
         kernel_rows = []
