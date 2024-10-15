@@ -10611,6 +10611,7 @@
 
   - api: torch.optim.Adam
     supported: true
+    limitations: torch.mlu.MLUGraph使能场景下，不支持参数fused=True或foreach=True。
 
   - api: torch.optim.Adam.add_param_group
     supported: true
@@ -10647,6 +10648,7 @@
 
   - api: torch.optim.AdamW
     supported: true
+    limitations: torch.mlu.MLUGraph使能场景下，不支持参数fused=True或foreach=True。
 
   - api: torch.optim.AdamW.add_param_group
     supported: true
@@ -10917,6 +10919,7 @@
 
   - api: torch.optim.SGD
     supported: true
+    limitations: torch.mlu.MLUGraph使能场景下，不支持参数fused=True或foreach=True。
 
   - api: torch.optim.SGD.add_param_group
     supported: true
