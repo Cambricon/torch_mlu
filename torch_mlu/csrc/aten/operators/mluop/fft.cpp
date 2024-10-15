@@ -1,14 +1,14 @@
 #include <ATen/native/Resize.h>
 #include <ATen/native/SpectralOpsUtils.h>
 
-#include "aten/operators/cnnl/cnnl_kernel.h"
-#include "aten/operators/cnnl/internal/cnnl_internal.h"
-#include "aten/operators/cnnl/internal/cnfft_plan_cache.h"
+#include "aten/operators/mluop/mluop_kernel.h"
+#include "aten/operators/mluop/internal/mluop_internal.h"
+#include "aten/operators/mluop/internal/cnfft_plan_cache.h"
 
 namespace torch_mlu {
 namespace ops {
 
-constexpr int64_t cnfft_max_ndim = 1;
+constexpr int64_t cnfft_max_ndim = 2;
 
 // Calculates the normalization constant and applies it in-place to self
 // sizes is the sizes of a twosided tensor and dims are all transformed dims
@@ -50,7 +50,7 @@ Tensor& _fft_apply_normalization_out(
   return at::mul_out(out, self, c10::scalar_to_tensor(scale));
 }
 
-at::Tensor cnnl__fft_r2c(
+at::Tensor mluop__fft_r2c(
     const at::Tensor& self,
     IntArrayRef dim,
     int64_t normalization,
@@ -59,7 +59,7 @@ at::Tensor cnnl__fft_r2c(
   TORCH_CHECK(
       self.is_floating_point(), "only support real floating point input");
   // TODO: Remove this when nl support _fft_fill_with_conjugate_symmetry op
-  TORCH_CHECK(onesided, "CNNL FFT currently only support onesided");
+  TORCH_CHECK(onesided, "MLUOP FFT currently only support onesided");
 
   auto input_sizes = self.sizes();
   at::DimVector onesided_sizes(input_sizes.begin(), input_sizes.end());
@@ -82,7 +82,7 @@ at::Tensor cnnl__fft_r2c(
   at::DimVector sorted_dims(dim.begin(), dim.end() - 1);
   // First do the R2C transform on the last dimension
   if (sorted_dims.empty()) {
-    cnnl_fft_internal(
+    mluop_fft_internal(
         output,
         working_tensor,
         onesided_sizes,
@@ -90,7 +90,7 @@ at::Tensor cnnl__fft_r2c(
         /*forward=*/true,
         scale_factor_float);
   } else {
-    cnnl_fft_internal(
+    mluop_fft_internal(
         output,
         working_tensor,
         onesided_sizes,
@@ -118,8 +118,10 @@ at::Tensor cnnl__fft_r2c(
     auto last_dims =
         IntArrayRef(sorted_dims).slice(sorted_dims.size() - max_dims, max_dims);
 
-    if (sorted_dims.size() > 1) {
-      cnnl_fft_internal(
+    // mluop integrates normalization in kernel, and normalization only needs to
+    // be done once.
+    if (sorted_dims.size() > max_dims) {
+      mluop_fft_internal(
           output,
           working_tensor,
           onesided_sizes,
@@ -127,7 +129,7 @@ at::Tensor cnnl__fft_r2c(
           /*forward=*/true,
           1.0);
     } else {
-      cnnl_fft_internal(
+      mluop_fft_internal(
           output,
           working_tensor,
           onesided_sizes,
@@ -141,7 +143,7 @@ at::Tensor cnnl__fft_r2c(
   return output;
 }
 
-Tensor cnnl__fft_c2r(
+Tensor mluop__fft_c2r(
     const Tensor& self,
     IntArrayRef dim,
     int64_t normalization,
@@ -155,7 +157,7 @@ Tensor cnnl__fft_c2r(
   // First complete any C2C transforms
   Tensor tmp = self;
   if (dim.size() > 1) {
-    tmp = cnnl__fft_c2c(
+    tmp = mluop__fft_c2c(
         self,
         dim.slice(0, dim.size() - 1),
         static_cast<int64_t>(at::native::fft_norm_mode::none),
@@ -166,17 +168,18 @@ Tensor cnnl__fft_c2r(
   auto output = at::empty(
       out_sizes,
       self.options().dtype(c10::toRealValueType(self.scalar_type())));
-  cnnl_fft_internal(output, tmp, out_sizes, dim.back(), /*forward=*/false, 1.0);
+  mluop_fft_internal(
+      output, tmp, out_sizes, dim.back(), /*forward=*/false, 1.0);
   return _fft_apply_normalization(output, normalization, out_sizes, dim);
 }
 
-at::Tensor& cnnl__fft_c2r_out(
+at::Tensor& mluop__fft_c2r_out(
     const at::Tensor& self,
     at::IntArrayRef dim,
     int64_t normalization,
     int64_t last_dim_size,
     at::Tensor& out) {
-  auto result = cnnl__fft_c2r(
+  auto result = mluop__fft_c2r(
       self,
       dim,
       static_cast<int64_t>(at::native::fft_norm_mode::none),
@@ -186,7 +189,7 @@ at::Tensor& cnnl__fft_c2r_out(
 }
 
 // n-dimensional complex to complex FFT/IFFT
-Tensor cnnl__fft_c2c(
+Tensor mluop__fft_c2c(
     const Tensor& self,
     IntArrayRef dim,
     int64_t normalization,
@@ -221,11 +224,13 @@ Tensor cnnl__fft_c2c(
     auto first_dims =
         IntArrayRef(sorted_dims).slice(sorted_dims.size() - max_dims, max_dims);
 
-    if (sorted_dims.size() > 1) {
-      cnnl_fft_internal(
+    // mluop integrates normalization in kernel, and normalization only needs to
+    // be done once.
+    if (sorted_dims.size() > max_dims) {
+      mluop_fft_internal(
           output, working_tensor, out_sizes, first_dims, forward, 1.0);
     } else {
-      cnnl_fft_internal(
+      mluop_fft_internal(
           output,
           working_tensor,
           out_sizes,
@@ -250,13 +255,13 @@ Tensor cnnl__fft_c2c(
   return output;
 }
 
-at::Tensor& cnnl__fft_c2c_out(
+at::Tensor& mluop__fft_c2c_out(
     const at::Tensor& self,
     at::IntArrayRef dim,
     int64_t normalization,
     bool forward,
     Tensor& out) {
-  auto result = cnnl__fft_c2c(
+  auto result = mluop__fft_c2c(
       self,
       dim,
       static_cast<int64_t>(at::native::fft_norm_mode::none),

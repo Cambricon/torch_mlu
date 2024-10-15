@@ -310,10 +310,15 @@ aten:
     structured_inherits: TensorIteratorBase
   - func: roll
   - func: _fft_r2c
+    derived_type: mluop
   - func: _fft_c2r
+    derived_type: mluop
   - func: _fft_c2r.out
+    derived_type: mluop
   - func: _fft_c2c
+    derived_type: mluop
   - func: _fft_c2c.out
+    derived_type: mluop
   - func: set_.source_Storage
   - func: set_.source_Tensor
   - func: set_.source_Storage_storage_offset

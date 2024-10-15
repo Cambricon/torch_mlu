@@ -57,4 +57,24 @@ mluOpDataType_t getMluOpDataType(const caffe2::TypeMeta& data_type) {
   return MLUOP_DTYPE_INVALID;
 }
 
+mluOpDataType_t cnnlTypeToMluOpType(const cnnlDataType_t& data_type) {
+  static const std::map<cnnlDataType_t, mluOpDataType_t> mapping_type = {
+      {CNNL_DTYPE_HALF, MLUOP_DTYPE_HALF},
+      {CNNL_DTYPE_FLOAT, MLUOP_DTYPE_FLOAT},
+      {CNNL_DTYPE_DOUBLE, MLUOP_DTYPE_DOUBLE},
+      {CNNL_DTYPE_INT8, MLUOP_DTYPE_INT8},
+      {CNNL_DTYPE_INT16, MLUOP_DTYPE_INT16},
+      {CNNL_DTYPE_INT32, MLUOP_DTYPE_INT32},
+      {CNNL_DTYPE_INT64, MLUOP_DTYPE_INT64},
+      {CNNL_DTYPE_UINT8, MLUOP_DTYPE_UINT8},
+      {CNNL_DTYPE_BOOL, MLUOP_DTYPE_BOOL},
+      {CNNL_DTYPE_COMPLEX_HALF, MLUOP_DTYPE_COMPLEX_HALF},
+      {CNNL_DTYPE_COMPLEX_FLOAT, MLUOP_DTYPE_COMPLEX_FLOAT},
+      {CNNL_DTYPE_BFLOAT16, MLUOP_DTYPE_BFLOAT16}};
+
+  if (mapping_type.find(data_type) != mapping_type.end()) {
+    return mapping_type.find(data_type)->second;
+  }
+  return MLUOP_DTYPE_INVALID;
+}
 } // namespace torch_mlu

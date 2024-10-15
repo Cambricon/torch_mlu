@@ -1,8 +1,7 @@
 #pragma once
 
-#include "aten/cnnl/cnnlHandle.h"
-#include "aten/cnnl/cnnlTensorDesc.h"
-#include "aten/utils/tensor_util.h"
+#include "aten/mluop/mluopHandle.h"
+#include "aten/mluop/mluopTensorDescriptors.h"
 #include "framework/core/mlu_guard.h"
 #include <ATen/native/utils/ParamsHash.h>
 
@@ -13,7 +12,7 @@ namespace ops {
 namespace detail {
 
 constexpr int kMaxRank =
-    1; // currently only support 1-d RFFT because of CNNL limitation
+    2; // currently only support 2-d RFFT because of CNNL limitation
 
 #define CNNL_FFT_L_LIMIT 4096
 
@@ -80,22 +79,22 @@ inline CnFFTTransformType get_cnfft_transformtype(
 }
 
 class CnFFTHandle {
-  ::cnnlFFTPlan_t plan_;
+  ::mluOpFFTPlan_t plan_;
 
  public:
   CnFFTHandle() {
-    TORCH_CNNL_CHECK(cnnlCreateFFTPlan(&plan_));
+    TORCH_MLUOP_CHECK(mluOpCreateFFTPlan(&plan_));
   }
 
-  ::cnnlFFTPlan_t& get() {
+  ::mluOpFFTPlan_t& get() {
     return plan_;
   }
-  const ::cnnlFFTPlan_t& get() const {
+  const ::mluOpFFTPlan_t& get() const {
     return plan_;
   }
 
   ~CnFFTHandle() {
-    cnnlDestroyFFTPlan(plan_);
+    mluOpDestroyFFTPlan(plan_);
   }
 };
 
@@ -150,7 +149,7 @@ class CnFFTConfig {
       for (int64_t i = 0; i < signal_ndim; i++) {
         TORCH_CHECK(
             is_pow_of_two(sizes[i + 1]),
-            "CNNL FFT only supports dimensions whose sizes are powers of two "
+            "MLUOP FFT only supports dimensions whose sizes are powers of two "
             "when"
             " computing in half precision, but got a signal size of",
             sizes.slice(1));
@@ -168,22 +167,23 @@ class CnFFTConfig {
       }
     }
 
-    auto input_impl = getMluTensorImpl(input);
-    auto input_desc = getTensorDesc(input_impl, CNNL_LAYOUT_ARRAY);
-    auto onchip_dtype =
-        value_type == at::ScalarType::Half ? CNNL_DTYPE_HALF : CNNL_DTYPE_FLOAT;
-    TORCH_CNNL_CHECK(
-        cnnlSetTensorDescriptorOnchipDataType(input_desc.get(), onchip_dtype));
+    MluOpTensorDescriptor input_desc;
+    input_desc.set(input, MLUOP_LAYOUT_ARRAY);
+    auto onchip_dtype = value_type == at::ScalarType::Half ? MLUOP_DTYPE_HALF
+                                                           : MLUOP_DTYPE_FLOAT;
+    TORCH_MLUOP_CHECK(mluOpSetTensorDescriptorOnchipDataType(
+        input_desc.desc(), onchip_dtype));
 
-    auto output_impl = getMluTensorImpl(output);
-    auto output_desc = getTensorDesc(output_impl, CNNL_LAYOUT_ARRAY);
+    MluOpTensorDescriptor output_desc;
+    output_desc.set(output, MLUOP_LAYOUT_ARRAY);
 
     size_t ws_size_t, rs_size_t;
-    TORCH_CNNL_CHECK(cnnlMakeFFTPlanMany(
-        getCurrentHandle(),
+    auto handle = getCurrentMluOpHandle();
+    TORCH_MLUOP_CHECK(mluOpMakeFFTPlanMany(
+        handle,
         plan(),
-        input_desc.get(),
-        output_desc.get(),
+        input_desc.desc(),
+        output_desc.desc(),
         signal_ndim,
         signal_sizes.data(),
         &rs_size_t,
@@ -207,7 +207,7 @@ class CnFFTConfig {
     }
   }
 
-  const cnnlFFTPlan_t& plan() const {
+  const mluOpFFTPlan_t& plan() const {
     return plan_ptr.get();
   }
 

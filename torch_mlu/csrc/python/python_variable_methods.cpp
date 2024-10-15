@@ -47,7 +47,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "framework/core/memory_allocator.h"
 #include "framework/hooks/MLUHooks.h"
 #include "aten/operators/cnnl/transformers/sdp_utils.h"
-#include "aten/operators/cnnl/internal/cnfft_plan_cache.h"
+#include "aten/operators/mluop/internal/cnfft_plan_cache.h"
 #include "framework/core/caching_allocator.h"
 #include "framework/core/device.h"
 #include "framework/core/device_utils.h"

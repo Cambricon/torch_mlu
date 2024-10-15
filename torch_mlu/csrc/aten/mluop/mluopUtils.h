@@ -35,12 +35,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <c10/core/ScalarType.h>
 #include "utils/Export.h"
 #include "mlu_op.h"
+#include "cnnl.h"
 
 namespace torch_mlu {
 
 TORCH_MLU_API mluOpDataType_t
 getMluOpDataType(const caffe2::TypeMeta& data_type);
 
-}
+TORCH_MLU_API mluOpDataType_t
+cnnlTypeToMluOpType(const cnnlDataType_t& data_type);
+
+} // namespace torch_mlu
 
 #endif
