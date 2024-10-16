@@ -98,12 +98,10 @@ void cnnl_reflection_pad1d_internal(
     at::Tensor& output,
     const at::Tensor& self,
     at::IntArrayRef padding) {
-  // unsqueeze pad
-  c10::SmallVector<int, 4> pad(padding.size());
-  pad[0] = 0;
-  pad[1] = 0;
-  for (int i = 0; i < padding.size(); i++) {
-    pad[i + 2] = static_cast<int>(padding[i]);
+  // Cnnl needs a 4 size pad. When processing pad1d, fill with 0
+  c10::SmallVector<int, 4> pad{0, 0};
+  for (const auto& val : padding) {
+    pad.push_back(static_cast<int>(val));
   }
 
   // get current handle
