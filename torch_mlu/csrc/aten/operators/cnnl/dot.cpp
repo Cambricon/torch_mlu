@@ -81,6 +81,11 @@ at::Tensor cnnl_dot(const at::Tensor& self, const at::Tensor& other) {
   dot_check(self, other);
 
   auto result_zero_dim = at::empty({}, self.options());
+
+  if (self._is_zerotensor() || other._is_zerotensor()) {
+    return at::_efficientzerotensor({}, self.options());
+  }
+
   if (self.numel() == 0) {
     result_zero_dim.fill_(0.0);
     return result_zero_dim;
