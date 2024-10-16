@@ -14,15 +14,17 @@ void cnnl_kthvalue_internal(
   dim = modify_dim_based_on_layout(dim, memory_format);
 
   auto self_impl = getMluTensorImpl(self);
-  auto self_desc = getTensorDesc(self_impl);
+  auto self_desc = getTensorDesc(self_impl, suggestCnnlLayout(memory_format));
   auto self_ptr = mlu_data_ptr(self_impl);
 
   auto values_impl = getMluTensorImpl(values);
-  auto values_desc = getTensorDesc(values_impl);
+  auto values_desc =
+      getTensorDesc(values_impl, suggestCnnlLayout(memory_format));
   auto values_ptr = mlu_data_ptr(values_impl);
 
   auto indices_impl = getMluTensorImpl(indices);
-  auto indices_desc = getTensorDesc(indices_impl, CNNL_DTYPE_INT64);
+  auto indices_desc = getTensorDesc(
+      indices_impl, CNNL_DTYPE_INT64, suggestCnnlLayout(memory_format));
   auto indices_ptr = mlu_data_ptr(indices_impl);
 
   // get current handle
