@@ -302,12 +302,6 @@ static const std::vector<std::vector<at::ScalarType>> optensor_input_mix_types(
      {at::kFloat, at::kLong, at::kFloat},
      {at::kBFloat16, at::kInt, at::kBFloat16}});
 
-// Note1: need to add input types first and then add output type;
-// Note2: Only support one output tensor right now, and doesn't find
-// any op in pytorch.
-static const std::vector<std::vector<at::ScalarType>> div_input_mix_types(
-    {{at::kFloat, at::kLong, at::kFloat}});
-
 static const std::vector<std::vector<at::ScalarType>> logic_input_mix_types(
     {{at::kFloat, at::kInt, at::kBool}, {at::kDouble, at::kInt, at::kBool}});
 
@@ -461,14 +455,6 @@ SUGGEST_MEMORY_FORMAT_HARD_OP_REGISTER(
 OPTENSOR_OP_REGISTER(REGISTER_PARAMS_WITH_MIXED_INPUT)
 #undef OPTENSOR_OP_REGISTER
 
-// Register div op params with mixed input types.
-#define DIV_OP_REGISTER(_)                          \
-  _(div, f_bf_h_i_types, true, div_input_mix_types) \
-  _(floor_divide, f_bf_h_i_types, true, div_input_mix_types)
-
-DIV_OP_REGISTER(REGISTER_PARAMS_WITH_MIXED_INPUT)
-#undef DIV_OP_REGISTER
-
 // Register optensor op params with mixed input types.
 #define FLOAT_HALF_BFLOAT16_REGISTER(_) \
   _(gelu, f_bf_h_types, false)          \
@@ -580,12 +566,14 @@ POLAR_OP_REGISTER(REGISTER_POLAR_OP_PARAM)
 // Operator params for ops, which compute dtype is float, half, int. And those
 // ops don't support mixed input types.
 #define OP_SUPPORT_FLOAT_HALF_INT_DTYPE_AND_WITHOUT_MIX_INPUT(_) \
+  _(div, f_bf_h_i_types, true)                                   \
   _(neg, f_bf_h_i_types, false)                                  \
   _(maximum, f_bf_h_i_types, true)                               \
   _(minimum, f_bf_h_i_types, true)                               \
   _(clamp_min, f_bf_h_i_types, true)                             \
   _(clamp_max, f_bf_h_i_types, true)                             \
   _(fmod, f_bf_h_i_types, true)                                  \
+  _(floor_divide, f_bf_h_i_types, true)                          \
   _(remainder, f_bf_h_i_types, true)
 
 OP_SUPPORT_FLOAT_HALF_INT_DTYPE_AND_WITHOUT_MIX_INPUT(
