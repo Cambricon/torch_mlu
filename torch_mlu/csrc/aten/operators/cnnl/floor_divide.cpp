@@ -57,7 +57,11 @@ void floor_divide_mlu_kernel(at::TensorIterator& iter) {
         scalar_to_tensor_with_dtype(self, iter_bridge.compute_dtype());
     auto other_tensor =
         scalar_to_tensor_with_dtype(other, iter_bridge.compute_dtype());
+    self_tensor = cast_long_to_int_if_needed(self_tensor);
+    other_tensor = cast_long_to_int_if_needed(other_tensor);
+    output = create_int_tensor_if_needed(output);
     cnnl_div_out_internal(output, self_tensor, other_tensor, "floor");
+    cast_int_to_long_if_needed(output, iter.output(0));
   }
   iter_bridge.cast_outputs(iter);
 }

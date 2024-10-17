@@ -71,7 +71,11 @@ void div_trunc_mlu_kernel(at::TensorIteratorBase& iter) {
         "div trunc inputs only support floating/integral type");
     auto self_tensor = scalar_to_tensor_with_dtype(self, iter.common_dtype());
     auto other_tensor = scalar_to_tensor_with_dtype(other, iter.common_dtype());
+    self_tensor = cast_long_to_int_if_needed(self_tensor);
+    other_tensor = cast_long_to_int_if_needed(other_tensor);
+    output = create_int_tensor_if_needed(output);
     cnnl_div_out_internal(output, self_tensor, other_tensor, "trunc");
+    cast_int_to_long_if_needed(output, iter.output(0));
   }
 }
 
@@ -93,7 +97,11 @@ void div_floor_mlu_kernel(at::TensorIteratorBase& iter) {
         "div floor inputs only support floating/integral type");
     auto self_tensor = scalar_to_tensor_with_dtype(self, iter.common_dtype());
     auto other_tensor = scalar_to_tensor_with_dtype(other, iter.common_dtype());
+    self_tensor = cast_long_to_int_if_needed(self_tensor);
+    other_tensor = cast_long_to_int_if_needed(other_tensor);
+    output = create_int_tensor_if_needed(output);
     cnnl_div_out_internal(output, self_tensor, other_tensor, "floor");
+    cast_int_to_long_if_needed(output, iter.output(0));
   }
 }
 
@@ -101,13 +109,18 @@ void div_mlu_kernel(at::TensorIteratorBase& iter) {
   auto output = iter.output(0);
   auto self = iter.input(0);
   auto other = iter.input(1);
+  output = create_int_tensor_if_needed(output);
   if (isCpuScalar(other)) {
+    self = cast_long_to_int_if_needed(self);
     cnnl_transform_out_internal(
         output, self, 1.0 / (other.item().to<float>()), 0);
   } else {
     auto self_tensor = scalar_to_tensor_with_dtype(self, iter.common_dtype());
+    self_tensor = cast_long_to_int_if_needed(self_tensor);
+    other = cast_long_to_int_if_needed(other);
     cnnl_div_out_internal(output, self_tensor, other, "true");
   }
+  cast_int_to_long_if_needed(output, iter.output(0));
 }
 
 at::Tensor& cnnl_true_divide_(at::Tensor& self, const at::Tensor& other) {
