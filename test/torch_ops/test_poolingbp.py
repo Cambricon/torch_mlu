@@ -1080,7 +1080,7 @@ class TestPoolbpOp(TestCase):
             )
             if return_indices == True:
                 output_cpu = output_cpu[0]
-            grad = torch.ones(output_cpu.shape, dtype=torch.float).to(
+            grad = torch.ones(output_cpu.shape, dtype=torch.bfloat16).to(
                 memory_format=memory_format
             )
             output_cpu.backward(grad, retain_graph=True)
@@ -1097,7 +1097,9 @@ class TestPoolbpOp(TestCase):
             )
             if return_indices == True:
                 output_mlu = output_mlu[0]
-            self.assertTensorsEqual(output_cpu, output_mlu.cpu(), 3e-3, use_MSE=True)
+            self.assertTensorsEqual(
+                output_cpu.float(), output_mlu.cpu().float(), 3e-3, use_MSE=True
+            )
             output_mlu.backward(self.to_mlu_dtype(grad, dtype), retain_graph=True)
             grad_mlu = input_mlu_t.grad
             self.assertTensorsEqual(grad_cpu, grad_mlu, 0.003, use_RAE=True)

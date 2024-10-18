@@ -123,6 +123,10 @@ void initDeviceProperty(at::DeviceIndex device_index) {
       cnrtAttrComputeCapabilityMinor,
       device_index));
   TORCH_CNRT_CHECK(cnrtDeviceGetAttribute(
+      &device_properties[device_index].isa_version,
+      cnrtAttrISAVersion,
+      device_index));
+  TORCH_CNRT_CHECK(cnrtDeviceGetAttribute(
       &device_properties[device_index].core_num_per_cluster,
       cnrtAttrMcorePerCluster,
       device_index));

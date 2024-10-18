@@ -48,6 +48,7 @@ struct DeviceProp {
   int core_num_per_cluster = -1;
   int cluster_count = -1;
   int multi_processor_count = -1;
+  int isa_version = -1;
   long total_memory = -1;
   bool supports_linear_memory = false;
   int nram_size = -1;
