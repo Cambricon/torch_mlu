@@ -2,7 +2,7 @@
   "version": "1.23.0-torch2.1.0",
   "driver_requires": ["release", "6.2.5-1"],
   "build_requires": {
-    "cnnl": ["release", "1.27.0-1"],
+    "cnnl": ["release", "1.27.1-1"],
     "cntoolkit": ["release","3.14.1-1"],
     "cncl": ["release", "1.22.0-1"],
     "cncv": ["release", "2.7.4-1"],
