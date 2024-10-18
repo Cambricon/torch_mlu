@@ -844,6 +844,7 @@ void registerMLUDeviceProperties(PyObject* module) {
       .def_readonly("name", &torch_mlu::DeviceProp::name)
       .def_readonly("major", &torch_mlu::DeviceProp::major)
       .def_readonly("minor", &torch_mlu::DeviceProp::minor)
+      .def_readonly("isa_version", &torch_mlu::DeviceProp::isa_version)
       .def_readonly(
           "multi_processor_count",
           &torch_mlu::DeviceProp::multi_processor_count)

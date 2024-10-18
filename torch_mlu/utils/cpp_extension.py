@@ -16,6 +16,7 @@ import subprocess
 COMMON_BANG_CFLAGS = [
     "--bang-mlu-arch=mtp_372",
     "--bang-mlu-arch=mtp_592",
+    "--bang-mlu-arch=mtp_613",
 ]
 
 COMMON_FLAGS = [
@@ -328,7 +329,7 @@ def _get_bang_arch_flags(cflags: Optional[List[str]] = None) -> List[str]:
             if "--bang-mlu-arch" in flag or "--bang-arch" in flag:
                 return []
 
-    supported_arches = ["3.0", "5.0"]
+    supported_arches = ["3.0", "5.0", "6.0"]
     cc_to_arch = {cc: cc.replace(".", "") for cc in supported_arches}
     valid_arch_strings = COMMON_BANG_CFLAGS + [
         "--bang-arch=compute_{}".format(cc_to_arch[c]) for c in supported_arches
@@ -345,6 +346,8 @@ def _get_bang_arch_flags(cflags: Optional[List[str]] = None) -> List[str]:
         for i in range(torch.mlu.device_count()):
             capability = torch.mlu.get_device_capability(i)
             arch = f"{capability[0]}.{capability[1]}"
+            if torch.mlu.get_device_properties(i).isa_version == "613":
+                arch = "6.0"
             if arch not in arch_list:
                 arch_list.append(arch)
         arch_list = sorted(arch_list)
@@ -370,7 +373,8 @@ def _get_bang_arch_flags(cflags: Optional[List[str]] = None) -> List[str]:
             )
         else:
             flags.append(f"--bang-arch=compute_{cc_to_arch[arch]}")
-
+    flags.append("--no-neuware-version-check")
+    
     return sorted(list(set(flags)))
 
 

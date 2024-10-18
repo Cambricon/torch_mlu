@@ -94,7 +94,9 @@ if (USE_BANG)
     get_filename_component(C_COMPILER_DIR ${CMAKE_C_COMPILER} DIRECTORY)
     set(BANG_CNCC_FLAGS "${BANG_CNCC_FLAGS}" " --bang-mlu-arch=mtp_372"
                                              " --bang-mlu-arch=mtp_592"
-				             " --gcc-toolchain=${C_COMPILER_DIR}/../")
+                                             " --bang-mlu-arch=mtp_613"
+                                             " --no-neuware-version-check"
+                                             " --gcc-toolchain=${C_COMPILER_DIR}/../")
 endif()
 
 # Set cndev header files and libs
