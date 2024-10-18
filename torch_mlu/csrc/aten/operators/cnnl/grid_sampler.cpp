@@ -120,17 +120,18 @@ at::Tensor cnnl_grid_sampler_3d(
   check_grid_sampler_inputs(input, grid, interpolation_mode, padding_mode);
 
   auto N = input.size(0);
-  auto D = input.size(1);
-  auto H = grid.size(1);
-  auto W = grid.size(2);
-  auto C = grid.size(3);
-  int64_t count = N * H * W * C;
+  auto D = grid.size(1);
+  auto H = grid.size(2);
+  auto W = grid.size(3);
+  int64_t count = N * D * H * W;
+
   // cnnl Layout NDHWC
-  auto memory_format = get_channels_last_memory_format(input.dim());
+  auto memory_format = at::MemoryFormat::ChannelsLast3d;
   auto input_contiguous = cnnl_contiguous(input, memory_format);
-  auto grid_contiguous = cnnl_contiguous(grid, memory_format);
+  auto C = input_contiguous.size(1);
+  auto grid_contiguous = cnnl_contiguous(grid);
   auto output =
-      at::empty({N, D, H, W, C}, input_contiguous.options(), memory_format);
+      at::empty({N, C, D, H, W}, input_contiguous.options(), memory_format);
   if (count > 0) {
     return cnnl_grid_sampler_internal(
         output,
@@ -211,7 +212,7 @@ std::tuple<at::Tensor, at::Tensor> cnnl_grid_sampler_3d_backward(
   auto C = grid.size(3);
   int64_t count = N * H * W * C;
   // cnnl Layout NDHWC
-  auto memory_format = get_channels_last_memory_format(input.dim());
+  auto memory_format = at::MemoryFormat::ChannelsLast3d;
   auto input_contiguous = cnnl_contiguous(input, memory_format);
   auto grad_output_contiguous = cnnl_contiguous(grad_output, memory_format);
   auto grid_contiguous = cnnl_contiguous(grid);
