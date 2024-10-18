@@ -86,8 +86,7 @@ at::Tensor& cnnl_arange_out(
           out.resize_(size);
         }
 
-        at::Tensor out_contiguous =
-            create_int_tensor_if_needed(cnnl_contiguous(out));
+        at::Tensor out_contiguous = cnnl_contiguous(out);
 
         using cpp_scalar_t = torch_mlu::MLUAccumulateType_t<scalar_t>;
         cpp_scalar_t start_internal = static_cast<cpp_scalar_t>(xstart);
