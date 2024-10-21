@@ -77,6 +77,26 @@ at::Tensor mluop__fft_r2c(
       _fft_normalization_scale(normalization, input_sizes, dim);
   auto scale_factor_float =
       c10::checked_convert<float, double>(scale_factor, "float");
+  int ndim = input_sizes.size();
+  // [optimazation condition]:
+  // 1) 2d fft
+  // 2) fft is done on abstract [0, 1] dims, e.g. for input with shape [1, 90,
+  // 180, 768] and dims [1, 2], can be transformed into shape [90, 180, 768] and
+  // dim [0, 1], then optimazation from mluops is available.
+  bool special_case = (dim.size() == cnfft_max_ndim) && (ndim >= 3) &&
+      (dim[cnfft_max_ndim - 1] < ndim - 1);
+  if (special_case) {
+    mluop_fft_internal(
+        output,
+        self,
+        out_sizes,
+        dim,
+        /*forward=*/true,
+        1.0,
+        special_case);
+    // TODO(CNNLCORE-21462): pass factor to mluops after bug fixed
+    return output.mul_(scale_factor_float);
+  }
 
   auto working_tensor = self;
   at::DimVector sorted_dims(dim.begin(), dim.end() - 1);
@@ -154,23 +174,36 @@ Tensor mluop__fft_c2r(
   at::DimVector out_sizes(in_sizes.begin(), in_sizes.end());
   out_sizes[dim.back()] = lastdim;
 
-  // First complete any C2C transforms
-  Tensor tmp = self;
-  if (dim.size() > 1) {
-    tmp = mluop__fft_c2c(
-        self,
-        dim.slice(0, dim.size() - 1),
-        static_cast<int64_t>(at::native::fft_norm_mode::none),
-        /*forward=*/false);
-  }
+  int ndim = in_sizes.size();
+  // [see note: optimazation condition]
+  bool special_case = (dim.size() == cnfft_max_ndim) && (ndim >= 3) &&
+      (dim[cnfft_max_ndim - 1] < ndim - 1);
+  if (special_case) {
+    auto output = at::empty(
+        out_sizes,
+        self.options().dtype(c10::toRealValueType(self.scalar_type())));
+    mluop_fft_internal(
+        output, self, out_sizes, dim, /*forward=*/false, 1.0, special_case);
+    return _fft_apply_normalization(output, normalization, out_sizes, dim);
+  } else {
+    // First complete any C2C transforms
+    Tensor tmp = self;
+    if (dim.size() > 1) {
+      tmp = mluop__fft_c2c(
+          self,
+          dim.slice(0, dim.size() - 1),
+          static_cast<int64_t>(at::native::fft_norm_mode::none),
+          /*forward=*/false);
+    }
 
-  // Finally, do a 1D C2R transform
-  auto output = at::empty(
-      out_sizes,
-      self.options().dtype(c10::toRealValueType(self.scalar_type())));
-  mluop_fft_internal(
-      output, tmp, out_sizes, dim.back(), /*forward=*/false, 1.0);
-  return _fft_apply_normalization(output, normalization, out_sizes, dim);
+    // Finally, do a 1D C2R transform
+    auto output = at::empty(
+        out_sizes,
+        self.options().dtype(c10::toRealValueType(self.scalar_type())));
+    mluop_fft_internal(
+        output, tmp, out_sizes, dim.back(), /*forward=*/false, 1.0);
+    return _fft_apply_normalization(output, normalization, out_sizes, dim);
+  }
 }
 
 at::Tensor& mluop__fft_c2r_out(

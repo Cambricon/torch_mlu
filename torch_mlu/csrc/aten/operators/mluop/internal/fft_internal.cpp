@@ -1,5 +1,6 @@
 #include "aten/operators/mluop/internal/mluop_internal.h"
 #include "aten/operators/mluop/internal/cnfft_plan_cache.h"
+#include "aten/utils/cnnl_util.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -87,10 +88,13 @@ const at::Tensor& mluop_fft_internal(
     c10::IntArrayRef out_sizes,
     c10::IntArrayRef dim,
     bool forward,
-    const float scale_factor) {
+    const float scale_factor,
+    bool special_case) {
   const auto ndim = self.dim();
   const int64_t signal_ndim = dim.size();
   const auto batch_dims = ndim - signal_ndim;
+  // mluop 2d fft does not support non dense input
+  auto self_contiguous = self.contiguous();
 
   // Permute dimensions so batch dimensions come first, and in stride order
   // This maximizes data locality when collapsing to a single batch dimension
@@ -105,12 +109,12 @@ const at::Tensor& mluop_fft_internal(
       std::partition(dim_permute.begin(), dim_permute.end(), [&](int64_t d) {
         return !is_transformed_dim[d];
       });
-  auto self_strides = self.strides();
+  auto self_strides = self_contiguous.strides();
   std::sort(dim_permute.begin(), batch_end, [&](int64_t a, int64_t b) {
     return self_strides[a] > self_strides[b];
   });
   std::copy(dim.cbegin(), dim.cend(), batch_end);
-  auto input = self.permute(dim_permute);
+  auto input = self_contiguous.permute(dim_permute);
 
   // Collapse batch dimensions into a single dimension
   at::DimVector batched_sizes(signal_ndim + 1);
@@ -141,7 +145,6 @@ const at::Tensor& mluop_fft_internal(
   for (size_t i = 0; i < dim.size(); ++i) {
     batched_out_sizes[i + 1] = out_sizes[dim[i]];
   }
-  out.resize_(batched_out_sizes, c10::MemoryFormat::Contiguous);
 
   // Create the transform plan (either from cache or locally)
   auto value_type = c10::toRealValueType(input.scalar_type());
@@ -150,6 +153,15 @@ const at::Tensor& mluop_fft_internal(
   }
   auto fft_type =
       detail::get_cnfft_transformtype(input.is_complex(), out.is_complex());
+
+  // optimazation for R2C and C2R for 2D
+  // optimazation kernel needs input and output both be permuted to enter
+  if (special_case) {
+    out = out.permute(dim_permute);
+    out = out.reshape(batched_out_sizes);
+  } else {
+    out.resize_(batched_out_sizes, c10::MemoryFormat::Contiguous);
+  }
   detail::CnFFTParams params(
       input.strides(), out.strides(), signal_size, fft_type, value_type);
   detail::CnFFTParamsLRUCache& plan_cache =
@@ -187,6 +199,9 @@ const at::Tensor& mluop_fft_internal(
       /* output       */ mlu_data_ptr(getMluTensorImpl(out)),
       /* direction    */ forward ? CNFFT_FORWARD : CNFFT_INVERSE));
 
+  if (special_case) {
+    out = cnnl_contiguous(out);
+  }
   // Inplace reshaping to original batch shape and inverting the dimension
   // permutation
   at::DimVector out_strides(ndim);
