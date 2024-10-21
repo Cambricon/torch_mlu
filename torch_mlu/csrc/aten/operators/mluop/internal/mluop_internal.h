@@ -33,7 +33,8 @@ const at::Tensor& mluop_fft_internal(
     c10::IntArrayRef out_sizes,
     c10::IntArrayRef dim,
     bool forward,
-    const float scale_factor);
+    const float scale_factor,
+    bool special_case = false);
 
 } // namespace ops
 } // namespace torch_mlu

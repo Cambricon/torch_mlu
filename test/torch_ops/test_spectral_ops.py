@@ -442,6 +442,35 @@ class TestSpectralOps(TestCase):
         self.assertTensorsEqual(result_cpu, result_mlu.cpu(), 0.003)
         self.assertTensorsEqual(out_cpu, out_mlu.cpu(), 0.003)
 
+        input_cpu = torch.randn(256, 256, 3, dtype=torch.complex64)
+        output_cpu = torch.randn(250, 250, 3, dtype=torch.complex64)
+        dims = [-3, -2]
+        s = [250, 250]
+
+        torch.fft.fft2(input_cpu, s=s, dim=dims, norm="forward", out=output_cpu)
+        input_mlu = input_cpu.mlu()
+        output_mlu = out_cpu.mlu()
+        torch.fft.fft2(input_mlu, s=s, dim=dims, norm="forward", out=output_mlu)
+        self.assertTensorsEqual(out_cpu, out_mlu.cpu(), 0.003)
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_rfft2(self):
+        dims = [(1, 2), (0, 1), (2, 3)]
+        for dim in dims:
+            cpu_input = torch.randn(1, 90, 180, 768)
+            mlu_input = cpu_input.mlu()
+            cpu_out = torch.fft.rfft2(cpu_input, dim=dim, norm="ortho")
+            mlu_out = torch.fft.rfft2(mlu_input, dim=dim, norm="ortho")
+            self.assertTensorsEqual(cpu_out, mlu_out.cpu(), 0.003)
+
+            # 1, 90, 91, 768
+        cpu_input = torch.randn(1, 90, 91, 768, dtype=torch.complex64)
+        mlu_input = cpu_input.mlu()
+        cpu_out = torch.fft.irfft2(cpu_input, s=(90, 180), dim=(1, 2), norm="ortho")
+        mlu_out = torch.fft.irfft2(mlu_input, s=(90, 180), dim=(1, 2), norm="ortho")
+        self.assertTensorsEqual(cpu_out, mlu_out.cpu(), 0.003)
+
     # @unittest.skip("not test")
     @testinfo()
     def test_fft_c2c_exception(self):
