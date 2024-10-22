@@ -16,6 +16,7 @@ from torch_mlu.utils import apply_module_patch
 from torch_mlu.distributed import apply_distributed_patch
 from torch_mlu.optimizers import apply_optim_patch
 from torch_mlu.mlu import apply_reductions_patch
+from torch_mlu import version
 
 _check_gencase()
 
@@ -36,7 +37,7 @@ def apply_patches():
     apply_module_patch()
     apply_distributed_patch()
     apply_optim_patch()
-    
+
 
 apply_patches()
 
@@ -88,7 +89,7 @@ _MLUC._initExtension()
 # set default device type mlu for checkpointing
 DefaultDeviceType.set_device_type("mlu")
 
-torch.version.mlu = None
+torch.version.mlu = version.mlu_version
 
 apply_reductions_patch()
 
