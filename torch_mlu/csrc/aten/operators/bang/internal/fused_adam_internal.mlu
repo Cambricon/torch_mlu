@@ -12,6 +12,7 @@
 
 #include "bang_internal.h"
 #include "aten/operators/bang/internal/multi_tensor_apply.h"
+#include "aten/operators/bang/internal/three_stage_pipeline.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -21,7 +22,8 @@ namespace ops {
 // Use half of the max nram size for ping-pong
 __nram__ char total_nram[MAX_NRAM_SIZE];
 
-// split nram to grad_nram,m_nram,v_nram,variable_nram
+// For noraml mode, split nram to grad_nram,m_nram,v_nram,variable_nram
+// For high precision mode, split nram to grad_nram,m_nram,v_nram,variable_nram and temp nram
 inline int get_char_element_num(const int& nram_size,
                                 const int& split_num) {
   return ((nram_size - reserve_stack_size) / split_num) / ALIGN_SIZE * ALIGN_SIZE;
@@ -33,12 +35,86 @@ template<typename T, typename FULL_T = float,
          std::enable_if_t<std::disjunction_v<std::is_same<float, T>,
                                              std::is_same<bfloat16_t, T>,
                                              std::is_same<half, T>>, int> = 1>
-struct AdamFunctor {
-  __mlu_func__ inline void operator()(const int& num_align,
-                                      T* variable_nram,
+struct AdamFunctorHighPrecision {
+  __mlu_func__ inline void operator()(T* variable_nram,
                                       T* grad_nram,
                                       FULL_T* m_nram,
                                       FULL_T* v_nram,
+                                      const int& num_align,
+                                      const int& load_offset,
+                                      FULL_T* temp_nram,
+                                      const float& beta1_minus,
+                                      const float& beta2,
+                                      const float& beta2_minus,
+                                      const float& decay,
+                                      const float& sub_lr_decay_multi,
+                                      const float& bias_correction2_sqrt,
+                                      const float& epsilon,
+                                      const float& step_size) {
+    FULL_T* grad_nram_f = (FULL_T*)grad_nram;
+    FULL_T* variable_nram_f = (FULL_T*)variable_nram;
+    if constexpr (std::is_same_v<T, bfloat16_t>) {
+      __bang_bfloat162float(grad_nram_f, grad_nram + load_offset, num_align);
+      __bang_bfloat162float(variable_nram_f, variable_nram + load_offset, num_align);
+    } else if constexpr (std::is_same_v<T, half>) {
+      __bang_half2float(grad_nram_f, grad_nram + load_offset, num_align);
+      __bang_half2float(variable_nram_f, variable_nram + load_offset, num_align);
+    }
+    if constexpr (mode == torch_mlu::ops::internal::ADAM_MODE::adamw) {
+      // param.mul_(1 - lr * weight_decay)
+      __bang_mul_scalar(variable_nram_f, variable_nram_f, sub_lr_decay_multi, num_align);
+    } else {
+      // scaled_grad = scaled_grad + decay * variable
+      __bang_fusion(FUSION_FMA, grad_nram_f, variable_nram_f, decay, grad_nram_f, num_align, num_align);
+    }
+    // Here lerp compute inst same with cnnl lerp op.
+    // exp_avg.lerp_(grad, 1 - beta1)
+    // exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
+    __bang_sub(temp_nram, grad_nram_f, m_nram, num_align);
+    __bang_fusion(FUSION_FMA, m_nram, temp_nram, beta1_minus, m_nram, num_align, num_align);
+    __bang_mul(grad_nram_f, grad_nram_f, grad_nram_f, num_align);
+    __bang_mul_scalar(grad_nram_f, grad_nram_f, beta2_minus, num_align);
+    __bang_fusion(FUSION_FMA, v_nram, v_nram, beta2, grad_nram_f, num_align, num_align);
+
+    // denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add_(eps)
+    // param.addcdiv_(exp_avg, denom, value=-step_size)
+    __cn_vector_accurate_sqrt_f32(num_align, temp_nram, v_nram);
+    // exp_avg_sq.sqrt() / bias_correction2_sqrt is call transformer_v2
+    // to do this.
+    __bang_mul_scalar(temp_nram, temp_nram, bias_correction2_sqrt, num_align);
+    __bang_add_scalar(temp_nram, temp_nram, epsilon, num_align);
+
+    #if __BANG_ARCH__ > 500
+      __bang_div(temp_nram, m_nram, temp_nram, num_align);
+    #else
+      __bang_recip(temp_nram, temp_nram, num_align);
+      __bang_mul(temp_nram, m_nram, temp_nram, num_align);
+    #endif
+    // __bang_mul_scalar(variable_nram, tmp_nram, 1.0, num_align);
+    // __bang_add(variable_nram, variable_nram, tmp_nram, num_align);
+    __bang_fusion(FUSION_FMA, variable_nram_f, temp_nram, step_size, variable_nram_f, num_align, num_align);
+
+    if constexpr (std::is_same_v<T, bfloat16_t>) {
+      __bang_float2bfloat16_rn(variable_nram, (FULL_T*)variable_nram_f, num_align);
+    } else if constexpr (std::is_same_v<T, half>) {
+      __bang_float2half_rn(variable_nram, (FULL_T*)variable_nram_f, num_align);
+    }
+  }
+};  // struct AdamFunctorHighPrecision
+
+template<typename T, typename FULL_T = float,
+         torch_mlu::ops::internal::ADAM_MODE mode = torch_mlu::ops::internal::ADAM_MODE::adamw,
+         std::enable_if_t<std::is_same_v<FULL_T, float>, int> = 1,
+         std::enable_if_t<std::disjunction_v<std::is_same<float, T>,
+                                             std::is_same<bfloat16_t, T>,
+                                             std::is_same<half, T>>, int> = 1>
+struct AdamFunctor {
+  __mlu_func__ inline void operator()(T* variable_nram,
+                                      T* grad_nram,
+                                      FULL_T* m_nram,
+                                      FULL_T* v_nram,
+                                      const int& num_align,
+                                      const int& load_offset,
                                       const float& beta1,
                                       const float& beta2,
                                       const float& beta1_minus,
@@ -46,8 +122,7 @@ struct AdamFunctor {
                                       const float& decay,
                                       const float& learning_rate_correction,
                                       const float& epsilon_correction,
-                                      const float& decay_correction,
-                                      const int& load_offset) {
+                                      const float& decay_correction) {
     FULL_T* grad_nram_f = (FULL_T*)grad_nram;
     FULL_T* variable_nram_f = (FULL_T*)variable_nram;
     if constexpr (std::is_same_v<T, bfloat16_t>) {
@@ -93,136 +168,83 @@ struct AdamFunctor {
   }
 };  // struct AdamFunctor
 
-template<typename tupleTypeList, int maxBlockNum, int depth>
-struct ApplyAdam {
-template<typename AdamFunctor>
+template<typename tupleTypeList, int maxBlockNum, int depth, typename AdamFunctor, typename... ARGS>
 __mlu_func__ static void const call_internal(const torch_mlu::bangcommon::BlockInfoContainer<maxBlockNum, depth>& block_info_container,
-                                             const float& beta1,
-                                             const float& beta1_minus,
-                                             const float& beta2,
-                                             const float& beta2_minus,
-                                             const float& epsilon_correction,
-                                             const float& learning_rate_correction,
                                              AdamFunctor&& compute_func,
-                                             const float& decay,
-                                             const float& decay_correction) {
-  using T = std::tuple_element_t<0, tupleTypeList>;
-  using FULL_T = std::tuple_element_t<2, tupleTypeList>;
+                                             ARGS&&... args) {
   torch_mlu::bangcommon::MemoryPolicy<tupleTypeList, maxBlockNum, depth>
     data_handler(block_info_container);
-  const int circle_num = data_handler.get_circle_num();
-  const int element_num = data_handler.get_each_block_element_num();
-  const int char_element_num = block_info_container.block_size * sizeof(float);
+  const int element_num = block_info_container.block_size;
+  const int char_element_num = element_num * sizeof(float);
+  void* load_ping_nram_array[depth] = {nullptr};
+  void* load_pong_nram_array[depth] = {nullptr};
+  void* store_ping_nram_array[depth] = {nullptr};
+  void* store_pong_nram_array[depth] = {nullptr};
   // params--grads--exp_avg--exp_avg_sq
-  T* param_nram_start = (T*)total_nram;
-  T* param_nram_load_start = param_nram_start;
-  T* grad_nram_start = (T*)(total_nram + 2 * char_element_num);
-  T* grad_nram_load_start = grad_nram_start;
-  // load_offset for half and bfloat16, and copy data to last part of nram,
-  // for using same nram space to convert from half/bfloat16 to float.
+  int char_ping_pong_offset = char_element_num * depth;
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    load_ping_nram_array, &(total_nram[0]), char_element_num);
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    load_pong_nram_array, &(total_nram[char_ping_pong_offset]), char_element_num);
+  // Store and Load with different nums.
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    store_ping_nram_array, &(total_nram[0]), char_element_num);
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    store_pong_nram_array, &(total_nram[char_ping_pong_offset]), char_element_num);
+  store_ping_nram_array[1] = nullptr;
+  store_pong_nram_array[1] = nullptr;
+  // load_offset for half and bfloat16_t, and copy data to last part of nram,
+  // for using same nram space to convert from half/bfloat16_t to float.
   // This is not need for store data back to gdram.
   // char_element_num size: |-----------------|-----------------|
-  //                    float start    half/bfloat16 start
-  const int load_offset = sizeof(T) == 2 ? char_element_num / sizeof(FULL_T) : 0;
-  if constexpr (sizeof(T) == 2) {
-    param_nram_load_start = param_nram_start + load_offset;
-    grad_nram_load_start = grad_nram_start + load_offset;
-  }
-  FULL_T* exp_avg_nram_start = (FULL_T*)(total_nram + 4 * char_element_num);
-  FULL_T* exp_avg_sq_nram_start = (FULL_T*)(total_nram + 6 * char_element_num);
-  const int full_t_ping_pong_size = element_num;
-  const int t_ping_pong_size = sizeof(T) == 2 ? element_num * 2 : element_num;
-  int ping_size = 0;
-  int pong_size = 0;
-  void* load_ping_nram_array[depth] = {
-    (void*)param_nram_load_start, (void*)grad_nram_load_start,
-    (void*)exp_avg_nram_start, (void*)exp_avg_sq_nram_start
-  };
-  void* load_pong_nram_array[depth] = {
-    (void*)(param_nram_load_start + t_ping_pong_size),
-    (void*)(grad_nram_load_start + t_ping_pong_size),
-    (void*)(exp_avg_nram_start + full_t_ping_pong_size),
-    (void*)(exp_avg_sq_nram_start + full_t_ping_pong_size)
-  };
-  void* store_ping_nram_array[depth] = {
-    (void*)param_nram_start, nullptr,
-    (void*)exp_avg_nram_start, (void*)exp_avg_sq_nram_start
-  };
-  void* store_pong_nram_array[depth] = {
-    (void*)(param_nram_start + t_ping_pong_size),
-    nullptr,
-    (void*)(exp_avg_nram_start + full_t_ping_pong_size),
-    (void*)(exp_avg_sq_nram_start + full_t_ping_pong_size)
-  };
-
-  if (circle_num > 0) {
-    data_handler.multi_data_load_same_size(0, load_ping_nram_array, ping_size);
-    __sync_io();
-  }
-  if (circle_num > 1) {
-    // pong and compute
-    data_handler.multi_data_load_same_size(1, load_pong_nram_array, pong_size);
-    // compute ping
-    std::forward<AdamFunctor>(compute_func)(ping_size, param_nram_start, grad_nram_start, exp_avg_nram_start,
-                 exp_avg_sq_nram_start, beta1, beta2, beta1_minus, beta2_minus, decay,
-                 learning_rate_correction, epsilon_correction, decay_correction, load_offset);
-    __sync_io_move_compute(false, false, true, true, false, false);
-    __sync_io_move_compute(true, false, false, false, false, true);
-  }
-  int load_index = 0;
-  int store_index = 0;
-  for (int i = 0; i < circle_num - 2; i++) {
-    // store data
-    load_index = i + 2;
-    store_index = i;
-    int ping_pong = i % 2;
-    data_handler.multi_data_store_same_size(store_index, ping_pong ? store_pong_nram_array : store_ping_nram_array,
-                                            ping_pong ? pong_size : ping_size);
-    data_handler.multi_data_load_same_size(load_index, ping_pong ? load_pong_nram_array : load_ping_nram_array,
-                                            ping_pong ? pong_size : ping_size);
-    // compute data date order is different with load and store data.
-    ping_pong = (i + 1) % 2;
-    std::forward<AdamFunctor>(compute_func)(ping_pong ? pong_size : ping_size,
-                 param_nram_start + ping_pong * t_ping_pong_size,
-                 grad_nram_start + ping_pong * t_ping_pong_size,
-                 exp_avg_nram_start + ping_pong * full_t_ping_pong_size,
-                 exp_avg_sq_nram_start + ping_pong * full_t_ping_pong_size,
-                 beta1, beta2, beta1_minus, beta2_minus,
-                 decay, learning_rate_correction, epsilon_correction,
-                 decay_correction, load_offset);
-    __sync_io_move_compute(false, false, true, true, false, false);
-    __sync_io_move_compute(true, false, false, false, false, true);
-  }
-
-  // store circle - 1 data
-  int ping_pong = circle_num % 2;
-  if (circle_num > 1) {
-    store_index = circle_num - 2;
-    data_handler.multi_data_store_same_size(store_index,
-                                            ping_pong ? store_pong_nram_array : store_ping_nram_array,
-                                            ping_pong ? pong_size : ping_size);
-  }
-
-  ping_pong = (circle_num + 1) % 2;
-  if (circle_num > 0) {
-    // compute last circle
-    std::forward<AdamFunctor>(compute_func)(ping_pong ? pong_size : ping_size,
-                 param_nram_start + ping_pong * t_ping_pong_size,
-                 grad_nram_start + ping_pong * t_ping_pong_size,
-                 exp_avg_nram_start + ping_pong * full_t_ping_pong_size,
-                 exp_avg_sq_nram_start + ping_pong * full_t_ping_pong_size,
-                 beta1, beta2, beta1_minus, beta2_minus,
-                 decay, learning_rate_correction, epsilon_correction,
-                 decay_correction, load_offset);
-    __sync_compute();
-    // store last circle data
-    store_index = circle_num - 1;
-    data_handler.multi_data_store_same_size(store_index,
-                                            ping_pong ? store_pong_nram_array : store_ping_nram_array,
-                                            ping_pong ? pong_size : ping_size);
-  }
+  //                    float start    half/bfloat16_t start
+  const int load_offset = char_element_num / sizeof(float);
+  do_three_stage_pipeline_compute(data_handler, compute_func, load_ping_nram_array,
+                                  store_ping_nram_array, load_pong_nram_array,
+                                  store_pong_nram_array, load_offset, args...);
 }
 
+// Overload global function is forbidden to use in a class, so split to ApplyHighPrecisionAdam
+// and ApplyAdam.
+template<typename tupleTypeList, int maxBlockNum, int depth>
+struct ApplyHighPrecisionAdam {
+__mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<maxBlockNum, depth> block_info_container,
+                                float beta1_minus,
+                                float beta2,
+                                float beta2_minus,
+                                float decay,
+                                float sub_lr_decay_multi,
+                                float bias_correction2_sqrt,
+                                float epsilon,
+                                float step_size,
+                                internal::ADAM_MODE adam_mode) {
+  if (__is_mpu()) return;
+  using T = std::tuple_element_t<0, tupleTypeList>;
+  using FULL_T = std::tuple_element_t<2, tupleTypeList>;
+  // Get temp nram space addr
+  const int char_element_num = block_info_container.block_size * sizeof(float);
+  FULL_T* temp_nram = (FULL_T*)(total_nram + 8 * char_element_num);
+  switch (adam_mode) {
+    case torch_mlu::ops::internal::ADAM_MODE::adam:
+      call_internal<tupleTypeList, maxBlockNum, depth>(block_info_container,
+                    AdamFunctorHighPrecision<T, FULL_T, torch_mlu::ops::internal::ADAM_MODE::adam>(),
+                    temp_nram, beta1_minus, beta2, beta2_minus, decay, sub_lr_decay_multi,
+                    bias_correction2_sqrt, epsilon, step_size);
+      break;
+    case torch_mlu::ops::internal::ADAM_MODE::adamw:
+      call_internal<tupleTypeList, maxBlockNum, depth>(block_info_container,
+                    AdamFunctorHighPrecision<T, FULL_T, torch_mlu::ops::internal::ADAM_MODE::adamw>(),
+                    temp_nram, beta1_minus, beta2, beta2_minus, decay, sub_lr_decay_multi,
+                    bias_correction2_sqrt, epsilon, step_size);
+      break;
+    default:
+      break;
+  }
+}
+};  // ApplyHighPrecisionAdam
+
+template<typename tupleTypeList, int maxBlockNum, int depth>
+struct ApplyAdam {
 __mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<maxBlockNum, depth> block_info_container,
                                 float beta1,
                                 float beta1_minus,
@@ -230,48 +252,47 @@ __mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<
                                 float beta2_minus,
                                 float epsilon_correction,
                                 float learning_rate_correction,
-                                internal::ADAM_MODE adam_mode,
                                 float decay,
-                                float decay_correction) {
+                                float decay_correction,
+                                internal::ADAM_MODE adam_mode) {
   if (__is_mpu()) return;
   using T = std::tuple_element_t<0, tupleTypeList>;
   using FULL_T = std::tuple_element_t<2, tupleTypeList>;
   switch (adam_mode) {
     case torch_mlu::ops::internal::ADAM_MODE::adam:
-      call_internal(block_info_container, beta1, beta1_minus, beta2, beta2_minus,
-                    epsilon_correction, learning_rate_correction,
+      call_internal<tupleTypeList, maxBlockNum, depth>(block_info_container,
                     AdamFunctor<T, FULL_T, torch_mlu::ops::internal::ADAM_MODE::adam>(),
-                    decay, decay_correction);
+                    beta1, beta2, beta1_minus, beta2_minus, decay, learning_rate_correction,
+                    epsilon_correction, decay_correction);
       break;
     case torch_mlu::ops::internal::ADAM_MODE::adamw:
-      call_internal(block_info_container, beta1, beta1_minus, beta2, beta2_minus,
-                    epsilon_correction, learning_rate_correction,
+      call_internal<tupleTypeList, maxBlockNum, depth>(block_info_container,
                     AdamFunctor<T, FULL_T, torch_mlu::ops::internal::ADAM_MODE::adamw>(),
-                    decay, decay_correction);
+                    beta1, beta2, beta1_minus, beta2_minus, decay, learning_rate_correction,
+                    epsilon_correction, decay_correction);
       break;
     default:
       break;
   }
 }
-
 };  // struct ApplyAdam
 
 template<cnrtDataType_V2_t value, int depth>
 void apex_fused_adam_internal(const std::vector<std::array<void*, depth>>& data_ptr_list,
                               const std::vector<int64_t>& sizes,
-                              float beta1,
-                              float beta1_minus,
-                              float beta2,
-                              float beta2_minus,
-                              float epsilon_correction,
-                              float learning_rate_correction,
+                              const double beta1,
+                              const double beta2,
+                              const int64_t step,
                               internal::ADAM_MODE mode,
-                              float decay,
-                              float decay_correction,
+                              const double epsilon,
+                              const int64_t bias_correction,
+                              const double learning_rate,
+                              const double weight_decay,
                               cnrtQueue_t queue,
                               cnrtFunctionType_t k_type,
                               cnrtDim3_t k_dim,
-                              const int nram_size) {
+                              const int nram_size,
+                              const bool using_high_precision) {
   // Load fix num data to nram each time per tensor.
   // Data order in nram:
   // variable_nram, grad_nram, m_nram, v_nram
@@ -287,17 +308,59 @@ void apex_fused_adam_internal(const std::vector<std::array<void*, depth>>& data_
   //    grad_nram data to gdram;
   // 4) Load variable_nram, grad_nram, m_nram, v_nram to nram each time per block,
   //    After compute, variable_nram, m_nram, v_nram data will be saved back to gdram;
-  // 5) Each block contains element_num is less or equal to get_char_element_num(nram_size) / sizeof(float);
-  const int element_num = get_char_element_num(nram_size, 8) / sizeof(float);
+  // 5) For AdamFunctorHighPrecision need another temp nram space for intermediate data.
   constexpr int maxBlockNum = torch_mlu::bangcommon::depth_to_max_blockinfo[depth - 1];
   using T = CNRTTypeValueToBangcCppType_t<value>;
   using FULL_T = float;
   using tupleTypeList = std::tuple<T, T, FULL_T, FULL_T>;
-  torch_mlu::bangcommon::multi_tensor_apply<maxBlockNum, depth, tupleTypeList>(
-              data_ptr_list, sizes, element_num, queue, k_type, k_dim,
-              ApplyAdam<tupleTypeList, maxBlockNum, depth>(),
-              beta1, beta1_minus, beta2, beta2_minus, epsilon_correction,
-              learning_rate_correction, mode, decay, decay_correction);
+  if (using_high_precision == false) {
+    double beta1_correction = 1.0f;
+    double beta2_correction_sqrt = 1.0f;
+    if (bias_correction == 1) {
+      beta1_correction = 1 - std::pow(beta1, step);
+      beta2_correction_sqrt = std::sqrt(1 - std::pow(beta2, step));
+    }
+    // epsion_correction = epsilon * (sqrt(1 - beta2 ^ t))
+    double epsilon_correction = epsilon * beta2_correction_sqrt;
+    // learning_rate_correction = -1.0*lr*sqrtf(bias_correction2)  /
+    // bias_correction1
+    double learning_rate_correction =
+        -1.0 * learning_rate * beta2_correction_sqrt / beta1_correction;
+    // weight_decay_correction = bias_correction1 / sqrtf(bias_correction2)) *
+    // decay
+    double weight_decay_correction =
+        weight_decay * beta1_correction / beta2_correction_sqrt;
+    double beta1_minus = 1 - beta1;
+    double beta2_minus = 1 - beta2;
+    const int element_num = get_char_element_num(nram_size, 8) / sizeof(float);
+    torch_mlu::bangcommon::multi_tensor_apply<maxBlockNum, depth, tupleTypeList>(
+                data_ptr_list, sizes, element_num, queue, k_type, k_dim,
+                ApplyAdam<tupleTypeList, maxBlockNum, depth>(),
+                static_cast<float>(beta1), static_cast<float>(beta1_minus),
+                static_cast<float>(beta2), static_cast<float>(beta2_minus),
+                static_cast<float>(epsilon_correction), static_cast<float>(learning_rate_correction),
+                static_cast<float>(weight_decay), static_cast<float>(weight_decay_correction),
+                mode);
+  } else {
+    double sub_lr_decay_multi = 1 - learning_rate * weight_decay;
+    double beta1_minus = 1 - beta1;
+    double beta2_minus = 1 - beta2;
+    double bias_correction1 = 1 - std::pow(beta1, double(step));
+    double bias_correction2 = 1 - std::pow(beta2, double(step));
+    double step_size = -1 * (learning_rate / bias_correction1);
+    double bias_correction2_sqrt = std::pow(bias_correction2, double(0.5));
+    // Align with small ops, using float to get recip value.
+    float bias_correction2_sqrt_recip = 1.0 / static_cast<float>(bias_correction2_sqrt);
+    const int element_num = get_char_element_num(nram_size, 9) / sizeof(float);
+    torch_mlu::bangcommon::multi_tensor_apply<maxBlockNum, depth, tupleTypeList>(
+                data_ptr_list, sizes, element_num, queue, k_type, k_dim,
+                ApplyHighPrecisionAdam<tupleTypeList, maxBlockNum, depth>(),
+                static_cast<float>(beta1_minus), static_cast<float>(beta2),
+                static_cast<float>(beta2_minus), static_cast<float>(weight_decay),
+                static_cast<float>(sub_lr_decay_multi), bias_correction2_sqrt_recip,
+                static_cast<float>(epsilon), static_cast<float>(step_size),
+                mode);
+  }
 }
 
 // add explicit instantiation for float, half, bfloat16_t
@@ -305,19 +368,19 @@ void apex_fused_adam_internal(const std::vector<std::array<void*, depth>>& data_
 template void apex_fused_adam_internal<cnrt_type, depth>(       \
     const std::vector<std::array<void*, depth>>& data_ptr_list, \
     const std::vector<int64_t>& sizes,                          \
-    float beta1,                                                \
-    float beta1_minus,                                          \
-    float beta2,                                                \
-    float beta2_minus,                                          \
-    float epsilon_correction,                                   \
-    float learning_rate_correction,                             \
+    const double beta1,                                         \
+    const double beta2,                                         \
+    const int64_t step,                                         \
     internal::ADAM_MODE mode,                                   \
-    float decay,                                                \
-    float decay_correction,                                     \
+    const double epsilon,                                       \
+    const int64_t bias_correction,                              \
+    const double learning_rate,                                 \
+    const double weight_decay,                                  \
     cnrtQueue_t queue,                                          \
     cnrtFunctionType_t k_type,                                  \
     cnrtDim3_t k_dim,                                           \
-    const int nram_size);
+    const int nram_size,                                        \
+    const bool using_high_precision);
 
 APEX_FUSED_ADAM_INTERNAL_DEFINE(cnrtDataType_V2_t::cnrtFloat, 4)
 APEX_FUSED_ADAM_INTERNAL_DEFINE(cnrtDataType_V2_t::cnrtHalf, 4)

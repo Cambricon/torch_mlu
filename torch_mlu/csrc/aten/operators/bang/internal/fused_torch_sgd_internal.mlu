@@ -12,6 +12,7 @@
 
 #include "bang_internal.h"
 #include "aten/operators/bang/internal/multi_tensor_apply.h"
+#include "aten/operators/bang/internal/three_stage_pipeline.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -232,7 +233,7 @@ __mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<
   // This is not need for store data back to gdram.
   // char_element_num size: |-----------------|-----------------|
   //                    float start    half/bfloat16_t start
-  int load_offset = sizeof(T) == 2 ? char_element_num / sizeof(FULL_T) : 0;
+  const int load_offset = char_element_num / sizeof(FULL_T);
   const float dampening_sub = 1.0f - dampening;
 
   // caculate decay and grad_scale

@@ -12,6 +12,7 @@
 
 #include "bang_internal.h"
 #include "aten/operators/bang/internal/multi_tensor_apply.h"
+#include "aten/operators/bang/internal/three_stage_pipeline.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -149,7 +150,7 @@ __mlu_func__ static void call_internal(const torch_mlu::bangcommon::BlockInfoWit
   // This is not need for store data back to gdram.
   // char_element_num size: |-----------------|-----------------|
   //                    float start    half/bfloat16_t start
-  int load_offset = sizeof(T) == 2 ? char_element_num / sizeof(FULL_T) : 0;
+  const int load_offset = char_element_num / sizeof(FULL_T);
   const int circle = data_handler.get_circle_num();
   int ping_size = 0;
   int pong_size = 0;

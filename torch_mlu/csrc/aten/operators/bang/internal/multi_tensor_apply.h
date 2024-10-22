@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <type_traits>
 #include <sys/time.h>
 #include "utils/cnlog.h"
-#include "aten/operators/bang/internal/memory_policy.h"
+#include "aten/operators/bang/internal/block_info_container.h"
 
 #define BANGC_PARAM_CHECK(api, condition, ...)                                \
   if (condition == false) {                                                   \

@@ -139,6 +139,8 @@ class MemoryPolicy {
     }
   }
 
+  // The offset will only take effect when the data type is set to half and
+  // bfloat16.
   __mlu_func__ inline void multi_data_load_same_size_with_offset(
       const int& repeat_num,
       void* nram_ptr[],
@@ -285,40 +287,5 @@ class MemoryPolicy {
   int total_repeat_num_ = 0;
   int circle_ = 0;
 };
-
-// function invoke
-
-// Now only just support same num inputs and outputs, and it's easy to support
-// different num inputs and outputs.
-template <
-    typename tupleTypeList,
-    typename FUNC,
-    typename Array_t,
-    typename... ARGS,
-    std::size_t... I>
-__mlu_func__ constexpr void invoke_impl(
-    FUNC&& func,
-    Array_t&& nram_array,
-    std::index_sequence<I...>,
-    ARGS&&... args) {
-  std::forward<FUNC>(func)(
-      (reinterpret_cast<std::tuple_element_t<I, tupleTypeList>*>(
-          nram_array[I]))...,
-      std::forward<ARGS>(args)...);
-}
-
-template <
-    int depth,
-    typename tupleTypeList,
-    typename FUNC,
-    typename Array_t,
-    typename... ARGS>
-__mlu_func__ constexpr void invoke(
-    FUNC&& func,
-    Array_t&& nram_array,
-    ARGS&&... args) {
-  invoke_impl<tupleTypeList>(
-      func, nram_array, std::make_index_sequence<depth>(), args...);
-}
 
 } // namespace torch_mlu::bangcommon
