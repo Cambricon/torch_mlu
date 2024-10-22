@@ -93,19 +93,19 @@ template <cnrtDataType_V2_t value, int depth>
 void apex_fused_adam_internal(
     const std::vector<std::array<void*, depth>>& data_ptr_list,
     const std::vector<int64_t>& sizes,
-    float beta1,
-    float beta1_minus,
-    float beta2,
-    float beta2_minus,
-    float epsilon_correction,
-    float learning_rate_correction,
+    const double beta1,
+    const double beta2,
+    const int64_t step,
     internal::ADAM_MODE mode,
-    float decay,
-    float decay_correction,
+    const double epsilon,
+    const int64_t bias_correction,
+    const double learning_rate,
+    const double weight_decay,
     cnrtQueue_t queue,
     cnrtFunctionType_t k_type,
     cnrtDim3_t k_dim,
-    const int nram_size);
+    const int nram_size,
+    const bool using_high_precision);
 
 template <cnrtDataType_V2_t value, int depth>
 void bang_torch_fused_adamw_internal(

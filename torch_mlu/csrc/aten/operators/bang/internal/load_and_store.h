@@ -116,7 +116,8 @@ struct LoadMultiDatas {
         mluMemcpyDirection_t::GDRAM2NRAM);
   }
 
-  // apply with offset.
+  // The offset will only take effect when the data type
+  // is set to half and bfloat16.
   template <typename array_t, typename container_t>
   __mlu_func__ static inline void apply(
       const container_t& data_ptr,
@@ -124,8 +125,12 @@ struct LoadMultiDatas {
       const int& copy_size,
       const int& offset) {
     using T = std::tuple_element_t<index, tupleTypeList>;
+    T* nram_addr = reinterpret_cast<T*>(array[index]);
+    if constexpr (std::is_same_v<T, half> || std::is_same_v<T, bfloat16_t>) {
+      nram_addr += offset;
+    }
     __memcpy_async(
-        reinterpret_cast<T*>(array[index]) + offset,
+        nram_addr,
         data_ptr[index],
         copy_size * sizeof(T),
         mluMemcpyDirection_t::GDRAM2NRAM);

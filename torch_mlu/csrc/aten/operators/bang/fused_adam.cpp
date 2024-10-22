@@ -28,7 +28,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <iostream>
 #include "aten/operators/bang/common_utils.h"
 
 namespace torch_mlu {
@@ -48,26 +47,26 @@ bool bang_fused_adam(
     int64_t mode,
     int64_t bias_correction,
     double weight_decay) {
-  double beta1_correction = 1.0f;
-  double beta2_correction_sqrt = 1.0f;
-  if (bias_correction == 1) {
-    beta1_correction = 1 - std::pow(beta1, step);
-    beta2_correction_sqrt = std::sqrt(1 - std::pow(beta2, step));
-  }
-
-  // epsion_correction = epsilon * (sqrt(1 - beta2 ^ t))
-  double epsilon_correction = epsilon * beta2_correction_sqrt;
-  // learning_rate_correction = -1.0*lr*sqrtf(bias_correction2)  /
-  // bias_correction1
-  double learning_rate_correction =
-      -1.0 * learning_rate * beta2_correction_sqrt / beta1_correction;
-  // weight_decay_correction = bias_correction1 / sqrtf(bias_correction2)) *
-  // decay
-  double weight_decay_correction =
-      weight_decay * beta1_correction / beta2_correction_sqrt;
-  double beta1_minus = 1 - beta1;
-  double beta2_minus = 1 - beta2;
-
+  // Get precision level of apex adam.
+  static std::once_flag initialized;
+  static bool using_high_precision = false;
+  // Environment TORCH_MLU_APEX_ADAM_HIGH_PRECISION is used to control compute
+  // type of mlu-apex fused adam. When set TORCH_MLU_APEX_ADAM_HIGH_PRECISION to
+  // ON, on or 1 value, mlu-apex fused adam compute type will be same with
+  // torch.optim.AdamW, torch.optim.Adam with parameter foreach == False and
+  // fused == False.
+  std::call_once(initialized, []() -> void {
+    const char* str = std::getenv("TORCH_MLU_APEX_ADAM_HIGH_PRECISION");
+    if (str != nullptr) {
+      std::string value(str);
+      if (value == "ON" || value == "on" || value == "1") {
+        using_high_precision = true;
+      }
+    }
+  });
+  TORCH_CHECK(
+      !(bias_correction != 1 && using_high_precision == true),
+      "high precision is not support when bias_correction is False.");
   // Add tensor size and device check
   const int tensor_num = grads.size();
   TORCH_CHECK(tensor_num > 0, "tensor num need be greater than zero.");
@@ -139,18 +138,18 @@ bool bang_fused_adam(
             contiguous_ptr_list,
             tensor_sizes_list,
             beta1,
-            beta1_minus,
             beta2,
-            beta2_minus,
-            epsilon_correction,
-            learning_rate_correction,
+            step,
             static_cast<internal::ADAM_MODE>(mode),
+            epsilon,
+            bias_correction,
+            learning_rate,
             weight_decay,
-            weight_decay_correction,
             stream,
             k_type,
             k_dim,
-            nram_size);
+            nram_size,
+            using_high_precision);
         int zero_count = 0;
         for (int i = 0; i < tensor_num; ++i) {
           if (grads[i].numel() == 0) {
