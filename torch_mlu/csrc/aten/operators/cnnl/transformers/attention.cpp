@@ -493,6 +493,18 @@ at::Tensor cnnl_scaled_dot_product_attention(
   }
 }
 
+at::Tensor cnnl_scaled_dot_product_attention_autograd(
+    const at::Tensor& query,
+    const at::Tensor& key,
+    const at::Tensor& value,
+    const std::optional<at::Tensor>& attn_mask_,
+    double dropout_p,
+    bool is_causal,
+    std::optional<double> scale) {
+  return cnnl_scaled_dot_product_attention(
+      query, key, value, attn_mask_, dropout_p, is_causal, scale);
+}
+
 #define CHECK_SHAPE(x, ...)                        \
   TORCH_CHECK(                                     \
       x.sizes() == at::IntArrayRef({__VA_ARGS__}), \

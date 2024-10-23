@@ -2896,6 +2896,29 @@ class TestSDPA(TestCase):
                 rtol=grad_v_ref_rtol,
             )
 
+    # This test is used to ensure backward of sdpa works under LoggingTensorMode ctx
+    @testinfo()
+    def test_LoggingTensorModeSDPA(self):
+        from torch.testing._internal.logging_tensor import LoggingTensorMode
+
+        q = torch.rand(
+            1, 2, 3, 4, dtype=torch.float16, device="mlu", requires_grad=True
+        )
+        k = torch.rand(
+            1, 2, 3, 4, dtype=torch.float16, device="mlu", requires_grad=True
+        )
+        v = torch.rand(
+            1, 2, 3, 4, dtype=torch.float16, device="mlu", requires_grad=True
+        )
+        with LoggingTensorMode():
+            o = torch.nn.functional.scaled_dot_product_attention(q, k, v)
+            try:
+                o.backward(o.data)
+            except:
+                self.assertTrue(
+                    False, msg="SDPA failed run under LoggingTensorMode ctx."
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
