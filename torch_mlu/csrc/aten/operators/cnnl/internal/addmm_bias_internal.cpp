@@ -207,6 +207,7 @@ void cnnl_addmm_bias_out_internal(
             workspace_ptr.get(),
             workspace_size));
       });
+  TORCH_CNNL_CHECK(cnnlDestroyActivationDescriptor(desc_activation));
 }
 
 } // namespace ops
