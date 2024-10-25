@@ -128,26 +128,6 @@ cnnl_rnn_training_internal(
     bool train,
     at::IntArrayRef batch_sizes);
 
-std::vector<Tensor> cnnl_rnn_backward_weight_internal(
-    const Tensor& input_r,
-    TensorList weight_arr,
-    int64_t weight_stride0,
-    const Tensor& weight_buf,
-    const Tensor& hx,
-    const Tensor& cx,
-    const Tensor& output_r,
-    int64_t fn_mode,
-    int64_t fn_hidden_size,
-    int64_t proj_size,
-    int64_t fn_num_layers,
-    double fn_dropout,
-    bool fn_train,
-    bool fn_bidirectional,
-    const int* batch_sizes_int_ptr,
-    const at::Tensor& dev_batch_sizes,
-    const Tensor& fn_dropout_state,
-    const Tensor& fn_reserve);
-
 std::tuple<Tensor, Tensor, Tensor> cnnl_rnn_backward_input_internal(
     const Tensor& input_r,
     const Tensor& weight_buf,
@@ -1601,5 +1581,31 @@ void cnnl_rrelu_with_noise_internal(
     std::optional<at::Generator> gen,
     const float lower,
     const float upper);
+
+std::tuple<at::Tensor, at::Tensor, at::Tensor, std::vector<at::Tensor>>
+cnnl_rnn_backward_internal(
+    const at::Tensor& input_r,
+    const at::TensorList& weight,
+    const at::Tensor& weight_buf,
+    int64_t weight_stride0,
+    const at::Tensor& hx,
+    const at::Tensor& cx,
+    const at::Tensor& output_r,
+    const at::Tensor& grad_output_r,
+    const at::Tensor& grad_hy,
+    const at::Tensor& grad_cy,
+    int64_t fn_mode,
+    int64_t fn_hidden_size,
+    int64_t proj_size,
+    int64_t fn_num_layers,
+    double fn_dropout,
+    bool fn_train,
+    bool fn_bidirectional,
+    const int* batch_sizes_int_ptr,
+    const at::Tensor& dev_batch_sizes,
+    const at::Tensor& fn_dropout_state,
+    const at::Tensor& fn_reserve,
+    std::array<bool, 3> output_mask);
+
 } // namespace ops
 } // namespace torch_mlu

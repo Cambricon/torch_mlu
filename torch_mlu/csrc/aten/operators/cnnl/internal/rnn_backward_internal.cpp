@@ -36,14 +36,18 @@ using at::TensorList;
 namespace torch_mlu {
 namespace ops {
 
-std::vector<Tensor> cnnl_rnn_backward_weight_internal(
+std::tuple<at::Tensor, at::Tensor, at::Tensor, std::vector<at::Tensor>>
+cnnl_rnn_backward_internal(
     const Tensor& input_r,
-    TensorList weight_arr,
-    int64_t weight_stride0,
+    const TensorList& weight,
     const Tensor& weight_buf,
+    int64_t weight_stride0,
     const Tensor& hx,
     const Tensor& cx,
     const Tensor& output_r,
+    const Tensor& grad_output_r,
+    const Tensor& grad_hy,
+    const Tensor& grad_cy,
     int64_t fn_mode,
     int64_t fn_hidden_size,
     int64_t proj_size,
@@ -54,7 +58,8 @@ std::vector<Tensor> cnnl_rnn_backward_weight_internal(
     const int* batch_sizes_int_ptr,
     const at::Tensor& dev_batch_sizes,
     const Tensor& fn_dropout_state,
-    const Tensor& fn_reserve) {
+    const Tensor& fn_reserve,
+    std::array<bool, 3> output_mask) {
   TORCH_CHECK(hx.is_contiguous(), "cnnl rnn backward: hx is not contiguous");
   TORCH_CHECK(
       !cx.defined() || cx.is_contiguous(),
@@ -64,12 +69,56 @@ std::vector<Tensor> cnnl_rnn_backward_weight_internal(
       "cnnl rnn backward currently only support LSTM RNN and cx must be defined.");
 
   auto input = input_r;
-  auto input_size = dev_batch_sizes.defined() ? input.size(1) : input.size(2);
   auto handle = getCurrentHandle();
+  auto input_type = getCnnlDataType(input.dtype());
+  auto grad_output = grad_output_r;
   auto output = output_r;
+  auto input_size = dev_batch_sizes.defined() ? input.size(1) : input.size(2);
+
+  auto dx = at::empty(input.sizes(), input.options());
+  auto dhy = cnnl_contiguous(grad_hy).view(hx.sizes());
+  auto dcy =
+      grad_cy.defined() ? cnnl_contiguous(grad_cy).view(cx.sizes()) : Tensor();
+  auto dhx = at::empty(hx.sizes(), hx.options());
+  auto dcx = cx.defined() ? at::empty(cx.sizes(), cx.options()) : Tensor();
+  auto dw = at::zeros(weight_buf.sizes(), weight_buf.options());
+
+  TORCH_CHECK(
+      fn_train, "cnnl RNN backward can only be called in training mode");
+
+  TORCH_CHECK(
+      dhy.device().is_privateuseone() &&
+          grad_output.device().is_privateuseone() &&
+          (!dcy.defined() || dcy.device().is_privateuseone()),
+      "Gradients aren't MLU tensors");
+
+  // Get seq_arr and max_batch_size.
+  const int seq_arr_size = dev_batch_sizes.defined()
+      ? c10::checked_convert<int32_t, size_t>(
+            dev_batch_sizes.numel(), "int32_t")
+      : 0;
+
+  // input
+  CnnlSeqDataDescriptor input_desc;
+  input_desc.set(input, seq_arr_size, batch_sizes_int_ptr);
+  auto input_impl = getMluTensorImpl(input);
+  auto input_ptr = mlu_data_ptr(input_impl);
+
+  // output
+  auto output_impl = getMluTensorImpl(output);
+  auto output_ptr = mlu_data_ptr(output_impl);
+  CnnlSeqDataDescriptor output_desc;
+  output_desc.set(output, seq_arr_size, batch_sizes_int_ptr);
+
+  // grad_output
+  auto dy_impl = getMluTensorImpl(grad_output);
+  auto dy_ptr = mlu_data_ptr(dy_impl);
+
+  // grad_dw
+  auto* dw_impl = getMluTensorImpl(dw);
+  auto dw_ptr = mlu_data_ptr(dw_impl);
 
   // RNNDesc
-  auto input_type = getCnnlDataType(input.dtype());
   if (proj_size != 0) {
     --weight_stride0;
   }
@@ -85,36 +134,30 @@ std::vector<Tensor> cnnl_rnn_backward_weight_internal(
       (cnnlRNNMode_t)fn_mode,
       input_type);
 
-  // Get seq_arr and max_batch_size.
-  const int seq_arr_size = dev_batch_sizes.defined()
-      ? c10::checked_convert<int32_t, size_t>(
-            dev_batch_sizes.numel(), "int32_t")
-      : 0;
+  // dx
+  auto dx_impl = getMluTensorImpl(dx);
+  auto dx_ptr = mlu_data_ptr(dx_impl);
 
-  // input
-  CnnlSeqDataDescriptor input_desc;
-  input_desc.set(input, seq_arr_size, batch_sizes_int_ptr);
-  auto input_impl = getMluTensorImpl(input);
-  auto input_ptr = mlu_data_ptr(input_impl);
-
-  // hx
+  // hy, cy
   auto hx_impl = getMluTensorImpl(hx);
   auto hx_ptr = mlu_data_ptr(hx_impl);
+  auto cx_impl = getMluTensorImpl(cx);
+  auto cx_ptr = mlu_data_ptr(cx_impl);
   auto hx_desc = getTensorDesc(hx_impl);
+  auto cx_desc = getTensorDesc(cx_impl);
 
-  // output
-  auto output_impl = getMluTensorImpl(output);
-  auto output_ptr = mlu_data_ptr(output_impl);
-  CnnlSeqDataDescriptor output_desc;
-  output_desc.set(output, seq_arr_size, batch_sizes_int_ptr);
+  // dhy, dcy
+  auto dhy_impl = getMluTensorImpl(dhy);
+  auto dhy_ptr = mlu_data_ptr(dhy_impl);
+  auto dcy_impl = getMluTensorImpl(dcy);
+  auto dcy_ptr = mlu_data_ptr(dcy_impl);
 
-  // dw
-  auto dw = at::zeros(weight_buf.sizes(), weight_buf.options());
-  auto* dw_impl = getMluTensorImpl(dw);
-  auto dw_ptr = mlu_data_ptr(dw_impl);
-  auto dw_nbytes = dw.dtype() == at::kDouble ? dw.nbytes() / 2 : dw.nbytes();
+  // dhx, dcx
+  auto dhx_impl = getMluTensorImpl(dhx);
+  auto dhx_ptr = mlu_data_ptr(dhx_impl);
+  auto dcx_impl = getMluTensorImpl(dcx);
+  auto dcx_ptr = mlu_data_ptr(dcx_impl);
 
-  // RNNWorkspaceSize
   size_t reserve_size = 0;
   size_t workspace_size = 0;
   cnnlGetRNNTempSizes(
@@ -123,6 +166,7 @@ std::vector<Tensor> cnnl_rnn_backward_weight_internal(
       input_desc.desc(),
       &workspace_size,
       &reserve_size);
+  // RNNWorkspaceSize
   auto workspace_ptr =
       torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
 
@@ -130,58 +174,75 @@ std::vector<Tensor> cnnl_rnn_backward_weight_internal(
   auto reserve_impl = getMluTensorImpl(fn_reserve);
   auto reserve_ptr = mlu_data_ptr(reserve_impl);
 
-  int* dev_seq_lengths_ptr =
-      dev_batch_sizes.defined() ? dev_batch_sizes.data_ptr<int>() : nullptr;
+  // weight
+  auto* weightspace_impl = getMluTensorImpl(weight_buf);
+  auto weightspace_ptr = mlu_data_ptr(weightspace_impl);
+  // onchip dtype is float when the dtype of tensor is double.
+  auto weight_nbytes = weight_buf.dtype() == at::kDouble
+      ? weight_buf.nbytes() / 2
+      : weight_buf.nbytes();
 
-  // RNNBackwardWeights
-  cnnlWgradMode_t add_grad = CNNL_WGRAD_MODE_SET;
-  TORCH_CNNL_CHECK(cnnlRNNBackwardWeights(
+  int* dev_seq_lengths_ptr = dev_batch_sizes.defined()
+      ? static_cast<int*>(dev_batch_sizes.data_ptr())
+      : nullptr;
+
+  // RNNBackwardData
+  TORCH_CNNL_CHECK(cnnlRNNBackward(
       handle,
       rnn_desc.desc(),
-      add_grad,
       dev_seq_lengths_ptr,
-      input_desc.desc(),
-      input_ptr,
-      hx_desc.get(),
-      hx_ptr,
       output_desc.desc(),
       output_ptr,
+      dy_ptr,
+      input_desc.desc(),
+      input_ptr,
+      dx_ptr,
+      hx_desc.get(),
+      hx_ptr,
+      dhy_ptr,
+      dhx_ptr,
+      cx_desc.get(),
+      cx_ptr,
+      dcy_ptr,
+      dcx_ptr,
+      weightspace_ptr,
       dw_ptr,
-      dw_nbytes,
+      weight_nbytes,
       workspace_ptr.get(),
       workspace_size,
+      reserve_ptr,
       reserve_ptr,
       fn_reserve.nbytes()));
 
   // split weight gradient
   int64_t index = 0;
+  std::vector<at::Tensor> dweight_vec;
   if (has_biases && proj_size > 0) {
     // Different with cudnn which use cudnnGetRNNLinLayerMatrixParams to calc
     // the position of w_hr, cnnl use the fixed order to try to align with
     // cudnn, w_hr is infront of bias.
-    std::vector<at::Tensor> dweight_vec(fn_bidirectional ? 10 : 5);
+    dweight_vec.resize(weight.size());
     for (auto& i : {0, 1, 4, 2, 3}) {
-      dweight_vec[i] = dw.slice(0, index, index + weight_arr[i].numel())
-                           .view(weight_arr[i].sizes());
-      index += weight_arr[i].numel();
+      dweight_vec[i] =
+          dw.slice(0, index, index + weight[i].numel()).view(weight[i].sizes());
+      index += weight[i].numel();
     }
     if (fn_bidirectional) {
       for (auto& i : {5, 6, 9, 7, 8}) {
-        dweight_vec[i] = dw.slice(0, index, index + weight_arr[i].numel())
-                             .view(weight_arr[i].sizes());
-        index += weight_arr[i].numel();
+        dweight_vec[i] = dw.slice(0, index, index + weight[i].numel())
+                             .view(weight[i].sizes());
+        index += weight[i].numel();
       }
     }
-    return dweight_vec;
   } else {
-    std::vector<at::Tensor> dweight_vec;
-    for (auto& w : weight_arr) {
+    for (auto& w : weight) {
       auto w_buf = dw.slice(0, index, index + w.numel());
       dweight_vec.emplace_back(w_buf.view(w.sizes()));
       index += w.numel();
     }
-    return dweight_vec;
   }
+
+  return std::make_tuple(dx, dhx, dcx, dweight_vec);
 }
 
 } // namespace ops
