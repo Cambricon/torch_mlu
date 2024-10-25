@@ -574,39 +574,18 @@ cnnl__cudnn_rnn_backward(
   at::Tensor output_contiguous = cnnl_contiguous(output_trans);
 
   at::Tensor dx, dhx, dcx;
-  std::tie(dx, dhx, dcx) = cnnl_rnn_backward_input_internal(
-      input_contiguous,
-      weight_buf,
-      weight_stride0,
-      hx,
-      cx,
-      output_contiguous,
-      grad_contiguous,
-      grad_hy_r,
-      grad_cy_r,
-      mode,
-      hidden_size,
-      proj_size,
-      num_layers,
-      dropout,
-      train,
-      bidirectional,
-      batch_sizes_int_ptr,
-      dev_batch_sizes,
-      dropout_state,
-      reserve,
-      {output_mask[0], output_mask[1], output_mask[2]});
-
   std::vector<Tensor> dw;
-  if (output_mask[3]) {
-    dw = cnnl_rnn_backward_weight_internal(
+  if (output_mask[3] == false) {
+    std::tie(dx, dhx, dcx) = cnnl_rnn_backward_input_internal(
         input_contiguous,
-        weight,
-        weight_stride0,
         weight_buf,
+        weight_stride0,
         hx,
         cx,
         output_contiguous,
+        grad_contiguous,
+        grad_hy_r,
+        grad_cy_r,
         mode,
         hidden_size,
         proj_size,
@@ -617,7 +596,32 @@ cnnl__cudnn_rnn_backward(
         batch_sizes_int_ptr,
         dev_batch_sizes,
         dropout_state,
-        reserve);
+        reserve,
+        {output_mask[0], output_mask[1], output_mask[2]});
+  } else {
+    std::tie(dx, dhx, dcx, dw) = cnnl_rnn_backward_internal(
+        input_contiguous,
+        weight,
+        weight_buf,
+        weight_stride0,
+        hx,
+        cx,
+        output_contiguous,
+        grad_contiguous,
+        grad_hy_r,
+        grad_cy_r,
+        mode,
+        hidden_size,
+        proj_size,
+        num_layers,
+        dropout,
+        train,
+        bidirectional,
+        batch_sizes_int_ptr,
+        dev_batch_sizes,
+        dropout_state,
+        reserve,
+        {output_mask[0], output_mask[1], output_mask[2]});
   }
 
   if (batch_first && !is_packed_input) {
