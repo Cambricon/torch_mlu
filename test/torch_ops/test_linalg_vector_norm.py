@@ -1,4 +1,5 @@
 import sys
+import math
 import os
 import unittest
 import logging
@@ -24,9 +25,9 @@ logging.basicConfig(level=logging.DEBUG)
 class TestOps(TestCase):
     # @unittest.skip("not test")
     @testinfo()
-    def test_l1_l2_vector_norm(self):
+    def test_vector_norm(self):
         shape_list = [(2899, 76), (2, 3, 4, 3, 2)]
-        ord_list = [1, 2]
+        ord_list = [1, 2, math.inf, -math.inf]
         dim_list = [-1, 0, 1, (0, 1)]
         keep_list = [True, False]
         loop_var = [shape_list, ord_list, dim_list, keep_list]
@@ -137,15 +138,6 @@ class TestOps(TestCase):
         self.assertTensorsEqual(
             y[:, :, 1, :].cpu(), y_expected.cpu(), 0.0, use_MSE=True
         )
-
-    # @unittest.skip("not test")
-    @testinfo()
-    def test_norm_exceptions(self):
-        x = torch.randn(4, 4, dtype=torch.float)
-        msg = "torch_mlu does not support inf-Norm as p=inf/-inf."
-        with self.assertRaises(RuntimeError) as cm:
-            _ = LA.vector_norm(x.to("mlu"), ord=float("inf"))
-        self.assertEqual(cm.exception.args[0], msg)
 
     @testinfo()
     @unittest.skipUnless(
