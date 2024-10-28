@@ -158,15 +158,6 @@ class TestOps(TestCase):
             y[:, :, 1, :].cpu(), y_expected.cpu(), 0.0, use_MSE=True
         )
 
-    # @unittest.skip("not test")
-    @testinfo()
-    def test_norm_exceptions(self):
-        x = torch.randn(4, 4, dtype=torch.float)
-        msg = "torch_mlu does not support inf-Norm as p=inf/-inf."
-        with self.assertRaises(RuntimeError) as cm:
-            _ = x.to("mlu").norm(float("inf"))
-        self.assertEqual(cm.exception.args[0], msg)
-
     @testinfo()
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"

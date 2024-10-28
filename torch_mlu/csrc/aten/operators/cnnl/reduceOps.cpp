@@ -179,9 +179,6 @@ void norm_mlu_kernel(at::TensorIterator& iter, const at::Scalar& val) {
     iter.output().fill_((p_value < 0) ? INFINITY : 0);
     return;
   }
-  TORCH_CHECK(
-      p_value != INFINITY && p_value != -INFINITY,
-      "torch_mlu does not support inf-Norm as p=inf/-inf.");
   auto reduce_mode = p_value == 1.0
       ? CNNL_REDUCE_NORM1
       : (p_value == 2.0 ? CNNL_REDUCE_NORM2 : CNNL_REDUCE_NORMP);
