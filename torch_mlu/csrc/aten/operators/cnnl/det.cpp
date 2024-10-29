@@ -107,7 +107,8 @@ at::Tensor& cnnl_linalg_det_out(const at::Tensor& self, at::Tensor& out) {
       out.fill_(1); // self.sizes() like (5,5,0,0)
   } else {
     cnnlDetMode_t mode = CNNL_DET_MODE_DET;
-    cnnl_det_internal(out, input_t, mode);
+    std::optional<at::Tensor> sign = std::nullopt;
+    cnnl_det_internal(out, input_t, sign, mode);
   }
   return out;
 }

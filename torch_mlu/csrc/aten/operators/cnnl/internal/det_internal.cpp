@@ -6,16 +6,29 @@ namespace ops {
 at::Tensor& cnnl_det_internal(
     at::Tensor& output,
     const at::Tensor& input,
+    std::optional<at::Tensor>& sign_opt, /* for slogdet */
     cnnlDetMode_t mode) {
+
   CnnlTensorDescriptor descInput;
   CnnlTensorDescriptor descOutput;
+  CnnlTensorDescriptor descSign;
   descInput.set(input);
   descOutput.set(output);
+
   // malloc mlu memory
   auto input_impl = getMluTensorImpl(input);
   auto output_impl = getMluTensorImpl(output);
   auto input_ptr = input_impl->mlu_data_ptr();
   auto output_ptr = output_impl->mlu_data_ptr();
+  void* sign_ptr = nullptr;
+
+  if (sign_opt.has_value()) {
+    const Tensor& sign = sign_opt.value();
+    auto sign_impl = getMluTensorImpl(sign);
+    descSign.set(sign);
+    sign_ptr = sign_impl->mlu_data_ptr();
+  }
+
   // set descriptor config
   auto handle = getCurrentHandle();
   size_t ws_size = 0;
@@ -34,11 +47,12 @@ at::Tensor& cnnl_det_internal(
       /* workspace_size */ ws_size,
       /* output_desc    */ descOutput.desc(),
       /* output         */ output_ptr,
-      /* sign_desc      */ nullptr,
-      /* sign           */ nullptr));
+      /* sign_desc      */ descSign.desc(),
+      /* sign           */ sign_ptr));
 
   return output;
 }
 
 } // namespace ops
 } // namespace torch_mlu
+
