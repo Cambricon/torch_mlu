@@ -6,6 +6,7 @@ namespace ops {
 at::Tensor& cnnl_det_internal(
     at::Tensor& output,
     const at::Tensor& input,
+    std::optional<at::Tensor>& sign_opt, /* for slogdet */
     cnnlDetMode_t mode) {
   auto input_impl = getMluTensorImpl(input);
   auto descInput = getTensorDesc(input_impl);
@@ -15,6 +16,15 @@ at::Tensor& cnnl_det_internal(
   auto descOutput = getTensorDesc(output_impl);
   auto output_ptr = mlu_data_ptr(output_impl);
 
+  void* sign_ptr = nullptr;
+  tensorDescPtr_t descSign = nullptr;
+
+  if (sign_opt.has_value()) {
+    const Tensor& sign = sign_opt.value();
+    auto sign_impl = getMluTensorImpl(sign);
+    descSign = getTensorDesc(sign_impl);
+    sign_ptr = mlu_data_ptr(sign_impl);
+  }
   // set descriptor config
   auto handle = getCurrentHandle();
   size_t ws_size = 0;
@@ -33,8 +43,8 @@ at::Tensor& cnnl_det_internal(
       /* workspace_size */ ws_size,
       /* output_desc    */ descOutput.get(),
       /* output         */ output_ptr,
-      /* sign_desc      */ nullptr,
-      /* sign           */ nullptr));
+      /* sign_desc      */ descSign.get(),
+      /* sign           */ sign_ptr));
   return output;
 }
 

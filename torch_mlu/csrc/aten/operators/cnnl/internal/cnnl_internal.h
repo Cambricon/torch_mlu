@@ -1172,11 +1172,6 @@ at::Tensor& cnnl_bitwise_op_out_internal(
     const at::Tensor& other,
     const cnnlBitComputeOp_t& op_type);
 
-std::tuple<Tensor&, Tensor&> cnnl_slogdet_internal(
-    const at::Tensor& input,
-    at::Tensor& sign,
-    at::Tensor& output);
-
 at::Tensor& cnnl_sign_internal(at::Tensor& output, const at::Tensor& input);
 
 void cnnl_index_copy_internal(
@@ -1382,7 +1377,9 @@ at::Tensor cnnl_linspace_internal(
 at::Tensor& cnnl_det_internal(
     at::Tensor& output,
     const at::Tensor& input,
+    std::optional<at::Tensor>& sign_opt, /* for slogdet */
     cnnlDetMode_t mode);
+
 at::Tensor& cnnl_roi_align_internal(
     at::Tensor& output, // output feature map.
     const at::Tensor& input, // Input feature map.

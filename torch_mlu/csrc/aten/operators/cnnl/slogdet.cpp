@@ -63,7 +63,9 @@ std::tuple<at::Tensor&, at::Tensor&> cnnl_linalg_slogdet_out(
       logabsdet.fill_(0);
     }
   } else {
-    cnnl_slogdet_internal(input_A, sign, logabsdet);
+    cnnlDetMode_t mode = CNNL_DET_MODE_SLOGDET;
+    std::optional<at::Tensor> sign_opt = sign;
+    cnnl_det_internal(logabsdet, input_A, sign_opt, mode);
   }
 
   return std::forward_as_tuple(sign, logabsdet);
