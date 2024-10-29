@@ -34,8 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 namespace ops {
 
-#define CNNLEXTRA_SEQ_LEN_LIMIT 608
-
 // input is also output, we cannot use the name "mask_softmax_dropout_fprop_",
 // because currently codegen does support.
 std::tuple<at::Tensor, at::Tensor> cnnl_mask_softmax_dropout_fprop(
@@ -78,10 +76,6 @@ std::tuple<at::Tensor, at::Tensor> cnnl_mask_softmax_dropout_fprop(
       "-D and ",
       seq_len.dim(),
       "-D!");
-  TORCH_MLU_CHECK(
-      seq_len.max().item().toLong() < CNNLEXTRA_SEQ_LEN_LIMIT,
-      "the max value of "
-      "seqlen must less than 608 currently because of CNNLExtra limitation.");
 
   auto input_ = cnnl_contiguous(input, c10::MemoryFormat::Contiguous);
   auto mask_ = cnnl_contiguous(mask, c10::MemoryFormat::Contiguous);
