@@ -224,8 +224,8 @@ void cnnl_softplus_internal(
     const at::Tensor& input,
     at::Scalar beta,
     at::Scalar threshold) {
-  const int beta_t = beta.to<int>();
-  const int threshold_t = threshold.to<int>();
+  const float beta_t = beta.to<float>();
+  const float threshold_t = threshold.to<float>();
   // prepare cnnl input
   auto input_impl = getMluTensorImpl(input);
   auto input_ptr = input_impl->mlu_data_ptr();
@@ -237,14 +237,14 @@ void cnnl_softplus_internal(
   auto output_desc = getTensorDescAndCoalesceDims(output_impl);
 
   auto handle = getCurrentHandle();
-  TORCH_CNNL_CHECK(cnnlSoftplusForward(
-      /* handle  */ handle,
-      /* x_desc  */ input_desc.get(),
-      /* x       */ input_ptr,
-      /* y_desc  */ output_desc.get(),
-      /* y       */ output_ptr,
-      /* beta    */ beta_t,
-      /* threshold */ threshold_t));
+  TORCH_CNNL_CHECK(cnnlSoftplusForward_v2(
+      /* handle    */ handle,
+      /* beta      */ &beta_t,
+      /* threshold */ &threshold_t,
+      /* x_desc    */ input_desc.get(),
+      /* x         */ input_ptr,
+      /* y_desc    */ output_desc.get(),
+      /* y         */ output_ptr));
 }
 
 void cnnl_softplus_backward_internal(
@@ -253,8 +253,8 @@ void cnnl_softplus_backward_internal(
     at::Scalar beta,
     at::Scalar threshold,
     at::Tensor& result) {
-  const int beta_t = beta.to<int>();
-  const int threshold_t = threshold.to<int>();
+  const float beta_t = beta.to<float>();
+  const float threshold_t = threshold.to<float>();
   // prepare cnnl self
   auto self_impl = getMluTensorImpl(self);
   auto self_ptr = self_impl->mlu_data_ptr();
@@ -270,16 +270,16 @@ void cnnl_softplus_backward_internal(
   auto self_desc = getTensorDesc(self_impl, cnnl_suggest_layout);
   auto grad_input_desc = getTensorDesc(grad_input_impl, cnnl_suggest_layout);
 
-  TORCH_CNNL_CHECK(cnnlSoftplusBackward(
+  TORCH_CNNL_CHECK(cnnlSoftplusBackward_v2(
       /* handle      */ handle,
+      /* beta        */ &beta_t,
+      /* threshold   */ &threshold_t,
       /* x_desc      */ grad_output_desc.get(),
       /* x           */ grad_output_ptr,
       /* diff_y_desc */ self_desc.get(),
       /* diff_y      */ self_ptr,
       /* diff_x_desc */ grad_input_desc.get(),
-      /* diff_x      */ grad_input_ptr,
-      /* beta        */ beta_t,
-      /* threshold   */ threshold_t));
+      /* diff_x      */ grad_input_ptr));
 }
 /***************************************hardtanh****************************************/
 void cnnl_hardtanh_backward_internal(
