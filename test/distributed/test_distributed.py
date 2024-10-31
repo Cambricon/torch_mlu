@@ -501,6 +501,33 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
                 )
                 dist.reduce(tensor, src, op)
 
+    def _test_reduce_complex_helper(self, group, rank, op):
+        torch.mlu.set_device(rank % torch.mlu.device_count())
+        real = torch.tensor([rank + 1.0], dtype=torch.float32)
+        imag = torch.tensor([rank + 1.0], dtype=torch.float32)
+        src = 0
+        complex_tensor = torch.complex(real, imag).mlu()
+        if rank == src:
+            n = len(group)
+            real = torch.tensor((n) * (n + 1) / 2, dtype=torch.float32)
+            imag = real
+            expected_tensor = torch.complex(real, imag).mlu()
+            dist.reduce(complex_tensor, src, op)
+            print(complex_tensor, expected_tensor)
+            self.assertTrue(torch.allclose(complex_tensor, expected_tensor, atol=3e-3))
+        else:
+            dist.reduce(complex_tensor, src, op)
+
+    # @unittest.skip("not test")
+    def test_reduce_sum_complex(self):
+        torch.manual_seed(1)
+        group, rank = self._init_global_test()
+        self._test_reduce_complex_helper(
+            group,
+            rank,
+            dist.ReduceOp.SUM,
+        )
+
     # @unittest.skip("not test")
     def test_reduce_sum(self):
         torch.manual_seed(1)
@@ -2481,6 +2508,44 @@ as input tensor",
     # @unittest.skip("not test")
     def test_import_torch_mlu_cncl(self):
         import torch.mlu.cncl
+
+    # @unittest.skip("not test")
+    def mlu_test_ddp_complex_params(self):
+        class FFTModel(nn.Module):
+            def __init__(self, hin, win, n_features):
+                super().__init__()
+                self.hin = hin
+                self.win = win
+                self.weight = nn.Parameter(
+                    torch.ones(
+                        (n_features, n_features, hin, win // 2 + 1), dtype=torch.cfloat
+                    )
+                )
+
+            def forward(self, x):
+                xc = torch.fft.rfft2(
+                    x, s=(self.hin, self.win), dim=(-2, -1), norm="ortho"
+                )
+                # call einsum with cpu
+                xcw = torch.einsum("nchw,cohw->nohw", xc.cpu(), self.weight.cpu())
+                xcw = xcw.mlu()
+                x = torch.fft.irfft2(xcw, dim=(-2, -1), norm="ortho")
+                return x
+
+        _, rank = self._init_global_test()
+        N, C, H, W = 1, 16, 64, 64
+        ddp_model = nn.parallel.DistributedDataParallel(
+            FFTModel(hin=H, win=W, n_features=C).mlu(rank),
+            device_ids=[rank],
+        )
+        optimizer = torch.optim.Adam(ddp_model.parameters(), lr=0.001)
+        inp = torch.ones((N, C, H, W), dtype=torch.float32)
+        # train step
+        out = ddp_model(inp)
+        loss = torch.sum(out)
+        loss.backward()
+        optimizer.step()
+        torch.mlu.synchronize(device=rank)
 
 
 @contextmanager

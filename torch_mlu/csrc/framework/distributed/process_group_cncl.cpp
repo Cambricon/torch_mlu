@@ -209,6 +209,22 @@ cnclDataType_t getCnclDataType(at::ScalarType type) {
   }
 }
 
+bool complexViewAsRealAllowed(const c10d::ReduceOp reduceOp) {
+  switch (reduceOp) {
+    case c10d::ReduceOp::SUM:
+      return true;
+    case c10d::ReduceOp::AVG:
+      return true;
+    case c10d::ReduceOp::PREMUL_SUM:
+      return true;
+    case c10d::ReduceOp::UNUSED:
+      return true;
+    default:
+      return false;
+  }
+  return false;
+}
+
 cnclReduceOp_t getCnclReduceOp(
     const c10d::ReduceOp reduce_op,
     at::Tensor& input) {
@@ -2068,6 +2084,14 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::allreduce(
     const c10d::AllreduceOptions& opts) {
   TORCH_CHECK(tensors.size() == 1, MULTI_DEVICE_ERROR_MSG);
   auto tensor = tensors.back();
+  if (tensor.is_complex()) {
+    TORCH_CHECK(
+        complexViewAsRealAllowed(opts.reduceOp),
+        "all_reduce does not support",
+        opts.reduceOp,
+        "on complex tensors");
+    tensor = at::view_as_real(tensor);
+  }
   check_mlu_single_tensor(tensor);
   return allreduce_impl(tensor, opts);
 }
@@ -2104,6 +2128,9 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::broadcast(
     const c10d::BroadcastOptions& opts) {
   TORCH_CHECK(tensors.size() == 1, MULTI_DEVICE_ERROR_MSG);
   auto tensor = tensors.back();
+  if (tensor.is_complex()) {
+    tensor = at::view_as_real(tensor);
+  }
   check_mlu_single_tensor(tensor);
 
   return collective(
@@ -2136,6 +2163,14 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::reduce(
     const c10d::ReduceOptions& opts) {
   TORCH_CHECK(tensors.size() == 1, MULTI_DEVICE_ERROR_MSG);
   auto tensor = tensors.back();
+  if (tensor.is_complex()) {
+    TORCH_CHECK(
+        complexViewAsRealAllowed(opts.reduceOp),
+        "reduce does not support",
+        opts.reduceOp,
+        "on complex tensors");
+    tensor = at::view_as_real(tensor);
+  }
   check_mlu_single_tensor(tensor);
 
   return collective(
