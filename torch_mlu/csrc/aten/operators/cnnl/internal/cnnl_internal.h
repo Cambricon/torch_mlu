@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <ATen/AccumulateType.h>
 #include <ATen/ATen.h>
 #include <ATen/ExpandUtils.h>
