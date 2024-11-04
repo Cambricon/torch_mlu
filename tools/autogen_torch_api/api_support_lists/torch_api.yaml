@@ -8625,7 +8625,6 @@
 
   - api: torch.linalg.vector_norm
     supported: true
-    limitations: 参数ord不支持inf和-inf。
 
 - torch.monitor:
 
