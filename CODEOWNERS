@@ -1,0 +1,51 @@
+# defalut core reviewers
+* @kongweiguang @zhujing
+
+# stream/event
+/torch_mlu/csrc/framework/core/MLUEvent* @sifengyang
+/torch_mlu/csrc/python/Event* @sifengyang
+/torch_mlu/csrc/framework/core/MLUStream* @sifengyang
+/torch_mlu/csrc/python/Stream* @sifengyang
+/torch_mlu/mlu/streams.py @sifengyang
+
+# device/guard
+/torch_mlu/csrc/framework/core/device* @xushuo
+/torch_mlu/mlu/__init__.py @xushuo
+/torch_mlu/csrc/framework/core/*guard* @xushuo
+/torch_mlu/csrc/framework/core/caching_event* @xushuo
+/torch_mlu/csrc/python/Module* @xushuo
+
+# profiler
+/torch_mlu/csrc/framework/profiler/ @fuwenguang @niuweizhi 
+/torch_mlu/profiler/ @fuwenguang @niuweizhi
+/third_party/kineto_mlu @fuwenguang @niuweizhi
+
+# distributed
+/torch_mlu/csrc/framework/distributed/ @zhiguangda
+/torch_mlu/csrc/python/ProcessGroupCNCL* @zhiguangda
+/torch_mlu/distributed/nn/ @zhiguangda
+/torch_mlu/mlu/cncl.py @zhiguangda
+
+# MLUGraph
+/torch_mlu/csrc/framework/graphs/ @daitian  
+/torch_mlu/csrc/python/Graph* @daitian 
+/torch_mlu/mlu/graph.py @daitian 
+
+# allocator
+/torch_mlu/csrc/framework/core/*allocator* @lipenghui
+/torch_mlu/csrc/framework/core/*memory* @lipenghui
+/torch_mlu/mlu/memory.py @lipenghui
+
+# storage/IPC
+/torch_mlu/csrc/python/Storage* @mengpenghui
+/torch_mlu/csrc/python/serialization* @mengpenghui
+/torch_mlu/storage.py @mengpenghui
+/torch_mlu/csrc/python/MluIPC* @mengpenghui
+/torch_mlu/mlu/reductions.py @mengpenghui
+
+# torch.compile
+/torch_mlu/_dynamo/ @zhouyusong
+/torch_mlu/_inductor/ @zhouyusong
+
+# fsdp
+/torch_mlu/distributed/_shard/ @daitian
