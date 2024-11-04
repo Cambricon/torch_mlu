@@ -33,20 +33,35 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 namespace ops {
 
+template <typename T>
 void check_group_norm_inputs(
     const Tensor& input,
     const Tensor& weight,
     const Tensor& bias,
-    int64_t C) {
+    T C,
+    int64_t num_groups) {
   TORCH_CHECK(
-      !weight.defined() || (weight.dim() == 1 && weight.numel() == C),
+      num_groups > 0,
+      "Expected num groups to be greater than 0, got ",
+      num_groups);
+  TORCH_CHECK(
+      C % num_groups == 0,
+      "Expected number of channels in input to be divisible by ",
+      "num_groups, but got input of shape ",
+      input.sizes(),
+      " and "
+      "num_groups=",
+      num_groups);
+  TORCH_CHECK(
+      !weight.defined() ||
+          (weight.dim() == 1 && at::symint::numel<T>(weight) == C),
       "Expected weight to be a vector of size equal to the number of ",
       "channels in input, but got weight of shape ",
       weight.sizes(),
       " and input of shape ",
       input.sizes());
   TORCH_CHECK(
-      !bias.defined() || (bias.dim() == 1 && bias.numel() == C),
+      !bias.defined() || (bias.dim() == 1 && at::symint::numel<T>(bias) == C),
       "Expected bias to be a vector of size equal to the number of ",
       "channels in input, but got bias of shape ",
       weight.sizes(),
@@ -70,7 +85,7 @@ at::Tensor cnnl_group_norm(
 
   const int64_t N = input.size(0);
   const int64_t C = input.size(1);
-  check_group_norm_inputs(input, weight, bias, C);
+  check_group_norm_inputs(input, weight, bias, C, num_groups);
 
   const auto input_shape = input.sizes();
   const int64_t HxW =
@@ -113,7 +128,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_native_group_norm(
   const at::Tensor& bias =
       c10::value_or_else(bias_opt, [] { return at::Tensor(); });
 
-  check_group_norm_inputs(input, weight, bias, C);
+  check_group_norm_inputs(input, weight, bias, C, group);
   TORCH_CHECK(
       input.numel() == N * C * HxW,
       "The size of input: ",
@@ -149,14 +164,11 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_native_group_norm(
   // None, and remove cnnl_view in CNNLCORE-12619.
   at::Tensor input_internal =
       input.is_contiguous() ? cnnl_view(input, {N, C, 1, HxW}) : input;
-  const auto& gamma =
-      weight.defined() ? weight : at::ones({C}, input.options());
-  const auto& beta = bias.defined() ? bias : at::zeros({C}, input.options());
   auto mean = at::empty({N, group}, input.options());
   auto rstd = at::empty({N, group}, input.options());
   auto output = at::native::empty_like(input_internal);
   std::tie(output, mean, rstd) = cnnl_group_norm_internal(
-      output, input_internal, gamma, beta, mean, rstd, eps, group);
+      output, input_internal, weight, bias, mean, rstd, eps, group);
   auto out = input.is_contiguous() ? cnnl_view(output, input.sizes()) : output;
   return std::make_tuple(out, mean, rstd);
 }

@@ -45,18 +45,25 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_group_norm_internal(
     return std::make_tuple(output, mean, rstd);
   }
   auto layout = suggest_cnnl_layout(input);
-
   auto input_impl = getMluTensorImpl(input);
   auto input_desc = getTensorDesc(input_impl, layout);
   auto input_ptr = mlu_data_ptr(input_impl);
 
-  auto weight_impl = getMluTensorImpl(weight);
-  auto weight_bias_desc = getTensorDesc(weight_impl);
-  auto weight_ptr = mlu_data_ptr(weight_impl);
-
-  auto bias_impl = getMluTensorImpl(bias);
-  auto bias_ptr = mlu_data_ptr(bias_impl);
-
+  void* weight_ptr = nullptr;
+  void* bias_ptr = nullptr;
+  tensorDescPtr_t weight_bias_desc = nullptr;
+  if (weight.defined()) {
+    auto weight_impl = getMluTensorImpl(weight);
+    weight_bias_desc = getTensorDesc(weight_impl);
+    weight_ptr = mlu_data_ptr(weight_impl);
+  }
+  if (bias.defined()) {
+    auto bias_impl = getMluTensorImpl(bias);
+    bias_ptr = mlu_data_ptr(bias_impl);
+    if (!(weight.defined())) {
+      weight_bias_desc = getTensorDesc(bias_impl);
+    }
+  }
   auto mean_impl = getMluTensorImpl(mean);
   auto mean_rstd_desc = getTensorDesc(mean_impl);
   auto mean_ptr = mlu_data_ptr(mean_impl);
