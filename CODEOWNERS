@@ -18,7 +18,7 @@
 # profiler
 /torch_mlu/csrc/framework/profiler/ @fuwenguang @niuweizhi 
 /torch_mlu/profiler/ @fuwenguang @niuweizhi
-/third_party/kineto_mlu @fuwenguang @niuweizhi
+/third_party/kineto_mlu/ @fuwenguang @niuweizhi
 
 # distributed
 /torch_mlu/csrc/framework/distributed/ @zhiguangda
