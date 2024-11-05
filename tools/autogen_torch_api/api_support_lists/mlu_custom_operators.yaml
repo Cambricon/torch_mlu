@@ -1,0 +1,241 @@
+- mlu_custom_ops:
+
+  - api: torch_mlu.optimizers.FusedAdam
+    usage: torch_mlu.optimizers.FusedAdam(params, lr=1e-3, bias_correction=True, betas=(0.9, 0.999), eps=1e-8, adam_w_mode=True, weight_decay=0.0, amsgrad=False, set_grad_none=True)
+    functionality: 实现Adam算法。
+    args:
+      params: 可迭代类型， 可迭代的参数或者参数组。
+      lr: float类型，可选，学习率，默认为1e-3。
+      bias_correction: bool类型，可选，是否进行动量项修正，默认为True。
+      betas: Tuple[float, float]类型，可选，用于计算梯度及其范数的运行平均值的系数，默认为(0.9, 0.999)。
+      eps: float类型，可选，添加到分母中以提高数值稳定性的系数，默认为1e-8。
+      adam_w_mode: bool类型，可选，使用L2正则化或者权重衰减。默认为True，表示使用权重衰减（AdamW）。
+      weight_decay: float类型，可选，权重衰减系数，默认为0.0。
+      amsgrad: bool类型，可选，是否使用AMSGrad算法的变体，默认为False。
+      set_grad_none: bool类型，可选，是否在使用zero_grad()时把梯度设置为None，默认为True。
+    limitations:
+      - amsgrad不支持True。
+    calculation lib: Cambricon BANG。
+
+  - api: torch_mlu.optimizers.FusedLAMB
+    usage: torch_mlu.optimizers.FusedLAMB(params, lr=1e-3, bias_correction=True, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.01, amsgrad=False, adam_w_mode=True, grad_averaging=True, set_grad_none=True, max_grad_norm=1.0, use_nvlamb=False)
+    functionality: 实现LAMB算法。
+    args:
+      params: 可迭代类型，可迭代的参数或者参数组。
+      lr: float类型，可选，学习率，默认为1e-3。
+      bias_correction: bool类型，可选，是否进行动量项修正，默认为True。
+      betas: Tuple[float, float]类型，可选，用于计算梯度及其范数的运行平均值的系数，默认为(0.9, 0.999)。
+      eps: float类型，可选，添加到分母中以提高数值稳定性的系数，默认为1e-6。
+      weight_decay: float类型，可选，权重衰减系数，默认为0.01。
+      amsgrad: bool类型，可选，是否使用AMSGrad算法的变体，默认为False。
+      adam_w_mode: bool类型，可选，是否使用L2正则化，默认为True。
+      grad_averaging: bool类型，可选，是否在计算梯度运行平均值时将1-beta2应用到梯度，默认为True。
+      set_grad_none: bool类型，可选，是否在使用zero_grad()时把梯度设置为None，默认为True。
+      max_grad_norm: float类型，可选，裁剪全局梯度范数，默认为1.0。
+      use_nvlamb: bool类型，可选，是否将自适应学习率应用于值为0.0的权重衰减参数，默认为False。
+    limitations:
+      - amsgrad不支持设置为True。
+    calculation lib: Cambricon BANG。
+
+  - api: torch_mlu.optimizers.FusedLAMBAMP
+    usage: torch_mlu.optimizers.FusedLAMBAMP(params, lr=1e-3, step=0, bias_correction=True, betas=(0.9, 0.999), eps=1e-6, weight_decay=0.01, amsgrad=False, adam_w_mode=True, grad_averaging=True, set_grad_none=True, max_grad_norm=1.0, use_nvlamb=False)
+    functionality: 实现LAMB算法，支持当参数类型为half时，额外保存一份float类型的副本，用于提升参数更新计算时的精度。
+    args:
+      params: 可迭代类型，可迭代的参数或者参数组。参数类型必须为float或者half类型的tensor，且数组中的tensor数据类型必须一致。
+      lr: float类型，可选，学习率，默认为1e-3。
+      step: int类型，可选，优化器更新的起始次数。
+      bias_correction: bool类型，可选，是否进行动量项修正，默认为True。
+      betas: Tuple[float, float]类型，可选，用于计算梯度及其范数的滑动平均值的系数，默认为(0.9, 0.999)。
+      eps: float类型，可选，添加到分母中以提高数值稳定性的系数，默认为1e-6。
+      weight_decay: float类型，可选，权重衰减系数，默认为0.01。
+      amsgrad: bool类型，可选，是否使用AMSGrad算法的变体，默认为False。
+      adam_w_mode: bool类型，可选，是否使用L2正则化，默认为True。
+      grad_averaging: bool类型，可选，是否在计算梯度运行平均值时将1-beta2应用到梯度，默认为True。
+      set_grad_none: bool类型，可选，是否在使用zero_grad()时把梯度设置为None，默认为True。
+      max_grad_norm: float类型，可选，裁剪全局梯度范数，默认为1.0。
+      use_nvlamb: bool类型，可选，是否将自适应学习率应用于值为0.0的权重衰减参数，默认为False。
+    limitations:
+      - amsgrad不支持设置为True。
+    calculation lib: Cambricon BANG。
+
+  - api: torch.ops.torch_mlu.points_in_boxes_mlu
+    usage: torch.ops.torch_mlu.points_in_boxes_mlu(points, boxes) -> Tensor
+    functionality: 检测给定的点云数据中每个点属于哪个3D框，输出表示对应框的索引。如果不存在对应的框，则输出-1。
+    args:
+      points: torch.Tensor类型，形状为 (B, M, 3) ，B 代表Batch Size，M 代表points的数量，3 代表空间的三维坐标(x,y,z)。
+      boxes: torch.Tensor类型，形状为 (B, T, 7) ，B 代表Batch Size，T 代表3D框数量，7 分别代表数据信息 (cx,cy,cz,dx,dy,dz,heading)，其中 (cx,cy,cz) 为3D框的几何中心位置，(dx,dy,dz) 分别为3D框在heading角度为0时沿着x-y-z三个方向的长度，heading 为3D框在俯视图下的朝向角。
+    limitations:
+      - points和boxes的元素数据类型仅支持float。
+    calculation lib: Cambricon CNNL。
+
+  - api: torch.ops.torch_mlu.boxes_overlap_bev
+    usage: torch.ops.torch_mlu.boxes_overlap_bev(boxes_a, boxes_b) -> Tensor
+    functionality: 检测给定的点云数据中检测框和目标框的IOU数值。
+    args:
+      boxes_a: torch.Tensor类型，形状为 (B, 7) ，B 代表Batch Size，7 分别代表数据信息 (x,y,z,dx,dy,dz,heading)。
+      boxes_b: torch.Tensor类型，形状为 (B, 7) ，B 代表Batch Size，7 分别代表数据信息 (x,y,z,dx,dy,dz,heading)，其中 (x,y,z) 为3D框的几何中心位置，(dx,dy,dz) 分别为3D框在heading角度为0时沿着x-y-z三个方向的长度，heading 为3D框在俯视图下的朝向角。
+    limitations:
+      - boxes_a和boxes_b的元素数据类型仅支持float。
+      - 不支持MLU200系列设备。
+    calculation lib: Cambricon CNNL。
+
+  - api: torch.ops.torch_mlu.boxes_iou_bev
+    usage: torch.ops.torch_mlu.boxes_iou_bev(boxes_a, boxes_b) -> Tensor
+    functionality: 计算两组矩形框两两之间的IOU数值。
+    args:
+      boxes_a: torch.Tensor类型，形状为 (N, 7) ，N 是矩形框的个数，7为数据信息 (x, y, z, dx, dy, dz, heading)。
+      boxes_b: torch.Tensor类型，形状为 (M, 7) ，M 是矩形框的个数，7为数据信息 (x, y, z, dx, dy, dz, heading)。其中，(x, y, z) 为矩形框的中心位置，(dx, dy, dz) 分别为矩形框在heading角度为0时沿着x-y-z三方向的长度， heading 为矩形框在俯视图下的朝向角。
+    limitations:
+      - boxes_a和boxes_b的元素数据类型必须为float类型。
+      - 不支持MLU200系列设备。
+      - 目前仅支持z和dz为0的平面矩形框计算。
+    calculation lib: Cambricon CNNL。
+
+  - api: torch.ops.torch_mlu.nms3D
+    usage: torch.ops.torch_mlu.nms3D(dets, iou_threshold) -> Tensor
+    functionality: 基于三维坐标的非极大值抑制算法。
+    args:
+      dets: torch.Tensor类型，形状为 (B, 7) ，B 代表Batch Size，7 代表3维框信息 (x,y,z,dx,dy,dz,heading)，(x,y,z) 表示3维框的几何中心点位置， (dx,dy,dz) 分别为3维框在 heading 角度为0时沿着x-y-z三个方向的长度， heading 为3维框在俯视图下的朝向角。
+      iou_threshold: float32类型，表示置信度阈值。
+    limitations:
+      - dets 的元素数据类型仅支持float。
+    calculation lib: Cambricon CNNL。
+
+  - api: torch.ops.torch_mlu.nms3D_cpu
+    usage: torch.ops.torch_mlu.nms3D_cpu(dets, iou_threshold) -> Tensor
+    functionality: 基于三维坐标的非极大值抑制算法。该算子运行在CPU设备上。
+    args:
+      dets: torch.Tensor类型，形状为 (B, 7) ，B 代表Batch Size，7 代表3维框信息 (x,y,z,dx,dy,dz,heading)，(x,y,z) 表示3维框的几何中心点位置， (dx,dy,dz) 分别为3维框在 heading 角度为0时沿着x-y-z三个方向的长度， heading 为3维框在俯视图下的朝向角。
+      iou_threshold: float32类型，表示置信度阈值。
+    limitations:
+      - dets 的元素数据类型仅支持float。
+    calculation lib: 无。
+
+  - api: torch.ops.torch_mlu.mask_softmax_dropout_fprop
+    usage: torch.ops.torch_mlu.mask_softmax_dropout_fprop(input, mask, batch, seqlen, heads, dropout_prob, enable_stream, sync, is_training) -> (Tensor, Tensor)
+    functionality: |
+      主要用于对MLPerf BERT-Large网络中的add+softmax+dropout部分网络结构进行融合加速。该算子负责对输入的批次数据进行前向计算。
+
+        主要计算公式如下：
+
+        :math:`output, dropout_mask = dropout(softmax(x + mask))`
+
+    args:
+      input: torch.Tensor类型，一维浮点数据类型且在MLU设备上的既是输入又是输出的tensor，由batch个heads * seqlen[i] * seqlen[i]元素数目的一维小tensor拼接而成，既是加法运算的输入，又是softmax运算的输出。
+      mask: torch.Tensor类型，一维浮点数据类型且在MLU设备上的输入tensor，由batch个seqlen[i]元素数目的一维小tensor拼接而成。
+      batch: int类型，输入的批次。
+      seqlen: torch.Tensor类型，一维torch.int或者torch.int64数据类型且在CPU设备上的输入tensor，有batch个元素。
+      heads: int类型，输入input的形状参数。
+      dropout_prob: float类型，dropout的置0概率，在[0.0, 1.0]区间内。
+      enable_stream: bool类型，表示是否使能多流并行计算，暂不支持该功能。
+      sync: bool类型，表示是否在算子内部插入同步，与多流并行配合使用，暂不支持。
+      is_training: bool类型，控制该算子是应用在训练场景还是推理场景。如果是推理场景，输出的dropout_mask为空tensor。
+    limitations:
+      - seqlen仅支持一维的int或long数据类型，且设备类型为CPU。
+      - input和mask的数据类型必须一致，且为一维浮点数据类型，同时设备类型为MLU。
+      - 不支持MLU200系列设备。
+    calculation lib: Cambricon CNNL EXTRA。
+
+  - api: torch.ops.torch_mlu.mask_softmax_dropout_bprop_
+    usage: torch.ops.torch_mlu.mask_softmax_dropout_bprop_(input, grad_output, dropout_mask, batch, seqlen, heads, dropout_prob, enable_stream, sync) -> Tensor
+    functionality: 自定义算子 torch.ops.torch_mlu.mask_softmax_dropout_fprop 的反向算子，计算输入input的梯度。
+    args:
+      input: torch.Tensor类型，一维浮点数据类型且在MLU设备上的输入tensor，由batch个heads * seqlen[i] * seqlen[i]元素数目的一维小tensor拼接而成，表示前向算子的softmax运算输出。
+      grad_output: torch.Tensor类型，一维浮点数据类型且在MLU设备上的既是输入又是输出的tensor，由batch个heads * seqlen[i] * seqlen[i]元素数目的一维小tensor拼接而成，既是前向算子输出的梯度，又是反向算子的输出。
+      dropout_mask: torch.Tensor类型，一维torch.uint8数据类型且在MLU设备上的输入tensor，由batch个heads * seqlen[i] * seqlen[i]元素数目的一维小tensor拼接而成，表示前向算子的输出。
+      batch: int类型，输入的批次。
+      seqlen: torch.Tensor类型，一维torch.int或者torch.int64数据类型且在CPU设备上的输入tensor，有batch个元素。
+      heads: int类型，输入input的形状参数。
+      dropout_prob: float类型，dropout的置0概率，在[0.0, 1.0]区间内。
+      enable_stream: bool类型，表示是否使能多流并行计算，暂不支持该功能。
+      sync: bool类型，表示是否在算子内部插入同步，与多流并行配合使用，暂不支持。
+    limitations:
+      - seqlen仅支持一维的int或long数据类型，且设备类型为CPU。
+      - input和grad_output的数据类型必须一致，且为一维浮点数据类型，同时设备类型为MLU。
+      - dropout_mask仅支持一维uint8数据类型，同时设备类型为MLU。
+      - 不支持MLU200系列设备。
+    calculation lib: Cambricon CNNL EXTRA。
+
+  - api: torch.ops.torch_mlu.voxel_pooling
+    usage: torch.ops.torch_mlu.voxel_pooling(batch_size, num_points, num_channels, num_voxel_x, num_voxel_y, num_voxel_z, geom_xyz, input_features, output_features, pos_memo) -> bool
+    functionality: 基于Bev类网络的体素池化算法。
+    args:
+      batch_size: int类型，输入的批次。
+      num_points: int类型，体素的数量。
+      num_channels: int类型，体素的特征的通道数。
+      num_voxel_x: int类型，体素在 X 轴上的坐标最大范围，对应的是 W 输入。
+      num_voxel_y: int类型，体素在 Y 轴上的坐标最大范围，对应的是 H 输入。
+      num_voxel_z: int类型，体素在 Z 轴上的坐标最大范围，对应的是 1 输入。
+      geom_xyz: torch.Tensor类型，torch.int数据类型且在MLU设备上的输入tensor，表示体素的坐标，形状为 (B,N,3) ， B 代表Batch Size， N 代表num_points， 3 代表xyz坐标。
+      input_features: torch.Tensor类型，torch.float数据类型且在MLU设备上的输入tensor，表示体素的特征值，形状为 (B,N,C) ， B 代表Batch Size， N 代表num_points， C 代表num_channels。
+      output_features: torch.Tensor类型，torch.float数据类型且在MLU设备上的输出tensor，表示体素的池化后的特征图，形状为 (B,H,W,C) ， B 代表Batch Size， H 代表num_voxel_y， W 代表num_voxel_x， C 代表num_channels。
+      pos_memo: torch.Tensor类型，torch.int数据类型且在MLU设备上的输出tensor，表示体素的位置信息，形状为 (B,N,C) ，参数含义参考 geom_xyz。
+    limitations:
+      - geom_xyz 只支持 int 输入， input_features 只支持 float 输入。
+      - 输入 geom_xyz 必须满足 dims=3，并且 dim[0]=batch_size, dim[1]=num_points, dim[2]=3。
+      - 输入 input_features 必须满足 dims=3，并且 dim[0]=batch_size, dim[1]=num_points, dim[2]=num_channels。
+      - 输入 batch_size,num_points,num_channels,num_voxel_x,num_voxel_y 对应输入 tensor 的维度必须大于 0。
+      - 输入 geom_xyz 属于 int 类型坐标值，不涉及 nan 或 inf， input_features 支持 nan 或 inf。
+      - 输出 pos_memo 需要调用算子之前对输出空间置初始值，且初始化为负数。
+      - 不支持MLU200系列设备。
+    calculation lib: Cambricon MLU-OPS。
+
+  - api: torchaudio.functional.rnnt_loss
+    usage: torchaudio.functional.rnnt_loss(logits, targets, logit_lengths, target_lengths, blank, clamp, reduction) -> Tensor
+    functionallity: 计算RNN Transducer loss。
+    args:
+      logits: Tensor 类型，其数据类型为 float、half 类型。jointer的输出，维度(batch,max_seq_length,max_target_length+1,class)。
+      targets: Tensor 类型，其数据类型为 int，0填充之后的target，维度（batch,max_target_length）。
+      logit_lengths: Tensor 类型，其数据类型为 int，编码器的每个序列的长度，维度（batch）。
+      target_lengths: Tensor 类型，其数据类型为int，包含每个target的序列的长度，维度(batch)。
+      blank: int 类型，blank的标签，默认为-1。
+      clamp: float 类型，对梯度限制值的大小，默认为-1。
+      reduction: str 类型，指定对输出使用reduction的方法，可选为none、mean、sum。默认为mean。
+    limitations:
+      - 输入 logits 数据类型必须为 float 或者 half。
+      - 输入 logits 的维度必须是4维。
+      - 输入 targets 的维度必须是2维。
+      - 输入 logits.size(1) 必须和 logits_lengths 中的最大元素相等。
+      - 输入 logits.size(2) 必须和 target_lengths 的最大值+1相等。
+      - 输入 target_size(1) 必须和 target_lengths 的最大值相等。
+    calculation lib: Cambricon CNNL。
+
+  - api: torch_mlu.optimizers.FusedSGD
+    usage: torch_mlu.optimizers.FusedSGD(params, lr, momentum=0, dampening=0, weight_decay=0, nesterov=False, wd_after_momentum=False, materialize_master_grads=True, set_grad_none=False)
+    functionality: 实现SGD算法。
+    args:
+      params: 可迭代类型，必选，可迭代的参数或者参数组。
+      lr: float类型，必选，学习率。
+      momentum: float类型，可选，动量系数，默认为0。
+      dampening: float类型，可选，动量抑制系数，默认为0。
+      weight_decay: float类型，可选，权重衰减系数，默认为0。
+      nesterov: bool类型，可选，是否开启Momentum的变体Nesterov，默认为False。
+      wd_after_momentum: bool类型，可选，是否在动量后权重衰减，默认为False。
+      materialize_master_grads: bool类型，可选，是否使用master_grads，默认为True。
+      set_grad_none: bool类型，可选，是否在使用zero_grad()时把梯度设置为None，默认为True。
+    limitations:
+      - grads中任何一个Tensor的元素个数都不能超过2^31。
+      - params类型为half时存在精度问题。
+    calculation lib: Cambricon BANG。
+
+  - api: torch.ops.torch_mlu.fused_l2_norm
+    usage: torch.ops.torch_mlu.fused_l2_norm(overflow_buf, input_list, per_tensor)
+    functionality: 计算输入张量input_list中所有元素的l2_norm，如果per_tensor为True，还会计算input_list中每个tensor的l2_norm。如果计算结果中含有inf或nan，overflow_buf的值会置为1。
+    args:
+      overflow_buf: Tensor类型，只有一个元素值，类型是int。
+      input_list: TensorList类型，数据类型仅支持half或者float，在MLU500系列上还支持bfloat16类型。
+      per_tensor: 布尔类型，控制是否计算input_list中每个tensor的l2_norm。
+    limitations:
+      - input_list中任何一个Tensor的元素个数都不能超过2^31。
+    calculation lib: Cambricon BANG。
+
+  - api: torch.ops.torch_mlu.fused_l2_norm_amp
+    usage: torch.ops.torch_mlu.fused_l2_norm_amp(overflow_buf, input_list, per_tensor)
+    functionality: 计算输入张量input_list中所有元素的l2_norm，如果per_tensor为True，还会计算input_list中每个tensor的l2_norm。如果计算结果中含有inf或nan，overflow_buf的值会置为1。当overflow_buf中值为1，或计算结果中有inf或nan时，返回值为0。
+    args:
+      overflow_buf: Tensor类型，只有一个元素值，类型是int。
+      input_list: TensorList类型，数据类型仅支持half或者float，在MLU500系列上还支持bfloat16类型。
+      per_tensor: 布尔类型，控制是否计算input_list中每个tensor的l2_norm。
+    limitations:
+      - input_list中任何一个Tensor的元素个数都不能超过2^31。
+    calculation lib: Cambricon BANG。
