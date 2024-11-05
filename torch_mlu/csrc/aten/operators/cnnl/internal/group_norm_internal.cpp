@@ -44,53 +44,60 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_group_norm_internal(
   if (input.numel() == 0) {
     return std::make_tuple(output, mean, rstd);
   }
+  auto layout = suggest_cnnl_layout(input);
   auto input_impl = getMluTensorImpl(input);
-  auto weight_impl = getMluTensorImpl(weight);
-  auto bias_impl = getMluTensorImpl(bias);
+  auto input_desc = getTensorDesc(input_impl, layout);
+  auto input_ptr = input_impl->mlu_data_ptr();
+
+  void* weight_ptr = nullptr;
+  void* bias_ptr = nullptr;
+  tensorDescPtr_t weight_bias_desc = nullptr;
+  if (weight.defined()) {
+    auto weight_impl = getMluTensorImpl(weight);
+    weight_bias_desc = getTensorDesc(weight_impl);
+    weight_ptr = weight_impl->mlu_data_ptr();
+  }
+  if (bias.defined()) {
+    auto bias_impl = getMluTensorImpl(bias);
+    bias_ptr = bias_impl->mlu_data_ptr();
+    if (!(weight.defined())) {
+      weight_bias_desc = getTensorDesc(bias_impl);
+    }
+  }
   auto mean_impl = getMluTensorImpl(mean);
+  auto mean_rstd_desc = getTensorDesc(mean_impl);
+  auto mean_ptr = mean_impl->mlu_data_ptr();
+
   auto rstd_impl = getMluTensorImpl(rstd);
+  auto rstd_ptr = rstd_impl->mlu_data_ptr();
+
   auto output_impl = getMluTensorImpl(output);
+  auto output_desc = getTensorDesc(output_impl, layout);
+  auto output_ptr = output_impl->mlu_data_ptr();
 
   // get current handle
   auto handle = getCurrentHandle();
-  CnnlTensorDescriptor input_desc;
-  CnnlTensorDescriptor output_desc;
-  CnnlTensorDescriptor weight_bias_desc;
-  CnnlTensorDescriptor mean_rstd_desc;
-
-  auto layout = suggest_cnnl_layout(input);
-  input_desc.set(input, layout);
-  output_desc.set(output, layout);
-  weight_bias_desc.set(weight);
-  mean_rstd_desc.set(mean);
-
-  auto input_ptr = input_impl->mlu_data_ptr();
-  auto weight_ptr = weight_impl->mlu_data_ptr();
-  auto bias_ptr = bias_impl->mlu_data_ptr();
-  auto mean_ptr = mean_impl->mlu_data_ptr();
-  auto rstd_ptr = rstd_impl->mlu_data_ptr();
-  auto output_ptr = output_impl->mlu_data_ptr();
 
   // get workspace for GroupNormForward
   size_t workspace_size = 0;
   TORCH_CNNL_CHECK(cnnlGetGroupNormForwardWorkspaceSize(
-      handle, num_groups, input_desc.desc(), &workspace_size));
-
+      handle, num_groups, input_desc.get(), &workspace_size));
   auto ws_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+
   TORCH_CNNL_CHECK(cnnlGroupNormForward_v3(
       handle,
       eps,
       num_groups,
-      input_desc.desc(),
+      input_desc.get(),
       input_ptr,
-      weight_bias_desc.desc(),
+      weight_bias_desc.get(),
       weight_ptr,
       bias_ptr,
       ws_ptr.get(),
       workspace_size,
-      output_desc.desc(),
+      output_desc.get(),
       output_ptr,
-      mean_rstd_desc.desc(),
+      mean_rstd_desc.get(),
       mean_ptr,
       rstd_ptr));
   return std::make_tuple(output, mean, rstd);
