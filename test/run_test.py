@@ -68,6 +68,7 @@ TESTS = [
     "mlu/test_amp",
     "mlu/test_graph",
     "profiler/test_profiler",
+    "profiler/test_profiler_cnperf",
     "mlu/test_caching_allocator",
     "cpp_extension/test_mlu_extension",
     "cnnl_gtest",

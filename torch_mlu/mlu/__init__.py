@@ -53,6 +53,11 @@ from .reductions import apply_reductions_patch
 from ._utils import _get_device_index
 from torch import device as _device
 
+try:
+    from torch_mlu._MLUC import _cnrt
+except ImportError:
+    _cnrt = None
+
 _initialized = False
 _tls = threading.local()
 _initialization_lock = threading.Lock()
@@ -310,6 +315,19 @@ def can_device_access_peer(device: _device_t, peer_device: _device_t) -> bool:
     return torch_mlu._MLUC._mlu_canDeviceAccessPeer(device, peer_device)
 
 default_generators: Tuple[torch._C.Generator] = ()
+
+def cnrt():
+    _lazy_init()
+    return _cnrt
+
+class CnrtError(RuntimeError):
+    def __init__(self, code: int) -> None:
+        msg = _cnrt.mluGetErrorStr(_cnrt.mluError(code))
+        super().__init__(f"{msg} ({code})")
+
+def check_error(res: int) -> None:
+    if res != _cnrt.mluError.success:
+        raise CnrtError(res)
 
 def _parse_visible_devices():
     r"""Parse CN_VISIBLE_DEVICES/MLU_VISIBLE_DEVICES environment variable. Keep align with cnrt"""
@@ -867,7 +885,7 @@ class StreamContext(object):
 def stream(stream: Optional["torch.mlu.Stream"]) -> StreamContext:
     return StreamContext(stream)
 
-from . import amp, cnpx
+from . import amp, cnpx, profiler
 
 __all__ = [
     # Typed storage and tensors
@@ -902,6 +920,8 @@ __all__ = [
     "caching_allocator_alloc",
     "caching_allocator_delete",
     "can_device_access_peer",
+    "check_error",
+    "cnrt",
     "current_device",
     "current_stream",
     "default_generators",
@@ -959,4 +979,5 @@ __all__ = [
     "stream",
     "streams",
     "synchronize",
+    "profiler",
 ]

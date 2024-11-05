@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "python/Graph.h"
 #include "python/ProcessGroupCNCL.h"
 #include "python/Cnpx.h"
+#include "python/Cnrt.h"
 
 #include "c10/core/Device.h"
 #include "c10/util/Optional.h"
@@ -72,6 +73,7 @@ void PythonVariableMethods(py::module& m) {
   registerMluAllocator(m.ptr());
   registerMluPluggableAllocator(m.ptr());
   initCnpxBindings(m.ptr());
+  initCnrtBindings(m.ptr());
   THMPStorage_Sharing_methods(m.ptr());
   initC10dMlu(m.ptr());
 
