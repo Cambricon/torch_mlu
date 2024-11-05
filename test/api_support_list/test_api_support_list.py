@@ -16,6 +16,10 @@ class APISupportListTest(unittest.TestCase):
             str(torch_mlu_path)
             + "/tools/autogen_torch_api/api_support_lists/torchvision_api.yaml"
         ) 
+        custom_ops_api_path = (
+            str(torch_mlu_path)
+            + "/tools/autogen_torch_api/api_support_lists/mlu_custom_operators.yaml"
+        )
         torch_api_lint_result = subprocess.run(
             ["yamllint", torch_api_path], capture_output=True, text=True
         )
@@ -24,6 +28,10 @@ class APISupportListTest(unittest.TestCase):
             ["yamllint", torchvision_api_path], capture_output=True, text=True
         )
         self.assertEqual(torchvision_api_lint_result.stdout, "")
+        custom_ops_lint_result = subprocess.run(
+            ["yamllint", custom_ops_api_path], capture_output=True, text=True
+        )
+        self.assertEqual(custom_ops_lint_result.stdout, "")
 
     def yaml_check(self, path):
         with open(path, "r", encoding="utf-8") as api_file:

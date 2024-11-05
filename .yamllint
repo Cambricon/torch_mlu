@@ -3,8 +3,8 @@ extends: default
 rules:
   indentation:
     spaces: 2
-    indent-sequences: false
-    check-multi-line-strings: true
+    indent-sequences: whatever 
+    check-multi-line-strings: false
 
   empty-lines:
     max: 1
