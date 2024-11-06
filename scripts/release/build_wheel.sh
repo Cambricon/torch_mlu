@@ -338,7 +338,7 @@ pip install /$WHEELHOUSE_DIR/torch_mlu*linux*.whl
 #######################################################
 git clone http://gitlab.software.cambricon.com/neuware/oss/pytorch/torchaudio_mlu.git -b "${TORCHAUDIO_MLU_BRANCH}" --single-branch
 ffmpeg_mlu_version=`cat ./torchaudio_mlu/version.info | grep ffmpeg_mlu | awk -F '\"' '{print $4}'`
-wget "http://daily.software.cambricon.com/release/ffmpeg-mlu/${ffmpeg_mlu_version}/src/ffmpeg-mlu-${ffmpeg_mlu_version}.tar.gz"
+wget "http://daily.software.cambricon.com/release/ffmpeg-mlu/${ffmpeg_mlu_version#v}/src/ffmpeg-mlu-${ffmpeg_mlu_version}.tar.gz"
 tar xvzf "ffmpeg-mlu-${ffmpeg_mlu_version}.tar.gz" -C ./
 ln -sf "ffmpeg-mlu-${ffmpeg_mlu_version}" ffmpeg_mlu
 pushd ffmpeg_mlu
