@@ -118,7 +118,7 @@
 
         主要计算公式如下：
 
-        :math:`output, dropout_mask = dropout(softmax(x + mask))`
+        :math:`output, dropout\_mask = dropout(softmax(x + mask))`
 
     args:
       input: torch.Tensor类型，一维浮点数据类型且在MLU设备上的既是输入又是输出的tensor，由batch个heads * seqlen[i] * seqlen[i]元素数目的一维小tensor拼接而成，既是加法运算的输入，又是softmax运算的输出。
@@ -191,6 +191,7 @@
       blank: int 类型，blank的标签，默认为-1。
       clamp: float 类型，对梯度限制值的大小，默认为-1。
       reduction: str 类型，指定对输出使用reduction的方法，可选为none、mean、sum。默认为mean。
+      fused_log_softmax: bool 类型，如果在loss之外调用 log_softmax，则设为 False（默认值：True）
     limitations:
       - 输入 logits 数据类型必须为 float 或者 half。
       - 输入 logits 的维度必须是4维。
@@ -212,7 +213,7 @@
       nesterov: bool类型，可选，是否开启Momentum的变体Nesterov，默认为False。
       wd_after_momentum: bool类型，可选，是否在动量后权重衰减，默认为False。
       materialize_master_grads: bool类型，可选，是否使用master_grads，默认为True。
-      set_grad_none: bool类型，可选，是否在使用zero_grad()时把梯度设置为None，默认为True。
+      set_grad_none: bool类型，可选，是否在使用zero_grad()时把梯度设置为None，默认为False。
     limitations:
       - grads中任何一个Tensor的元素个数都不能超过2^31。
       - params类型为half时存在精度问题。
