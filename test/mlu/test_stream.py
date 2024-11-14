@@ -437,7 +437,7 @@ class TestStream(TestCase):
         self.assertTrue(a.grad.sum().item() == 4 * size)
         self.assertTrue(b.grad.sum().item() == 4 * size)
 
-    # @unittest.skip("not test")
+    @unittest.skip("PYTORCH-13058 not test")
     @testinfo()
     def test_record_stream(self):
         # cycles_per_ms = get_cycles_per_ms()
