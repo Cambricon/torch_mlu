@@ -292,14 +292,14 @@ class TestSmoothL1LossOps(TestCase):
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
-    @largeTensorTest("94GB")
+    @largeTensorTest("35GB")
     def test_smooth_l1_loss_forward_large(self):
         shape_list = [(5, 1024, 1024, 1024)]
         reduct_list = ["none"]
         dtype_list = [torch.half]
         for item in product(shape_list, reduct_list, dtype_list):
-            x = torch.randn(item[0], requires_grad=True)
-            target = torch.randn(item[0])
+            x = torch.randn(item[0], requires_grad=True).to(item[2])
+            target = torch.randn(item[0]).to(item[2])
 
             layer = torch.nn.SmoothL1Loss(reduction=item[1])
             out_cpu = layer(x, target)
@@ -309,7 +309,7 @@ class TestSmoothL1LossOps(TestCase):
             )
             self.assertTensorsEqual(
                 out_cpu,
-                out_mlu.cpu().float(),
+                out_mlu.cpu(),
                 0.003,
                 use_MSE=True,
                 message=str(item[1] + " " + str(item[2])),
