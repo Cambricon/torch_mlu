@@ -34,6 +34,7 @@ class TestConstantPadNdOp(TestCase):
         pad_list = [
             (1, 2),
             (0, 0, 0, 0),
+            (0, 0, 0, 1),
             (1, 1, 1, 1),
             (-1, 2, -2, 3),
             (1, 1, 1, 2, 2, 2),
@@ -48,8 +49,33 @@ class TestConstantPadNdOp(TestCase):
             torch.float,
             torch.half,
             torch.bool,
+            torch.complex64,
+            torch.complex128,
         ]
         func_list = [self.convert_to_channel_last, self.to_non_dense, lambda x: x]
+        loop_list = [shape_list, pad_list, dtype_list, func_list]
+        for shape, pad, dtype, func in product(*loop_list):
+            x = make_tensor(shape, dtype=dtype, device="cpu")
+            out_cpu = torch.constant_pad_nd(func(x), pad, 0)
+            out_mlu = torch.constant_pad_nd(func(x).mlu(), pad, 0)
+            self.assertTensorsEqual(
+                out_cpu.float(), out_mlu.cpu().float(), 0.003, use_MSE=True
+            )
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_constant_pad_nd_special_case(self):
+        shape_list = [(8, 4, 2, 2048, 336)]
+        pad_list = [
+            (0, 0, 0, 1),
+        ]
+
+        # skip torch.long and torch.double, maybe overflow
+        dtype_list = [
+            torch.complex64,
+            torch.complex128,
+        ]
+        func_list = [lambda x: x]
         loop_list = [shape_list, pad_list, dtype_list, func_list]
         for shape, pad, dtype, func in product(*loop_list):
             x = make_tensor(shape, dtype=dtype, device="cpu")
@@ -141,10 +167,6 @@ class TestConstantPadNdOp(TestCase):
         with self.assertRaisesRegex(RuntimeError, "resulted in a negative output size"):
             x = torch.randn((1, 1), dtype=torch.float32).mlu()
             out_mlu = torch.constant_pad_nd(x, (-1, -1), 0.1)
-
-        with self.assertRaisesRegex(RuntimeError, "MLU constant_pad_nd"):
-            x = torch.randn((1, 2, 4), dtype=torch.complex64).mlu()
-            out_mlu = torch.constant_pad_nd(x, (1, 2), 0.1)
 
     # @unittest.skip("not test")
     @testinfo()
