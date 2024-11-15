@@ -26,7 +26,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os.path as _osp
-from ._foreach_utils import apply_foreach_fused_patch
 from .overrides_utils import apply_torch_overrides_patch
 from .distributed import apply_ddp_patch
 

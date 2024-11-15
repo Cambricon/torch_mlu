@@ -18,7 +18,6 @@ from torch_mlu.backends.mlufusion import MlufusionModule
 from torch_mlu.utils.counter import _check_gencase
 from torch_mlu.data import apply_dataloader_patch
 from torch_mlu.utils import (
-    apply_foreach_fused_patch,
     apply_torch_overrides_patch,
     apply_ddp_patch,
 )
@@ -45,7 +44,6 @@ def get_git_version() -> str:
 def apply_patches():
     apply_dataloader_patch()
     apply_functional_patch()
-    apply_foreach_fused_patch()
     apply_torch_overrides_patch()
     apply_distributed_patch()
     apply_ddp_patch()
