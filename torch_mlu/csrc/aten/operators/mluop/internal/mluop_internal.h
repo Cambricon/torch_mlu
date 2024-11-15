@@ -36,5 +36,15 @@ const at::Tensor& mluop_fft_internal(
     const float scale_factor,
     bool special_case = false);
 
+at::Tensor& mluop_boxes_iou_bev_internal(
+    const at::Tensor& boxes_a,
+    const at::Tensor& boxes_b,
+    at::Tensor& ans_iou);
+
+at::Tensor& mluop_points_in_boxes_mlu_internal(
+    at::Tensor& point_indices,
+    const at::Tensor& points,
+    const at::Tensor& boxes);
+
 } // namespace ops
 } // namespace torch_mlu

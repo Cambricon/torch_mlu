@@ -484,11 +484,6 @@ at::Tensor& cnnl_unfold_internal(
     int64_t size,
     int64_t step);
 
-at::Tensor& cnnl_points_in_boxes_mlu_internal(
-    at::Tensor& point_indices,
-    const at::Tensor& points,
-    const at::Tensor& boxes);
-
 at::Tensor cnnl_slice_internal(
     const at::Tensor& input,
     int64_t dim,
@@ -943,11 +938,6 @@ void cnnl_native_layer_norm_backward_internal(
     at::Tensor& diff_bias);
 
 void cnnl_ceil_internal(at::Tensor& output, const at::Tensor& input);
-
-at::Tensor& cnnl_boxes_iou_bev_internal(
-    const at::Tensor& boxes_a,
-    const at::Tensor& boxes_b,
-    at::Tensor& ans_iou);
 
 at::Tensor& cnnl_boxes_overlap_bev_out_internal(
     at::Tensor& output,

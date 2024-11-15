@@ -28,12 +28,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "aten/operators/cnnl/internal/cnnl_internal.h"
+#include "aten/operators/mluop/internal/mluop_internal.h"
 
 namespace torch_mlu {
 namespace ops {
 
-at::Tensor& cnnl_boxes_iou_bev_internal(
+at::Tensor& mluop_boxes_iou_bev_internal(
     const at::Tensor& boxes_a,
     const at::Tensor& boxes_b,
     at::Tensor& ans_iou) {
@@ -42,31 +42,36 @@ at::Tensor& cnnl_boxes_iou_bev_internal(
   */
   /* assert output shape is A*B*/
   auto a_impl = getMluTensorImpl(boxes_a);
-  auto a_desc = getTensorDesc(a_impl);
   auto a_ptr = mlu_data_ptr(a_impl);
 
   auto b_impl = getMluTensorImpl(boxes_b);
-  auto b_desc = getTensorDesc(b_impl);
   auto b_ptr = mlu_data_ptr(b_impl);
 
   auto ans_impl = getMluTensorImpl(ans_iou);
-  auto ans_desc = getTensorDesc(ans_impl);
   auto ans_ptr = mlu_data_ptr(ans_impl);
+
+  MluOpTensorDescriptor a_desc;
+  MluOpTensorDescriptor b_desc;
+  MluOpTensorDescriptor ans_desc;
+
+  a_desc.set(boxes_a);
+  b_desc.set(boxes_b);
+  ans_desc.set(ans_iou);
 
   int mode = 0; // IOU mode.
   bool aligned = false; // A x B mode.
 
-  auto handle = getCurrentHandle();
+  auto handle = getCurrentMluOpHandle();
 
-  TORCH_CNNL_CHECK(cnnlBoxIouRotated(
+  TORCH_MLUOP_CHECK(mluOpBoxIouRotated(
       handle,
       mode,
       aligned,
-      a_desc.get(),
+      a_desc.desc(),
       a_ptr,
-      b_desc.get(),
+      b_desc.desc(),
       b_ptr,
-      ans_desc.get(),
+      ans_desc.desc(),
       ans_ptr));
   return ans_iou;
 }
