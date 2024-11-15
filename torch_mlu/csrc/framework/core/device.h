@@ -50,6 +50,7 @@ struct DeviceProp {
   int multi_processor_count = -1;
   long total_memory = -1;
   bool supports_linear_memory = false;
+  int nram_size = -1;
 };
 
 TORCH_MLU_API c10::DeviceIndex device_count();

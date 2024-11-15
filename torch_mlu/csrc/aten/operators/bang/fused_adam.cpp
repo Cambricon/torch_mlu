@@ -75,12 +75,14 @@ bool bang_fused_adam(
   TORCH_CHECK(
       ref_device.type() == at::kPrivateUse1, "expected input to be on mlu.");
   auto stream = getCurMLUStream();
+  const int64_t device_index = ref_device.index();
   // compute kernel dim
   cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
   cnrtDim3_t k_dim;
-  k_dim.x = torch_mlu::getDeviceAttr(cnrtAttrMcorePerCluster);
-  k_dim.y = torch_mlu::getDeviceAttr(cnrtAttrClusterCount);
+  k_dim.x = torch_mlu::getDeviceProperties(device_index)->core_num_per_cluster;
+  k_dim.y = torch_mlu::getDeviceProperties(device_index)->cluster_count;
   k_dim.z = 1;
+  const int nram_size = torch_mlu::getDeviceProperties(device_index)->nram_size;
   // get grad and param tensor cnrt type
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::Half,
@@ -145,19 +147,25 @@ bool bang_fused_adam(
             weight_decay_correction,
             stream,
             k_type,
-            k_dim);
+            k_dim,
+            nram_size);
+        int zero_count = 0;
         for (int i = 0; i < tensor_num; ++i) {
-          if (grads[i].numel() == 0)
+          if (grads[i].numel() == 0) {
+            ++zero_count;
             continue;
-          if (is_copy_necessary(params[i], contiguous_tensors_list[i][0])) {
-            params[i].copy_(contiguous_tensors_list[i][0]);
           }
-          if (is_copy_necessary(exp_avgs[i], contiguous_tensors_list[i][2])) {
-            exp_avgs[i].copy_(contiguous_tensors_list[i][2]);
+          const int index = i - zero_count;
+          if (is_copy_necessary(params[i], contiguous_tensors_list[index][0])) {
+            params[i].copy_(contiguous_tensors_list[index][0]);
           }
           if (is_copy_necessary(
-                  exp_avg_sqs[i], contiguous_tensors_list[i][3])) {
-            exp_avg_sqs[i].copy_(contiguous_tensors_list[i][3]);
+                  exp_avgs[i], contiguous_tensors_list[index][2])) {
+            exp_avgs[i].copy_(contiguous_tensors_list[index][2]);
+          }
+          if (is_copy_necessary(
+                  exp_avg_sqs[i], contiguous_tensors_list[index][3])) {
+            exp_avg_sqs[i].copy_(contiguous_tensors_list[index][3]);
           }
         }
       });

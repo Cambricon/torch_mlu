@@ -1435,9 +1435,9 @@ custom:
     derived_type: bang
   - func: amp_unscale(Tensor[] scaled_grads, Tensor found_inf, Tensor inv_scale) -> Tensor
     derived_type: bang
-  - func: fused_l2_norm(Tensor _dummy_overflow_buf, Tensor[] inputs, bool per_tensor) -> (Tensor, Tensor)
+  - func: fused_l2_norm(Tensor _dummy_overflow_buf, Tensor[] inputs, bool? per_tensor) -> (Tensor, Tensor)
     derived_type: bang
-  - func: fused_l2_norm_amp(Tensor _dummy_overflow_buf, Tensor[] inputs, bool per_tensor) -> (Tensor, Tensor)
+  - func: fused_l2_norm_amp(Tensor _dummy_overflow_buf, Tensor[] inputs, bool? per_tensor) -> (Tensor, Tensor)
     derived_type: bang
   - func: fused_adam(Tensor _dummy_overflow_buf, Tensor[] grads, Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, float learning_rate, float beta1, float beta2, float epsilon, int step, int mode, int bias_correction, float weight_decay) -> bool
     derived_type: bang

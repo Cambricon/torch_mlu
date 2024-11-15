@@ -61,12 +61,14 @@ void _fused_adam_common_mlu_impl_(
   const int tensor_num = grads.size();
 
   auto stream = getCurMLUStream();
+  const int64_t device_index = params[0].get_device();
   // compute kernel dim
   cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
   cnrtDim3_t k_dim;
-  k_dim.x = torch_mlu::getDeviceAttr(cnrtAttrMcorePerCluster);
-  k_dim.y = torch_mlu::getDeviceAttr(cnrtAttrClusterCount);
+  k_dim.x = torch_mlu::getDeviceProperties(device_index)->core_num_per_cluster;
+  k_dim.y = torch_mlu::getDeviceProperties(device_index)->cluster_count;
   k_dim.z = 1;
+  const int nram_size = torch_mlu::getDeviceProperties(device_index)->nram_size;
   // get grad and param tensor cnrt type
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::Half,
@@ -130,7 +132,8 @@ void _fused_adam_common_mlu_impl_(
             mode,
             stream,
             k_type,
-            k_dim);
+            k_dim,
+            nram_size);
       });
 }
 

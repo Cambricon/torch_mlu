@@ -122,6 +122,7 @@ class TestFusedOptimizer(unittest.TestCase):
         nelem=278011,
         param_type=torch.float,
         device="mlu",
+        tensor_num=1,
         *,
         skip_assert: bool = False
     ):
@@ -132,9 +133,11 @@ class TestFusedOptimizer(unittest.TestCase):
         # If there is no "tst_options" field provided, safe to initialize
         # the test optimizer with the parameters of reference optimizer.
         for options in self.options_list:
-            tensor = torch.rand(nelem).to(dtype=param_type, device=device)
+            tensors = []
+            for _ in range(tensor_num):
+                tensors.append(torch.rand(nelem).to(dtype=param_type, device=device))
             ref_param, tst_param, ref_optim, tst_optim = self.gen_param_optim(
-                [tensor], options
+                tensors, options
             )
 
             for i in range(self.iters):
@@ -290,6 +293,12 @@ class TestFusedAdam(TestFusedOptimizer):
     def test_adamw_one_element(self):
         self.gen_single_type_test(nelem=1, param_type=torch.float)
 
+    def test_multi_tensor_float(self):
+        fix_tensor_num = 1000
+        self.gen_single_type_test(
+            param_type=torch.float, device="mlu", tensor_num=fix_tensor_num
+        )
+
     def test_network(self):
         for gradScaler in [False, True]:
             model = Model().mlu()
@@ -354,6 +363,7 @@ class TestFusedAdam(TestFusedOptimizer):
         for i in range(self.iters):
             ref_param[0].grad = torch.rand_like(ref_param[0])
             fused_optim.step()
+        torch.mlu.synchronize()
 
 
 if __name__ == "__main__":

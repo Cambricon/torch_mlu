@@ -130,6 +130,10 @@ void initDeviceProperty(at::DeviceIndex device_index) {
       &device_properties[device_index].cluster_count,
       cnrtAttrClusterCount,
       device_index));
+  TORCH_CNRT_CHECK(cnrtDeviceGetAttribute(
+      &device_properties[device_index].nram_size,
+      cnrtAttrNramSizePerMcore,
+      device_index));
   device_properties[device_index].multi_processor_count =
       device_properties[device_index].cluster_count *
       device_properties[device_index].core_num_per_cluster;
@@ -146,14 +150,16 @@ void initDeviceProperty(at::DeviceIndex device_index) {
       device_index));
   if (support_linear) {
     char uuid_str[40];
-    TORCH_CNDRV_CHECK(cnDeviceGetUuidStr(uuid_str, /*length*/40, device_index));
+    TORCH_CNDRV_CHECK(
+        cnDeviceGetUuidStr(uuid_str, /*length*/ 40, device_index));
     TORCH_CNDEV_CHECK(cndevInit(0));
     cndevDevice_t handle;
     TORCH_CNDEV_CHECK(cndevGetDeviceHandleByUUID(uuid_str, &handle));
     unsigned long long enable_linear_memory = 1;
     TORCH_CNDEV_CHECK(cndevDeviceGetConfigs(
-          &enable_linear_memory, CNDEV_DEVICE_CONFIGS_LINEAR_MEM, handle));
-    device_properties[device_index].supports_linear_memory = (enable_linear_memory == 2);
+        &enable_linear_memory, CNDEV_DEVICE_CONFIGS_LINEAR_MEM, handle));
+    device_properties[device_index].supports_linear_memory =
+        (enable_linear_memory == 2);
   } else {
     device_properties[device_index].supports_linear_memory = false;
   }

@@ -16,16 +16,15 @@
 namespace torch_mlu {
 namespace ops {
 
-#define ADAM_NRAM_SIZE (MAX_NRAM_SIZE + REM_FOR_STACK - 32 * 1024)
 #define ALIGN_SIZE 128
 
 using FULL_T = float;
 // Use half of the max nram size for ping-pong
-__nram__ char total_nram[ADAM_NRAM_SIZE];
+__nram__ char total_nram[MAX_NRAM_SIZE];
 
-__mlu_func__ __mlu_host__ inline int get_element_num(const int& split_num) {
-  int SIZE_PER_REGION_UNPAD = ADAM_NRAM_SIZE / split_num;
-  return SIZE_PER_REGION_UNPAD / ALIGN_SIZE * ALIGN_SIZE;
+// More details in Note [FusedSGD Nram space split]
+inline int get_char_element_num(const int& nram_size, const int& split_num) {
+  return (nram_size - reserve_stack_size) / split_num / ALIGN_SIZE * ALIGN_SIZE;
 }
 
 template<int depth>
@@ -181,8 +180,7 @@ __mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<
                                 const bool maximize,
                                 const bool is_first_step,
                                 const float* grad_scale_ptr,
-                                const float* found_inf_ptr,
-                                const int char_element_num) {
+                                const float* found_inf_ptr) {
   if (__is_mpu()) return;
   if (found_inf_ptr && *found_inf_ptr == 1) return;
   using T = std::tuple_element_t<0, tupleTypeList>;
@@ -194,7 +192,8 @@ __mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<
   void* load_pong_nram_array[array_depth] = {nullptr};
   void* store_ping_nram_array[array_depth] = {nullptr};
   void* store_pong_nram_array[array_depth] = {nullptr};
-  int char_ping_pong_offset = char_element_num * depth;
+  const int char_element_num = container.block_size * sizeof(FULL_T);
+  const int char_ping_pong_offset = char_element_num * depth;
   torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
     load_ping_nram_array, &(total_nram[0]), char_element_num);
   torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
@@ -365,15 +364,15 @@ void bang_torch_fused_sgd_internal(
     const float* found_inf_ptr,
     cnrtQueue_t stream,
     cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim) {
-  int char_element_num = 0;
+    cnrtDim3_t k_dim,
+    const int nram_size) {
+  int element_num = 0;
   // More details in Note [FusedSGD Nram space split]
   if constexpr (depth == 3) {
-    char_element_num = get_element_num(2 * depth + (grad_scale_ptr != nullptr ? 2 : 1));
+    element_num = get_char_element_num(nram_size, 2 * depth + (grad_scale_ptr != nullptr ? 2 : 1)) / sizeof(float);
   } else {
-    char_element_num = get_element_num(2 * depth + (grad_scale_ptr != nullptr ? 1 : 0));
+    element_num = get_char_element_num(nram_size, 2 * depth + (grad_scale_ptr != nullptr ? 1 : 0)) / sizeof(float);
   }
-  int element_num = char_element_num / sizeof(float);
   using T = CNRTTypeValueToBangcCppType_t<value>;
   // Why need to using max depth to generate tuple_t?
   // Answer: This op has three inputs when moment_buffer is not empty, otherwise only two inputs.
@@ -385,111 +384,37 @@ void bang_torch_fused_sgd_internal(
                 data_ptr_list, sizes, element_num, stream, k_type, k_dim,
                 TorchFusedSGD<tuple_t, maxBlockNum, depth>(),
                 lr_ptr, learning_rate, weight_decay, momentum, dampening, nesterov,
-                maximize, is_first_step, grad_scale_ptr, found_inf_ptr, char_element_num);
+                maximize, is_first_step, grad_scale_ptr, found_inf_ptr);
 }
 
 // add explicit instantiation for float, half, bfloat16_t
-template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtFloat, 3>(
-    const std::vector<std::array<void*, 3>>& data_ptr_list,
-    const std::vector<int64_t>& sizes,
-    const float* lr_ptr,
-    const float learning_rate,
-    const float weight_decay,
-    const float momentum,
-    const float dampening,
-    const bool nesterov,
-    const bool maximize,
-    const bool is_first_step,
-    const float* grad_scale_ptr,
-    const float* found_inf_ptr,
-    cnrtQueue_t stream,
-    cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
+#define TORCH_FUSED_SGD_INTERNAL_API_DEFINE(cnrt_type, depth)     \
+  template void bang_torch_fused_sgd_internal<cnrt_type, depth>(  \
+      const std::vector<std::array<void*, depth>>& data_ptr_list, \
+      const std::vector<int64_t>& sizes,                          \
+      const float* lr_ptr,                                        \
+      const float learning_rate,                                  \
+      const float weight_decay,                                   \
+      const float momentum,                                       \
+      const float dampening,                                      \
+      const bool nesterov,                                        \
+      const bool maximize,                                        \
+      const bool is_first_step,                                   \
+      const float* grad_scale_ptr,                                \
+      const float* found_inf_ptr,                                 \
+      cnrtQueue_t stream,                                         \
+      cnrtFunctionType_t k_type,                                  \
+      cnrtDim3_t k_dim,                                           \
+      const int nram_size);
 
-template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtHalf, 3>(
-    const std::vector<std::array<void*, 3>>& data_ptr_list,
-    const std::vector<int64_t>& sizes,
-    const float* lr_ptr,
-    const float learning_rate,
-    const float weight_decay,
-    const float momentum,
-    const float dampening,
-    const bool nesterov,
-    const bool maximize,
-    const bool is_first_step,
-    const float* grad_scale_ptr,
-    const float* found_inf_ptr,
-    cnrtQueue_t stream,
-    cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
+TORCH_FUSED_SGD_INTERNAL_API_DEFINE(cnrtDataType_V2_t::cnrtFloat, 2)
+TORCH_FUSED_SGD_INTERNAL_API_DEFINE(cnrtDataType_V2_t::cnrtFloat, 3)
+TORCH_FUSED_SGD_INTERNAL_API_DEFINE(cnrtDataType_V2_t::cnrtHalf, 2)
+TORCH_FUSED_SGD_INTERNAL_API_DEFINE(cnrtDataType_V2_t::cnrtHalf, 3)
+TORCH_FUSED_SGD_INTERNAL_API_DEFINE(cnrtDataType_V2_t::cnrtBfloat, 2)
+TORCH_FUSED_SGD_INTERNAL_API_DEFINE(cnrtDataType_V2_t::cnrtBfloat, 3)
 
-template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtBfloat, 3>(
-    const std::vector<std::array<void*, 3>>& data_ptr_list,
-    const std::vector<int64_t>& sizes,
-    const float* lr_ptr,
-    const float learning_rate,
-    const float weight_decay,
-    const float momentum,
-    const float dampening,
-    const bool nesterov,
-    const bool maximize,
-    const bool is_first_step,
-    const float* grad_scale_ptr,
-    const float* found_inf_ptr,
-    cnrtQueue_t stream,
-    cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
-
-template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtFloat, 2>(
-    const std::vector<std::array<void*, 2>>& data_ptr_list,
-    const std::vector<int64_t>& sizes,
-    const float* lr_ptr,
-    const float learning_rate,
-    const float weight_decay,
-    const float momentum,
-    const float dampening,
-    const bool nesterov,
-    const bool maximize,
-    const bool is_first_step,
-    const float* grad_scale_ptr,
-    const float* found_inf_ptr,
-    cnrtQueue_t stream,
-    cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
-
-template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtHalf, 2>(
-    const std::vector<std::array<void*, 2>>& data_ptr_list,
-    const std::vector<int64_t>& sizes,
-    const float* lr_ptr,
-    const float learning_rate,
-    const float weight_decay,
-    const float momentum,
-    const float dampening,
-    const bool nesterov,
-    const bool maximize,
-    const bool is_first_step,
-    const float* grad_scale_ptr,
-    const float* found_inf_ptr,
-    cnrtQueue_t stream,
-    cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
-
-template void bang_torch_fused_sgd_internal<cnrtDataType_V2_t::cnrtBfloat, 2>(
-    const std::vector<std::array<void*, 2>>& data_ptr_list,
-    const std::vector<int64_t>& sizes,
-    const float* lr_ptr,
-    const float learning_rate,
-    const float weight_decay,
-    const float momentum,
-    const float dampening,
-    const bool nesterov,
-    const bool maximize,
-    const bool is_first_step,
-    const float* grad_scale_ptr,
-    const float* found_inf_ptr,
-    cnrtQueue_t stream,
-    cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
+#undef TORCH_FUSED_SGD_INTERNAL_API_DEFINE
 
 } // namespace ops
 } // namespace torch_mlu

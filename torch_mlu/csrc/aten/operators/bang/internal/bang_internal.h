@@ -58,28 +58,32 @@ bool amp_unscale_internal(
     cnrtQueue_t queue,
     cnrtDataType_t cnrt_type);
 
+template <cnrtDataType_V2_t value, int depth>
 void bang_fused_l2_norm_internal(
-    AddressList tensors,
-    SizeList sizes,
+    const std::vector<std::array<void*, depth>>& tensor_ptr_list,
+    const std::vector<int64_t>& tensor_size_list,
+    const std::vector<int>& tensor_index_list,
     float* output_buffer_ptr,
+    const int each_cluster_per_tensor_num,
     float* output_buffer_per_tensor_ptr,
-    int tensor_num,
     bool per_tensor,
     int32_t* overflow,
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
-    cnrtQueue_t queue,
-    cnrtDataType_V2_t cnrt_type,
+    const int nram_size,
+    cnrtQueue_t stream,
     bool amp_opt);
 
 void bang_fused_l2_norm_clean_internal(
+    int num_of_output,
     float* output_ptr,
-    float* output_per_tensor_ptr,
     float* output_buffer_ptr,
+    int tensor_num,
+    int tensor_size,
+    float* output_per_tensor_ptr,
     float* output_buffer_per_tensor_ptr,
     bool per_tensor,
-    int tensor_num,
-    int* overflow,
+    int32_t* overflow,
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
@@ -100,7 +104,8 @@ void apex_fused_adam_internal(
     float decay_correction,
     cnrtQueue_t queue,
     cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
+    cnrtDim3_t k_dim,
+    const int nram_size);
 
 template <cnrtDataType_V2_t value, int depth>
 void bang_torch_fused_adamw_internal(
@@ -122,7 +127,8 @@ void bang_torch_fused_adamw_internal(
     internal::ADAM_MODE mode,
     cnrtQueue_t stream,
     cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
+    cnrtDim3_t k_dim,
+    const int nram_size);
 
 template <cnrtDataType_V2_t value, int depth>
 void bang_torch_fused_sgd_internal(
@@ -140,7 +146,8 @@ void bang_torch_fused_sgd_internal(
     const float* found_inf_ptr,
     cnrtQueue_t stream,
     cnrtFunctionType_t k_type,
-    cnrtDim3_t k_dim);
+    cnrtDim3_t k_dim,
+    const int nram_size);
 
 void bang_fused_sgd_internal(
     AddressList g,

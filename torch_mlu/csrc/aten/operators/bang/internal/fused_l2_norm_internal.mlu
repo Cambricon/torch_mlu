@@ -10,264 +10,472 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *************************************************************************/
 
-#include <cmath>
 #include "bang_internal.h"
+#include "aten/operators/bang/internal/multi_tensor_apply.h"
 
 namespace torch_mlu {
 namespace ops {
 
-#define SIZE_PER_REGION_L2NORM (MAX_NRAM_SIZE - 32 * 4)
+static constexpr int L2NormTempNum = 64;
+__nram__ float first_sumpool_temp_nram[L2NormTempNum];
+__nram__ float second_sumpool_temp_nram[1];
+__nram__ char total_nram[MAX_NRAM_SIZE - (L2NormTempNum + 1)];
+__mlu_shared__ char total_sram[MAX_SRAM_SIZE];
 
-__nram__ float temp_nram[32];
-__nram__ char total_nram[SIZE_PER_REGION_L2NORM];
+/**
+ * Note [l2-norm nram size]
+ * Split nram to three part, first two parts are used for load input in ping-pong mode,
+ * last part is used for store output data.
+ * For per-tensor is false, last part is a float nram data to sum all repeat result in each core,
+ * then store this nram data to gdram for last reduce. And then store this float data to gdram;
+ * For per-tensor is true, last part is seve__load_nramral float datas for each tensor to store reduce value,
+ * then sum each tensor result to store to gdram.
+*/
+inline int get_char_element_num(const int& nram_size,
+                                const bool& per_tensor,
+                                const int& each_cluster_per_tensor_num) {
+  // 2 mean output and second sumpool output.
+  constexpr int temp_nram_buffer = L2NormTempNum + 2;
+  constexpr int L2NormAlignSize = L2NormTempNum * sizeof(float);
+  const int nram_space_size = nram_size - reserve_stack_size - sizeof(float) * temp_nram_buffer;
+  if (per_tensor == true) {
+    return (nram_space_size - each_cluster_per_tensor_num * sizeof(float)) / (2 * L2NormAlignSize) * L2NormAlignSize;
+  } else {
+    return nram_space_size / (2 * L2NormAlignSize) * L2NormAlignSize;
+  }
+}
 
-inline __mlu_func__ void ComputeInternal(float* tensor_nram, int num_align) {
+template<typename AccT, bool perTensor, typename = std::enable_if_t<std::is_same_v<AccT, float>>>
+inline __mlu_func__ void fused_l2_norm_internal(AccT* tensor_nram,
+                                                AccT* output_nram,
+                                                AccT* output_nram_buffer_per_tensor,
+                                                const int& tensor_index,
+                                                const int& num_align) {
   __bang_square(tensor_nram, tensor_nram, num_align);
+  // align num_align to 256 byte.
+  // This is only used for remaind part of all data,
+  // because nram size already aligned to 256 byte.
+  int ci_align_num = num_align;
+  const int remainder = ci_align_num % L2NormTempNum;
+  if (remainder != 0) {
+    // pad up
+    const int last_part_num = L2NormTempNum - remainder;
+    ci_align_num = num_align + last_part_num;
+    __bang_write_zero(tensor_nram + num_align, last_part_num);
+  }
   __bang_sumpool(
-      temp_nram,
+      first_sumpool_temp_nram,
       tensor_nram,
-      /*channel*/ 32,
+      /*channel*/ L2NormTempNum,
       /*height*/ 1,
-      /*width*/ num_align / 32,
+      /*width*/ ci_align_num / L2NormTempNum,
       /*kernel_height*/ 1,
-      /*kernel_width*/ num_align / 32,
+      /*kernel_width*/ ci_align_num / L2NormTempNum,
       /*stride_height*/ 1,
       /*stride_width*/ 1);
-  __bang_reduce_sum(temp_nram, temp_nram, 32);
-}
-
-template <typename T>
-inline __mlu_func__ void Compute(T* tensor_nram, int num_align) {
-  ComputeInternal((float*)tensor_nram, num_align);
-}
-
-template <>
-inline __mlu_func__ void Compute(half* tensor_nram, int num_align) {
-  __bang_half2float(
-      (float*)tensor_nram, tensor_nram + SIZE_PER_REGION_L2NORM / 4, num_align);
-  ComputeInternal((float*)tensor_nram, num_align);
-}
-
-template <>
-inline __mlu_func__ void Compute(bfloat16_t* tensor_nram,
-                                 int num_align) {
-  __bang_bfloat162float((float*)tensor_nram, tensor_nram + SIZE_PER_REGION_L2NORM / 4, num_align);
-  ComputeInternal((float*)tensor_nram, num_align);
-}
-
-template <typename T>
-__mlu_func__ void ApplyL2norm(
-    const AddressList& tensors,
-    const SizeList& sizes,
-    float* output_buffer,
-    float* output_buffer_per_tensor,
-    int tensor_num,
-    bool per_tensor,
-    int32_t* overflow) {
-  // Data
-  int num_per_region =
-      SIZE_PER_REGION_L2NORM / sizeof(float); // compute type is fixed as float
-  T* tensor_nram = (T*)total_nram;
-  int load_offset = sizeof(T) == 2 ? SIZE_PER_REGION_L2NORM / 4 : 0;
-
-  int remains_chunck_num = 0; // assign each task average chuncks as possible
-  // avoid int overflow for tensor_size near to 2 ^ 31(2G)
-  int64_t tensor_size, chunck_num, last_chunck_size;
-  int repeat_per_task, last_loop_chunck_num;
-  int chunck_id; // chunck_id maybe minus
-  int element_num;
-  float per_core_sum = 0;
-  float temp_partial_sum = 0.0;
-  for (int tensor_id = 0; tensor_id < tensor_num; ++tensor_id) {
-    tensor_size = sizes.sizes[tensor_id];
-
-    chunck_num = ALIGN_UP_DIV(tensor_size, num_per_region);
-    last_chunck_size = (tensor_size - 1) % num_per_region + 1;
-
-    repeat_per_task = ALIGN_UP_DIV(chunck_num + remains_chunck_num, taskDim);
-    last_loop_chunck_num = chunck_num % taskDim;
-
-    T* tensor_gdram = (T*)tensors.addresses[tensor_id];
-    for (int iter = 0; iter < repeat_per_task; ++iter) {
-      chunck_id = iter * taskDim + taskId - remains_chunck_num;
-
-      if (chunck_id > -1 && chunck_id < chunck_num) {
-        element_num =
-            chunck_id == chunck_num - 1 ? last_chunck_size : num_per_region;
-        // bang_squre requires n * 128 bytes
-        // __bang_half2float requires n * 64 elements
-        // take 64 as the intersection
-        int num_align = ALIGN_UP(element_num, 64);
-
-        // Load
-        if (num_align != element_num) {
-          if (sizeof(T) == 2) {
-            __bang_write_value((uint16_t *)tensor_nram + load_offset, num_align, (uint16_t)0);
-          } else {
-            __bang_write_value((uint32_t *)tensor_nram + load_offset, num_align, (uint32_t)0);
-          }
-        }
-        __memcpy(
-            tensor_nram + load_offset,
-            tensor_gdram + chunck_id * num_per_region,
-            element_num * sizeof(T),
-            GDRAM2NRAM);
-
-        Compute(tensor_nram, num_align);
-
-        temp_partial_sum = *temp_nram;
-        per_core_sum += temp_partial_sum;
-        if (per_tensor) {
-          __bang_atomic_add(
-              temp_nram + 1,
-              output_buffer_per_tensor + tensor_id * taskDim + taskId,
-              temp_partial_sum);
-        }
-      }
-    }
-    remains_chunck_num = (remains_chunck_num + last_loop_chunck_num) % taskDim;
+  __bang_sumpool(
+      second_sumpool_temp_nram,
+      first_sumpool_temp_nram,
+      /*channel*/ 1,
+      /*height*/ 1,
+      /*width*/ L2NormTempNum,
+      /*kernel_height*/ 1,
+      /*kernel_width*/ L2NormTempNum,
+      /*stride_height*/ 1,
+      /*stride_width*/ 1);
+  __bang_add(output_nram, output_nram, second_sumpool_temp_nram, 1);
+  if constexpr (perTensor == true) {
+    __bang_add(output_nram_buffer_per_tensor + tensor_index,
+               output_nram_buffer_per_tensor + tensor_index, second_sumpool_temp_nram, 1);
   }
-  __bang_atomic_add(temp_nram + 1, output_buffer + taskId, per_core_sum);
-} 
+}
 
-__mlu_global__ void MLUMultiTensorL2Norm(AddressList tensors, SizeList sizes,
-                                         float* output_buffer,
-                                         float* output_buffer_per_tensor,
-                                         int tensor_num, bool per_tensor,
-                                         bool amp_opt, int32_t* overflow,
-                                         cnrtDataType_V2_t cnrt_type) {
+template<typename T, typename AccT, bool perTensor>
+using fused_l2_norm_func_ptr_type = void (*)(T* tensor_nram,
+                                             AccT* output_nram,
+                                             AccT* output_nram_buffer_per_tensor,
+                                             const int& tensor_index,
+                                             const int& load_offset,
+                                             const int& num_align);
+
+template<typename T, typename AccT, bool perTensor>
+inline __mlu_func__ void fused_l2_norm(T* tensor_nram,
+                                       AccT* output_nram,
+                                       AccT* output_nram_buffer_per_tensor,
+                                       const int& tensor_index,
+                                       const int& load_offset,
+                                       const int& num_align) {
+  // convert half/bfloat16 to float
+  AccT* tensor_nram_f = (AccT*)tensor_nram;
+  if constexpr (std::is_same_v<T, half>) {
+    __bang_half2float(tensor_nram_f, tensor_nram + load_offset, num_align);
+  } else if constexpr (std::is_same_v<T, bfloat16_t>) {
+    __bang_bfloat162float(tensor_nram_f, tensor_nram + load_offset, num_align);
+  }
+  fused_l2_norm_internal<AccT, perTensor>(tensor_nram_f, output_nram,
+                                          output_nram_buffer_per_tensor,
+                                          tensor_index, num_align);
+}
+
+template<typename tupleTypeList, int maxBlockNum, int depth>
+struct FusedL2Nrom {
+
+using FULL_T = float;
+
+template<bool perTensor>
+__mlu_func__ static void call_internal(const torch_mlu::bangcommon::BlockInfoWithIndexList<maxBlockNum, depth>& container,
+                                       float* output_buffer_ptr,
+                                       const int& each_cluster_per_tensor_num,
+                                       float* output_buffer_per_tensor_ptr,
+                                       const int32_t* overflow,
+                                       const bool& amp_opt) {
+  // Only check overflow when amp mode.
   if (amp_opt && *overflow) {
     return;
   }
-  switch (cnrt_type) {
-    case (cnrtDataType_V2_t)cnrtFloat:
-      ApplyL2norm<float>(tensors, sizes, output_buffer,
-                   output_buffer_per_tensor, tensor_num, per_tensor,
-                   overflow);
-      break;
-    case (cnrtDataType_V2_t)cnrtHalf:
-      ApplyL2norm<half>(tensors, sizes, output_buffer, output_buffer_per_tensor,
-                  tensor_num, per_tensor, overflow);
-      break;
-    case (cnrtDataType_V2_t)cnrtBfloat:
-      ApplyL2norm<bfloat16_t>(tensors, sizes, output_buffer, output_buffer_per_tensor,
-                  tensor_num, per_tensor, overflow);
-      break;
-    default:
-      break;
-  }
-}
+  // Get nram space for input and output.
+  const auto& inner_container = container.block_info_container;
+  const int char_element_num = inner_container.block_size * sizeof(FULL_T);
+  void* load_input_ping[depth] = {(void*)total_nram};
+  void* load_input_pong[depth] = {(void*)(total_nram + char_element_num)};
+  FULL_T* output_nram_buffer = (FULL_T*)(total_nram + 2 * char_element_num);
+  FULL_T* output_nram_buffer_per_tensor = nullptr;
+  torch_mlu::bangcommon::MemoryPolicy<tupleTypeList, maxBlockNum, depth>
+    data_handler(inner_container);
 
-__mlu_func__ void ReduceSumPerTensor(
-    float* output_per_tensor,
-    float* output_buffer_per_tensor_ptr,
-    int tensor_num) {
-  // divide tensor_num equally by cores except for the last core
-  // NOTE [taskDim assumption]: the following codes make the assumption that
-  // taskDims for cleanup kernel and ApplyL2norm kernel are the same,
-  // please be careful to break that assumption.
-  const int batch_num = ALIGN_UP_DIV(tensor_num, taskDim);
-  for (int batch = 0; batch < batch_num; batch++) {
-    int tensor_id = batch * taskDim + taskId;
-    if (tensor_id < tensor_num) {
-      float temp_sum = 0.0f;
-      float* tensor_nram = (float*)total_nram;
-      __memcpy(
-          tensor_nram,
-          output_buffer_per_tensor_ptr + tensor_id * taskDim,
-          taskDim * sizeof(float),
-          GDRAM2NRAM);
-      for (int chunk_id = 0; chunk_id < taskDim; chunk_id++) {
-        temp_sum += tensor_nram[chunk_id];
+  using T = std::tuple_element_t<0, tupleTypeList>;
+  // load_offset for half and bfloat16_t, and copy data to last part of nram,
+  // for using same nram space to convert from half/bfloat16_t to float.
+  // This is not need for store data back to gdram.
+  // char_element_num size: |-----------------|-----------------|
+  //                    float start    half/bfloat16_t start
+  int load_offset = sizeof(T) == 2 ? char_element_num / sizeof(FULL_T) : 0;
+  const int circle = data_handler.get_circle_num();
+  int ping_size = 0;
+  int pong_size = 0;
+
+  fused_l2_norm_func_ptr_type<T, FULL_T, perTensor> compute_func = &fused_l2_norm<T, FULL_T, perTensor>;
+  // init nram/wram space
+  // init result output_nram space for per tensor situation.
+  __memcpy_async(
+      output_nram_buffer,
+      output_buffer_ptr + taskId,
+      sizeof(FULL_T),
+      mluMemcpyDirection_t::GDRAM2NRAM);
+  if constexpr (perTensor == true) {
+    output_nram_buffer_per_tensor = output_nram_buffer + 1;
+    if (coreId == 0) {
+      __memcpy_async(
+        output_nram_buffer_per_tensor,
+        output_buffer_per_tensor_ptr,
+        sizeof(FULL_T) * each_cluster_per_tensor_num,
+        mluMemcpyDirection_t::GDRAM2NRAM);
+    } else {
+      __bang_write_zero(output_nram_buffer_per_tensor, each_cluster_per_tensor_num);
+    }
+    __sync_io_move_compute();
+  }
+
+  if (circle > 0) {
+    data_handler.multi_data_load_same_size_with_offset(0, load_input_ping, ping_size, load_offset);
+  }
+  // can't move this to if (circle > 0), cause some core need to sync gdram to nram even when circle
+  // is equal to zero.
+  __sync_io();
+
+  for (int i = 0; i < circle - 1; ++i) {
+    const bool ping_pong = i % 2;
+    data_handler.multi_data_load_same_size_with_offset(i + 1,
+                                                       ping_pong ? load_input_ping : load_input_pong,
+                                                       ping_pong ? ping_size : pong_size, load_offset);
+    torch_mlu::bangcommon::invoke<depth, tupleTypeList>(compute_func,
+                                  ping_pong ? load_input_pong : load_input_ping,
+                                  output_nram_buffer, output_nram_buffer_per_tensor,
+                                  container.index_list[data_handler.get_block_index(i)],
+                                  load_offset, ping_pong ? pong_size : ping_size);
+    __sync_io_move_compute(false, false, true, true, false, false);
+    __sync_io_move_compute(true, false, false, false, false, true);
+  }
+
+  if (circle > 0) {
+    const bool ping_pong = circle % 2;
+    torch_mlu::bangcommon::invoke<depth, tupleTypeList>(compute_func,
+                                  ping_pong ? load_input_ping : load_input_pong,
+                                  output_nram_buffer, output_nram_buffer_per_tensor,
+                                  container.index_list[data_handler.get_block_index(circle - 1)],
+                                  load_offset, ping_pong ? ping_size : pong_size);
+    __sync_compute();
+  }
+
+  // collect a cluster nram data to sram array.
+  // use sram to ease write confilct.
+  FULL_T* output_sram_buffer = (FULL_T*)total_sram;
+  // store nram data to sram
+  __memcpy_async(
+      output_sram_buffer + coreId,
+      output_nram_buffer,
+      sizeof(FULL_T),
+      mluMemcpyDirection_t::NRAM2SRAM);
+  __sync_cluster();
+  // store sram to gdram
+  __memcpy_async(output_buffer_ptr + taskIdY * coreDim,
+        output_sram_buffer,
+        sizeof(FULL_T) * coreDim,
+        mluMemcpyDirection_t::SRAM2GDRAM);
+  // __sync_io(); no need to add sync in here.
+  // For perTensor output, copy nram data to sram except ipu0,
+  // and copy others data from sram, then sum all ipu data in ipu0.
+  // |  ipu0  |  ipu1  |  ipu2  |  ipu3  |
+  // 1) copy to sram:
+  // sram:    |  ipu1  |  ipu2  |   ipu3  |
+  // 2) copy sram to ipu0 nram, add all ipu data in ipu0.
+  // 3) then copy back to gdram.
+  if constexpr (perTensor == true) {
+    // copy ipu nram data to sram except ipu 0.
+    FULL_T* output_sram_buffer_per_tensor = output_sram_buffer + coreDim;
+    if (coreId != 0) {
+      __memcpy_async(
+          output_sram_buffer_per_tensor + (coreId - 1) * each_cluster_per_tensor_num,
+          output_nram_buffer_per_tensor,
+          sizeof(FULL_T) * each_cluster_per_tensor_num,
+          mluMemcpyDirection_t::NRAM2SRAM);
+    }
+    __sync_all_ipu();
+    // using first core in cluster to reduce a sram data to a single line.
+    if (coreId == 0) {
+      const int repeat_copy_num = coreDim - 1;
+      FULL_T* reduce_nram = (FULL_T*)total_nram;
+      __memcpy_async(reduce_nram,
+                     output_sram_buffer_per_tensor,
+                     sizeof(FULL_T) * repeat_copy_num * each_cluster_per_tensor_num,
+                     mluMemcpyDirection_t::SRAM2NRAM);
+      __sync_move();
+      for (int i = 0; i < repeat_copy_num; ++i) {
+        __bang_add(output_nram_buffer_per_tensor, output_nram_buffer_per_tensor,
+                   reduce_nram + i * each_cluster_per_tensor_num,
+                   each_cluster_per_tensor_num);
       }
-      output_per_tensor[tensor_id] = sqrtf(temp_sum);
+      __sync_compute();
+      __memcpy_async(
+          output_buffer_per_tensor_ptr,
+          output_nram_buffer_per_tensor,
+          sizeof(FULL_T) * each_cluster_per_tensor_num,
+          mluMemcpyDirection_t::NRAM2GDRAM);
     }
   }
 }
+
+__mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoWithIndexList<maxBlockNum, depth> container,
+                                float* output_buffer_ptr,
+                                const int each_cluster_per_tensor_num,
+                                float* output_buffer_per_tensor_ptr,
+                                const int32_t* overflow,
+                                const bool amp_opt,
+                                const bool per_tensor) {
+  if (per_tensor == true) {
+    // For output buffer per tensor load, we need to add a offset for each cluster.
+    // each_cluster_per_tensor_num for offset of each cluster.
+    const int total_offet_per_tensor = each_cluster_per_tensor_num * taskIdY;
+    output_buffer_per_tensor_ptr += total_offet_per_tensor;
+    call_internal<true>(container, output_buffer_ptr, each_cluster_per_tensor_num,
+                        output_buffer_per_tensor_ptr, overflow, amp_opt);
+  } else {
+    call_internal<false>(container, output_buffer_ptr, each_cluster_per_tensor_num,
+                         output_buffer_per_tensor_ptr, overflow, amp_opt);
+  }
+}
+};
+
+/**
+ * Note [L2NormBufferUsing]
+ * Using output buffer and output buffer per tensor to store l2 norm intermediate
+ * data.
+ * Output buffer size is same as taskDim * sizeof(float). And output buffer per tensor
+ * size is same as clusterNum * sizeof(float).
+ * 
+ * Each core computes different part of tensor or different tensors in kernel, so how to
+ * store those intermediate data.
+ * 1) For output compute. Each core will accumulate all the result data to a single float
+ *    nram space, and then gathered in sram to store to gdram.
+ * Like this:
+ * 1, 2, 3... mean each core nram space.
+ * |   cluster 0   |   cluster 1   |...
+ * | 1 | 2 | 3 | 4 | 1 | 2 | 3 | 4 |...
+ * gathered to sram and store to gdram.
+ * | 1   2   3   4 | 1   2   3   4 |...
+ * In function MLUCleanUp will reduce sum all those data to get output value.
+ *
+ * 2) For output per tensor compute. Each core will accumulate a block of data and store this
+ * value to nram with tensor index.
+ * Like this:
+ * gdram: cluster_num * total_tensor_num
+ * |        total_tensor_num        |        total_tensor_num        |...
+ * nram: compute different part of different tensor, and store to narm with tensor index.
+ * T1P1 mean part1 of tesor1.
+ * |  core1  |  core2  |  core3  |  core1  |  core2  |  core3  |...
+ * |   T1P1  |   T2P1  |   T3P1  |   T1P2  |   T2P2  |   T3P2  |...
+ * core1 will add T1P1,T1P2 result to (float*)nram_start_ptr + T1_index in different circle;
+ * core2 will add T2P1,T2P2 result to (float*)nram_start_ptr + T2_index in different circle;
+ * core2 will add T3P1,T3P2 result to (float*)nram_start_ptr + T3_index in different circle;
+ *
+ * 3) If total tensor num greater than maxBlockNum, operator of FusedL2Nrom will be called
+ *    several times.
+ *
+ * 4) First core will gather ipus data in same cluster for output buffer. And in sum ipus
+ *    data in same cluster for output buffer per tensor.
+ */
+template <cnrtDataType_V2_t value, int depth>
+void bang_fused_l2_norm_internal(
+    const std::vector<std::array<void*, depth>>& tensor_ptr_list,
+    const std::vector<int64_t>& tensor_size_list,
+    const std::vector<int>& tensor_index_list,
+    float* output_buffer_ptr,
+    const int each_cluster_per_tensor_num,
+    float* output_buffer_per_tensor_ptr,
+    bool per_tensor,
+    int32_t* overflow,
+    cnrtDim3_t k_dim,
+    cnrtFunctionType_t k_type,
+    const int nram_size,
+    cnrtQueue_t stream,
+    bool amp_opt) {
+  constexpr int maxBlockNum = torch_mlu::bangcommon::depth_to_max_blockinfo[depth - 1];
+  using T = CNRTTypeValueToBangcCppType_t<value>;
+  using tupleTypeList = std::tuple<T>;
+  const int element_num = get_char_element_num(nram_size, per_tensor,
+                            each_cluster_per_tensor_num) / sizeof(float);
+  torch_mlu::bangcommon::multi_tensor_apply_with_tensor_index<maxBlockNum, depth, tupleTypeList>(
+              tensor_ptr_list, tensor_size_list, tensor_index_list,
+              element_num, stream, k_type, k_dim,
+              FusedL2Nrom<tupleTypeList, maxBlockNum, depth>(),
+              output_buffer_ptr, each_cluster_per_tensor_num,
+              output_buffer_per_tensor_ptr, overflow, amp_opt, per_tensor);
+}
+
+// add explicit instantiation for float, half, bfloat16_t
+#define APEX_FUSED_L2NORM_INTERNAL_DEFINE(cnrt_type, depth)       \
+template void bang_fused_l2_norm_internal<cnrt_type, depth>(      \
+    const std::vector<std::array<void*, depth>>& tensor_ptr_list, \
+    const std::vector<int64_t>& tensor_size_list,                 \
+    const std::vector<int>& tensor_index_list,                    \
+    float* output_buffer_ptr,                                     \
+    const int each_cluster_per_tensor_num,                        \
+    float* output_buffer_per_tensor_ptr,                          \
+    bool per_tensor,                                              \
+    int32_t* overflow,                                            \
+    cnrtDim3_t k_dim,                                             \
+    cnrtFunctionType_t k_type,                                    \
+    const int nram_size,                                          \
+    cnrtQueue_t stream,                                           \
+    bool amp_opt);
+
+APEX_FUSED_L2NORM_INTERNAL_DEFINE(cnrtDataType_V2_t::cnrtFloat, 1)
+APEX_FUSED_L2NORM_INTERNAL_DEFINE(cnrtDataType_V2_t::cnrtHalf, 1)
+APEX_FUSED_L2NORM_INTERNAL_DEFINE(cnrtDataType_V2_t::cnrtBfloat, 1)
+
+#undef APEX_FUSED_L2NORM_INTERNAL_DEFINE
 
 __mlu_global__ void MLUCleanUp(
-    float* output,
-    float* output_per_tensor,
-    float* output_buffer_ptr,
-    float* output_buffer_per_tensor_ptr,
-    bool per_tensor,
-    int tensor_num,
-    bool amp_opt,
-    int* overflow) {
-  if (coreId == 0x80) {
-    return;
+    const int num_of_output,
+    float* output_ptr,
+    const float* output_buffer_ptr,
+    const int tensor_num,
+    const int tensor_size,
+    float* output_per_tensor_ptr,
+    const float* output_buffer_per_tensor_ptr,
+    const bool per_tensor,
+    const bool amp_opt,
+    int32_t* overflow) {
+  int pad_num_of_output = num_of_output;
+  #if __BANG_ARCH__ < 520
+  if (num_of_output % L2NormTempNum != 0) {
+    pad_num_of_output = (num_of_output + L2NormTempNum - 1) / L2NormTempNum * L2NormTempNum;
   }
-
-  if (amp_opt && *overflow) {
-    return;
-  }
-
-  // all cores will write to the same place with the same value
-  // see NOTE [taskDim assumption]
-  float final_value = 0.0f;
+  #endif
   float* tensor_nram = (float*)total_nram;
-  __memcpy(tensor_nram, output_buffer_ptr, taskDim * sizeof(float), GDRAM2NRAM);
-  for (int i = 0; i < taskDim; i++) {
-    final_value += tensor_nram[i];
+  float* tensor_nram_per_tensor = tensor_nram + pad_num_of_output;
+  __memcpy_async(tensor_nram, output_buffer_ptr,
+           num_of_output * sizeof(float),
+           mluMemcpyDirection_t::GDRAM2NRAM);
+  if (per_tensor) {
+    __memcpy_async(tensor_nram_per_tensor, output_buffer_per_tensor_ptr,
+                   tensor_num * tensor_size * sizeof(float),
+                   mluMemcpyDirection_t::GDRAM2NRAM);
   }
-
-  if (std::isnan(final_value) || std::isinf(final_value)) {
+  __sync_io();
+  float final_value = 0.0f;
+  #if __BANG_ARCH__ >= 520
+  final_value = __bang_sum(tensor_nram, num_of_output);
+  #else
+  __bang_write_zero(tensor_nram + num_of_output, pad_num_of_output - num_of_output);
+  __bang_sumpool(
+      second_sumpool_temp_nram,
+      tensor_nram,
+      /*channel*/ 1,
+      /*height*/ 1,
+      /*width*/ pad_num_of_output,
+      /*kernel_height*/ 1,
+      /*kernel_width*/ pad_num_of_output,
+      /*stride_height*/ 1,
+      /*stride_width*/ 1);
+  #endif
+  if (per_tensor) {
+    for (int i = 1; i < tensor_num; ++i) {
+      __bang_add(tensor_nram_per_tensor, tensor_nram_per_tensor,
+                 tensor_nram_per_tensor + i * tensor_size, tensor_size);
+    }
+    __bang_sqrt(tensor_nram_per_tensor, tensor_nram_per_tensor, tensor_size);
+  }
+  __sync_compute();
+  #if __BANG_ARCH__ < 520
+  final_value = __load_nram(second_sumpool_temp_nram);
+  #endif
+  // aligned with apex: if(!isfinite(final)) *noop_gmem = 1;
+  if (!__cn_scalar_isfinite_f32(final_value)) {
     *overflow = 1;
+    // according to the behavior of multi_tensor_l2norm_mp, if abnormal value
+    // is detected, just return. And here we take advantage of the feature
+    // that abnormal values can be saved in the output.
+    if (amp_opt) {
+      // Apex using at::empty to malloc device space, and gpu init device space
+      // to all zero when malloc. MLU don't do this now. So need to write zero
+      // in overflow situation. And other situation no need do thie.
+      final_value = 0.0f;
+      __bang_write_zero(tensor_nram_per_tensor, tensor_size);
+    }
   }
-
-  // according to the behavior of multi_tensor_l2norm_mp, if abnormal value
-  // is detected, just return. And here we take advantage of the feature
-  // that abnormal values can be saved in the output.
-  if (amp_opt && *overflow) {
-    return;
-  }
-
-  *output = sqrtf(final_value);
+  __store_gdram(output_ptr, std::sqrtf(final_value));
 
   if (per_tensor) {
-    ReduceSumPerTensor(
-        output_per_tensor, output_buffer_per_tensor_ptr, tensor_num);
+    __memcpy_async(output_per_tensor_ptr, tensor_nram_per_tensor,
+                   tensor_size * sizeof(float),
+                   mluMemcpyDirection_t::NRAM2GDRAM);
   }
-}
-
-void bang_fused_l2_norm_internal(AddressList tensors, SizeList sizes,
-                                 float* output_buffer_ptr,
-                                 float* output_buffer_per_tensor_ptr,
-                                 int tensor_num, bool per_tensor,
-                                 int32_t* overflow, cnrtDim3_t k_dim,
-                                 cnrtFunctionType_t k_type, cnrtQueue_t queue,
-                                 cnrtDataType_V2_t cnrt_type, bool amp_opt) {
-  MLUMultiTensorL2Norm<<<k_dim, k_type, queue>>>(
-      tensors,
-      sizes,
-      output_buffer_ptr,
-      output_buffer_per_tensor_ptr,
-      tensor_num,
-      per_tensor,
-      amp_opt,
-      overflow,
-      cnrt_type);
 }
 
 void bang_fused_l2_norm_clean_internal(
+    int num_of_output,
     float* output_ptr,
-    float* output_per_tensor_ptr,
     float* output_buffer_ptr,
+    int tensor_num,
+    int tensor_size,
+    float* output_per_tensor_ptr,
     float* output_buffer_per_tensor_ptr,
     bool per_tensor,
-    int tensor_num,
-    int* overflow,
+    int32_t* overflow,
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
     bool amp_opt) {
   MLUCleanUp<<<k_dim, k_type, queue>>>(
+      num_of_output,
       output_ptr,
-      output_per_tensor_ptr,
       output_buffer_ptr,
+      tensor_num,
+      tensor_size,
+      output_per_tensor_ptr,
       output_buffer_per_tensor_ptr,
       per_tensor,
-      tensor_num,
       amp_opt,
       overflow);
 }
