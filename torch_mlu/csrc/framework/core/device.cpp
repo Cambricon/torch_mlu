@@ -113,6 +113,10 @@ void initDeviceProperty(at::DeviceIndex device_index) {
       &device_properties[device_index].cluster_count,
       cnrtAttrClusterCount,
       device_index));
+  TORCH_CNRT_CHECK(cnrtDeviceGetAttribute(
+      &device_properties[device_index].nram_size,
+      cnrtAttrNramSizePerMcore,
+      device_index));
   device_properties[device_index].multi_processor_count =
       device_properties[device_index].cluster_count *
       device_properties[device_index].core_num_per_cluster;

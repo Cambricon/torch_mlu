@@ -2,17 +2,16 @@
 
 #include <array>
 #include <vector>
-#include <optional>
 #include "aten/operators/bang/internal/common_util.h"
 
 namespace torch_mlu {
 namespace ops {
 
 namespace internal {
-  enum class ADAM_MODE {
-    adam = 0,
-    adamw = 1,
-  };
+enum class ADAM_MODE {
+  adam = 0,
+  adamw = 1,
+};
 }
 
 void dump(
@@ -59,69 +58,77 @@ bool amp_unscale_internal(
     cnrtQueue_t queue,
     cnrtDataType_t cnrt_type);
 
+template <cnrtDataType_V2_t value, int depth>
 void bang_fused_l2_norm_internal(
-    AddressList tensors,
-    SizeList sizes,
+    const std::vector<std::array<void*, depth>>& tensor_ptr_list,
+    const std::vector<int64_t>& tensor_size_list,
+    const std::vector<int>& tensor_index_list,
     float* output_buffer_ptr,
+    const int each_cluster_per_tensor_num,
     float* output_buffer_per_tensor_ptr,
+    bool per_tensor,
+    int32_t* overflow,
+    cnrtDim3_t k_dim,
+    cnrtFunctionType_t k_type,
+    const int nram_size,
+    cnrtQueue_t stream,
+    bool amp_opt);
+
+void bang_fused_l2_norm_clean_internal(
+    int num_of_output,
+    float* output_ptr,
+    float* output_buffer_ptr,
     int tensor_num,
+    int tensor_size,
+    float* output_per_tensor_ptr,
+    float* output_buffer_per_tensor_ptr,
     bool per_tensor,
     int32_t* overflow,
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    cnrtDataType_V2_t cnrt_type,
     bool amp_opt);
 
-void bang_fused_l2_norm_clean_internal(
-    float* output_ptr,
-    float* output_per_tensor_ptr,
-    float* output_buffer_ptr,
-    float* output_buffer_per_tensor_ptr,
-    bool per_tensor,
-    int tensor_num,
-    int* overflow,
-    cnrtDim3_t k_dim,
-    cnrtFunctionType_t k_type,
+template <cnrtDataType_V2_t value, int depth>
+void apex_fused_adam_internal(
+    const std::vector<std::array<void*, depth>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    float beta1,
+    float beta1_minus,
+    float beta2,
+    float beta2_minus,
+    float epsilon_correction,
+    float learning_rate_correction,
+    internal::ADAM_MODE mode,
+    float decay,
+    float decay_correction,
     cnrtQueue_t queue,
-    bool amp_opt);
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim,
+    const int nram_size);
 
-template<cnrtDataType_V2_t value, int depth>
-void apex_fused_adam_internal(const std::vector<std::array<void*, depth>>& data_ptr_list,
-                              const std::vector<int64_t>& sizes,
-                              float beta1,
-                              float beta1_minus,
-                              float beta2,
-                              float beta2_minus,
-                              float epsilon_correction,
-                              float learning_rate_correction,
-                              internal::ADAM_MODE mode,
-                              float decay,
-                              float decay_correction,
-                              cnrtQueue_t queue,
-                              cnrtFunctionType_t k_type,
-                              cnrtDim3_t k_dim);
-
-template<cnrtDataType_V2_t value, int depth>
-void bang_torch_fused_adamw_internal(const std::vector<std::array<void*, depth>>& data_ptr_list,
-                                     const std::vector<int64_t>& sizes,
-                                     const std::vector<void*>& steps_ptr_list,
-                                     float* lr_ptr,
-                                     float learning_rate,
-                                     float beta1,
-                                     float beta1_minus,
-                                     float beta2,
-                                     float beta2_minus,
-                                     float weight_decay,
-                                     float epsilon,
-                                     bool maximize,
-                                     bool amsgrad,
-                                     float* grad_scale_ptr,
-                                     float* found_inf_ptr,
-                                     internal::ADAM_MODE mode,
-                                     cnrtQueue_t stream,
-                                     cnrtFunctionType_t k_type,
-                                     cnrtDim3_t k_dim);
+template <cnrtDataType_V2_t value, int depth>
+void bang_torch_fused_adamw_internal(
+    const std::vector<std::array<void*, depth>>& data_ptr_list,
+    const std::vector<int64_t>& sizes,
+    const std::vector<void*>& steps_ptr_list,
+    float* lr_ptr,
+    float learning_rate,
+    float beta1,
+    float beta1_minus,
+    float beta2,
+    float beta2_minus,
+    float weight_decay,
+    float epsilon,
+    bool maximize,
+    bool amsgrad,
+    float* grad_scale_ptr,
+    float* found_inf_ptr,
+    internal::ADAM_MODE mode,
+    cnrtQueue_t stream,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim,
+    const int nram_size);
 
 void bang_fused_sgd_internal(
     AddressList g,

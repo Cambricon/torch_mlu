@@ -52,6 +52,7 @@ struct DeviceProp {
   bool supports_linear_memory = false;
   int ipu_frequency = -1;
   int dram_bandwidth = -1;
+  int nram_size = -1;
 };
 
 TORCH_MLU_API c10::DeviceIndex device_count();

@@ -34,53 +34,58 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 namespace ops {
 
-std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm(
+std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm_common(
     const at::Tensor& _dummy_overflow_buf,
-    at::TensorList inputs,
-    bool per_tensor) {
-  auto stream = getCurMLUStream();
+    at::TensorList& inputs,
+    c10::optional<bool>& per_tensor_python,
+    const bool& is_amp) {
+  bool per_tensor =
+      per_tensor_python.has_value() ? per_tensor_python.value() : false;
   auto tensor_num = inputs.size();
-  std::tuple<at::Tensor, at::Tensor> outputs;
-  outputs = std::make_tuple(
-      at::empty(
-          1,
-          at::TensorOptions()
-              .dtype(at::ScalarType::Float)
-              .device(at::kPrivateUse1)),
-      at::empty(
-          tensor_num,
-          at::TensorOptions()
-              .dtype(at::ScalarType::Float)
-              .device(at::kPrivateUse1)));
+  TORCH_CHECK(tensor_num > 0, "tensor num need be greater than zero.");
 
-  cnrtDataType_V2_t cnrt_type =
-      cnnlType2CnrtType_V2(getCnnlType(getMluTensorImpl(inputs[0])));
-
-  AddressList tensors;
-  SizeList sizes;
-  int tensor_count = 0;
-
+  // Add tensor size and device check
+  auto ref_device = inputs[0].device();
+  TORCH_CHECK(
+      ref_device.type() == at::kPrivateUse1, "expected input to be on mlu.");
+  auto stream = getCurMLUStream();
+  const int64_t device_index = ref_device.index();
   cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
   cnrtDim3_t k_dim;
-  uint32_t union_number = torch_mlu::getDeviceAttr(cnrtAttrClusterCount);
-  uint32_t core_dim = torch_mlu::getDeviceAttr(cnrtAttrMcorePerCluster);
-  k_dim.x = core_dim;
-  k_dim.y = union_number;
+  k_dim.x = torch_mlu::getDeviceProperties(device_index)->core_num_per_cluster;
+  k_dim.y = torch_mlu::getDeviceProperties(device_index)->cluster_count;
   k_dim.z = 1;
+  const int nram_size = torch_mlu::getDeviceProperties(device_index)->nram_size;
 
   int taskdim = k_dim.x * k_dim.y * k_dim.z;
-  at::Tensor output_buffer = at::zeros(
-      taskdim,
+  at::Tensor output = at::empty(
+      1,
       at::TensorOptions()
           .dtype(at::ScalarType::Float)
           .device(at::kPrivateUse1));
+  //  Using buffer to store intermediate result. And buffer must be init to
+  //  zero.
+  //  1) For total norm of all input tensors, each ipu will get a intermediate
+  //     result, which is the sum result of all computations on this core.
+  //  2) For per tensor norm of each input tensors, each ipu will store
+  //     accumulate result of each tensor to corresponding position.
+  //     After this, through sram to reduce sum all intermediate result, then
+  //     store to output per tensor buffer.
+  at::Tensor output_buffer = at::zeros(
+      taskdim, at::TensorOptions().dtype(at::kFloat).device(at::kPrivateUse1));
+  at::Tensor output_per_tensor;
   at::Tensor output_buffer_per_tensor;
   if (per_tensor) {
-    output_buffer_per_tensor = at::zeros(
-        tensor_num * taskdim,
+    output_per_tensor = std::move(at::empty(
+        tensor_num,
         at::TensorOptions()
             .dtype(at::ScalarType::Float)
-            .device(at::kPrivateUse1));
+            .device(at::kPrivateUse1)));
+    // buffer for cluster intermediate result. k_dim.y mean num of buffer, and
+    // each buffer size is tensor_num * sizeof(float)
+    output_buffer_per_tensor = at::zeros(
+        tensor_num * k_dim.y,
+        at::TensorOptions().dtype(at::kFloat).device(at::kPrivateUse1));
   }
 
   TORCH_CHECK(
@@ -88,92 +93,113 @@ std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm(
       "MultiTensorL2Norm: The data type of overflow must be int32")
   int32_t* overflow = static_cast<int32_t*>(
       getMluTensorImpl(_dummy_overflow_buf)->mlu_data_ptr());
-  float* output_ptr = static_cast<float*>(
-      getMluTensorImpl(std::get<0>(outputs))->mlu_data_ptr());
+  float* output_ptr =
+      static_cast<float*>(getMluTensorImpl(output)->mlu_data_ptr());
   float* output_buffer_ptr =
       static_cast<float*>(getMluTensorImpl(output_buffer)->mlu_data_ptr());
   float* output_per_tensor_ptr = nullptr;
   float* output_buffer_per_tensor_ptr = nullptr;
   if (per_tensor) {
     output_per_tensor_ptr = static_cast<float*>(
-        getMluTensorImpl(std::get<1>(outputs))->mlu_data_ptr());
+        getMluTensorImpl(output_per_tensor)->mlu_data_ptr());
     output_buffer_per_tensor_ptr = static_cast<float*>(
         getMluTensorImpl(output_buffer_per_tensor)->mlu_data_ptr());
   }
-
-  int tensor_offset = 0;
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       inputs[0].scalar_type(),
       "bang_fused_l2_norm",
       [&]() {
-        for (int tensor_id = 0; tensor_id < tensor_num; ++tensor_id) {
-          auto input = inputs[tensor_id];
+        constexpr int depth = 1;
+        std::vector<at::Tensor> contiguous_tensor_list;
+        std::vector<std::array<void*, depth>> tensor_ptr_list;
+        std::vector<int64_t> tensor_size_list;
+        std::vector<int> tensor_index_list;
+        contiguous_tensor_list.reserve(tensor_num);
+        tensor_ptr_list.reserve(tensor_num);
+        tensor_size_list.reserve(tensor_num);
+        tensor_index_list.reserve(tensor_num);
+        for (int index = 0; index < tensor_num; ++index) {
+          auto input = inputs[index];
           int64_t num_elements = input.numel();
-          auto memory_format = input.suggest_memory_format();
-          auto input_contiguous = cnnl_contiguous(input, memory_format);
-
           if (num_elements == 0) {
             CNLOG(INFO) << "MultiTensorL2Norm: Skip zero element tensor.";
             continue;
           }
-
-          tensors.addresses[tensor_count] =
-              getMluTensorImpl(input_contiguous)->mlu_data_ptr();
-          sizes.sizes[tensor_count] = num_elements;
-
-          ++tensor_count;
-          if (tensor_count == MAX_TENSOR_NUM) {
-            bang_fused_l2_norm_internal(
-                tensors,
-                sizes,
-                output_buffer_ptr,
-                output_buffer_per_tensor_ptr + tensor_offset * taskdim,
-                tensor_count,
-                per_tensor,
-                overflow,
-                k_dim,
-                k_type,
-                stream,
-                cnrt_type,
-                false);
-            tensor_count = 0;
-            tensor_offset = tensor_id + 1;
-          }
+          TORCH_CHECK(input.device() == ref_device, "Device need be same.");
+          auto memory_format = input.suggest_memory_format();
+          auto input_contiguous = cnnl_contiguous(input, memory_format);
+          std::array<void*, depth> ptr_array = {
+              getMluTensorImpl(input_contiguous)->mlu_data_ptr()};
+          tensor_ptr_list.emplace_back(std::move(ptr_array));
+          tensor_size_list.emplace_back(num_elements);
+          contiguous_tensor_list.emplace_back(std::move(input_contiguous));
+          tensor_index_list.emplace_back(index);
         }
-
-        if (tensor_count != 0) {
-          bang_fused_l2_norm_internal(
-              tensors,
-              sizes,
+        if (tensor_ptr_list.size() == 0) {
+          // GPU malloc and init device memory to zero.
+          // So need to fill zero.
+          output.fill_(0.0f);
+          if (per_tensor)
+            output_per_tensor.fill_(0.0f);
+        } else {
+          bang_fused_l2_norm_internal<
+              CPPTypeToCNRTTypeValue_v<scalar_t>,
+              depth>(
+              tensor_ptr_list,
+              tensor_size_list,
+              tensor_index_list,
               output_buffer_ptr,
-              output_buffer_per_tensor_ptr + tensor_offset * taskdim,
-              tensor_count,
+              tensor_num,
+              output_buffer_per_tensor_ptr,
+              per_tensor,
+              overflow,
+              k_dim,
+              k_type,
+              nram_size,
+              stream,
+              is_amp);
+          // using block task to reduce cluster data to
+          // output and output_per_tensor
+          const int cluster_num = k_dim.y;
+          k_type = CNRT_FUNC_TYPE_BLOCK;
+          k_dim.x = 1;
+          k_dim.y = 1;
+          bang_fused_l2_norm_clean_internal(
+              taskdim,
+              output_ptr,
+              output_buffer_ptr,
+              cluster_num,
+              tensor_num,
+              output_per_tensor_ptr,
+              output_buffer_per_tensor_ptr,
               per_tensor,
               overflow,
               k_dim,
               k_type,
               stream,
-              cnrt_type,
-              false);
+              is_amp);
         }
-
-        // see NOTE [taskDim assumption]
-        bang_fused_l2_norm_clean_internal(
-            output_ptr,
-            output_per_tensor_ptr,
-            output_buffer_ptr,
-            output_buffer_per_tensor_ptr,
-            per_tensor,
-            tensor_num,
-            overflow,
-            k_dim,
-            k_type,
-            stream,
-            false);
       });
-  return outputs;
+  return {output, output_per_tensor};
+}
+
+std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm(
+    const at::Tensor& _dummy_overflow_buf,
+    at::TensorList inputs,
+    c10::optional<bool> per_tensor_python) {
+  return bang_fused_l2_norm_common(
+      _dummy_overflow_buf, inputs, per_tensor_python, false);
+}
+
+// reference to multi_tensor_l2norm_kernel_mp
+std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm_amp(
+    const at::Tensor& _dummy_overflow_buf,
+    at::TensorList inputs,
+    c10::optional<bool> per_tensor_python) {
+  return bang_fused_l2_norm_common(
+      _dummy_overflow_buf, inputs, per_tensor_python, true);
 }
 
 } // namespace ops

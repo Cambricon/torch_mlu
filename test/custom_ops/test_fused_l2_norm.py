@@ -14,6 +14,7 @@ from common_utils import (
     read_card_info,
     TestCase,
 )  # pylint: disable=C0413,C0411
+from common_utils import TEST_LARGETENSOR, largeTensorTest
 
 TEST_BFLOAT16 = read_card_info()
 
@@ -30,14 +31,20 @@ class TestFusedL2Norm(TestCase):
         tensors_mlu = []
         torch.manual_seed(9876)
 
+        sizeA = shape[0]
+        sizeB = shape[1]
         for _ in range(len):
-            tensor = torch.randn(shape, dtype=torch.float)
-            tensors_cpu.append(tensor)
-            tensors_mlu.append(tensor.to("mlu").to(test_type))
+            tensorA = torch.randn(sizeA, dtype=torch.float)
+            tensorB = torch.randn(sizeB, dtype=torch.float)
+            tensors_cpu.extend([tensorA, tensorB])
+            tensors_mlu.extend(
+                [tensorA.to("mlu").to(test_type), tensorB.to("mlu").to(test_type)]
+            )
 
         fused_out1, fused_out2 = op(self._dummy_overflow_buf, tensors_mlu, per_tensor)
 
-        reference = torch.cat(tensors_cpu).norm().reshape(1)
+        tensors_cpu_flatten = [item.flatten() for item in tensors_cpu]
+        reference = torch.cat(tensors_cpu_flatten).norm().reshape(1)
         if per_tensor:
             referenceb = torch.cat([t.flatten().norm().reshape(1) for t in tensors_cpu])
 
@@ -48,20 +55,21 @@ class TestFusedL2Norm(TestCase):
             self.assertTensorsEqual(
                 fused_out2.cpu().float(), referenceb, 0.003, use_MSE=True
             )
+        self.assertTrue(self._dummy_overflow_buf.item() == 0)
 
     # @unittest.skip("not test")
     @testinfo()
     def test_fused_l2norm(self):
         shape_list = [
-            (0),
-            (1),
-            (15, 20),
-            (2, 3, 4),
-            (8, 1, 2, 3),
-            (2, 1, 2, 1, 4),
-            (33333),
-            (555),
-            (2048 * 32 + 1),
+            ((0), (333 * 2)),
+            ((1), (333 * 2)),
+            ((15, 20), (333 * 2)),
+            ((2, 3, 4), (333 * 2)),
+            ((8, 1, 2, 3), (333 * 2)),
+            ((2, 1, 2, 1, 4), (333 * 2)),
+            ((33333), (333 * 2)),
+            ((555), (333 * 2)),
+            ((2048 * 32 + 1), (333 * 2)),
         ]
         op_list = [
             torch.ops.torch_mlu.fused_l2_norm_amp,
@@ -74,6 +82,24 @@ class TestFusedL2Norm(TestCase):
         for shape, op, dtype, per_tensor, len in product(*loop_var):
             self.fused_l2norm_dtype(
                 op=op, test_type=dtype, shape=shape, per_tensor=per_tensor, len=len
+            )
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_fused_l2norm_multi_tensors(self):
+        shape_list = [
+            ((0), (333 * 2)),
+            ((2048 * 32 + 1), (333 * 2)),
+        ]
+        op_list = [
+            torch.ops.torch_mlu.fused_l2_norm_amp,
+            torch.ops.torch_mlu.fused_l2_norm,
+        ]
+        len = 500
+        loop_var = [shape_list, op_list]
+        for shape, op in product(*loop_var):
+            self.fused_l2norm_dtype(
+                op=op, test_type=torch.float, shape=shape, per_tensor=True, len=len
             )
 
     # @unittest.skip("not test")
@@ -110,15 +136,12 @@ class TestFusedL2Norm(TestCase):
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     def test_fused_l2norm_bfloat16(self):
         shape_list = [
-            (0),
-            (1),
-            (15, 20),
-            (2, 3, 4),
-            (8, 1, 2, 3),
-            (2, 1, 2, 1, 4),
-            (33333),
-            (555),
-            (2048 * 32 + 1),
+            ((0), (333 * 2)),
+            ((1), (333 * 2)),
+            ((15, 20), (333 * 2)),
+            ((33333), (333 * 2)),
+            ((555), (333 * 2)),
+            ((2048 * 32 + 1), (333 * 2)),
         ]
         op_list = [
             torch.ops.torch_mlu.fused_l2_norm_amp,
@@ -136,17 +159,38 @@ class TestFusedL2Norm(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_fused_l2norm_exception(self):
-        msg_ref_list = [
-            "\"bang_fused_l2_norm\" not implemented for 'Long'",
-            "\"bang_fused_l2_norm_amp\" not implemented for 'Long'",
-        ]
+        msg_ref = "\"bang_fused_l2_norm\" not implemented for 'Long'"
         op_list = [
             torch.ops.torch_mlu.fused_l2_norm,
             torch.ops.torch_mlu.fused_l2_norm_amp,
         ]
-        for msg_ref, op in zip(msg_ref_list, op_list):
+        for op in op_list:
             with self.assertRaisesRegex(RuntimeError, msg_ref):
                 self.fused_l2norm_dtype(op=op, test_type=torch.long, shape=(1, 2))
+
+    @unittest.skipIf(
+        TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
+    )
+    @largeTensorTest("49GB")
+    def test_fused_adam_large(self):
+        # add custom cases
+        size_list = [
+            (11003, 23986),
+            (2147483660),
+        ]
+        num_list = [24, 6]
+        for size, num in zip(size_list, num_list):
+            tensors = []
+            for i in range(num):
+                tensors.append(torch.rand(size, dtype=torch.float, device="mlu"))
+            op_list = [
+                torch.ops.torch_mlu.fused_l2_norm,
+                torch.ops.torch_mlu.fused_l2_norm_amp,
+            ]
+
+            for op in op_list:
+                fused_out1, fused_out2 = op(self._dummy_overflow_buf, tensors, True)
+            torch.mlu.synchronize()
 
 
 if __name__ == "__main__":

@@ -16,15 +16,16 @@
 namespace torch_mlu {
 namespace ops {
 
-#define ADAM_NRAM_SIZE (MAX_NRAM_SIZE + REM_FOR_STACK - 32 * 1024)
-#define NRAM_SPLIT_NUM 8  // split nram to grad_nram,m_nram,v_nram,variable_nram
 #define ALIGN_SIZE 128
-#define PAD_DOWN(X, Y) (((X) / (Y)) * (Y))
-#define SIZE_PER_REGION ADAM_NRAM_SIZE / NRAM_SPLIT_NUM
-#define SIZE_PER_REGION_ADAM PAD_DOWN(SIZE_PER_REGION, ALIGN_SIZE)
 
 // Use half of the max nram size for ping-pong
-__nram__ char total_nram[SIZE_PER_REGION_ADAM * (NRAM_SPLIT_NUM)];
+__nram__ char total_nram[MAX_NRAM_SIZE];
+
+// split nram to grad_nram,m_nram,v_nram,variable_nram
+inline int get_char_element_num(const int& nram_size,
+                                const int& split_num) {
+  return ((nram_size - reserve_stack_size) / split_num) / ALIGN_SIZE * ALIGN_SIZE;
+}
 
 template<typename T, typename FULL_T = float,
          torch_mlu::ops::internal::ADAM_MODE mode = torch_mlu::ops::internal::ADAM_MODE::adamw,
@@ -111,23 +112,24 @@ __mlu_func__ static void const call_internal(const torch_mlu::bangcommon::BlockI
     data_handler(block_info_container);
   const int circle_num = data_handler.get_circle_num();
   const int element_num = data_handler.get_each_block_element_num();
+  const int char_element_num = block_info_container.block_size * sizeof(float);
   // params--grads--exp_avg--exp_avg_sq
   T* param_nram_start = (T*)total_nram;
   T* param_nram_load_start = param_nram_start;
-  T* grad_nram_start = (T*)(total_nram + 2 * SIZE_PER_REGION_ADAM);
+  T* grad_nram_start = (T*)(total_nram + 2 * char_element_num);
   T* grad_nram_load_start = grad_nram_start;
   // load_offset for half and bfloat16, and copy data to last part of nram,
   // for using same nram space to convert from half/bfloat16 to float.
   // This is not need for store data back to gdram.
-  // SIZE_PER_REGION_ADAM size: |-----------------|-----------------|
-  //                        float start    half/bfloat16 start
-  constexpr int load_offset = sizeof(T) == 2 ? SIZE_PER_REGION_ADAM / sizeof(FULL_T) : 0;
+  // char_element_num size: |-----------------|-----------------|
+  //                    float start    half/bfloat16 start
+  const int load_offset = sizeof(T) == 2 ? char_element_num / sizeof(FULL_T) : 0;
   if constexpr (sizeof(T) == 2) {
     param_nram_load_start = param_nram_start + load_offset;
     grad_nram_load_start = grad_nram_start + load_offset;
   }
-  FULL_T* exp_avg_nram_start = (FULL_T*)(total_nram + 4 * SIZE_PER_REGION_ADAM);
-  FULL_T* exp_avg_sq_nram_start = (FULL_T*)(total_nram + 6 * SIZE_PER_REGION_ADAM);
+  FULL_T* exp_avg_nram_start = (FULL_T*)(total_nram + 4 * char_element_num);
+  FULL_T* exp_avg_sq_nram_start = (FULL_T*)(total_nram + 6 * char_element_num);
   const int full_t_ping_pong_size = element_num;
   const int t_ping_pong_size = sizeof(T) == 2 ? element_num * 2 : element_num;
   int ping_size = 0;
@@ -268,7 +270,8 @@ void apex_fused_adam_internal(const std::vector<std::array<void*, depth>>& data_
                               float decay_correction,
                               cnrtQueue_t queue,
                               cnrtFunctionType_t k_type,
-                              cnrtDim3_t k_dim) {
+                              cnrtDim3_t k_dim,
+                              const int nram_size) {
   // Load fix num data to nram each time per tensor.
   // Data order in nram:
   // variable_nram, grad_nram, m_nram, v_nram
@@ -284,8 +287,8 @@ void apex_fused_adam_internal(const std::vector<std::array<void*, depth>>& data_
   //    grad_nram data to gdram;
   // 4) Load variable_nram, grad_nram, m_nram, v_nram to nram each time per block,
   //    After compute, variable_nram, m_nram, v_nram data will be saved back to gdram;
-  // 5) Each block contains element_num is less or equal to SIZE_PER_REGION_ADAM / sizeof(float);
-  constexpr int element_num = SIZE_PER_REGION_ADAM / sizeof(float);
+  // 5) Each block contains element_num is less or equal to get_char_element_num(nram_size) / sizeof(float);
+  const int element_num = get_char_element_num(nram_size, 8) / sizeof(float);
   constexpr int maxBlockNum = torch_mlu::bangcommon::depth_to_max_blockinfo[depth - 1];
   using T = CNRTTypeValueToBangcCppType_t<value>;
   using FULL_T = float;
@@ -298,50 +301,29 @@ void apex_fused_adam_internal(const std::vector<std::array<void*, depth>>& data_
 }
 
 // add explicit instantiation for float, half, bfloat16_t
-template void apex_fused_adam_internal<cnrtDataType_V2_t::cnrtFloat, 4>(const std::vector<std::array<void*, 4>>& data_ptr_list,
-                              const std::vector<int64_t>& sizes,
-                              float beta1,
-                              float beta1_minus,
-                              float beta2,
-                              float beta2_minus,
-                              float epsilon_correction,
-                              float learning_rate_correction,
-                              internal::ADAM_MODE mode,
-                              float decay,
-                              float decay_correction,
-                              cnrtQueue_t queue,
-                              cnrtFunctionType_t k_type,
-                              cnrtDim3_t k_dim);
+#define APEX_FUSED_ADAM_INTERNAL_DEFINE(cnrt_type, depth)       \
+template void apex_fused_adam_internal<cnrt_type, depth>(       \
+    const std::vector<std::array<void*, depth>>& data_ptr_list, \
+    const std::vector<int64_t>& sizes,                          \
+    float beta1,                                                \
+    float beta1_minus,                                          \
+    float beta2,                                                \
+    float beta2_minus,                                          \
+    float epsilon_correction,                                   \
+    float learning_rate_correction,                             \
+    internal::ADAM_MODE mode,                                   \
+    float decay,                                                \
+    float decay_correction,                                     \
+    cnrtQueue_t queue,                                          \
+    cnrtFunctionType_t k_type,                                  \
+    cnrtDim3_t k_dim,                                           \
+    const int nram_size);
 
-template void apex_fused_adam_internal<cnrtDataType_V2_t::cnrtHalf, 4>(const std::vector<std::array<void*, 4>>& data_ptr_list,
-                              const std::vector<int64_t>& sizes,
-                              float beta1,
-                              float beta1_minus,
-                              float beta2,
-                              float beta2_minus,
-                              float epsilon_correction,
-                              float learning_rate_correction,
-                              internal::ADAM_MODE mode,
-                              float decay,
-                              float decay_correction,
-                              cnrtQueue_t queue,
-                              cnrtFunctionType_t k_type,
-                              cnrtDim3_t k_dim);
+APEX_FUSED_ADAM_INTERNAL_DEFINE(cnrtDataType_V2_t::cnrtFloat, 4)
+APEX_FUSED_ADAM_INTERNAL_DEFINE(cnrtDataType_V2_t::cnrtHalf, 4)
+APEX_FUSED_ADAM_INTERNAL_DEFINE(cnrtDataType_V2_t::cnrtBfloat, 4)
 
-template void apex_fused_adam_internal<cnrtDataType_V2_t::cnrtBfloat, 4>(const std::vector<std::array<void*, 4>>& data_ptr_list,
-                              const std::vector<int64_t>& sizes,
-                              float beta1,
-                              float beta1_minus,
-                              float beta2,
-                              float beta2_minus,
-                              float epsilon_correction,
-                              float learning_rate_correction,
-                              internal::ADAM_MODE mode,
-                              float decay,
-                              float decay_correction,
-                              cnrtQueue_t queue,
-                              cnrtFunctionType_t k_type,
-                              cnrtDim3_t k_dim);
+#undef APEX_FUSED_ADAM_INTERNAL_DEFINE
 
 } // namespace ops
 } // namespace torch_mlu

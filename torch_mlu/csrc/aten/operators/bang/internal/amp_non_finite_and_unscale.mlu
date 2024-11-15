@@ -14,13 +14,6 @@
 #include "common_util.h"
 #include "amp_non_finite_and_unscale.h"
 
-#define REM_FOR_STACK (128 * 1024)
-#if __BANG_ARCH__
-#define MAX_NRAM_SIZE (__MLU_NRAM_SIZE__ * 1024 - REM_FOR_STACK)
-#else
-#define MAX_NRAM_SIZE (384 * 1024)
-#endif
-
 #define PAD_UP(x, y) (x / y + (int)(x % y > 0)) * y
 #define PAD_DOWN(x, y) ((x / y) * y)
 #define CEIL_ALIGN(x, align) (((x) + (align) - 1) / (align) * (align))
