@@ -40,6 +40,7 @@ enum class ActivityType {
     MLU_CONCURRENT_KERNEL, // on-device kernels
     MLU_RUNTIME,
     MLU_PROFILER_RANGE,
+    MLU_NOTIFIER,
 
     ENUM_COUNT, // This is to add buffer and not used for any profiling logic. Add your new type before it.
     OPTIONAL_ACTIVITY_TYPE_START = CUDA_SYNC,

@@ -10,8 +10,6 @@
 #include <stdint.h>
 #include <string>
 
-#include <cnpapi.h>
-
 namespace KINETO_NAMESPACE {
 
 // Return compute properties for each device as a json string

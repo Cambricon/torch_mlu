@@ -3,8 +3,8 @@
 #include "ActivityProfilerProxy.h"
 
 #include "ActivityProfilerController.h"
+#include "CnperfApi.h"
 #include "Config.h"
-#include "CnpapiActivityApi.h"
 #include "Logger.h"
 #include <chrono>
 
@@ -78,23 +78,23 @@ bool ActivityProfilerProxy::isActive() {
 }
 
 void ActivityProfilerProxy::pushCorrelationId(uint64_t id) {
-  CnpapiActivityApi::pushCorrelationID(id,
-    CnpapiActivityApi::CorrelationFlowType::Default);
+  CnperfApi::pushCorrelationID(id,
+    CnperfApi::CorrelationFlowType::Default);
 }
 
 void ActivityProfilerProxy::popCorrelationId() {
-  CnpapiActivityApi::popCorrelationID(
-    CnpapiActivityApi::CorrelationFlowType::Default);
+  CnperfApi::popCorrelationID(
+    CnperfApi::CorrelationFlowType::Default);
 }
 
 void ActivityProfilerProxy::pushUserCorrelationId(uint64_t id) {
-  CnpapiActivityApi::pushCorrelationID(id,
-    CnpapiActivityApi::CorrelationFlowType::User);
+  CnperfApi::pushCorrelationID(id,
+    CnperfApi::CorrelationFlowType::User);
 }
 
 void ActivityProfilerProxy::popUserCorrelationId() {
-  CnpapiActivityApi::popCorrelationID(
-    CnpapiActivityApi::CorrelationFlowType::User);
+  CnperfApi::popCorrelationID(
+    CnperfApi::CorrelationFlowType::User);
 }
 
 void ActivityProfilerProxy::transferCpuTrace(

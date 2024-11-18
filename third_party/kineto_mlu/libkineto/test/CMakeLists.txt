@@ -27,15 +27,11 @@ file(GLOB GMOCK_SRC_DIR ${CMAKE_GOOGLE_MOCK_PATH}/src/gmock-all.cc
 add_library(kineto_gmock_shared SHARED ${GMOCK_SRC_DIR})
 
 set(TEST_SOURCES
-    CnpapiStringsTest.cpp
     ConfigTest.cpp
     PidInfoTest.cpp
-    CnpapiCallbackManagerTest.cpp
-    # Temporarily skip this TEST due to the refactoring of CnpapiActivityApi
-    # CnpapiActivityProfilerTest.cpp
+    CnperfApiTypeTest.cpp
+    LoggerObserverTest.cpp
 )
-
-add_library(mock_profiler SHARED MockActivitySubProfiler.cpp)
 
 # kineto_test_mlu
 foreach(src_file ${LIBKINETO_SRCS})
@@ -59,7 +55,7 @@ target_include_directories(kineto_test_base PUBLIC
       $<BUILD_INTERFACE:${LIBKINETO_INCLUDE_DIR}>
       $<BUILD_INTERFACE:${LIBKINETO_SOURCE_DIR}>
       $<BUILD_INTERFACE:${FMT_INCLUDE_DIR}>
-      $<BUILD_INTERFACE:${CNPAPI_INCLUDE_DIR}>
+      $<BUILD_INTERFACE:${CNPERF_API_INCLUDE_DIR}>
       $<BUILD_INTERFACE:${LIBPYTORCH_DIR}>)
 target_include_directories(kineto_test_api PUBLIC
       $<BUILD_INTERFACE:${FMT_INCLUDE_DIR}>
@@ -69,7 +65,7 @@ target_include_directories(kineto_test_api PUBLIC
 add_library(kineto_test_mlu SHARED
     $<TARGET_OBJECTS:kineto_test_base>
     $<TARGET_OBJECTS:kineto_test_api>)
-target_link_libraries(kineto_test_mlu "${CNPAPI_LIBRARY}")
+target_link_libraries(kineto_test_mlu "${CNPERF_API_LIBRARY}")
 target_link_libraries(kineto_test_mlu $<BUILD_INTERFACE:fmt::fmt-header-only>)
 add_dependencies(kineto_test_mlu fmt::fmt-header-only)
 target_link_libraries(kineto_test_mlu "${KINETO_LIBRARY}/libkineto.so")
@@ -80,6 +76,6 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     target_compile_options(${TEST_NAME} PRIVATE "${KINETO_COMPILE_OPTIONS}")
     target_link_libraries(${TEST_NAME} kineto_gtest_shared kineto_gmock_shared
-        mock_profiler kineto_test_mlu "${CNRT_LIBRARIES}")
+        kineto_test_mlu "${CNRT_LIBRARIES}")
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endforeach()

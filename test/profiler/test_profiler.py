@@ -12,10 +12,14 @@ import unittest
 from unittest.mock import patch
 import logging
 import pickle
+import random
+import socket
 
 import torch
 import torch_mlu
 import torch.nn as nn
+import torch.distributed as dist
+import torch.multiprocessing as mp
 
 from utils import (
     get_kernel_total_info_from_json,
@@ -705,10 +709,10 @@ class TestProfiler(TestCase):
                             if "cat" in e.keys() and e["cat"] == "kernel"
                         ]
                         for kernel in kernels:
-                            if "tasktopo_external_op" in kernel["args"].keys():
+                            if "tasktopo external op" in kernel["args"].keys():
                                 found_tasktopo_external_op = True
             # If not enable TORCH_MLU_ENABLE_CATCHING_MLUGRAPH_OP, Profiler will not write
-            # "tasktopo_external_op" into json file.
+            # "tasktopo external op" into json file.
             # The env enabled testcase in test_profiler_with_mlugraph.py
             self.assertFalse(found_tasktopo_external_op)
 
@@ -742,7 +746,7 @@ class TestProfiler(TestCase):
                 "kernel type": "BLOCK",
                 "dimx": 1, "dimy": 640, "dimz": 1,
                 "tasktopo": 0,
-                "tasktopo_node": 0
+                "tasktopo node": 0
               }
             }]
         """
@@ -785,6 +789,37 @@ class TestProfiler(TestCase):
                         )
                     if header[i] == "Operator":
                         self.assertTrue(line1[i] == "cnnlMultiTensorScale")
+
+    @staticmethod
+    def setup(rand, world_size, master_port):
+        os.environ["MASTER_ADDR"] = "localhost"
+        os.environ["MASTER_PORT"] = str(master_port)
+        dist.init_process_group("cncl", rank=rand, world_size=world_size)
+
+    @staticmethod
+    def cleanup():
+        dist.destroy_process_group()
+
+    @staticmethod
+    def run_comm_op(rank, world_size, master_port, dname):
+        rank = rank
+        TestProfiler.setup(rank, world_size, master_port)
+        device = torch.device(f"mlu:{rank}")
+        torch.mlu.set_device(device)
+        with torch.profiler.profile(
+            on_trace_ready=torch_mlu.profiler.tensorboard_trace_handler(dname)
+        ) as p:
+            a = torch.randn(10, 3, device="mlu")
+            dist.all_reduce(a)
+            dist.barrier()
+        TestProfiler.cleanup()
+
+    def _find_free_port(self):
+        while True:
+            port = random.randint(1024, 65535)
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                if s.connect_ex(("localhost", port)) != 0:
+                    return port
 
     @testinfo()
     def test_profiler_generate_csv_files_with_record_shapes(self):
@@ -868,6 +903,141 @@ class TestProfiler(TestCase):
                         else:
                             assert row[4] != "[]", "Operator Input Shapes empty!"
                             assert row[5] != "", "Operator Input Type empty!"
+
+    @testinfo()
+    @unittest.skip("Open this case when upgrade to cntoolkit3.15.2")
+    @unittest.skipIf(torch.mlu.device_count() < 2, "Test requres 2 MLU devices")
+    def test_communication_csv(self):
+        world_size = 2
+        master_port = self._find_free_port()
+        with TemporaryDirectoryName() as dname:
+            mp.spawn(
+                TestProfiler.run_comm_op,
+                args=(world_size, master_port, dname),
+                nprocs=world_size,
+                join=True,
+            )
+
+            json_file_num = 0
+            for json_file in os.listdir(dname):
+                if os.path.isfile(os.path.join(dname, json_file)):
+                    parts = json_file.split(".")
+                    self.assertTrue(len(parts) > 4)
+                    self.assertTrue(
+                        parts[-4].isdigit() and int(parts[-4]) > 0,
+                        "Wrong tracing file name pattern",
+                    )
+                    self.assertEqual(parts[-3:], ["pt", "trace", "json"])
+                    json_file_num += 1
+                else:
+                    self.assertTrue(
+                        os.path.isdir(os.path.join(dname, "cambricon_output"))
+                    )
+
+            csv_dir_num = 0
+            found_comm_csv_num = 0
+            found_rank0 = False
+            found_rank1 = False
+            for csv_dir in os.listdir(os.path.join(dname, "cambricon_output")):
+                csv_dir_num += 1
+                for csv_file in os.listdir(
+                    os.path.join(dname, "cambricon_output", csv_dir)
+                ):
+                    self.assertTrue(csv_file.endswith("csv"))
+                    self.assertTrue(
+                        self.check_csv_file(
+                            os.path.join(dname, "cambricon_output", csv_dir, csv_file)
+                        )
+                    )
+                    if csv_file == "communication_op_details.csv":
+                        found_comm_csv_num += 1
+                        with open(
+                            os.path.join(dname, "cambricon_output", csv_dir, csv_file),
+                            "r",
+                            newline="",
+                        ) as f:
+                            reader = csv.reader(f)
+                            header = next(reader)
+                            self.assertEqual(
+                                header,
+                                [
+                                    "Thread Id",
+                                    "Name",
+                                    "Start",
+                                    "Communication Bytes",
+                                    "Duration(us)",
+                                    "Bandwidth(MB/s)",
+                                    "Rank",
+                                    "Clique Id",
+                                    "Communication Type",
+                                    "Operator Name",
+                                ],
+                            )
+                            found_all_reduce = False
+                            found_barrier = False
+                            for row in reader:
+                                if row[9] == "c10d::allreduce_":
+                                    found_all_reduce = True
+                                elif row[9] == "c10d::barrier":
+                                    found_barrier = True
+                                if int(row[6]) == 0:
+                                    found_rank0 = True
+                                elif int(row[6]) == 1:
+                                    found_rank1 = True
+                                self.assertAlmostEqual(
+                                    float(row[3]) / float(row[4]),
+                                    float(row[5]),
+                                    places=2,
+                                )
+                            self.assertTrue(found_all_reduce)
+                            self.assertTrue(found_barrier)
+
+            self.assertTrue(found_rank0)
+            self.assertTrue(found_rank1)
+            # The nums should be equal to world_size, that is 2.
+            self.assertEqual(json_file_num, 2)
+            self.assertEqual(csv_dir_num, 2)
+            self.assertEqual(found_comm_csv_num, 2)
+
+    @testinfo()
+    @unittest.skip("Skip due to PYTORCH-13047")
+    @unittest.skipIf(torch.mlu.device_count() < 2, "Test requres 2 MLU devices")
+    def test_default_api_config(self):
+        world_size = 2
+        master_port = self._find_free_port()
+        with TemporaryDirectoryName() as dname:
+            mp.spawn(
+                TestProfiler.run_comm_op,
+                args=(world_size, master_port, dname),
+                nprocs=world_size,
+                join=True,
+            )
+            for json_file in os.listdir(dname):
+                if os.path.isfile(os.path.join(dname, json_file)):
+                    with open(os.path.join(dname, json_file), "r") as f:
+                        data = json.load(f)
+                        found_cnpx = False
+                        found_cncl = False
+                        found_cnrt_memcpy = False
+                        found_cnnl_descripter = False
+                        found_invoke_kernel = False
+                        for event in data["traceEvents"]:
+                            if event.get("cat") == "mlu_runtime":
+                                if event.get("name") == "cnrtMemcpyAsync":
+                                    found_cnrt_memcpy = True
+                                if event.get("name") == "cnpxDomainRangePush":
+                                    found_cnpx = True
+                                if event.get("name") == "cnclAllReduce":
+                                    found_cncl = True
+                                if "Descriptor" in event.get("name"):
+                                    found_cnnl_descripter = True
+                                if event.get("name") == "cnInvokeKernel":
+                                    found_invoke_kernel = True
+                        self.assertTrue(found_cnpx)
+                        self.assertTrue(found_cncl)
+                        self.assertTrue(found_cnrt_memcpy)
+                        self.assertTrue(found_invoke_kernel)
+                        self.assertFalse(found_cnnl_descripter)
 
 
 if __name__ == "__main__":

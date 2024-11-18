@@ -237,7 +237,7 @@ index de330f10a4f..07ac6a302bb 100644
              yield self._mem_records[self._indices[i]]
  
 diff --git a/torch/csrc/autograd/init.cpp b/torch/csrc/autograd/init.cpp
-index 746695eb714..fea728e4377 100644
+index 746695eb714..e497c7ef1a0 100644
 --- a/torch/csrc/autograd/init.cpp
 +++ b/torch/csrc/autograd/init.cpp
 @@ -193,9 +193,13 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
@@ -505,10 +505,10 @@ index 20ef0c85836..919110f73d1 100644
   private:
    uint32_t id_;
 diff --git a/torch/csrc/profiler/kineto_shim.cpp b/torch/csrc/profiler/kineto_shim.cpp
-index 59e721eec41..ae7cd2bd20f 100644
+index 59e721eec41..0cb545d5b48 100644
 --- a/torch/csrc/profiler/kineto_shim.cpp
 +++ b/torch/csrc/profiler/kineto_shim.cpp
-@@ -331,10 +331,17 @@ c10::DeviceType deviceTypeFromActivity(libkineto::ActivityType activity_type) {
+@@ -331,10 +331,18 @@ c10::DeviceType deviceTypeFromActivity(libkineto::ActivityType activity_type) {
      // TODO: T151322015
      case libkineto::ActivityType::MTIA_CCP_EVENTS:
        return c10::DeviceType::CUDA;
@@ -517,6 +517,7 @@ index 59e721eec41..ae7cd2bd20f 100644
 +    case libkineto::ActivityType::MLU_CONCURRENT_KERNEL:
 +    case libkineto::ActivityType::MLU_USER_ANNOTATION:
 +    case libkineto::ActivityType::MLU_PROFILER_RANGE:
++    case libkineto::ActivityType::MLU_NOTIFIER:
 +      return c10::DeviceType::PrivateUse1;
      case libkineto::ActivityType::CPU_OP:
      case libkineto::ActivityType::USER_ANNOTATION:

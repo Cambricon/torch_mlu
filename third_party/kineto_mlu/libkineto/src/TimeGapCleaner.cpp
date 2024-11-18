@@ -1,6 +1,6 @@
 #include "TimeGapCleaner.h"
 
-#include <cnpapi.h>
+#include <cnperf_api.h>
 
 namespace KINETO_NAMESPACE {
 
@@ -17,13 +17,13 @@ TimeGap::TimeGap() {
         // Add warmup to reduce overhead of calling these 2 apis
         // to make time_gap more accurate.
         for (int i = 0; i < 5; ++i) {
-            cnpapiGetTimestamp();
+            cnperfGetTimestamp();
             std::chrono::high_resolution_clock::now();
         }
-        uint64_t cnpapi_time = cnpapiGetTimestamp();
+        uint64_t cnperf_time = cnperfGetTimestamp();
         auto time_cpu = std::chrono::high_resolution_clock::now();
         return (std::chrono::duration_cast<std::chrono::nanoseconds>(
-            time_cpu.time_since_epoch()).count() - cnpapi_time);
+            time_cpu.time_since_epoch()).count() - cnperf_time);
     }();
 }
 

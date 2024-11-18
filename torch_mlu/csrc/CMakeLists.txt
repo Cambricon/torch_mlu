@@ -141,13 +141,11 @@ if (USE_CNCL AND CNCL_FOUND)
     list(APPEND DEPENDENT_LIBRARIES ${CNCL_LIBRARIES})
 endif()
 
-# Find CNPAPI header files and libs
-find_package(CNPAPI)
-message(STATUS " DEPENDENT_INCLUDE_DIRS " ${DEPENDENT_INCLUDE_DIRS})
-message(STATUS " CNPAPI_INCLUDE_DIRS " ${CNPAPI_INCLUDE_DIRS})
-if (USE_PROFILE AND CNPAPI_FOUND)
+# Find CNPERF API header files and libs
+find_package(CNPERF_API)
+if (USE_PROFILE AND CNPERF_API_FOUND)
     include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/kineto_mlu/libkineto/include)
-    list(APPEND DEPENDENT_INCLUDE_DIRS ${CNPAPI_INCLUDE_DIRS})
+    list(APPEND DEPENDENT_INCLUDE_DIRS ${CNPERF_API_INCLUDE_DIRS})
     add_definitions("-DUSE_PROFILE")
 endif()
 
@@ -282,7 +280,7 @@ if (NOT BUILD_LIBTORCH AND USE_PYTHON)
     endif()
     set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/python/ProcessGroupCNCL.cpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")
 
-    if(USE_PROFILE AND CNPAPI_FOUND)
+    if(USE_PROFILE AND CNPERF_API_FOUND)
         add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../third_party/kineto_mlu/libkineto" kineto_mlu.out)
         target_link_libraries(torch_mlu_python kineto_mlu)
     endif()

@@ -28,6 +28,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 os.environ["KINETO_MLU_RECORD_ALL_APIS"] = "true"
 
+
 class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
@@ -40,6 +41,7 @@ class ConvNet(nn.Module):
         x = F.relu(self.conv1(x))
         x = self.pool(x)
         return x
+
 
 class TestProfiler(TestCase):
     # @unittest.skip("not test")
@@ -78,6 +80,7 @@ class TestProfiler(TestCase):
         self.assertTrue(has_set_queue)
         self.assertTrue(has_cnrt_invoke)
         self.assertTrue(has_cnmodule_load)
+
 
 if __name__ == "__main__":
     unittest.main()

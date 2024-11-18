@@ -8,10 +8,7 @@
 #include <map>
 
 #include "Config.h"
-#ifdef HAS_CNPAPI
 #include "MluDeviceProperties.h"
-#endif // HAS_CNPAPI
-#include "Demangle.h"
 #include "TraceSpan.h"
 
 #include "Logger.h"
@@ -73,11 +70,9 @@ void ChromeTraceLogger::handleTraceStart(
 {{
   "schemaVersion": {},)JSON", kSchemaVersion);
 
-#ifdef HAS_CNPAPI
   traceOf_ << fmt::format(R"JSON(
   "deviceProperties": [{}
   ],)JSON", devicePropertiesJson());
-#endif
 
   metadataToJSON(metadata);
   traceOf_ << R"JSON(
@@ -327,6 +322,7 @@ void ChromeTraceLogger::handleActivity(
     external_id = op.linkedActivity()->correlationId();
   } else if (op.type() == ActivityType::CPU_OP ||
              op.type() == ActivityType::USER_ANNOTATION ||
+             op.type() == ActivityType::MLU_USER_ANNOTATION ||
              op.type() == ActivityType::PYTHON_FUNCTION ||
              op.type() == ActivityType::CPU_INSTANT_EVENT) {
     external_id = op.correlationId();

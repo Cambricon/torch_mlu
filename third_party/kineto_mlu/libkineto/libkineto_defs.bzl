@@ -9,34 +9,22 @@ def get_libkineto_api_srcs():
         "src/libkineto_api.cpp",
     ]
 
-def get_libkineto_cnpapi_srcs(with_api = True):
+def get_libkineto_cnperf_srcs(with_api = True):
     return [
-        "src/MluDeviceProperties.cpp",
-        "src/CnpapiActivityApi.cpp",
-        "src/CnpapiPmuApi.cpp",
-        "src/CnpapiResourceApi.cpp",
-        "src/CnpapiActivityPlatform.cpp",
         "src/ApiListCommon.cpp",
+        "src/MluDeviceProperties.cpp",
+        "src/CnperfApi.cpp",
+        "src/CnperfActivity.cpp",
+        "src/CnperfPmuApi.cpp",
         "src/TimeGapCleaner.cpp",
-        "src/Demangle.cpp",
-        "src/WeakSymbols.cpp",
-        "src/cnpapi_strings.cpp",
-        "src/profile_mlu.cpp"
-    ] + (get_libkineto_cpu_only_srcs(with_api))
-
-def get_libkineto_cpu_only_srcs(with_api = True):
-    return [
+        "src/profile_mlu.cpp",
         "src/AbstractConfig.cpp",
-        "src/CnpapiActivityProfiler.cpp",
+        "src/CnperfProfiler.cpp",
         "src/ActivityProfilerController.cpp",
         "src/ActivityProfilerProxy.cpp",
         "src/ActivityType.cpp",
         "src/Config.cpp",
         "src/ConfigLoader.cpp",
-        "src/CnpapiActivityApi.cpp",
-        "src/CnpapiCallbackManager.cpp",
-        "src/ApiListCommon.cpp",
-        "src/Demangle.cpp",
         "src/GenericTraceActivity.cpp",
         "src/ILoggerObserver.cpp",
         "src/Logger.cpp",

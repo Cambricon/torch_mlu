@@ -37,6 +37,7 @@ static constexpr std::array<ActivityTypeName, activityTypeCount + 1> map{{
     {"kernel", ActivityType::MLU_CONCURRENT_KERNEL},
     {"mlu_runtime", ActivityType::MLU_RUNTIME},
     {"mlu_profiler_range", ActivityType::MLU_PROFILER_RANGE},
+    {"mlu_notifier", ActivityType::MLU_NOTIFIER},
     {"ENUM_COUNT", ActivityType::ENUM_COUNT}
 }};
 

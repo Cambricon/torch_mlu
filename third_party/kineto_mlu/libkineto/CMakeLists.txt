@@ -31,19 +31,7 @@ if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif()
 
-# Set LIBKINETO_NOCNPAPI to explicitly disable CNPAPI
-# Otherwise, CNPAPI is disabled if not found
-IF (NOT CNPAPI_INCLUDE_DIR OR NOT CNPAPI_LIBRARY)
-    set(LIBKINETO_NOCNPAPI ON CACHE BOOL "" FORCE)
-endif()
-
-# Define file lists
-if (LIBKINETO_NOCNPAPI)
-    get_filelist("get_libkineto_cpu_only_srcs(with_api=False)" LIBKINETO_SRCS)
-    message(INFO " CNPAPI unavailable or disabled - not building MLU profilers")
-else()
-    get_filelist("get_libkineto_cnpapi_srcs(with_api=False)" LIBKINETO_SRCS)
-endif()
+get_filelist("get_libkineto_cnperf_srcs(with_api=False)" LIBKINETO_SRCS)
 get_filelist("get_libkineto_public_headers()" LIBKINETO_PUBLIC_HEADERS)
 get_filelist("get_libkineto_api_srcs()" LIBKINETO_API_SRCS)
 
@@ -69,9 +57,6 @@ else()
   list(APPEND KINETO_COMPILE_OPTIONS "/std:c++17")
   list(APPEND KINETO_COMPILE_OPTIONS "-DWIN32_LEAN_AND_MEAN")
   list(APPEND KINETO_COMPILE_OPTIONS "-DNOGDI")
-endif()
-if (NOT LIBKINETO_NOCNPAPI)
-    list(APPEND KINETO_COMPILE_OPTIONS "-DHAS_CNPAPI")
 endif()
 
 target_compile_options(kineto_base PRIVATE "${KINETO_COMPILE_OPTIONS}")
@@ -99,7 +84,7 @@ set(FMT_INCLUDE_DIR "${FMT_SOURCE_DIR}/include")
 message(STATUS "Kineto: FMT_SOURCE_DIR = ${FMT_SOURCE_DIR}")
 message(STATUS "Kineto: FMT_INCLUDE_DIR = ${FMT_INCLUDE_DIR}")
 
-message(INFO " CNPAPI_INCLUDE_DIR = ${CNPAPI_INCLUDE_DIR}")
+message(INFO " CNPERF_API_INCLUDE_DIR = ${CNPERF_API_INCLUDE_DIR}")
 
 set(JSON_SOURCE_DIR "${LIBKINETO_THIRDPARTY_DIR}/json")
 add_subdirectory("${JSON_SOURCE_DIR}")
@@ -111,7 +96,7 @@ target_include_directories(kineto_base PUBLIC
       $<BUILD_INTERFACE:${LIBKINETO_INCLUDE_DIR}>
       $<BUILD_INTERFACE:${LIBKINETO_SOURCE_DIR}>
       $<BUILD_INTERFACE:${FMT_INCLUDE_DIR}>
-      $<BUILD_INTERFACE:${CNPAPI_INCLUDE_DIR}>
+      $<BUILD_INTERFACE:${CNPERF_API_INCLUDE_DIR}>
       $<BUILD_INTERFACE:${LIBPYTORCH_DIR}>)
 
 target_include_directories(kineto_api PUBLIC
@@ -137,9 +122,7 @@ else()
   message(FATAL_ERROR "Unsupported library type ${KINETO_LIBRARY_TYPE}")
 endif()
 
-if(NOT LIBKINETO_NOCNPAPI)
-    target_link_libraries(kineto_mlu "${CNPAPI_LIBRARY}")
-endif()
+target_link_libraries(kineto_mlu "${CNPERF_API_LIBRARY}")
 target_link_libraries(kineto_mlu $<BUILD_INTERFACE:fmt::fmt-header-only>)
 add_dependencies(kineto_mlu fmt::fmt-header-only)
 

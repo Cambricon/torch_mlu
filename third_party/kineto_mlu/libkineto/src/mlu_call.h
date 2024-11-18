@@ -4,8 +4,6 @@
 
 #include <fmt/format.h>
 
-#ifdef HAS_CNPAPI
-
 #include <cnrt.h>
 
 #define CNRT_CALL(call)                                      \
@@ -22,4 +20,3 @@
     return _status_;                                         \
   }()
 
-#endif // HAS_CNPAPI

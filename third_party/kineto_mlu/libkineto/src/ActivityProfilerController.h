@@ -11,11 +11,10 @@
 // TODO(T90238193)
 // @lint-ignore-every CLANGTIDY facebook-hte-RelativeInclude
 #include "ActivityLoggerFactory.h"
-#include "CnpapiActivityProfiler.h"
+#include "CnperfProfiler.h"
 #include "ActivityProfilerInterface.h"
 #include "ActivityTraceInterface.h"
 #include "ConfigLoader.h"
-#include "CnpapiActivityApi.h"
 #include "LoggerCollector.h"
 
 namespace KINETO_NAMESPACE {
@@ -65,9 +64,7 @@ class ActivityProfilerController : public ConfigLoader::ConfigHandler {
   }
 
   void addChildActivityProfiler(
-      std::unique_ptr<IActivityProfiler> profiler) {
-    profiler_->addChildActivityProfiler(std::move(profiler));
-  }
+      std::unique_ptr<IActivityProfiler> profiler) {}
 
   void addMetadata(const std::string& key, const std::string& value);
 
@@ -81,7 +78,7 @@ class ActivityProfilerController : public ConfigLoader::ConfigHandler {
   std::unique_ptr<Config> asyncRequestConfig_;
   std::mutex asyncConfigLock_;
 
-  std::unique_ptr<CnpapiActivityProfiler> profiler_;
+  std::unique_ptr<CnperfProfiler> profiler_;
   std::unique_ptr<ActivityLogger> logger_;
   std::thread* profilerThread_{nullptr};
   std::atomic_bool stopRunloop_{false};

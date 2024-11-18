@@ -7,7 +7,7 @@
 
 #include "ActivityLoggerFactory.h"
 #include "ActivityTrace.h"
-#include "CnpapiActivityApi.h"
+#include "CnperfApi.h"
 #include "ThreadUtil.h"
 #include "output_json.h"
 #include "output_membuf.h"
@@ -36,8 +36,7 @@ ActivityProfilerController::ActivityProfilerController(
     ConfigLoader& configLoader, bool cpuOnly)
     : configLoader_(configLoader) {
   ChromeTraceBaseTime::singleton().init();
-  profiler_ = std::make_unique<CnpapiActivityProfiler>(
-      CnpapiActivityApi::singleton(), cpuOnly);
+  profiler_ = std::make_unique<CnperfProfiler>(CnperfApi::singleton(), cpuOnly);
   configLoader_.addHandler(ConfigLoader::ConfigKind::ActivityProfiler, this);
 
 #if !USE_GOOGLE_LOG

@@ -1,4 +1,7 @@
 #pragma once
+
+#include <cnperf_api.h>
+
 #include <vector>
 #include <string>
 
@@ -9,10 +12,7 @@ class ApiList {
 public:
     static ApiList& getInstance();
 
-    const std::vector<cnpapi_CallbackIdCNNL> getCnnlCbidList();
-    const std::vector<cnpapi_CallbackIdCNRT> getCnrtCbidList();
-    const std::vector<cnpapi_CallbackIdCNDRV> getCndrvCbidList();
-    const std::vector<cnpapi_CallbackIdCNDRV>& getCndrvLaunchCbidList();
+    void updateConfig(cnperfConfig_t config);
 
 private:
     ApiList();
@@ -22,12 +22,16 @@ private:
     ApiList(const ApiList&) = delete;
     ApiList& operator=(const ApiList&) = delete;
 
-    static bool initializeJsonConfig();
-
-    static bool recordAllApis();
+    bool initializeJsonConfig();
+    bool recordAllApis();
+    void replaceAllValue(
+        std::vector<std::string>* str_list, const std::string& target_str);
+    void updateBlackListWithWhiteList(
+        const std::vector<std::string>& white_list,
+        std::vector<std::string>* black_list);
     
     bool useConfig_;
-
+    std::string jsonConfigPath_;
     bool recordAll_;
     
     std::vector<std::string> cnnlBlackList_;
@@ -37,7 +41,12 @@ private:
     std::vector<std::string> cndrvBlackList_;
     std::vector<std::string> cndrvWhiteList_;
 
-    std::vector<cnpapi_CallbackIdCNNL> enabledCnnlCbidList_ = {};
+    const std::string cnnlAllPattern_ = "^cnnl.*";
+    const std::string cnrtAllPattern_ = "^cnrt.*";
+    const std::string cndrvAllPattern_ = "^cn[A-Z].*";
+
+    std::string enabled_list_str_;
+    std::string disabled_list_str_;
 };
 
-} // namespace
+}  // namespace KINETO_NAMESPACE

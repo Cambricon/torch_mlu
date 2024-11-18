@@ -62,7 +62,13 @@ class TestEnd2End(unittest.TestCase):
 
     def _test_tensorboard_with_arguments(self, test_folder, expected_runs, env=None, path_prefix=None):
         host = 'localhost'
-        port = random.randint(6008, 65535)
+        def find_free_port():
+            while True:
+                port = random.randint(6008, 65535)
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    if s.connect_ex(("localhost", port)) != 0:
+                        return port
+        port = find_free_port()
 
         try:
             if env:

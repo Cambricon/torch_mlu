@@ -7,7 +7,7 @@
 // @lint-ignore-every CLANGTIDY facebook-hte-RelativeInclude
 #include "include/libkineto.h"
 #include "src/Logger.h"
-#include "LoggerCollector.h"
+#include "src/LoggerCollector.h"
 
 using namespace KINETO_NAMESPACE;
 

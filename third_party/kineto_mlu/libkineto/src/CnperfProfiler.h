@@ -1,5 +1,3 @@
-// (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
-
 #pragma once
 
 #include <atomic>
@@ -19,11 +17,10 @@
 // TODO(T90238193)
 // @lint-ignore-every CLANGTIDY facebook-hte-RelativeInclude
 
-#ifdef HAS_CNPAPI
-#include <cnpapi.h>
-#include "CnpapiActivity.h"
-#endif // HAS_CNPAPI
-
+#include <cnperf_api.h>
+#include "CnperfApi.h"
+#include "CnperfActivity.h"
+#include "CnperfPmuApi.h"
 #include "ThreadUtil.h"
 #include "TraceSpan.h"
 #include "libkineto.h"
@@ -31,12 +28,11 @@
 #include "GenericTraceActivity.h"
 #include "IActivityProfiler.h"
 #include "LoggerCollector.h"
-#include "CnpapiPmuApi.h"
 
 namespace KINETO_NAMESPACE {
 
 class Config;
-class CnpapiActivityApi;
+class CnperfApi;
 
 // This struct is a derived snapshot of the Config. And should not
 // be mutable after construction.
@@ -93,11 +89,11 @@ struct ConfigDerivedState final {
   bool profilingByIter_ {false};
 };
 
-class CnpapiActivityProfiler {
+class CnperfProfiler {
  public:
-  CnpapiActivityProfiler(CnpapiActivityApi& cnpapi, bool cpuOnly);
-  CnpapiActivityProfiler(const CnpapiActivityProfiler&) = delete;
-  CnpapiActivityProfiler& operator=(const CnpapiActivityProfiler&) = delete;
+  CnperfProfiler(CnperfApi& cnperf, bool cpuOnly);
+  CnperfProfiler(const CnperfProfiler&) = delete;
+  CnperfProfiler& operator=(const CnperfProfiler&) = delete;
 
   bool isActive() const {
     return currentRunloopState_ != RunloopState::WaitForRequest;
@@ -157,7 +153,7 @@ class CnpapiActivityProfiler {
   inline void recordThreadInfo() {
     int32_t sysTid = systemThreadId();
     // Note we're using the lower 32 bits of the (opaque) pthread id
-    // as key, because that's what CNPAPI records.
+    // as key, because that's what CNPERF records.
     int32_t tid = threadId();
     int32_t pid = processId();
     std::lock_guard<std::mutex> guard(mutex_);
@@ -180,12 +176,6 @@ class CnpapiActivityProfiler {
   void addMetadata(const std::string& key, const std::string& value) {
     std::lock_guard<std::mutex> guard(mutex_);
     metadata_[key] = value;
-  }
-
-  void addChildActivityProfiler(
-      std::unique_ptr<IActivityProfiler> profiler) {
-    std::lock_guard<std::mutex> guard(mutex_);
-    profilers_.push_back(std::move(profiler));
   }
 
  protected:
@@ -223,20 +213,10 @@ class CnpapiActivityProfiler {
   MluUserEventMap mluUserEventMap_;
   // id -> activity*
   std::unordered_map<int64_t, const ITraceActivity*> activityMap_;
-  // mlu runtime id -> pytorch op id
-  // CNPAPI provides a mechanism for correlating Mlu events to arbitrary
-  // external events, e.g.operator activities from PyTorch.
-  std::unordered_map<int64_t, int64_t> cpuCorrelationMap_;
+
   // MLU runtime <-> MLU Activity
   std::unordered_map<int64_t, const ITraceActivity*>
       correlatedMluActivities_;
-  std::unordered_map<int64_t, int64_t> userCorrelationMap_;
-
-  // data structure to collect cnpapiActivityFlushAll() latency overhead
-  struct profilerOverhead {
-    int64_t overhead;
-    int cntr;
-  };
 
   void logMluVersions();
 
@@ -251,8 +231,6 @@ class CnpapiActivityProfiler {
   void resetInternal();
 
   void finalizeTrace(const Config& config, ActivityLogger& logger);
-
-  void configureChildProfilers();
 
   // Process a single CPU trace
   void processCpuTrace(
@@ -270,6 +248,19 @@ class CnpapiActivityProfiler {
     }
   }
 
+  inline void recordCnpxInfo(int rank, int tid) {
+    if (resourceInfo_.find({rank, tid}) == resourceInfo_.end()) {
+      resourceInfo_.emplace(
+          std::make_pair(rank, tid),
+          ActivityLogger::ResourceInfo(
+              rank,
+              tid,
+              tid, // sortindex
+              fmt::format("cnpx (thread {})", tid)));
+    }
+  }
+
+
   // Record client trace span for subsequent lookups from activities
   // Also creates a corresponding MLU-side span.
   CpuMluSpanPair& recordTraceSpan(TraceSpan& span, int mluOpCount);
@@ -281,39 +272,23 @@ class CnpapiActivityProfiler {
   // net name to id
   int netId(const std::string& netName);
 
-  const ITraceActivity* linkedActivity(
-      int32_t correlationId,
-      const std::unordered_map<int64_t, int64_t>& correlationMap);
+  const ITraceActivity* linkedActivity(int32_t correlationId);
 
-#ifdef HAS_CNPAPI
   // Process specific MLU activity types
   void updateMluNetSpan(const ITraceActivity& mluOp);
   bool outOfRange(const ITraceActivity& act);
-  void handleCorrelationActivity(
-      const ExternalCorrelationRecord& correlation);
   void handleRuntimeActivity(
-      const RuntimeRecord& activity, ActivityLogger* logger);
-  void handleOverheadActivity(
-      const OverheadRecord& activity, ActivityLogger* logger);
-  void handleMluActivity(const ITraceActivity& act,
+      const RuntimeRecord& activity,
+      const std::unique_ptr<std::unordered_set<uint64_t>>& device_task_corrids,
       ActivityLogger* logger);
-  template <class T>
-  void handleMluActivity(const T& act,
-    std::vector<CnpapiPmuData>* pmu_data, ActivityLogger* logger);
-#endif // HAS_CNPAPI
+  void handleMluActivity(const DeviceTaskRecord& act,
+      std::vector<CnperfPmuData>* pmu_data,
+      ActivityLogger* logger);
+  void handleCommunicationActivity(
+      const CommunicationRecord& record,
+      ActivityLogger* logger);
 
   void resetTraceData();
-
-  void addOverheadSample(profilerOverhead& counter, int64_t overhead) {
-    counter.overhead += overhead;
-    counter.cntr++;
-  }
-  int64_t getOverhead(const profilerOverhead& counter) {
-    if (counter.cntr == 0) {
-      return 0;
-    }
-    return counter.overhead / counter.cntr;
-  }
 
   void checkTimestampOrder(const ITraceActivity* act1);
 
@@ -327,8 +302,7 @@ class CnpapiActivityProfiler {
   // Logger used during trace processing
   ActivityLogger* logger_;
 
-  // Calls to CNPAPI is encapsulated behind this interface
-  CnpapiActivityApi& cnpapi_;
+  CnperfApi& cnperf_;
 
   enum class RunloopState {
     WaitForRequest,
@@ -355,11 +329,6 @@ class CnpapiActivityProfiler {
       ActivityLogger::ResourceInfo> resourceInfo_;
 
   std::vector<ActivityLogger::OverheadInfo> overheadInfo_;
-
-  // the overhead to flush the activity buffer
-  profilerOverhead flushOverhead_;
-  // the overhead to enable/disable activity tracking
-  profilerOverhead setupOverhead_;
 
   bool cpuOnly_{false};
 
@@ -388,17 +357,8 @@ class CnpapiActivityProfiler {
   // Buffers where trace data is stored
   std::unique_ptr<ActivityBuffers> traceBuffers_;
 
-  // Trace pmu data
-  std::unique_ptr<PmuDataMap> pmuDataMap_;
-
   // Trace metadata
   std::unordered_map<std::string, std::string> metadata_;
-
-  // child activity profilers
-  std::vector<std::unique_ptr<IActivityProfiler>> profilers_;
-
-  // a vector of active profiler plugin sessions
-  std::vector<std::unique_ptr<IActivityProfilerSession>> sessions_;
 
   // Number of memory overhead events encountered during the session
   uint32_t resourceOverheadCount_; 

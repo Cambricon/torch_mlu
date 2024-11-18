@@ -1,6 +1,6 @@
 // (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
 
-#include "CnpapiActivityProfiler.h"
+#include "CnperfProfiler.h"
 
 #include <fmt/format.h>
 #include <time.h>
@@ -11,22 +11,12 @@
 #include <vector>
 #include <limits>
 
-#ifdef HAS_CNPAPI
-#include <cnpapi.h>
 // TODO(T90238193)
 // @lint-ignore-every CLANGTIDY facebook-hte-RelativeInclude
 #include "mlu_call.h"
-#include "cnpapi_call.h"
-#endif
 
 #include "Config.h"
 #include "time_since_epoch.h"
-#ifdef HAS_CNPAPI
-#include "CnpapiActivity.h"
-#include "CnpapiActivity.tpp"
-#include "CnpapiActivityApi.h"
-#include "CnpapiResourceApi.h"
-#endif // HAS_CNPAPI
 #include "output_base.h"
 
 #include "Logger.h"
@@ -102,7 +92,7 @@ bool ConfigDerivedState::isCollectionDone(
   return false;
 }
 
-void CnpapiActivityProfiler::transferCpuTrace(
+void CnperfProfiler::transferCpuTrace(
     std::unique_ptr<libkineto::CpuTraceBuffer> cpuTrace) {
   std::lock_guard<std::mutex> guard(mutex_);
   const string& trace_name = cpuTrace->span.name;
@@ -121,14 +111,10 @@ void CnpapiActivityProfiler::transferCpuTrace(
   traceBuffers_->cpu.push_back(std::move(cpuTrace));
 }
 
-CnpapiActivityProfiler::CnpapiActivityProfiler(CnpapiActivityApi& cnpapi, bool cpuOnly)
-    : cnpapi_(cnpapi),
-      flushOverhead_{0, 0},
-      setupOverhead_{0, 0},
+CnperfProfiler::CnperfProfiler(CnperfApi& cnperf, bool cpuOnly)
+    : cnperf_(cnperf),
       cpuOnly_{cpuOnly},
       currentRunloopState_{RunloopState::WaitForRequest} {
-
-#ifdef HAS_CNPAPI
     // determine MLU availability on the system
     cnrtRet_t error;
     unsigned int deviceCount;
@@ -138,23 +124,14 @@ CnpapiActivityProfiler::CnpapiActivityProfiler(CnpapiActivityApi& cnpapi, bool c
     if (mluAvailable) {
       logMluVersions();
     }
-
-    static std::unique_ptr<CnpapiResourceCallbackRegistration>
-      resourceRegisterInstance = std::make_unique<CnpapiResourceCallbackRegistration>();
-
-    static std::unique_ptr<CnpapiPmuCallbackRegistration>
-      pmuRegisterInstance = std::make_unique<CnpapiPmuCallbackRegistration>();
-#endif
   }
 
-#ifdef HAS_CNPAPI
-void CnpapiActivityProfiler::logMluVersions() {
+void CnperfProfiler::logMluVersions() {
   // check mlu versions
-  int cnpapiMajor, cnpapiMinor, cnpapiPatch;
   int cnrtMajor, cnrtMinor, cnrtPatch;
   int cndrvMajor, cndrvMinor, cndrvPatch;
 
-  CNPAPI_CALL(cnpapiGetLibVersion(&cnpapiMajor, &cnpapiMinor, &cnpapiPatch));
+  //TODO(): add cnperfGetLibVersion
   CNRT_CALL(cnrtGetLibVersion(&cnrtMajor, &cnrtMinor, &cnrtPatch));
   CNRT_CALL(cnrtDriverGetVersion(&cndrvMajor, &cndrvMinor, &cndrvPatch));
 
@@ -164,13 +141,11 @@ void CnpapiActivityProfiler::logMluVersions() {
                                 std::to_string(minor),
                                 std::to_string(patch)}), "."));
   };
-  LOG(INFO) << "MLU versions. CNPapi: " << fmtVer(cnpapiMajor, cnpapiMinor, cnpapiPatch)
-            << "; Runtime: " << fmtVer(cnrtMajor, cnrtMinor, cnrtPatch)
+  LOG(INFO) << "MLU versions. Runtime: " << fmtVer(cnrtMajor, cnrtMinor, cnrtPatch)
             << "; Driver: " << fmtVer(cndrvMajor, cndrvMinor, cndrvPatch);
 }
-#endif
 
-void CnpapiActivityProfiler::processTraceInternal(ActivityLogger& logger) {
+void CnperfProfiler::processTraceInternal(ActivityLogger& logger) {
   LOG(INFO) << "Processing " << traceBuffers_->cpu.size() << " CPU buffers";
   VLOG(0) << "Profile time range: " << captureWindowStartTime_ << " - "
           << captureWindowEndTime_;
@@ -186,47 +161,27 @@ void CnpapiActivityProfiler::processTraceInternal(ActivityLogger& logger) {
     LOGGER_OBSERVER_ADD_EVENT_COUNT(cpu_trace->activities.size());
   }
 
-#ifdef HAS_CNPAPI
   if (!cpuOnly_) {
-    VLOG(0) << "Retrieving MLU activity buffers";
-    traceBuffers_->mlu = cnpapi_.activityBuffers();
-    pmuDataMap_ = CnpapiPmuApi::singleton().getPmuData();
-    if (VLOG_IS_ON(1)) {
-      addOverheadSample(flushOverhead_, cnpapi_.flushOverhead);
-    }
+    LOG(INFO) << "Retrieving MLU activity buffers";
+    cnperf_.process(activityMap_);
+    traceBuffers_->mlu = cnperf_.getAllRecords();
+    auto pmu_datamap = CnperfPmuApi::singleton().getPmuData();
     if (traceBuffers_->mlu) {
-      CnpapiResourceApi::singleton().processTaskTopoData(activityMap_);
-      // Handle external_correlation first
-      for (const auto& record : traceBuffers_->mlu->external_correlation_records) {
-        handleCorrelationActivity(record);
-      }
+      auto device_task_corrids = cnperf_.getDeviceTaskCorrelations();
       for (const auto& record : traceBuffers_->mlu->runtime_records) {
-        handleRuntimeActivity(record, &logger);
+        handleRuntimeActivity(record, device_task_corrids, &logger);
       }
-      for (const auto& record : traceBuffers_->mlu->kernel_records) {
-        std::vector<CnpapiPmuData>* pmu_data = nullptr;
-        if (pmuDataMap_) {
-          auto it = pmuDataMap_->find(record.correlation_id);
-          if (it != pmuDataMap_->end()) {
-            pmu_data = &it->second;
+      for (const auto& record : traceBuffers_->mlu->device_task_records) {
+        std::vector<CnperfPmuData>* pmu_datalist = nullptr;
+        if (pmu_datamap) {
+          if (auto search = pmu_datamap->find(record.correlation_id); search != pmu_datamap->end()) {
+            pmu_datalist = &search->second;
           }
         }
-        handleMluActivity(record, pmu_data, &logger);
+        handleMluActivity(record, pmu_datalist, &logger);
       }
-      for (const auto& record : traceBuffers_->mlu->memcpy_records) {
-        handleMluActivity(record, nullptr, &logger);
-      }
-      for (const auto& record : traceBuffers_->mlu->memcpy_p2p_records) {
-        handleMluActivity(record, nullptr, &logger);
-      }
-      for (const auto& record : traceBuffers_->mlu->memset_records) {
-        handleMluActivity(record, nullptr, &logger);
-      }
-      for (const auto& record : traceBuffers_->mlu->overhead_records) {
-        handleOverheadActivity(record, &logger);
-      }
-      for (const auto& record : traceBuffers_->mlu->atomic_op_records) {
-        handleMluActivity(record, nullptr, &logger);
+      for (const auto& record : traceBuffers_->mlu->comm_records) {
+        handleCommunicationActivity(record, &logger);
       }
       // resourceOverheadCount_ is set while processing MLU activities
       if (resourceOverheadCount_ > 0) {
@@ -235,17 +190,10 @@ void CnpapiActivityProfiler::processTraceInternal(ActivityLogger& logger) {
       LOGGER_OBSERVER_ADD_METADATA("ResourceOverhead", std::to_string(resourceOverheadCount_));
     }
   }
-#endif // HAS_CNPAPI
-
-  for (const auto& session : sessions_){
-    LOG(INFO) << "Processing child profiler trace";
-    session->processTrace(logger);
-  }
-
   finalizeTrace(*config_, logger);
 }
 
-CnpapiActivityProfiler::CpuMluSpanPair& CnpapiActivityProfiler::recordTraceSpan(
+CnperfProfiler::CpuMluSpanPair& CnperfProfiler::recordTraceSpan(
     TraceSpan& span, int mluOpCount) {
   TraceSpan mlu_span(mluOpCount, span.iteration, span.name, "MLU: ");
   auto& iterations = traceSpans_[span.name];
@@ -253,7 +201,7 @@ CnpapiActivityProfiler::CpuMluSpanPair& CnpapiActivityProfiler::recordTraceSpan(
   return iterations.back();
 }
 
-void CnpapiActivityProfiler::processCpuTrace(
+void CnperfProfiler::processCpuTrace(
     libkineto::CpuTraceBuffer& cpuTrace,
     ActivityLogger& logger) {
   if (cpuTrace.activities.size() == 0) {
@@ -276,19 +224,6 @@ void CnpapiActivityProfiler::processCpuTrace(
   logger.handleTraceSpan(cpu_span);
 }
 
-#ifdef HAS_CNPAPI
-inline void CnpapiActivityProfiler::handleCorrelationActivity(
-    const ExternalCorrelationRecord& correlation) {
-  if (correlation.external_type == CNPAPI_EXTERNAL_CORRELATION_TYPE_CUSTOM0) {
-    cpuCorrelationMap_[correlation.correlation_id] = correlation.external_id;
-  } else if (correlation.external_type == CNPAPI_EXTERNAL_CORRELATION_TYPE_CUSTOM1){
-    userCorrelationMap_[correlation.correlation_id] = correlation.external_id;
-  } else {
-    LOG(WARNING) << "Invalid cnpapiActivityExternalCorrelation sent to handleCnpapiActivity";
-  }
-}
-#endif // HAS_CNPAPI
-
 static GenericTraceActivity createUserMluSpan(
     const libkineto::ITraceActivity& cpuTraceActivity,
     const libkineto::ITraceActivity& mluTraceActivity) {
@@ -305,7 +240,7 @@ static GenericTraceActivity createUserMluSpan(
   return res;
 }
 
-void CnpapiActivityProfiler::MluUserEventMap::insertOrExtendEvent(
+void CnperfProfiler::MluUserEventMap::insertOrExtendEvent(
     const ITraceActivity& userActivity,
     const ITraceActivity& mluActivity) {
   StreamKey key(mluActivity.deviceId(), mluActivity.resourceId());
@@ -327,13 +262,13 @@ void CnpapiActivityProfiler::MluUserEventMap::insertOrExtendEvent(
   }
 }
 
-const CnpapiActivityProfiler::CpuMluSpanPair& CnpapiActivityProfiler::defaultTraceSpan() {
+const CnperfProfiler::CpuMluSpanPair& CnperfProfiler::defaultTraceSpan() {
   static TraceSpan span(0, 0, "Unknown", "");
   static CpuMluSpanPair span_pair(span, span);
   return span_pair;
 }
 
-void CnpapiActivityProfiler::MluUserEventMap::logEvents(ActivityLogger *logger) {
+void CnperfProfiler::MluUserEventMap::logEvents(ActivityLogger *logger) {
   for (auto const& streamMapPair : streamSpanMap_) {
     for (auto const& correlationSpanPair : streamMapPair.second) {
       correlationSpanPair.second.log(*logger);
@@ -341,92 +276,8 @@ void CnpapiActivityProfiler::MluUserEventMap::logEvents(ActivityLogger *logger) 
   }
 }
 
-#ifdef HAS_CNPAPI
-inline bool CnpapiActivityProfiler::outOfRange(const ITraceActivity& act) {
-  bool out_of_range = act.timestamp() < captureWindowStartTime_ ||
-      (act.timestamp() + act.duration()) > captureWindowEndTime_;
-  if (out_of_range) {
-    VLOG(2) << "TraceActivity outside of profiling window: " << act.name()
-        << " (" << act.timestamp() << " < " << captureWindowStartTime_ << " or "
-        << (act.timestamp() + act.duration()) << " > " << captureWindowEndTime_;
-  }
-  return out_of_range;
-}
-
-template <typename T>
-inline static bool checkRuntimeCbid(cnpapi_CallbackId cbid, const T& block_cbid_list) {
-  for (const auto& block_cbid : block_cbid_list) {
-    if (cbid == block_cbid) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void CnpapiActivityProfiler::handleRuntimeActivity(
-    const RuntimeRecord& activity,
-    ActivityLogger* logger) {
-  const ITraceActivity* linked = linkedActivity(
-      activity.correlation_id, cpuCorrelationMap_);
-
-  VLOG(2) << activity.correlation_id
-          << ": CNPAPI_ACTIVITY_KIND_RUNTIME, cbid=" << activity.cbid
-          << " tid=" << activity.thread_id;
-  int32_t tid = activity.thread_id;
-  const auto& it = resourceInfo_.find({processId(), tid});
-  if (it != resourceInfo_.end()) {
-    tid = it->second.id;
-  }
-  const auto& runtime_activity =
-      traceBuffers_->addActivityWrapper(RuntimeActivity(activity, linked, tid));
-  checkTimestampOrder(&runtime_activity);
-  if (outOfRange(runtime_activity)) {
-    return;
-  }
-  runtime_activity.log(*logger);
-}
-
-void CnpapiActivityProfiler::handleOverheadActivity(
-    const OverheadRecord& activity,
-    ActivityLogger* logger) {
-  VLOG(2) << ": CNPAPI_ACTIVITY_KIND_OVERHEAD" << " overheadKind=" << activity.overhead_type;
-  const auto& overhead_activity =
-      traceBuffers_->addActivityWrapper(OverheadActivity(activity, nullptr));
-  // Monitor memory overhead
-  if (activity.overhead_type == CNPAPI_ACTIVITY_OVERHEAD_CNPAPI_RESOURCE) {
-    resourceOverheadCount_++;
-  }
-
-  if (outOfRange(overhead_activity)) {
-    return;
-  }
-  overhead_activity.log(*logger);
-}
-
-
-inline void CnpapiActivityProfiler::updateMluNetSpan(
-    const ITraceActivity& mluOp) {
-  if (!mluOp.linkedActivity()) {
-    VLOG(0) << "Missing linked activity";
-    return;
-  }
-  const auto& it = clientActivityTraceMap_.find(
-     mluOp.linkedActivity()->correlationId());
-  if (it == clientActivityTraceMap_.end()) {
-    // No correlation id mapping?
-    return;
-  }
-  TraceSpan& mlu_span = it->second->second;
-  if (mluOp.timestamp() < mlu_span.startTime || mlu_span.startTime == 0) {
-    mlu_span.startTime = mluOp.timestamp();
-  }
-  if ((mluOp.timestamp() + mluOp.duration()) > mlu_span.endTime) {
-    mlu_span.endTime = mluOp.timestamp() + mluOp.duration();
-  }
-}
-
 // I've observed occasional broken timestamps attached to MLU events...
-void CnpapiActivityProfiler::checkTimestampOrder(const ITraceActivity* act1) {
+void CnperfProfiler::checkTimestampOrder(const ITraceActivity* act1) {
   // Correlated MLU runtime activity cannot
   // have timestamp greater than the MLU activity's
   const auto& it = correlatedMluActivities_.find(act1->correlationId());
@@ -454,33 +305,19 @@ void CnpapiActivityProfiler::checkTimestampOrder(const ITraceActivity* act1) {
   }
 }
 
-inline void CnpapiActivityProfiler::handleMluActivity(
-    const ITraceActivity& act,
-    ActivityLogger* logger) {
-  if (outOfRange(act)) {
-    return;
+inline bool CnperfProfiler::outOfRange(const ITraceActivity& act) {
+  bool out_of_range = act.timestamp() < captureWindowStartTime_ ||
+      (act.timestamp() + act.duration()) > captureWindowEndTime_;
+  if (out_of_range) {
+    LOG(WARNING) << "TraceActivity outside of profiling window: " << act.name()
+        << " (" << act.timestamp() << " < " << captureWindowStartTime_ << " or "
+        << (act.timestamp() + act.duration()) << " > " << captureWindowEndTime_;
   }
-  checkTimestampOrder(&act);
-  VLOG(2) << act.correlationId() << ": "
-          << act.name();
-  recordStream(act.deviceId(), act.resourceId(), "");
-  act.log(*logger);
-  updateMluNetSpan(act);
-  if (derivedConfig_->profileActivityTypes().count(ActivityType::MLU_USER_ANNOTATION)) {
-    const auto& it = userCorrelationMap_.find(act.correlationId());
-    if (it != userCorrelationMap_.end()) {
-      const auto& it2 = activityMap_.find(it->second);
-      if (it2 != activityMap_.end()) {
-        recordStream(act.deviceId(), act.resourceId(), "context");
-        mluUserEventMap_.insertOrExtendEvent(*it2->second, act);
-      }
-    }
-  }
+  return out_of_range;
 }
 
-const ITraceActivity* CnpapiActivityProfiler::linkedActivity(
-    int32_t correlation_id,
-    const std::unordered_map<int64_t, int64_t>& correlationMap) {
+const ITraceActivity* CnperfProfiler::linkedActivity(int32_t correlation_id) {
+  const auto& correlationMap = cnperf_.getCpuCorrelationMap();
   const auto& it = correlationMap.find(correlation_id);
   if (it != correlationMap.end()) {
     const auto& it2 = activityMap_.find(it->second);
@@ -491,47 +328,95 @@ const ITraceActivity* CnpapiActivityProfiler::linkedActivity(
   return nullptr;
 }
 
-template <class T>
-inline void CnpapiActivityProfiler::handleMluActivity(
-    const T& act, std::vector<CnpapiPmuData>* pmu_data,
+void CnperfProfiler::handleRuntimeActivity(
+    const RuntimeRecord& activity,
+    const std::unique_ptr<std::unordered_set<uint64_t>>& device_task_corrids,
     ActivityLogger* logger) {
-  const ITraceActivity* linked = linkedActivity(
-      act.correlation_id, cpuCorrelationMap_);
+  const ITraceActivity* linked = linkedActivity(activity.correlation_id);
 
-  const auto& mlu_activity =
-      traceBuffers_->addActivityWrapper(MluActivity<T>(act, linked, pmu_data));
-  handleMluActivity(mlu_activity, logger);
+  int32_t tid = activity.thread_id;
+  const auto& it = resourceInfo_.find({processId(), tid});
+  if (it != resourceInfo_.end()) {
+    tid = it->second.id;
+  }
+  bool flow_event_start =
+      device_task_corrids->find(activity.correlation_id) != device_task_corrids->end();
+  const auto& runtime_activity = traceBuffers_->addActivityWrapper(
+      createRuntimeActivity(&activity, linked, tid, flow_event_start));
+  checkTimestampOrder(&runtime_activity);
+  if (outOfRange(runtime_activity)) {
+    return;
+  }
+  logger->handleActivity(runtime_activity);
 }
 
-#endif // HAS_CNPAPI
-
-void CnpapiActivityProfiler::configureChildProfilers() {
-  // If child profilers are enabled create profiler sessions
-  int64_t start_time_ms = duration_cast<milliseconds>(
-    derivedConfig_->profileStartTime().time_since_epoch()).count();
-  for (auto& profiler: profilers_) {
-    LOG(INFO) << "Running child profiler " << profiler->name() << " for "
-            << derivedConfig_->profileDuration().count() << " ms";
-    auto session = profiler->configure(
-        start_time_ms,
-        derivedConfig_->profileDuration().count(),
-        derivedConfig_->profileActivityTypes(),
-        *config_
-    );
-    if (session) {
-      LOG(INFO) << "Running child profiler " << profiler->name() << " for "
-                << derivedConfig_->profileDuration().count() << " ms";
-      sessions_.push_back(std::move(session));
-    }
+inline void CnperfProfiler::updateMluNetSpan(
+    const ITraceActivity& mluOp) {
+  if (!mluOp.linkedActivity()) {
+    VLOG(0) << "Missing linked activity";
+    return;
+  }
+  const auto& it = clientActivityTraceMap_.find(
+     mluOp.linkedActivity()->correlationId());
+  if (it == clientActivityTraceMap_.end()) {
+    // No correlation id mapping?
+    return;
+  }
+  TraceSpan& mlu_span = it->second->second;
+  if (mluOp.timestamp() < mlu_span.startTime || mlu_span.startTime == 0) {
+    mlu_span.startTime = mluOp.timestamp();
+  }
+  if ((mluOp.timestamp() + mluOp.duration()) > mlu_span.endTime) {
+    mlu_span.endTime = mluOp.timestamp() + mluOp.duration();
   }
 }
 
-void CnpapiActivityProfiler::configure(
+inline void CnperfProfiler::handleMluActivity(
+    const DeviceTaskRecord& act, std::vector<CnperfPmuData>* pmu_data,
+    ActivityLogger* logger) {
+  const ITraceActivity* linked = linkedActivity(act.correlation_id);
+
+  const auto& mlu_activity =
+      traceBuffers_->addActivityWrapper(createMluActivity(&act, linked, pmu_data));
+  if (outOfRange(mlu_activity)) {
+    return;
+  }
+  checkTimestampOrder(&mlu_activity);
+  recordStream(mlu_activity.deviceId(), mlu_activity.resourceId(), "");
+  if (derivedConfig_->profileActivityTypes().count(ActivityType::MLU_USER_ANNOTATION)) {
+    const auto& userCorrelationMap = cnperf_.getUserCorrelationMap();
+    const auto& it = userCorrelationMap.find(mlu_activity.correlationId());
+    if (it != userCorrelationMap.end()) {
+      const auto& it2 = activityMap_.find(it->second);
+      if (it2 != activityMap_.end()) {
+        recordStream(mlu_activity.deviceId(), mlu_activity.resourceId(), "context");
+        mluUserEventMap_.insertOrExtendEvent(*it2->second, mlu_activity);
+      }
+    }
+  }
+  updateMluNetSpan(mlu_activity);
+  logger->handleActivity(mlu_activity);
+}
+
+inline void CnperfProfiler::handleCommunicationActivity(
+    const CommunicationRecord& record,
+    ActivityLogger* logger) {
+  //
+  const auto& comm_activity =
+      traceBuffers_->addActivityWrapper(createCommunicationActivity(&record));
+  if (outOfRange(comm_activity)) {
+    return;
+  }
+  recordCnpxInfo(record.rank, record.thread_id);
+  logger->handleActivity(comm_activity);
+}
+
+void CnperfProfiler::configure(
     const Config& config,
     const time_point<system_clock>& now) {
   std::lock_guard<std::mutex> guard(mutex_);
   if (isActive()) {
-    LOG(WARNING) << "CnpapiActivityProfiler already busy, terminating";
+    LOG(WARNING) << "CnperfProfiler already busy, terminating";
     return;
   }
 
@@ -577,30 +462,9 @@ void CnpapiActivityProfiler::configure(
   }
   LOGGER_OBSERVER_ADD_DESTINATION(config_->activitiesLogUrl());
 
-#if defined(HAS_CNPAPI)
   if (!cpuOnly_) {
-    // Enabling CUPTI activity tracing incurs a larger perf hit at first,
-    // presumably because structures are allocated and initialized, callbacks
-    // are activated etc. After a while the overhead decreases and stabilizes.
-    // It's therefore useful to perform some warmup before starting recording.
     LOG(INFO) << "Enabling MLU tracing";
-    cnpapi_.setMaxBufferSize(config_->activitiesMaxMluBufferSize());
-
-    time_point<system_clock> timestamp;
-    if (VLOG_IS_ON(1)) {
-      timestamp = system_clock::now();
-    }
-    cnpapi_.enableCnpapiActivities(config_->selectedActivityTypes());
-    if (VLOG_IS_ON(1)) {
-      auto t2 = system_clock::now();
-      addOverheadSample(
-          setupOverhead_, duration_cast<microseconds>(t2 - timestamp).count());
-    }
-  }
-#endif // HAS_CNPAPI
-
-  if (profilers_.size() > 0) {
-    configureChildProfilers();
+    cnperf_.prepare();
   }
 
   if (libkineto::api().client()) {
@@ -626,36 +490,15 @@ void CnpapiActivityProfiler::configure(
   currentRunloopState_ = RunloopState::Warmup;
 }
 
-void CnpapiActivityProfiler::startTraceInternal(const time_point<system_clock>& now) {
+void CnperfProfiler::startTraceInternal(const time_point<system_clock>& now) {
   captureWindowStartTime_ = libkineto::timeSinceEpoch(now);
   VLOG(0) << "Warmup -> CollectTrace";
-  for (auto& session : sessions_){
-    LOG(INFO) << "Starting child profiler session";
-    session->start();
-  }
   currentRunloopState_ = RunloopState::CollectTrace;
+  cnperf_.start();
 }
 
-void CnpapiActivityProfiler::stopTraceInternal(const time_point<system_clock>& now) {
+void CnperfProfiler::stopTraceInternal(const time_point<system_clock>& now) {
   captureWindowEndTime_ = libkineto::timeSinceEpoch(now);
-#if defined(HAS_CNPAPI)
-  if (!cpuOnly_) {
-    time_point<system_clock> timestamp;
-    if (VLOG_IS_ON(1)) {
-      timestamp = system_clock::now();
-    }
-#ifdef HAS_CNPAPI
-    cnpapi_.disableCnpapiActivities(derivedConfig_->profileActivityTypes());
-#else
-    cnpapi_.disableActivities(derivedConfig_->profileActivityTypes());
-#endif
-    if (VLOG_IS_ON(1)) {
-      auto t2 = system_clock::now();
-      addOverheadSample(
-          setupOverhead_, duration_cast<microseconds>(t2 - timestamp).count());
-    }
-  }
-#endif // HAS_CNPAPI
 
   if (currentRunloopState_ == RunloopState::CollectTrace) {
     VLOG(0) << "CollectTrace -> ProcessTrace";
@@ -664,19 +507,15 @@ void CnpapiActivityProfiler::stopTraceInternal(const time_point<system_clock>& n
         static_cast<std::underlying_type<RunloopState>::type>(
             currentRunloopState_.load());
   }
-  for (auto& session : sessions_){
-    LOG(INFO) << "Stopping child profiler session";
-    session->stop();
-  }
   currentRunloopState_ = RunloopState::ProcessTrace;
 }
 
-void CnpapiActivityProfiler::resetInternal() {
+void CnperfProfiler::resetInternal() {
   resetTraceData();
   currentRunloopState_ = RunloopState::WaitForRequest;
 }
 
-const time_point<system_clock> CnpapiActivityProfiler::performRunLoopStep(
+const time_point<system_clock> CnperfProfiler::performRunLoopStep(
     const time_point<system_clock>& now,
     const time_point<system_clock>& nextWakeupTime,
     int64_t currentIter) {
@@ -695,23 +534,12 @@ const time_point<system_clock> CnpapiActivityProfiler::performRunLoopStep(
     case RunloopState::Warmup:
       VLOG(1) << "State: Warmup";
       warmup_done = derivedConfig_->isWarmupDone(now, currentIter);
-#if defined(HAS_CNPAPI)
       // Flushing can take a while so avoid doing it close to the start time
       if (!cpuOnly_ && currentIter < 0 &&
           (derivedConfig_->isProfilingByIteration() ||
            nextWakeupTime < derivedConfig_->profileStartTime())) {
-        cnpapi_.clearActivities();
+        cnperf_.clearTraceData();
       }
-
-      if (cnpapi_.stopCollection) {
-        // Go to process trace to clear any outstanding buffers etc
-        std::lock_guard<std::mutex> guard(mutex_);
-        stopTraceInternal(now);
-        resetInternal();
-        VLOG(0) << "Warmup -> WaitForRequest";
-        break;
-      }
-#endif // HAS_CNPAPI
 
       if (warmup_done) {
         UST_LOGGER_MARK_COMPLETED(kWarmUpStage);
@@ -742,11 +570,7 @@ const time_point<system_clock> CnpapiActivityProfiler::performRunLoopStep(
       VLOG(1) << "State: CollectTrace";
       collection_done = derivedConfig_->isCollectionDone(now, currentIter);
 
-      if (collection_done
-#if defined(HAS_CNPAPI)
-          || cnpapi_.stopCollection
-#endif // HAS_CNPAPI
-      ){
+      if (collection_done){
         // Update runloop state first to prevent further updates to shared state
         LOG(INFO) << "Tracing complete.";
         VLOG_IF(1, currentIter > 0) << "This state change was invoked by application's step() call";
@@ -790,7 +614,7 @@ const time_point<system_clock> CnpapiActivityProfiler::performRunLoopStep(
   return new_wakeup_time;
 }
 
-void CnpapiActivityProfiler::finalizeTrace(const Config& config, ActivityLogger& logger) {
+void CnperfProfiler::finalizeTrace(const Config& config, ActivityLogger& logger) {
   LOG(INFO) << "Traces Recorded:";
   {
     for (const auto& it : iterationCountMap_) {
@@ -839,11 +663,6 @@ void CnpapiActivityProfiler::finalizeTrace(const Config& config, ActivityLogger&
 
   mluUserEventMap_.logEvents(&logger);
 
-  for (auto& session : sessions_){
-    auto trace_buffer = session->getTraceBuffer();
-    traceBuffers_->cpu.push_back(std::move(trace_buffer));
-  }
-
 #if !USE_GOOGLE_LOG
   // Save logs from LoggerCollector objects into Trace metadata.
   auto LoggerMD = loggerCollectorMetadata_->extractCollectorMetadata();
@@ -856,21 +675,17 @@ void CnpapiActivityProfiler::finalizeTrace(const Config& config, ActivityLogger&
   logger.finalizeTrace(config, std::move(traceBuffers_), captureWindowEndTime_, LoggerMDString);
 }
 
-void CnpapiActivityProfiler::resetTraceData() {
-#if defined(HAS_CNPAPI)
+void CnperfProfiler::resetTraceData() {
   if (!cpuOnly_) {
-    cnpapi_.clearActivities();
+    cnperf_.clearTraceData();
   }
-#endif // HAS_CNPAPI
   activityMap_.clear();
-  cpuCorrelationMap_.clear();
   correlatedMluActivities_.clear();
   mluUserEventMap_.clear();
   traceSpans_.clear();
   clientActivityTraceMap_.clear();
   traceBuffers_ = nullptr;
   metadata_.clear();
-  sessions_.clear();
   resourceOverheadCount_ = 0;
 #if !USE_GOOGLE_LOG
   Logger::removeLoggerObserver(loggerCollectorMetadata_.get());

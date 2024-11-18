@@ -15,9 +15,6 @@ from .trace import (
     ModuleEvent,
     OperatorEvent,
     PLProfileEvent,
-    CnclOpNameSet,
-    NcclOpNameSet,
-    GlooOpNameSet,
 )
 
 logger = utils.get_logger()
@@ -89,7 +86,7 @@ class OperatorNode(HostNode):
         callstack: Optional[str] = None,
         self_host_duration: float = 0,
         self_device_duration: float = 0,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.children: List[OperatorNode] = (
@@ -203,7 +200,96 @@ class OperatorNode(HostNode):
             input_shape=event.input_shape,
             input_type=event.input_type,
             callstack=event.callstack,
-            **kwargs
+            **kwargs,
+        )
+
+
+class UserAnnotationNode(HostNode):
+    def __init__(
+        self,
+        parent_node: OperatorNode = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.parent_node = parent_node
+
+    def set_parent(self, parent_node):
+        self.parent_node = parent_node
+
+    @classmethod
+    def create(cls, event: OperatorEvent):
+        kwargs = BaseNode.get_node_argument(event)
+        return cls(
+            parent_node=None,
+            **kwargs,
+        )
+
+
+class CommunicationNode(OperatorNode):
+    def __init__(
+        self,
+        rank=None,
+        clique_id=None,
+        comm_bytes=None,
+        comm_type: str = None,
+        op_name: str = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+
+        self.rank = rank
+        self.clique_id = clique_id
+        self.comm_bytes = comm_bytes
+        self.comm_type = comm_type
+        self.op_name = op_name
+        self.bandwidth = (
+            round(self.comm_bytes / self.duration, 3) if self.duration != 0 else None
+        )
+
+    @classmethod
+    def header(cls):
+        return [
+            "Thread Id",
+            "Name",
+            "Start",
+            "Communication Bytes",
+            "Duration(us)",
+            "Bandwidth(MB/s)",
+            "Rank",
+            "Clique Id",
+            "Communication Type",
+            "Operator Name",
+        ]
+
+    def data(self):
+        return [
+            self.tid,
+            self.name,
+            self.start_time,
+            self.comm_bytes,
+            self.duration,
+            self.bandwidth,
+            self.rank,
+            self.clique_id,
+            self.comm_type,
+            self.op_name,
+        ]
+
+    def set_op_name(self, anno_node: UserAnnotationNode):
+        self.op_name = (
+            anno_node.parent_node.name if anno_node.parent_node else self.op_name
+        )
+
+    @classmethod
+    def create(cls, event: OperatorEvent):
+        kwargs = BaseNode.get_node_argument(event)
+        return cls(
+            rank=event.args.get("rank", None),
+            clique_id=event.args.get("clique id", None),
+            comm_bytes=event.args.get("bytes", None),
+            comm_type=event.args.get("type", None),
+            op_name=event.args.get("op name", None),
+            **kwargs,
         )
 
 
@@ -292,7 +378,7 @@ class RuntimeNode(HostNode):
         self,
         device_nodes: Optional[List["DeviceNode"]] = None,
         parent_rt_node=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         # One runtime could trigger more than one kernel, such as cudaLaunchCooperativeKernelMultiDevice.
@@ -389,7 +475,7 @@ class DeviceNode(BaseNode):
         tasktopo_external_id: int = None,
         tasktopo_external_op: str = None,
         pmus: Dict = {},
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.op_name = None

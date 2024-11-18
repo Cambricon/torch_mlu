@@ -1601,8 +1601,7 @@ class TestProfiler(unittest.TestCase):
                 "name": "kernel1", "pid": 0, "tid": "1",
                 "ts": 230, "dur": 15,
                 "args": {"correlation": 1000, "external id": 3, "device": 0,
-                        "kernel type": "UNION",
-                        "dimx": 16, "dimy": 16, "dimz": 16}
+                        "extra": {"dimx": 16, "dimy": 16, "dimz": 16, "kernel_type": "UNION"}}
             },
             {
                 "ph": "X", "cat": "mlu_runtime",
@@ -1615,8 +1614,7 @@ class TestProfiler(unittest.TestCase):
                 "name": "kernel1", "pid": 0, "tid": "1",
                 "ts": 250, "dur": 10,
                 "args": {"correlation": 1001, "external id": 3, "device": 0,
-                        "kernel type": "UNION",
-                        "dimx": 16, "dimy": 16, "dimz": 16}
+                        "extra": {"dimx": 16, "dimy": 16, "dimz": 16, "kernel_type": "UNION"}}
             },
             {
                 "ph": "X", "cat": "mlu_runtime",
@@ -1629,8 +1627,7 @@ class TestProfiler(unittest.TestCase):
                 "name": "kernel1", "pid": 0, "tid": "1",
                 "ts": 250, "dur": 13,
                 "args": {"correlation": 1002, "external id": 3, "device": 0,
-                        "kernel type": "UNION",
-                        "dimx": 16, "dimy": 4, "dimz": 4}
+                        "extra": {"dimx": 16, "dimy": 4, "dimz": 4, "kernel_type": "UNION"}}
             },
             {
                 "ph": "X", "cat": "mlu_runtime",
@@ -1643,8 +1640,7 @@ class TestProfiler(unittest.TestCase):
                 "name": "kernel1", "pid": 0, "tid": "1",
                 "ts": 250, "dur": 17,
                 "args": {"correlation": 1003, "external id": 4, "device": 0,
-                        "kernel type": "UNION",
-                        "dimx": 16, "dimy": 4, "dimz": 4}
+                        "extra": {"dimx": 16, "dimy": 4, "dimz": 4, "kernel_type": "UNION"}}
             },
             {
                 "ph": "X", "cat": "mlu_runtime",
@@ -1722,7 +1718,7 @@ class TestProfiler(unittest.TestCase):
                 "name": "kernel1", "pid": 0, "tid": "1",
                 "ts": 220, "dur": 1,
                 "args": {"correlation": 1000, "external id": 3, "device": 0,
-                        "dimx": 16, "dimy": 16, "dimz": 16}
+                        "extra": {"dimx": 16, "dimy": 16, "dimz": 16}}
             },
             {
                 "ph": "X", "cat": "mlu_runtime",
@@ -1735,7 +1731,7 @@ class TestProfiler(unittest.TestCase):
                 "name": "kernel1", "pid": 0, "tid": "1",
                 "ts": 230, "dur": 2,
                 "args": {"correlation": 1001, "external id": 3, "device": 0,
-                        "kernel type": "UNION"}
+                        "extra": {"kernel_type": "UNION"}}
             },
             {
                 "ph": "X", "cat": "mlu_runtime",
@@ -1748,8 +1744,7 @@ class TestProfiler(unittest.TestCase):
                 "name": "kernel1", "pid": 0, "tid": "1",
                 "ts": 240, "dur": 4,
                 "args": {"correlation": 1002, "external id": 3, "device": 0,
-                        "kernel type": "UNION",
-                        "dimx": 16, "dimy": 16, "dimz": 16}
+                        "extra": {"dimx": 16, "dimy": 16, "dimz": 16, "kernel_type": "UNION"}}
             },
             {
                 "ph": "X", "cat": "mlu_runtime",
@@ -1762,8 +1757,7 @@ class TestProfiler(unittest.TestCase):
                 "name": "kernel1", "pid": 0, "tid": "1",
                 "ts": 250, "dur": 4,
                 "args": {"correlation": 1003, "external id": 3, "device": 0,
-                        "kernel type": "UNION",
-                        "dimx": 16, "dimy": 16, "dimz": 16}
+                        "extra": {"dimx": 16, "dimy": 16, "dimz": 16, "kernel_type": "UNION"}}
             },
             {
                 "ph": "X", "cat": "mlu_runtime",

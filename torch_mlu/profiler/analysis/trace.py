@@ -16,20 +16,19 @@ CnclOpNameSet = [
     "cncl:all_reduce",
     "cncl:all_gather",
     "cncl:reduce_scatter",
-]
-NcclOpNameSet = [
-    "nccl:broadcast",
-    "nccl:reduce",
-    "nccl:all_reduce",
-    "nccl:all_gather",
-    "nccl:reduce_scatter",
-]
-GlooOpNameSet = [
-    "gloo:broadcast",
-    "gloo:reduce",
-    "gloo:all_reduce",
-    "gloo:all_gather",
-    "gloo:reduce_scatter",
+    "cncl:allreduce_coalesced",
+    "cncl:all_gather_into_tensor_coalesced",
+    "cncl:_broadcast_oop",
+    "cncl:all_gather_base",
+    "cncl:_reduce_oop",
+    "cncl:reduce_scatter_tensor_coalesced",
+    "cncl:AlltoAll",
+    "cncl:AlltoAllv",
+    "cncl:gather",
+    "cncl:scatter",
+    "cncl:send",
+    "cncl:recv",
+    "cncl:coalesced",
 ]
 
 
@@ -76,6 +75,7 @@ EventTypeMap = {
     "memory": EventTypes.MEMORY,
     "python_function": EventTypes.PYTHON_FUNCTION,
     "user_annotation": EventTypes.USER_ANNOTATION,
+    "mlu_user_annotation": EventTypes.USER_ANNOTATION,
 }
 
 
@@ -109,15 +109,16 @@ class KernelEvent(DurationEvent):
         self.device_id = self.args.get("device")
         self.stream_id = self.args.get("stream")
         self.context_id = self.args.get("context")
-        self.kernel_type = self.args.get("kernel type")
-        self.dim = list(
-            [self.args.get("dimx"), self.args.get("dimy"), self.args.get("dimz")]
-        )
         self.tasktopo = self.args.get("tasktopo")
-        self.tasktopo_node = self.args.get("tasktopo_node")
-        self.tasktopo_external_id = self.args.get("tasktopo_external_id")
-        self.tasktopo_external_op = self.args.get("tasktopo_external_op")
+        self.tasktopo_node = self.args.get("tasktopo node")
+        self.tasktopo_external_id = self.args.get("tasktopo external id")
+        self.tasktopo_external_op = self.args.get("tasktopo external op")
         self.pmus = self.args.get("pmus", {})
+        self.extra = self.args.get("extra", {})
+        self.kernel_type = self.extra.get("kernel_type")
+        self.dim = list(
+            [self.extra.get("dimx"), self.extra.get("dimy"), self.extra.get("dimz")]
+        )
 
 
 class OperatorEvent(DurationEvent):

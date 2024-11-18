@@ -61,8 +61,8 @@ class TestProfiler(TestCase):
                 if "pmus" in args.keys() and "OpTensor" in kernel["name"]:
                     found_optensor_with_pmu = True
                 if (
-                    "tasktopo_external_op" in args.keys()
-                    and "aten::gelu" in args["tasktopo_external_op"]
+                    "tasktopo external op" in args.keys()
+                    and "aten::gelu" in args["tasktopo external op"]
                     and "pmus" not in args.keys()
                 ):
                     found_gule_without_pmu = True

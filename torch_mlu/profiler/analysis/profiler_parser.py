@@ -9,7 +9,7 @@ from . import trace
 from .event_parser import EventParser
 from .kernel_parser import KernelParser
 from .memory_parser import MemoryParser, MemorySnapshot, MemoryRecord
-from .node import OperatorNode, DeviceNode
+from .node import OperatorNode, DeviceNode, CommunicationNode, UserAnnotationNode
 from .trace import BaseEvent, EventTypes, MemoryEvent, DeviceType
 
 from .common import utils
@@ -57,6 +57,8 @@ class ProfileData:
         self.tid2tree: Dict[int, OperatorNode] = None
         self.pl_tid2tree: Dict[int, OperatorNode] = None
         self.memory_snapshot: Optional[MemorySnapshot] = None
+        self.comm_node_list: List[CommunicationNode] = None
+        self.external_id_to_anno: Dict[int, UserAnnotationNode] = None
 
     def _load_file(self, file_path: str):
         if not os.path.exists(file_path):
@@ -90,7 +92,12 @@ class ProfileData:
 
     def process(self, id2opinfo: Dict = {}):
         parser = EventParser()
-        self.tid2tree, self.pl_tid2tree = parser.parse(self.events, id2opinfo)
+        (
+            self.tid2tree,
+            self.pl_tid2tree,
+            self.comm_node_list,
+            self.external_id_to_anno,
+        ) = parser.parse(self.events, id2opinfo)
         ops_details = []
         kerners_details = []
         l2_cache = []
@@ -103,12 +110,26 @@ class ProfileData:
                 kerners_details.append(kernel.data())
                 l2_cache.append(kernel.l2_cache_data())
 
+        comm_details = []
+        for comm_node in self.comm_node_list:
+            if comm_node.external_id in self.external_id_to_anno.keys():
+                comm_node.set_op_name(self.external_id_to_anno[comm_node.external_id])
+                # else use default name
+            comm_details.append(comm_node.data())
+
         if ops_details:
             FileManager.create_csv_file(
                 self.output_dir,
                 ops_details,
                 consts.OPERATOR_DETAILS_FILE_NAME,
                 OperatorNode.header(),
+            )
+        if comm_details:
+            FileManager.create_csv_file(
+                self.output_dir,
+                comm_details,
+                consts.COMM_DETAILS_FILE_NAME,
+                CommunicationNode.header(),
             )
         if kerners_details:
             FileManager.create_csv_file(

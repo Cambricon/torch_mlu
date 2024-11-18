@@ -5,8 +5,6 @@ These test files will be automatically compiled when compiling torch_mlu. The co
 2. test
 
 ```
-./build/kineto_gtest/CnpapiActivityProfilerTest
-./build/kineto_gtest/CnpapiStringsTest
 ./build/kineto_gtest/ConfigTest
 ./build/kineto_gtest/PidInfoTest
 ```

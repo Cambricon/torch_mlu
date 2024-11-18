@@ -10,6 +10,8 @@ from .node import (
     DeviceNode,
     ModuleNode,
     OperatorNode,
+    CommunicationNode,
+    UserAnnotationNode,
     PLModuleNode,
     PLProfileNode,
     ProfilerStepNode,
@@ -21,6 +23,7 @@ from .trace import (
     BaseEvent,
     DurationEvent,
     EventTypes,
+    CnclOpNameSet,
 )
 from .common import utils
 
@@ -68,6 +71,8 @@ class NodeParserMixin:
         externalid_to_runtime: Dict[int, List[RuntimeNode]] = defaultdict(
             list
         )  # value is a list of RuntimeNode
+        comm_node_list: List[CommunicationNode] = []
+        tid2cncl_annos: Dict[int, List[UserAnnotationNode]] = defaultdict(list)
 
         for event in events:
             if event.type == EventTypes.MEMORY:
@@ -80,6 +85,8 @@ class NodeParserMixin:
                 tid2list,
                 pl_tid2list,
                 tid2zero_rt_list,
+                comm_node_list,
+                tid2cncl_annos,
             )
 
         # associate MLU Runtimes with CPU events
@@ -120,7 +127,14 @@ class NodeParserMixin:
                 [n for n in device_nodes if n.type == EventTypes.KERNEL]
             )
 
-        return tid2list, tid2zero_rt_list, staled_device_nodes, pl_tid2list
+        return (
+            tid2list,
+            tid2zero_rt_list,
+            staled_device_nodes,
+            pl_tid2list,
+            comm_node_list,
+            tid2cncl_annos,
+        )
 
     def _parse_node(
         self,
@@ -131,6 +145,8 @@ class NodeParserMixin:
         tid2list: Dict[int, List[OperatorNode]],
         pl_tid2list: Dict[int, List[PLProfileNode]],
         tid2zero_rt_list: Dict[int, List[RuntimeNode]],
+        comm_node_list: List[CommunicationNode],
+        tid2cncl_annos: Dict[int, List[UserAnnotationNode]],
     ):
         corrid = event.correlation_id
         tid = event.tid
@@ -178,7 +194,6 @@ class NodeParserMixin:
             EventTypes.PL_MODULE,
             EventTypes.PROFILER_STEP,
             EventTypes.MODULE,
-            EventTypes.USER_ANNOTATION,
         ]:
             if event.type == EventTypes.PROFILER_STEP:
                 op_node = ProfilerStepNode.create(event)
@@ -190,6 +205,13 @@ class NodeParserMixin:
                 op_node = create_operator_node(event)
             if op_node:
                 tid2list[int(tid)].append(op_node)
+        elif event.type == EventTypes.USER_ANNOTATION:
+            if event.name in CnclOpNameSet:
+                cncl_anno_node = UserAnnotationNode.create(event)
+                tid2cncl_annos[int(tid)].append(cncl_anno_node)
+            elif event.args.get("op name", None) in CnclOpNameSet:
+                comm_node = CommunicationNode.create(event)
+                comm_node_list.append(comm_node)
         elif event.type == EventTypes.PL_PROFILE:
             op_node = PLProfileNode.create(event)
             pl_tid2list[int(tid)].append(op_node)
@@ -202,17 +224,22 @@ class EventParser(NodeParserMixin):
     def parse(
         self, events: Iterable[BaseEvent], id2opinfo: Dict = {}
     ) -> Dict[int, List[OperatorNode]]:
-        tid2list, tid2zero_rt_list, staled_device_nodes, pl_tid2list = self.parse_nodes(
-            events
-        )
+        (
+            tid2list,
+            tid2zero_rt_list,
+            staled_device_nodes,
+            pl_tid2list,
+            comm_node_list,
+            tid2cncl_annos,
+        ) = self.parse_nodes(events)
 
         builder = OpTreeBuilder()
         tid2tree = builder.build_tree(
-            tid2list, tid2zero_rt_list, staled_device_nodes, id2opinfo
-        )
+            tid2list, tid2zero_rt_list, staled_device_nodes, tid2cncl_annos, id2opinfo
+                    )
         pl_tid2tree = builder.build_tree(pl_tid2list, {}, [], {})
 
-        return tid2tree, pl_tid2tree
+        return tid2tree, pl_tid2tree, comm_node_list, builder.external_id_to_anno
 
     @staticmethod
     def print_tree(root):

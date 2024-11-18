@@ -8,7 +8,7 @@ class TimeGap {
   public:
     static TimeGap& instance();
 
-    int64_t get() {
+    uint64_t get() {
         return time_gap_;
     }
 
@@ -17,11 +17,16 @@ class TimeGap {
   private:
     TimeGap();
 
-    int64_t time_gap_;
+    uint64_t time_gap_;
 };
 
-inline int64_t removeTimeGap(int64_t timestamp) {
-  return timestamp + TimeGap::instance().get();
+inline uint64_t transCPUTimeToCnperfTime(uint64_t cpu_ts, uint64_t start_ts) {
+  return cpu_ts - TimeGap::instance().get() - start_ts;
+}
+
+inline uint64_t transCnperfTimeToCPUTime(uint64_t cnperf_ts, uint64_t start_ts) {
+  return cnperf_ts + TimeGap::instance().get() + start_ts;
+
 }
 
 } // namespace KINETO_NAMESPACE

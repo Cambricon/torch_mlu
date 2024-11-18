@@ -62,13 +62,13 @@ class TestProfiler(TestCase):
                 ]
                 for kernel in kernels:
                     args = kernel["args"]
-                    if "tasktopo_external_op" in args.keys():
-                        if "aten::_convolution" in args["tasktopo_external_op"]:
+                    if "tasktopo external op" in args.keys():
+                        if "aten::_convolution" in args["tasktopo external op"]:
                             found_conv = True
-                        elif "aten::max_pool" in args["tasktopo_external_op"]:
+                        elif "aten::max_pool" in args["tasktopo external op"]:
                             found_max_pool = True
                         for i, op in enumerate(extra_op):
-                            if op in args["tasktopo_external_op"]:
+                            if op in args["tasktopo external op"]:
                                 found_extra_op[i] = True
                                 break
                 self.assertTrue(found_conv == expect_found)

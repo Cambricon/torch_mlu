@@ -11,6 +11,7 @@ from .node import (
     DeviceNode,
     ModuleNode,
     OperatorNode,
+    UserAnnotationNode,
     ProfilerStepNode,
     RuntimeNode,
     is_operator_node,
@@ -23,16 +24,30 @@ logger = utils.get_logger()
 class OpTreeBuilder:
     def __init__(self):
         self.tid2tree: Dict[int, OperatorNode] = None
+        self.external_id_to_anno: Dict[int, UserAnnotationNode] = {}
+
+    def _set_annotation_parent(self, tail_node, cncl_anno_list):
+        for cncl_anno in cncl_anno_list:
+            if (
+                tail_node.name != "CallTreeRoot"
+                and cncl_anno.start_time > tail_node.start_time
+                and cncl_anno.end_time <= tail_node.end_time
+                and cncl_anno.external_id not in self.external_id_to_anno.keys()
+            ):
+                cncl_anno.set_parent(tail_node)
+                self.external_id_to_anno[cncl_anno.external_id] = cncl_anno
+                break
 
     def build_tree(
         self,
         tid2list: Dict[int, List[OperatorNode]],
         tid2zero_rt_list: Dict[int, List[RuntimeNode]],
         staled_device_nodes: List[DeviceNode],
+        tid2cncl_annos: Dict[int, List[UserAnnotationNode]],
         id2opinfo: Dict = {},
     ):
         self.tid2tree = self._build_tree(
-            tid2list, tid2zero_rt_list, staled_device_nodes, id2opinfo
+            tid2list, tid2zero_rt_list, staled_device_nodes, tid2cncl_annos, id2opinfo
         )
         return self.tid2tree
 
@@ -41,16 +56,19 @@ class OpTreeBuilder:
         tid2list: Dict[int, List[OperatorNode]],
         tid2zero_rt_list,
         staled_device_nodes,
+        tid2cncl_annos,
         id2opinfo: Dict = {},
     ):
         tid2tree = {}
 
         for tid, op_list in tid2list.items():
             zero_rt_list = tid2zero_rt_list[tid] if tid in tid2zero_rt_list else []
+            cncl_anno_list = tid2cncl_annos[tid] if tid in tid2cncl_annos else []
+            cncl_anno_list.sort(key=lambda x: (x.start_time, -x.end_time))
             # Note that when 2 start_time are equal, the one with bigger end_time should be ahead of the other.
             op_list.sort(key=lambda x: (x.start_time, -x.end_time))
             root_node = self._build_tree_internal(
-                op_list, zero_rt_list, tid, [], id2opinfo
+                op_list, zero_rt_list, tid, [], cncl_anno_list, id2opinfo
             )
             tid2tree[int(tid)] = root_node
 
@@ -67,7 +85,7 @@ class OpTreeBuilder:
         # Keep this code in case we need this data in the future.
         if False and staled_device_nodes:
             # Add staled device nodes to a new CallTreeRoot.
-            tid2tree[0] = self._build_tree_internal([], [], 0, staled_device_nodes)
+            tid2tree[0] = self._build_tree_internal([], [], 0, staled_device_nodes, [])
 
         return tid2tree
 
@@ -77,6 +95,7 @@ class OpTreeBuilder:
         zero_rt_list,
         tid,
         staled_device_nodes,
+        cncl_anno_list,
         id2opinfo: Dict = {},
     ):
         """host_node_list: list of OperatorNode and ProfilerStepNode.
@@ -173,7 +192,11 @@ class OpTreeBuilder:
                             )
                         break
                     else:
+                        # cncl user_annotation at the top of op node stack.
+                        self._set_annotation_parent(tail_node, cncl_anno_list)
                         node_stack.pop()
+            # For the scenario where the last tail_node is a communication operator.
+            self._set_annotation_parent(tail_node, cncl_anno_list)
             return root_node
 
         # Merge the consecutive calls to same function into one.

@@ -1,0 +1,31 @@
+# - Try to find CNPERF_API
+#
+# The following are set after configuration is done:
+#  CNPERF_API_FOUND
+#  CNPERF_API_INCLUDE_DIRS
+#  CNPERF_API_LIBRARIES
+
+include(FindPackageHandleStandardArgs)
+
+SET(CNPERF_API_LIB_SEARCH_PATHS $ENV{NEUWARE_HOME}/lib64)
+SET(CNPERF_API_INCLUDE_SEARCH_PATHS $ENV{NEUWARE_HOME}/include)
+
+find_library(CNPERF_API_LIBRARY NAMES cnperf_api
+             PATHS ${CNPERF_API_LIB_SEARCH_PATHS}
+             NO_DEFAULT_PATH)
+find_library(CNPERF_API_LIBRARY NAMES cnperf_api
+             NO_CMAKE_FIND_ROOT_PATH)
+
+find_path(CNPERF_API_INCLUDE_DIR NAMES cnperf_api.h
+          PATHS ${CNPERF_API_INCLUDE_SEARCH_PATHS}
+          NO_DEFAULT_PATH)
+find_path(CNPERF_API_INCLUDE_DIR NAMES cnperf_api.h
+          NO_CMAKE_FIND_ROOT_PATH)
+
+find_package_handle_standard_args(CNPERF_API DEFAULT_MSG CNPERF_API_INCLUDE_DIR CNPERF_API_LIBRARY)
+
+if(CNPERF_API_FOUND)
+  set(CNPERF_API_INCLUDE_DIRS ${CNPERF_API_INCLUDE_DIR})
+  set(CNPERF_API_LIBRARIES ${CNPERF_API_LIBRARY})
+  mark_as_advanced(CNPERF_API_INCLUDE_DIR CNPERF_API_LIBRARY)
+endif()

@@ -95,12 +95,13 @@ class KernelEvent(DurationEvent):
         self.shared_memory = self.args.get('shared memory')
         self.device_id = self.args.get('device')
         # for mlu
-        self.kernel_type = self.args.get('kernel type')
-        self.dim = list([self.args.get('dimx'),
-                         self.args.get('dimy'),
-                         self.args.get('dimz')])
+        self.extra = self.args.get('extra', {})
+        self.kernel_type = self.extra.get('kernel_type')
+        self.dim = list([self.extra.get('dimx'),
+                         self.extra.get('dimy'),
+                         self.extra.get('dimz')])
         self.tasktopo = self.args.get('tasktopo')
-        self.tasktopo_node = self.args.get('tasktopo_node')
+        self.tasktopo_node = self.args.get('tasktopo node')
 
 
 class OperatorEvent(DurationEvent):

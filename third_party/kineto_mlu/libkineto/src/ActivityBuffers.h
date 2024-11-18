@@ -7,14 +7,13 @@
 #include <memory>
 
 #include "libkineto.h"
-#include "CnpapiActivityBuffer.h"
-#include "CnpapiRecord.h"
+#include "CnperfRecord.h"
 
 namespace KINETO_NAMESPACE {
 
 struct ActivityBuffers {
   std::list<std::unique_ptr<libkineto::CpuTraceBuffer>> cpu;
-  std::unique_ptr<CnpapiRecordSet> mlu;
+  std::unique_ptr<CnperfRecordSet> mlu;
 
   // Add a wrapper object to the underlying struct stored in the buffer
   template<class T>
