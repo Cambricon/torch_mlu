@@ -499,4 +499,12 @@ void CnnlSparseDenseMatmulDescriptor::set_attr(
       this->mut_desc(), attr, buf, size_in_bytes));
 };
 
+void CnnlDivDescriptor::set_attr(
+    cnnlDivDescAttribute_t attr,
+    const void* buf,
+    size_t size_in_bytes) {
+  TORCH_CNNL_CHECK(
+      cnnlSetDivDescAttr(this->mut_desc(), attr, buf, size_in_bytes));
+};
+
 } // end of namespace torch_mlu

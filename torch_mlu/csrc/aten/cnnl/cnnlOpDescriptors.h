@@ -446,4 +446,17 @@ class CnnlSparseDenseMatmulDescriptor : public CnnlDescriptor<
       size_t size_in_bytes);
 };
 
+class CnnlDivDescriptor : public CnnlDescriptor<
+                              cnnlDivStruct,
+                              &cnnlCreateDivDescriptor,
+                              &cnnlDestroyDivDescriptor> {
+ public:
+  CnnlDivDescriptor() {}
+
+  void set_attr(
+      cnnlDivDescAttribute_t attr,
+      const void* buf,
+      size_t size_in_bytes);
+};
+
 } // end of namespace torch_mlu

@@ -95,10 +95,16 @@ void MluOpTensorDescriptor::set(
   }
   std::vector<int64_t> shape_info(t.sizes().vec());
   std::vector<int64_t> stride_info(t.strides().vec());
+  std::vector<int64_t> cnnl_stride_info(t_dim);
+  if (t.is_contiguous()) {
+    cnnl_stride_info = get_contiguous_strides(t.sizes());
+  } else {
+    cnnl_stride_info = get_cnnl_strides(shape_info, stride_info);
+  }
 
   if (layout == MLUOP_LAYOUT_NHWC || layout == MLUOP_LAYOUT_NDHWC ||
       layout == MLUOP_LAYOUT_NLC) {
-    convertShapeAndStride(shape_info, stride_info);
+    convertShapeAndStride(shape_info, cnnl_stride_info);
   } else if (layout == MLUOP_LAYOUT_HWCN) {
     auto convertDepthWiseConvShapeStride =
         [](const std::vector<int64_t>& vec,
@@ -115,7 +121,8 @@ void MluOpTensorDescriptor::set(
           stride_vec[1] = target_vec[2] * stride_vec[2];
           stride_vec[0] = target_vec[1] * stride_vec[1];
         };
-    convertDepthWiseConvShapeStride(t.sizes().vec(), shape_info, stride_info);
+    convertDepthWiseConvShapeStride(
+        t.sizes().vec(), shape_info, cnnl_stride_info);
   }
   TORCH_MLUOP_CHECK(mluOpSetTensorDescriptorEx_v2(
       this->mut_desc(),
@@ -123,7 +130,7 @@ void MluOpTensorDescriptor::set(
       data_type,
       t_dim,
       shape_info.data(),
-      stride_info.data()));
+      cnnl_stride_info.data()));
 }
 
 // protected:

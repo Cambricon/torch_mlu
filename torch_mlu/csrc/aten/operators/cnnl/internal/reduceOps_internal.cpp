@@ -91,11 +91,11 @@ void cnnl_reduce_internal(
 
   // index
   void* index_ptr = nullptr;
-  uint32_t index_size_inbytes = 0;
+  tensorDescPtr_t index_desc;
   if (index.defined()) {
     auto index_impl = getMluTensorImpl(index);
     index_ptr = index_impl->mlu_data_ptr();
-    index_size_inbytes = sizeof(int64_t) * index.numel();
+    index_desc = getTensorDesc(index_impl, CNNL_LAYOUT_ARRAY);
   }
 
   // output
@@ -123,10 +123,11 @@ void cnnl_reduce_internal(
 
   size_t workspace_size = 0;
   auto handle = getCurrentHandle();
-  TORCH_CNNL_CHECK(cnnlGetReduceOpWorkspaceSize(
+  TORCH_CNNL_CHECK(cnnlGetReduceOpWorkspaceSize_v2(
       handle,
       input_desc.get(),
       output_desc.get(),
+      index_desc.get(),
       reduce_desc.mut_desc(),
       &workspace_size));
   auto workspace_ptr =
@@ -134,19 +135,19 @@ void cnnl_reduce_internal(
 
   const void* alpha = nullptr;
   const void* beta = nullptr;
-  TORCH_CNNL_CHECK(cnnlReduce(
+  TORCH_CNNL_CHECK(cnnlReduce_v2(
       /* handle               */ handle,
       /* reduce_desc          */ reduce_desc.desc(),
-      /* workspace            */ workspace_ptr.get(),
-      /* workspace_size       */ workspace_size,
-      /* alpha                */ alpha,
       /* input_desc           */ input_desc.get(),
       /* input                */ input_ptr,
-      /* indices_size_inbytes */ index_size_inbytes,
-      /* indices              */ index_ptr,
+      /* alpha                */ alpha,
       /* beta                 */ beta,
+      /* workspace            */ workspace_ptr.get(),
+      /* workspace_size       */ workspace_size,
       /* output_desc          */ output_desc.get(),
-      /* output               */ output_ptr));
+      /* output               */ output_ptr,
+      /* indices_desc         */ index_desc.get(),
+      /* indices              */ index_ptr));
 }
 
 void cnnl_var_internal(

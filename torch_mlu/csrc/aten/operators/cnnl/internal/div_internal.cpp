@@ -77,72 +77,43 @@ at::Tensor& cnnl_div_out_internal(
   if (input_impl->numel() == 0)
     return output;
 
+  CnnlDivDescriptor div_desc;
+  cnnlDivMode_t div_mode;
+  if (rounding_mode == "true") {
+    div_mode = CNNL_DIV_TRUE;
+    div_desc.set_attr(CNNL_DIV_MODE, &div_mode, sizeof(div_mode));
+  } else if (rounding_mode == "trunc") {
+    div_mode = CNNL_DIV_TRUNC;
+    div_desc.set_attr(CNNL_DIV_MODE, &div_mode, sizeof(div_mode));
+  } else if (rounding_mode == "floor") {
+    div_mode = CNNL_DIV_FLOOR;
+    div_desc.set_attr(CNNL_DIV_MODE, &div_mode, sizeof(div_mode));
+  }
+
   // workspace
   size_t workspace_size = 0;
-  if (rounding_mode == "true") {
-    TORCH_CNNL_CHECK(cnnlGetDivWorkspaceSize(
-        handle,
-        desc_input.get(),
-        desc_other.get(),
-        desc_output.get(),
-        &workspace_size));
-  } else if (rounding_mode == "trunc") {
-    TORCH_CNNL_CHECK(cnnlGetFloorDivTruncWorkspaceSize(
-        handle,
-        desc_input.get(),
-        desc_other.get(),
-        desc_output.get(),
-        &workspace_size));
-  } else if (rounding_mode == "floor") {
-    TORCH_CNNL_CHECK(cnnlGetFloorDivWorkspaceSize(
-        handle,
-        desc_input.get(),
-        desc_other.get(),
-        desc_output.get(),
-        &workspace_size));
-  }
-  auto temp_ptr =
+  TORCH_CNNL_CHECK(cnnlGetDivWorkspaceSize_v2(
+      handle,
+      div_desc.desc(),
+      desc_input.get(),
+      desc_other.get(),
+      desc_output.get(),
+      &workspace_size));
+  auto workspace_ptr =
       torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
 
-  // set descriptor config
-  if (rounding_mode == "true") {
-    TORCH_CNNL_CHECK(cnnlDiv(
-        handle,
-        desc_input.get(),
-        input_ptr,
-        desc_other.get(),
-        other_ptr,
-        temp_ptr.get(),
-        workspace_size,
-        desc_output.get(),
-        output_ptr));
-  } else if (rounding_mode == "trunc") {
-    TORCH_CNNL_CHECK(cnnlFloorDivTrunc_v2(
-        handle,
-        desc_input.get(),
-        input_ptr,
-        desc_other.get(),
-        other_ptr,
-        desc_output.get(),
-        output_ptr,
-        temp_ptr.get(),
-        workspace_size));
-  } else if (rounding_mode == "floor") {
-    // cnnl FloorDiv_v2 use CNNL_COMPUTATION_FAST mode will cause
-    // performace go down, use CNNL_COMPUTATION_HIGH_PRECISION instead;
-    cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
-    TORCH_CNNL_CHECK(cnnlFloorDivV2(
-        handle,
-        prefer,
-        desc_input.get(),
-        input_ptr,
-        desc_other.get(),
-        other_ptr,
-        desc_output.get(),
-        output_ptr,
-        temp_ptr.get(),
-        workspace_size));
-  }
+  TORCH_CNNL_CHECK(cnnlDiv_v3(
+      handle,
+      div_desc.desc(),
+      desc_input.get(),
+      input_ptr,
+      desc_other.get(),
+      other_ptr,
+      workspace_ptr.get(),
+      workspace_size,
+      desc_output.get(),
+      output_ptr));
+
   return output;
 }
 
