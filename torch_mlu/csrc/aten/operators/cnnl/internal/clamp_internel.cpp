@@ -103,15 +103,45 @@ void clip(
 
   // compute ops
   cnnlPointerMode_t pointer_mode = CNNL_POINTER_MODE_HOST;
-  TORCH_CNNL_CHECK(cnnlClip_v2(
+  const int64_t dimSize[1] = {1};
+  auto data_type_ = getCnnlType(self_impl);
+
+  cnnlTensorDescriptor_t desc_min = nullptr;
+  cnnlTensorDescriptor_t desc_max = nullptr;
+
+  if (min.has_value()) {
+    TORCH_CNNL_CHECK(cnnlCreateTensorDescriptor(&desc_min));
+    TORCH_CNNL_CHECK(
+        cnnlSetTensorDescriptorPointerMode(desc_min, pointer_mode));
+    TORCH_CNNL_CHECK(cnnlSetTensorDescriptor_v2(
+        desc_min, CNNL_LAYOUT_ARRAY, data_type_, 1, dimSize));
+  }
+
+  if (max.has_value()) {
+    TORCH_CNNL_CHECK(cnnlCreateTensorDescriptor(&desc_max));
+    TORCH_CNNL_CHECK(
+        cnnlSetTensorDescriptorPointerMode(desc_max, pointer_mode));
+    TORCH_CNNL_CHECK(cnnlSetTensorDescriptor_v2(
+        desc_max, CNNL_LAYOUT_ARRAY, data_type_, 1, dimSize));
+  }
+
+  TORCH_CNNL_CHECK(cnnlClip_v3(
       handle,
-      pointer_mode,
       desc_self.get(),
       self_ptr,
+      desc_min,
       min.has_value() ? static_cast<void*>(&min_bound) : nullptr,
+      desc_max,
       max.has_value() ? static_cast<void*>(&max_bound) : nullptr,
+      nullptr,
+      0,
       desc_output.get(),
       output_ptr));
+
+  if (min.has_value())
+    cnnlDestroyTensorDescriptor(desc_min);
+  if (max.has_value())
+    cnnlDestroyTensorDescriptor(desc_max);
 }
 
 void cnnl_clamp_internal(
