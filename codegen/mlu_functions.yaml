@@ -1424,6 +1424,7 @@ custom:
     derived_type: bang
   - func: boxes_overlap_bev(Tensor self, Tensor other) -> Tensor
   - func: boxes_iou_bev(Tensor boxes_a, Tensor boxes_b) -> Tensor
+    derived_type: mluop
   - func: nms3D(Tensor dets, float iou_threshold) -> Tensor
   - func: fused_lamb(Tensor _dummy_overflow_buf, Tensor[] grads, Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, float learning_rate, float beta1, float beta2, float epsilon, int step, int bias_correction, float weight_decay, int grad_averaging, int mode, Tensor global_grad_norm, float max_grad_norm, bool use_nvlamb_python) -> bool
     derived_type: bang
@@ -1446,6 +1447,7 @@ custom:
     custom_autograd: True
   - func: ctc_loss_backward(Tensor grad_out, Tensor raw_grad) -> Tensor
   - func: points_in_boxes_mlu(Tensor boxes, Tensor points) -> Tensor
+    derived_type: mluop
   # NB: if your backward function needs to create double backward graph node, add custom_autograd keyword for backward too.
   - func: max_unpool2d(Tensor self, Tensor indices, int[] kernel_size, int[] stride, int[] padding, int[] output_size) -> Tensor
     custom_autograd: True

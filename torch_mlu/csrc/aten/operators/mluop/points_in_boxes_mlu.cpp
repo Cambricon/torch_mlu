@@ -1,10 +1,10 @@
-#include "aten/operators/cnnl/cnnl_kernel.h"
-#include "aten/operators/cnnl/internal/cnnl_internal.h"
+#include "aten/operators/mluop/mluop_kernel.h"
+#include "aten/operators/mluop/internal/mluop_internal.h"
 
 namespace torch_mlu {
 namespace ops {
 
-at::Tensor cnnl_points_in_boxes_mlu(
+at::Tensor mluop_points_in_boxes_mlu(
     const at::Tensor& points,
     const at::Tensor& boxes) {
   TORCH_MLU_CHECK(
@@ -46,7 +46,7 @@ at::Tensor cnnl_points_in_boxes_mlu(
   }
   auto points_contiguous = cnnl_contiguous(points);
   auto boxes_contiguous = cnnl_contiguous(boxes);
-  cnnl_points_in_boxes_mlu_internal(
+  mluop_points_in_boxes_mlu_internal(
       point_indices, points_contiguous, boxes_contiguous);
   return point_indices;
 }

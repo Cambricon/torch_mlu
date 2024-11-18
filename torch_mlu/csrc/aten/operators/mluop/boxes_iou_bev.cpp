@@ -28,13 +28,13 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "aten/operators/cnnl/cnnl_kernel.h"
-#include "aten/operators/cnnl/internal/cnnl_internal.h"
+#include "aten/operators/mluop/mluop_kernel.h"
+#include "aten/operators/mluop/internal/mluop_internal.h"
 
 namespace torch_mlu {
 namespace ops {
 
-at::Tensor cnnl_boxes_iou_bev(
+at::Tensor mluop_boxes_iou_bev(
     const at::Tensor& boxes_a,
     const at::Tensor& boxes_b) {
   // Input is [x, y, z, dx, dy, dz, heading],
@@ -77,7 +77,7 @@ at::Tensor cnnl_boxes_iou_bev(
   boxes_b_vec.push_back(boxes_b_h);
   auto boxes_b_all = cnnl_contiguous(at::cat(at::TensorList(boxes_b_vec), 1));
 
-  cnnl_boxes_iou_bev_internal(boxes_a_all, boxes_b_all, output);
+  mluop_boxes_iou_bev_internal(boxes_a_all, boxes_b_all, output);
   return output;
 }
 
