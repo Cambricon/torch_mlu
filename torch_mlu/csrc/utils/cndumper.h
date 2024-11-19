@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "cnnl.h" // NOLINT
 #include "cnnl_extra.h" // NOLINT
+#include "mlu_op.h" // NOLINT
 #include "utils/Export.h"
 
 namespace torch_mlu {

@@ -36,6 +36,7 @@ namespace torch_mlu {
 void _dump_cnnl_gencase(int mode) {
   cnnlSetGenCaseMode(mode);
   cnnlExtraSetGenCaseMode(mode);
+  mluOpSetGenCaseMode(mode);
 }
 
 } // namespace torch_mlu
