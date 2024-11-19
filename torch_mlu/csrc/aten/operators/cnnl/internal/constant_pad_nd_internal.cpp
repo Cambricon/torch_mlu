@@ -58,8 +58,8 @@ at::Tensor& cnnl_constant_pad_nd_internal(
   // get current handle
   auto handle = getCurrentHandle();
 
-  // complex128, complex64, complex32 and bf16 are not supported
-  AT_DISPATCH_ALL_TYPES_AND3(
+  // complex32 not supported
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
       at::ScalarType::Bool,
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
