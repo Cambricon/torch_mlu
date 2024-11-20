@@ -227,6 +227,11 @@ class TestStream(TestCase):
         with torch.mlu.device(d1):
             self.assertEqual(torch.mlu.current_stream(), s1)
 
+        new_stream = torch.mlu.Stream()
+        assert torch.mlu.current_stream() == torch.mlu.default_stream()
+        with torch.mlu.stream(new_stream):
+            assert torch.mlu.current_stream() != torch.mlu.default_stream()
+
     def _test_copy_sync_current_stream(self, x, y):
         x_plus_one = x + 1
         s0 = torch.mlu.Stream(device=x.device)

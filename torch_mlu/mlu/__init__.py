@@ -708,7 +708,7 @@ def default_stream(device: Optional[_device_t] = None) -> Stream:
             (default).
     """
     torch.mlu._lazy_init()
-    streamdata = torch_mlu._MLUC._mlu_getCurrentMLUStream(
+    streamdata = torch_mlu._MLUC._mlu_getDefaultStream(
         _get_device_index(device, optional=True)
     )
     return Stream(
