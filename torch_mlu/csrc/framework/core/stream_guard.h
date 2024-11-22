@@ -38,7 +38,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "framework/core/device.h"
 #include "framework/core/MLUStream.h"
 #include "framework/core/guard_impl.h"
-#include "utils/common.h"
 #include "cnrt.h" // NOLINT
 
 using torch_mlu::MLUStream;

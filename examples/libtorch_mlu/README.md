@@ -9,15 +9,7 @@
 python trace_model.py
 ```
 
-2. 重新编译`libtorch_mlu.so`.
-```
-export BUILD_LIBTORCH=1
-export USE_PYTHON=0
-cd path/to/your/torch_mlu
-python setup.py install
-```
-
-3. 编译torch_mlu_demo, 注意需要手动修改`CMakeLists.txt`中的`torch_path`及`torch_mlu_root`所指向的路径, 以及`build.sh`中`DCMAKE_PREFIX_PATH`所指向的路径.
+2. 编译torch_mlu_demo, 注意需要手动修改`CMakeLists.txt`中的`torch_path`及`torch_mlu_path`所指向的路径, 以及`build.sh`中`DCMAKE_PREFIX_PATH`所指向的路径.
 ```
 mkdir build
 cp build.sh build/

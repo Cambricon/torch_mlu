@@ -1,3 +1,5 @@
+#include <torch/python.h>
+#include <pybind11/chrono.h>
 #include "ProcessGroupCNCL.h"
 #include "framework/distributed/process_group_cncl.hpp"
 #include "framework/distributed/cncl_utils.h"

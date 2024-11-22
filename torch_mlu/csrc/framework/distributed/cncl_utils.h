@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <c10/util/Optional.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <torch/extension.h>
+#include <torch/all.h>
 
 #include <iostream>
 #include <memory>

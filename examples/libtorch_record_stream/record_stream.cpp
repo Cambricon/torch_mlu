@@ -5,7 +5,6 @@
 #include "framework/core/MLUEvent.h"
 #include "framework/core/MLUStream.h"
 #include "framework/core/stream_guard.h"
-#include "utils/assert_tensor.h"
 
 int main() {
   auto device = at::Device("mlu:0");
@@ -34,7 +33,7 @@ int main() {
     // stream when tmp goes out of scope. E1 will be checked when
     // caching allocator tries to malloc.
     tmp.record_stream(torch_mlu::getCurrentMLUStream());
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       at::matmul(input_x, input_y);
     }
     result.copy_(tmp);
@@ -47,8 +46,8 @@ int main() {
     TORCH_CHECK_NE(tmp2.data_ptr(), tensor_ptr);
     std::cout << "Allocation not reused.\n";
   }
-  assertTensorsEqual(
-      result.cpu(), torch::tensor({1, 2, 3, 4}), 0.0, true, false, false);
+
+  std::cout << "The value of reuslt:\n" << result << "\n";
 
   // Event E1 is ready, the chunk of memory of tmp will be reused.
   torch_mlu::getCurrentMLUStream().synchronize();
