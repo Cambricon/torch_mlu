@@ -233,10 +233,6 @@ if(NOT TORCH_MLU_INSTALL_LIB_DIR)
     set(TORCH_MLU_INSTALL_LIB_DIR lib)
 endif()
 
-if (DEFINED BUILD_LIBTORCH)
-  add_compile_definitions(BUILD_LIBTORCH)
-endif()
-
 # Compile torch_mlu Library
 file(GLOB_RECURSE API_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/api/*.cpp)
 file(GLOB_RECURSE UTIL_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/utils/*.cpp)
@@ -279,11 +275,9 @@ if (BUILD_TEST)
 endif()
 
 set(DEPENDENT_SRCS "")
-if(NOT BUILD_LIBTORCH)
-    file(GLOB_RECURSE DEPENDENT_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/python/*.cpp)
-endif()
+file(GLOB_RECURSE DEPENDENT_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/python/*.cpp)
 
-if (NOT BUILD_LIBTORCH AND USE_PYTHON)
+if (USE_PYTHON)
     # Enable hidden visibility of inline function if compiler support it.
     add_library(torch_mlu_python SHARED ${DEPENDENT_SRCS})
     if(${COMPILER_SUPPORTS_HIDDEN_INLINE_VISIBILITY})

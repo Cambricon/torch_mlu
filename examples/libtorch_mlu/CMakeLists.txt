@@ -38,12 +38,12 @@ link_directories(${torch_path}/lib)
 
 # set the real path
 if(DEFINED ENV{TORCH_MLU_HOME})
-    set(torch_mlu_root "$ENV{TORCH_MLU_HOME}")
+    set(torch_mlu_path "$ENV{TORCH_MLU_HOME}")
 else()
-    set(torch_mlu_root "path/to/your/torch_mlu")
+    set(torch_mlu_path "path/to/your/torch_mlu")
 endif()
-if(NOT EXISTS ${torch_mlu_root})
-  message(FATAL_ERROR "please set correct torch_mlu_root")
+if(NOT EXISTS ${torch_mlu_path})
+  message(FATAL_ERROR "please set correct torch_mlu_path")
 endif()
 
 # set the real path
@@ -56,11 +56,10 @@ if(NOT EXISTS ${neuware_home})
   message(FATAL_ERROR "please set correct neuware_home")
 endif()
 
-include_directories(${torch_mlu_root}/torch_mlu/csrc/include)
-include_directories(${torch_mlu_root}/torch_mlu/csrc)
+include_directories(${torch_mlu_path}/csrc)
 include_directories(${neuware_home}/include)
 
-link_directories(${torch_mlu_root}/torch_mlu/csrc/lib)
+link_directories(${torch_mlu_path}/csrc/lib)
 link_directories(${neuware_home}/lib64)
 
 if(DEFINED ENV{_GLIBCXX_USE_CXX11_ABI})

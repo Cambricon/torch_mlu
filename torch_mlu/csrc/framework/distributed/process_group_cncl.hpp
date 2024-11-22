@@ -30,8 +30,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <pybind11/chrono.h>
-#include <torch/extension.h>
+#if defined(__linux__)
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+#include <torch/all.h>
 #include <unordered_map>
 #include <future>
 

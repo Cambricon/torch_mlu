@@ -22,7 +22,6 @@ function(torch_mlu_print_configuration_summary)
   message(STATUS "  USE_MLUOP             : ${USE_MLUOP}")
   message(STATUS "  USE_PROFILE           : ${USE_PROFILE}")
   message(STATUS "  BUILD_TEST            : ${BUILD_TEST}")
-  message(STATUS "  BUILD_LIBTORCH        : ${BUILD_LIBTORCH}")
   message(STATUS "")
 
   SET(NEUWARE_HOME_PATH $ENV{NEUWARE_HOME})

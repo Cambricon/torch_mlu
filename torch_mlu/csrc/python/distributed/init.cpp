@@ -1,4 +1,4 @@
-#include "framework/distributed/init.h"
+#include "python/distributed/init.h"
 #include <torch/csrc/distributed/c10d/python_comm_hook.h>
 
 namespace torch_mlu {

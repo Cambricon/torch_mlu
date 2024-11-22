@@ -52,7 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "framework/core/caching_allocator.h"
 #include "framework/core/device.h"
 #include "framework/core/device_utils.h"
-#include "framework/distributed/init.h"
+#include "python/distributed/init.h"
 #include "utils/version.h"
 #include "utils/cndumper.h"
 #include "python/THMP.h"

@@ -63,13 +63,6 @@ link_directories("${CMAKE_CURRENT_SOURCE_DIR}")
 set(GTEST_SRCS "")
   file(GLOB_RECURSE BASIC_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/cnnl/*.cpp"
                                "${CMAKE_CURRENT_SOURCE_DIR}/common/*.cpp")
-if(BUILD_LIBTORCH)
-    file(GLOB_RECURSE EXCLUDED_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/common/test_process_group_cncl_errors.cpp
-    )
-
-    list(REMOVE_ITEM BASIC_SRCS ${EXCLUDED_SRCS})
-endif()
 
 list(APPEND GTEST_SRCS ${BASIC_SRCS})
 
