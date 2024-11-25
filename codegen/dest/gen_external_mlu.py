@@ -81,6 +81,8 @@ SKIP_DEVICE_GUARD_OPS = {
   'mask_softmax_dropout_fprop',
   'mask_softmax_dropout_bprop_',
   '_batch_norm_impl_index',
+  '_foreach_mul.Tensor'
+  '_foreach_mul_.Tensor'
 }
 
 @dataclass(frozen=True)

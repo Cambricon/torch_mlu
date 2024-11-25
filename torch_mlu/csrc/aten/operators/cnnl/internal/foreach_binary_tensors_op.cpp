@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "aten/operators/cnnl/internal/foreach_common_utils.h"
+#include "aten/utils/tensor_util.h"
 
 namespace torch_mlu::ops {
 
@@ -67,10 +68,9 @@ void cnnl_foreach_binary_tensors_op(
     const scalar_t& alpha,
     const cnnlForeachOpMode_t& op_mode,
     const cnnlForeachBinaryMode_t& mode) {
-  auto stream = torch_mlu::getCurrentMLUStream();
   auto handle = getCurrentHandle();
-  ForeachOPTensorScalarHandle<2, 1, isInplace, scalar_t> tensor_desc_ptr(
-      {tensors1, tensors2, outputs}, scalar_list);
+  ForeachOPTensorScalarHandle<2, 1, isInplace, /*isReduceOp*/ false, scalar_t>
+      tensor_desc_ptr({tensors1, tensors2, outputs}, scalar_list);
   const int64_t tensor_num = tensor_desc_ptr.get_tensor_num();
   if (tensor_num == 0)
     return;
@@ -95,43 +95,19 @@ void cnnl_foreach_binary_tensors_op(
   // mode 3
   if (mode == cnnlForeachBinaryMode_t::FOREACH_BINARY_SCALAR) {
     scalar_ptr = const_cast<scalar_t*>(&scalar);
+  } else if (mode == cnnlForeachBinaryMode_t::FOREACH_BINARY_SCALAR_TENSOR) {
+    auto scalar_tensor_impl = getMluTensorImpl(scalar_tensor);
+    scalar_desc = getTensorDesc(scalar_tensor_impl);
+    scalar_ptr = static_cast<scalar_t*>(mlu_data_ptr(scalar_tensor_impl));
   }
 
   size_t workspace_size = 0;
   at::DataPtr workspace_ptr;
-  at::DataPtr cpu_workspace_ptr;
   TORCH_CNNL_CHECK(cnnlGetForeachBinaryOpWorkspaceSize(
       handle, tensor_num, input1_desc_array, &workspace_size));
   if (workspace_size != 0) {
-    // TODO(PYTORCH-12852): Foreach op not support graph now.
-    TORCH_CHECK(
-        torch_mlu::currentStreamCaptureStatusMayInitCtx() ==
-            torch_mlu::CaptureStatus::None,
-        "Foreach op not support graph now.");
     workspace_ptr =
         torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
-
-    cpu_workspace_ptr = torch_mlu::HostAlloc(workspace_size);
-    TORCH_CNNL_CHECK(cnnlInitForeachBinaryOpWorkspace(
-        handle,
-        tensor_num,
-        mode,
-        input1_desc_array,
-        input1_ptr_array,
-        input2_ptr_array,
-        (void*)scalar_ptr,
-        output_desc_array,
-        output_ptr_array,
-        cpu_workspace_ptr.get()));
-
-    TORCH_CNRT_CHECK(cnrtMemcpyAsync_V2(
-        workspace_ptr.get(),
-        cpu_workspace_ptr.get(),
-        workspace_size,
-        stream.stream(),
-        CNRT_MEM_TRANS_DIR_HOST2DEV));
-    CachingHostAllocator_recordEvent(
-        cpu_workspace_ptr.get(), cpu_workspace_ptr.get_context(), stream);
   }
 
   TORCH_CNNL_CHECK(cnnlForeachBinaryOp(

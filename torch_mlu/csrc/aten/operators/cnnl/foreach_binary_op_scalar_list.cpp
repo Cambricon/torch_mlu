@@ -124,6 +124,13 @@ FOREACH_BINARY_OP_SCALARLIST(
     add,
     CNNL_FOREACH_ADD,
     /*div_op*/ false);
+
+FOREACH_BINARY_OP_SCALARLIST(
+    all_floating_types_with_half_bfloat16,
+    mul,
+    CNNL_FOREACH_MUL,
+    /*div_op*/ false);
+
 FOREACH_BINARY_OP_SCALARLIST(
     all_floating_types_with_half_bfloat16,
     sub,

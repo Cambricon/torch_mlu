@@ -61,8 +61,8 @@ void cnnl_foreach_lerp_op(
     const cnnlForeachLerpMode_t& mode) {
   auto stream = torch_mlu::getCurrentMLUStream();
   auto handle = getCurrentHandle();
-  ForeachOPTensorScalarHandle<3, 1, isInplace, scalar_t> tensor_desc_ptr(
-      {tensors1, tensors2, tensors3, outputs}, scalar_list);
+  ForeachOPTensorScalarHandle<3, 1, isInplace, /*isReduceOp*/ false, scalar_t>
+      tensor_desc_ptr({tensors1, tensors2, tensors3, outputs}, scalar_list);
   const int64_t tensor_num = tensor_desc_ptr.get_tensor_num();
   if (tensor_num == 0)
     return;

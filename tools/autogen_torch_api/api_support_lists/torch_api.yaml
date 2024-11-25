@@ -223,7 +223,6 @@
 
   - api: torch._foreach_zero_
     supported: true
-    limitations: 不支持使能torch.mlu.MLUGraph下运行。
 
   - api: torch.abs
     supported: true
@@ -10927,7 +10926,6 @@
 
   - api: torch.optim.SGD
     supported: true
-    limitations: torch.mlu.MLUGraph使能场景下，不支持参数fused=True或foreach=True。
 
   - api: torch.optim.SGD.add_param_group
     supported: true

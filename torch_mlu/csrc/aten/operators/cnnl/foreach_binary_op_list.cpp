@@ -114,6 +114,29 @@ void all_floating_types_with_half_bfloat16_(
     return FUNCTION(tensors1, tensors2, MODE, alpha);                   \
   }
 
+#define FOREACH_BINARY_OP_LIST(FUNCTION, NAME, MODE, DIVISION_OP)           \
+  void cnnl__foreach_##NAME##_(                                             \
+      at::TensorList tensors1, at::TensorList tensors2) {                   \
+    at::native::check_foreach_api_restrictions(tensors1, tensors2);         \
+    if (!at::native::can_use_fast_route(tensors1, tensors2, DIVISION_OP)) { \
+      return at::native::foreach_tensor_##NAME##_list_kernel_slow_(         \
+          tensors1, tensors2);                                              \
+    }                                                                       \
+                                                                            \
+    FUNCTION##_(tensors1, tensors2, MODE);                                  \
+  }                                                                         \
+                                                                            \
+  std::vector<Tensor> cnnl__foreach_##NAME(                                 \
+      at::TensorList tensors1, at::TensorList tensors2) {                   \
+    at::native::check_foreach_api_restrictions(tensors1, tensors2);         \
+    if (!at::native::can_use_fast_route(tensors1, tensors2, DIVISION_OP)) { \
+      return at::native::foreach_tensor_##NAME##_list_kernel_slow(          \
+          tensors1, tensors2);                                              \
+    }                                                                       \
+                                                                            \
+    return FUNCTION(tensors1, tensors2, MODE);                              \
+  }
+
 // add and sub pytorch support all_types_complex_bool_half_bfloat16, but only
 // support half, bfloat16, float in mlu side, scalar list support half,
 // bfloat16, float, int32.
@@ -121,11 +144,17 @@ FOREACH_BINARY_OP_LIST_ALPHA(
     all_floating_types_with_half_bfloat16,
     add,
     CNNL_FOREACH_ADD);
+FOREACH_BINARY_OP_LIST(
+    all_floating_types_with_half_bfloat16,
+    mul,
+    CNNL_FOREACH_MUL,
+    /*division_op*/ false);
 FOREACH_BINARY_OP_LIST_ALPHA(
     all_floating_types_with_half_bfloat16,
     sub,
     CNNL_FOREACH_SUB);
 
+#undef FOREACH_BINARY_OP_LIST
 #undef FOREACH_BINARY_OP_LIST_ALPHA
 
 } // namespace torch_mlu::ops

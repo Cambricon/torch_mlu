@@ -1,6 +1,7 @@
 import torch
 import sys
 import os
+import math
 import numpy as np
 from typing import cast, Optional, Union
 from enum import Enum, auto
@@ -24,7 +25,10 @@ class ForeachFuncWrapper:
             actual = self.func(*inputs, **kwargs)
         keys = tuple([e.key for e in p.key_averages()])
         mta_called = any(
-            "ForeachBinaryOp" in k or "ForeachUnaryOp" in k or "ForeachLerp" in k
+            "ForeachBinaryOp" in k
+            or "ForeachUnaryOp" in k
+            or "ForeachNorm" in k
+            or "ForeachLerp" in k
             for k in keys
         )
         assert mta_called == True
@@ -33,12 +37,14 @@ class ForeachFuncWrapper:
 
 class ForeachType(Enum):
     UnaryOp = 0
+    ReduceOp = auto()
     BinaryOpWithTensor = auto()
     BinaryOpWithScalar = auto()
     BinaryOpWithScalarList = auto()
     BinaryOpWithScalarTensor = auto()
     LerpWithTensor = auto()
     LerpWithScalar = auto()
+    BinaryOpWithCPUScalarTensor = auto()
 
 
 class ForeachOpTest(object):
@@ -50,22 +56,36 @@ class ForeachOpTest(object):
         input_shapes: Union[tuple, list] = [],
         dtypes: Union[tuple, list] = [],
         err: float = 0.003,
+        **kwargs,
     ):
         self.cpu_func = func
         self.mlu_func = ForeachFuncWrapper(func)
         self.foreach_type = foreach_type
-        self.input_shapes = (
-            [
-                (3, 4),
-                (10,),
-                (1, 3, 224, 224),
-                (2, 0, 4),
-                (254, 254, 112, 1, 1, 3),
-                (0, 2, 3),
-            ]
-            if len(input_shapes) == 0
-            else input_shapes
-        )
+        # empty inputs cant be handled correctly by cpu foreach_norm
+        if foreach_type == ForeachType.ReduceOp and kwargs["ord"] == math.inf:
+            self.input_shapes = (
+                [
+                    (3, 4),
+                    (10,),
+                    (1, 3, 224, 224),
+                    (254, 254, 112, 1, 1, 3),
+                ]
+                if len(input_shapes) == 0
+                else input_shapes
+            )
+        else:
+            self.input_shapes = (
+                [
+                    (3, 4),
+                    (10,),
+                    (1, 3, 224, 224),
+                    (2, 0, 4),
+                    (254, 254, 112, 1, 1, 3),
+                    (0, 2, 3),
+                ]
+                if len(input_shapes) == 0
+                else input_shapes
+            )
         self.input_args = input_args
         self.err = err
         self.dtypes = (
@@ -78,6 +98,7 @@ class ForeachOpTest(object):
         self.trans_param = (2, 0)
         # Some foreach functions don't have in-place implementations.
         self.is_inplace = False if func is None else func.__name__.endswith("_")
+        self.kwargs = kwargs
 
     def generate_cpu_inputs(self, dtype):
         return [
@@ -96,7 +117,10 @@ class ForeachOpTest(object):
 
     def generate_cpu_and_mlu_tenors(self, dtype):
         tensors = self.generate_cpu_inputs(dtype)
-        cpu_tensor = self.trans_tensors([item.float() for item in tensors])
+        if self.foreach_type == ForeachType.ReduceOp:
+            cpu_tensor = self.trans_tensors([item for item in tensors])
+        else:
+            cpu_tensor = self.trans_tensors([item.float() for item in tensors])
         mlu_tensors = self.trans_tensors(self.copy_to_mlu(tensors))
         return cpu_tensor, mlu_tensors
 
@@ -116,6 +140,9 @@ class ForeachOpTest(object):
 
     def generate_inputs(self, dtype):
         if self.foreach_type == ForeachType.UnaryOp:
+            inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            return (inputs[0],), (inputs[1],)
+        elif self.foreach_type == ForeachType.ReduceOp:
             inputs = self.generate_cpu_and_mlu_tenors(dtype)
             return (inputs[0],), (inputs[1],)
         elif self.foreach_type == ForeachType.BinaryOpWithTensor:
@@ -162,17 +189,29 @@ class ForeachOpTest(object):
                 right_inputs[1],
                 weight_scalr_inputs[1],
             )
+        elif self.foreach_type == ForeachType.BinaryOpWithCPUScalarTensor:
+            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            cpu_scalar_tensor = torch.testing.make_tensor((), dtype=dtype, device="cpu")
+            mlu_scalar_tensor = cpu_scalar_tensor
+            return (left_inputs[0], cpu_scalar_tensor), (
+                left_inputs[1],
+                mlu_scalar_tensor,
+            )
         else:
             raise Exception("Invalid ForeachType")
 
     def __call__(self, value_check, tensor_check):
         for dtype in self.dtypes:
+            if dtype == torch.double and self.foreach_type == ForeachType.ReduceOp:
+                if self.kwargs["dtype"] == torch.float:
+                    # when input dtype is double, output dtype cant be float
+                    continue
             cpu_inputs, mlu_inputs = self.generate_inputs(dtype)
             mlu_input_ptr = [item.data_ptr() for item in mlu_inputs[0]]
-            out_cpu = self.cpu_func(*cpu_inputs)
+            out_cpu = self.cpu_func(*cpu_inputs, **self.kwargs)
             if self.is_inplace is True:
                 out_cpu = cpu_inputs[0]
-            out_mlu = self.mlu_func(mlu_inputs)
+            out_mlu = self.mlu_func(mlu_inputs, **self.kwargs)
             for each_cpu, each_mlu, mlu_input_ptr in zip(
                 out_cpu, out_mlu, mlu_input_ptr
             ):

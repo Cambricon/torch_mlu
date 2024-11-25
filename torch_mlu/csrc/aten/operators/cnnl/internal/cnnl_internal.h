@@ -1578,6 +1578,11 @@ void cnnl_foreach_lerp_op(
     const scalar_t& scalar,
     const cnnlForeachLerpMode_t& mode);
 
+void cnnl_foreach_norm_internal(
+    at::TensorList tensors,
+    at::TensorList outputs,
+    const float pnorm);
+
 void cnnl_rrelu_with_noise_internal(
     at::Tensor& output,
     const at::Tensor& noise,
