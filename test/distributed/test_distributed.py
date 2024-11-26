@@ -1385,8 +1385,8 @@ as input tensor",
     # @unittest.skip("not test")
     def test_gather_object(self):
         _, rank = self._init_global_test()
-        rank = (rank) % torch.mlu.device_count()
-        torch.mlu.set_device(next)
+        next_rank = (rank + 1) % torch.mlu.device_count()
+        torch.mlu.set_device(next_rank)
 
         f = Foo(10)
         f.bar = 1  # pylint: disable=C0104,W0201
