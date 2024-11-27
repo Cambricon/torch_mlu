@@ -76,6 +76,6 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     target_compile_options(${TEST_NAME} PRIVATE "${KINETO_COMPILE_OPTIONS}")
     target_link_libraries(${TEST_NAME} kineto_gtest_shared kineto_gmock_shared
-        kineto_test_mlu "${CNRT_LIBRARIES}")
+        kineto_test_mlu "${CNRT_LIBRARIES}" stdc++fs)
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endforeach()
