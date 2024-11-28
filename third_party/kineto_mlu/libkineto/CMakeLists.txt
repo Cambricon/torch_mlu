@@ -126,7 +126,7 @@ target_link_libraries(kineto_mlu "${CNPERF_API_LIBRARY}")
 target_link_libraries(kineto_mlu $<BUILD_INTERFACE:fmt::fmt-header-only>)
 add_dependencies(kineto_mlu fmt::fmt-header-only)
 
-target_link_libraries(kineto_mlu $<BUILD_INTERFACE:nlohmann_json::nlohmann_json>)
+target_link_libraries(kineto_mlu $<BUILD_INTERFACE:nlohmann_json::nlohmann_json> stdc++fs)
 
 set(KINETO_LIBRARY "$ENV{PYTORCH_WHEEL_DIR}/lib")
 target_link_libraries(kineto_mlu "${KINETO_LIBRARY}/libkineto.so")

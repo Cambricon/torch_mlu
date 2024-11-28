@@ -905,7 +905,6 @@ class TestProfiler(TestCase):
                             assert row[5] != "", "Operator Input Type empty!"
 
     @testinfo()
-    @unittest.skip("Open this case when upgrade to cntoolkit3.15.2")
     @unittest.skipIf(torch.mlu.device_count() < 2, "Test requres 2 MLU devices")
     def test_communication_csv(self):
         world_size = 2

@@ -145,7 +145,7 @@ class TestProfiler(TestCase):
                     TestProfiler._run_profiler_with_custom_env,
                     args=(fname, "0", event_name_list),
                     nprocs=1,
-                    join=True
+                    join=True,
                 )
 
                 # test record all using KINETO_MLU_RECORD_ALL_APIS and set config to empty
@@ -154,21 +154,34 @@ class TestProfiler(TestCase):
                     TestProfiler._run_profiler_with_custom_env,
                     args=("", "1", event_name_list2),
                     nprocs=1,
-                    join=True
+                    join=True,
                 )
-                self.assertEqual(list(event_name_list).sort(), list(event_name_list2).sort())
+                self.assertEqual(
+                    list(event_name_list).sort(), list(event_name_list2).sort()
+                )
 
                 found_cnnl_descritor = False
                 found_cnnl_workspace_size = False
                 found_cnnl_conv = False
                 # Check apis in black list by default
-                some_cnrt_apis = ["cnrtGetDevice", "cnrtGetLastError", "cnrtInvokeKernel", "cnrtSetDevice", "cnrtQueueSync"]
-                some_cndrv_apis = ["cnSharedContextAcquire", "cnCtxGetCurrent", "cnCtxSync", "cnCtxSetCurrent"]
+                some_cnrt_apis = [
+                    "cnrtGetDevice",
+                    "cnrtGetLastError",
+                    "cnrtInvokeKernel",
+                    "cnrtSetDevice",
+                    "cnrtQueueSync",
+                ]
+                some_cndrv_apis = [
+                    "cnSharedContextAcquire",
+                    "cnCtxGetCurrent",
+                    "cnCtxSync",
+                    "cnCtxSetCurrent",
+                ]
                 for name in event_name_list:
                     if name.startswith("cnnl") and "Descriptor" in name:
                         found_cnnl_descritor = True
                     if name.startswith("cnnl") and "WorkspaceSize" in name:
-                        found_cnnl_workspace_size  = True
+                        found_cnnl_workspace_size = True
                     if name.startswith("cnnl") and "Convolution" in name:
                         found_cnnl_conv = True
                 self.assertTrue(found_cnnl_descritor)
@@ -198,17 +211,22 @@ class TestProfiler(TestCase):
                     TestProfiler._run_profiler_with_custom_env,
                     args=(fname, "0", event_name_list),
                     nprocs=1,
-                    join=True
+                    join=True,
                 )
 
                 found_cnnl = False
                 found_cnrt = False
-                some_cndrv_apis = ["cnSharedContextAcquire", "cnCtxGetCurrent", "cnCtxSync", "cnCtxSetCurrent"]
+                some_cndrv_apis = [
+                    "cnSharedContextAcquire",
+                    "cnCtxGetCurrent",
+                    "cnCtxSync",
+                    "cnCtxSetCurrent",
+                ]
                 for name in event_name_list:
                     if name.startswith("cnnl"):
                         found_cnnl = True
                     if name.startswith("cnrt"):
-                        found_cnrt  = True
+                        found_cnrt = True
                 # Should not find cnnl and cnrt
                 self.assertFalse(found_cnnl)
                 self.assertFalse(found_cnrt)
@@ -233,17 +251,27 @@ class TestProfiler(TestCase):
                     TestProfiler._run_profiler_with_custom_env,
                     args=(fname, "0", event_name_list),
                     nprocs=1,
-                    join=True
+                    join=True,
                 )
 
-                should_found_cnnl_apis = ["cnnlCreate", "cnnlSetConvolutionDescriptor", "cnnlGetPoolingWithIndexWorkspaceSize_v2",
-                                          "cnnlPoolingForwardWithIndex", "cnnlConvolutionForward"]
-                should_not_found_cnnl_apis = ["cnnlSetQueue",
-                                              "cnnlCreateConvolutionDescriptor",
-                                              "cnnlGetConvolutionForwardWorkspaceSize"]
+                should_found_cnnl_apis = [
+                    "cnnlCreate",
+                    "cnnlSetConvolutionDescriptor",
+                    "cnnlGetPoolingWithIndexWorkspaceSize_v2",
+                    "cnnlPoolingForwardWithIndex",
+                    "cnnlConvolutionForward",
+                ]
+                should_not_found_cnnl_apis = [
+                    "cnnlSetQueue",
+                    "cnnlCreateConvolutionDescriptor",
+                    "cnnlGetConvolutionForwardWorkspaceSize",
+                ]
                 event_name_set = set(event_name_list)
                 self.assertTrue(set(should_found_cnnl_apis).issubset(event_name_set))
-                self.assertTrue(event_name_set.isdisjoint(set(should_not_found_cnnl_apis)))
+                self.assertTrue(
+                    event_name_set.isdisjoint(set(should_not_found_cnnl_apis))
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

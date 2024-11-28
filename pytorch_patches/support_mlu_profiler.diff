@@ -1,5 +1,5 @@
 diff --git a/torch/_C/_autograd.pyi b/torch/_C/_autograd.pyi
-index 0a92d31b323..cbb256d7036 100644
+index 0a92d31b323..8bd2d4a0821 100644
 --- a/torch/_C/_autograd.pyi
 +++ b/torch/_C/_autograd.pyi
 @@ -53,7 +53,9 @@ class _KinetoEvent:
@@ -12,7 +12,15 @@ index 0a92d31b323..cbb256d7036 100644
      def is_async(self) -> bool: ...
      def linked_correlation_id(self) -> int: ...
      def shapes(self) -> List[List[int]]: ...
-@@ -77,6 +79,7 @@ class _ProfilerResult:
+@@ -70,6 +72,7 @@ class _KinetoEvent:
+     def flops(self) -> int: ...
+     def cuda_elapsed_us(self) -> int: ...
+     def privateuse1_elapsed_us(self) -> int: ...
++    def is_user_annotation(self) -> bool: ...
+ 
+ class _ProfilerResult:
+     def events(self) -> List[_KinetoEvent]: ...
+@@ -77,6 +80,7 @@ class _ProfilerResult:
      def save(self, path: str) -> None: ...
      def experimental_event_tree(self) -> List[_ProfilerEvent]: ...
      def trace_start_us(self) -> int: ...
@@ -21,7 +29,7 @@ index 0a92d31b323..cbb256d7036 100644
  class SavedTensor: ...
  
 diff --git a/torch/autograd/profiler.py b/torch/autograd/profiler.py
-index 650546fac4c..03fdb5b7a36 100644
+index 650546fac4c..bfc338d0311 100644
 --- a/torch/autograd/profiler.py
 +++ b/torch/autograd/profiler.py
 @@ -215,6 +215,7 @@ class profile:
@@ -109,13 +117,18 @@ index 650546fac4c..03fdb5b7a36 100644
          # Create and return FunctionEvent list
          function_events = []
          device_corr_map: Dict[int, List[FunctionEvent]] = {}
-@@ -450,20 +470,22 @@ class profile:
+@@ -450,20 +470,27 @@ class profile:
          for kineto_event in result.events():
              if _filter_name(kineto_event.name()):
                  continue
 -            rel_start_us = kineto_event.start_us() - trace_start_us
 -            rel_end_us = rel_start_us + kineto_event.duration_us()
 -            abs_end_us = kineto_event.start_us() + kineto_event.duration_us()
++            if (
++                kineto_event.device_type() != DeviceType.CPU
++                and kineto_event.is_user_annotation()
++            ):
++                continue
 +            rel_start_ns = kineto_event.start_ns() - trace_start_ns
 +            rel_end_ns = rel_start_ns + kineto_event.duration_ns()
 +            abs_end_ns = kineto_event.start_ns() + kineto_event.duration_ns()
@@ -136,7 +149,7 @@ index 650546fac4c..03fdb5b7a36 100644
                      privateuse1_memory_usage += _privateuse1_memory_usage(mem_record[0])
                      mem_record[1] = True
  
-@@ -476,8 +498,8 @@ class profile:
+@@ -476,8 +503,8 @@ class profile:
                  name=_rewrite_name(name=kineto_event.name(), with_wildcard=True),
                  trace_name=_rewrite_name(name=kineto_event.name(), with_wildcard=False),
                  thread=kineto_event.start_thread_id(),
@@ -147,7 +160,7 @@ index 650546fac4c..03fdb5b7a36 100644
                  fwd_thread=kineto_event.fwd_thread_id(),
                  input_shapes=kineto_event.shapes(),
                  concrete_inputs=kineto_event.concrete_inputs(),
-@@ -489,7 +511,7 @@ class profile:
+@@ -489,7 +516,7 @@ class profile:
                  scope=kineto_event.scope(),
                  use_device=self.use_device,
                  cpu_memory_usage=cpu_memory_usage,
@@ -156,7 +169,7 @@ index 650546fac4c..03fdb5b7a36 100644
                  privateuse1_memory_usage=privateuse1_memory_usage,
                  is_async=is_async,
                  sequence_nr=kineto_event.sequence_nr(),
-@@ -516,16 +538,18 @@ class profile:
+@@ -516,16 +543,18 @@ class profile:
                  if corr_id not in device_corr_map:
                      device_corr_map[corr_id] = []
                  device_corr_map[corr_id].append(fe)
@@ -176,7 +189,7 @@ index 650546fac4c..03fdb5b7a36 100644
                          fe.append_kernel(
                              f_evt.name,
                              f_evt.device_index,
-@@ -538,21 +562,22 @@ class profile:
+@@ -538,21 +567,22 @@ class profile:
                          f_evt.thread = fe.thread
  
          def createFunctionEventForMemoryEvents(evt):
@@ -237,7 +250,7 @@ index de330f10a4f..07ac6a302bb 100644
              yield self._mem_records[self._indices[i]]
  
 diff --git a/torch/csrc/autograd/init.cpp b/torch/csrc/autograd/init.cpp
-index 746695eb714..e497c7ef1a0 100644
+index 746695eb714..3fb79a113a5 100644
 --- a/torch/csrc/autograd/init.cpp
 +++ b/torch/csrc/autograd/init.cpp
 @@ -193,9 +193,13 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
@@ -256,7 +269,24 @@ index 746695eb714..e497c7ef1a0 100644
        // used for correlation between high-level PyTorch events
        // and low-level device events
        .def(
-@@ -247,6 +251,7 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
+@@ -240,6 +244,16 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
+       .def("is_async", [](const KinetoEvent& e) { return e.isAsync(); })
+       .def("cuda_elapsed_us", &KinetoEvent::cudaElapsedUs)
+       .def("privateuse1_elapsed_us", &KinetoEvent::privateuse1ElapsedUs)
++      .def(
++          "is_user_annotation",
++          [](const KinetoEvent& e) {
++            return e.activityType() ==
++                (uint8_t)libkineto::ActivityType::USER_ANNOTATION ||
++                e.activityType() ==
++                (uint8_t)libkineto::ActivityType::MLU_USER_ANNOTATION ||
++                e.activityType() ==
++                (uint8_t)libkineto::ActivityType::GPU_USER_ANNOTATION;
++          })
+       .def("nbytes", [](const KinetoEvent& e) { return e.nBytes(); });
+ 
+   m.def("_soft_assert_raises", &setSoftAssertRaises);
+@@ -247,6 +261,7 @@ PyObject* THPAutograd_initExtension(PyObject* _unused, PyObject* unused) {
  
    py::class_<ProfilerResult>(m, "_ProfilerResult")
        .def("trace_start_us", &ProfilerResult::trace_start_us)

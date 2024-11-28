@@ -3,6 +3,7 @@
 #include "ApiListCommon.h"
 #include "ILoggerObserver.h"
 #include "Logger.h"
+#include "ThreadUtil.h"
 
 #include <assert.h>
 #include <chrono>
@@ -28,7 +29,9 @@ CnperfApi::CnperfApi() {
   // define the folder path to save cnperf data
   const char* raw_data_path = std::getenv("TORCH_MLU_PROFILER_OUTPUT_PATH");
   const char* data_path = raw_data_path ? raw_data_path : "./TORCH_PROFILER_RAW_DATA";
-  const std::filesystem::path fspath{data_path};
+  const std::filesystem::path root_path{data_path};
+  const std::filesystem::path pid{std::to_string(processId())};
+  const std::filesystem::path fspath = root_path / pid;
   if (std::filesystem::is_directory(fspath)) {
     int ret = access(fspath.c_str(), W_OK);
     // return 0 means ok with write permission
@@ -46,7 +49,12 @@ CnperfApi::CnperfApi() {
     }
   }
   CNPERF_CALL(cnperfInit(0));
-  CNPERF_CALL(cnperfSetBaseDir(data_path));
+  CNPERF_CALL(cnperfSetBaseDir(fspath.string().c_str()));
+
+  // Keep the user_external_ids_ lifecycle consistent with the process.
+  // To obtain the tasktopo op name, it may be necessary to know
+  // the user external id of the previous profile in same process.
+  user_external_ids_.reserve(USER_EXTERNAL_IDS_DEFAULT_CAPACITY);
 
   // whether enable catching mlugraph's op or not
   enable_catching_mlugraph_op_ = [] {
@@ -261,7 +269,6 @@ void CnperfApi::prepare() {
   CNPERF_CALL(cnperfConfigEnable(config_));
   all_records_ = std::make_unique<CnperfRecordSet>();
   device_task_correlations_ = std::make_unique<std::unordered_set<uint64_t>>();
-  user_external_ids_.reserve(USER_EXTERNAL_IDS_DEFAULT_CAPACITY);
   // Start session in prepare() to align with native.
   CNPERF_CALL(cnperfStart(&session_));
 }
@@ -300,7 +307,6 @@ void CnperfApi::process(
 }
 
 void CnperfApi::clearTraceData() {
-  user_external_ids_.clear();
   cpu_correlation_map_.clear();
   user_correlation_map_.clear();
 }

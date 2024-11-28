@@ -195,8 +195,12 @@ class OpTreeBuilder:
                         # cncl user_annotation at the top of op node stack.
                         self._set_annotation_parent(tail_node, cncl_anno_list)
                         node_stack.pop()
-            # For the scenario where the last tail_node is a communication operator.
-            self._set_annotation_parent(tail_node, cncl_anno_list)
+            # For the scenario where the last node_stack contain a communication operator.
+            tail_node = node_stack[-1]
+            while tail_node != root_node:
+                self._set_annotation_parent(tail_node, cncl_anno_list)
+                node_stack.pop()
+                tail_node = node_stack[-1]
             return root_node
 
         # Merge the consecutive calls to same function into one.

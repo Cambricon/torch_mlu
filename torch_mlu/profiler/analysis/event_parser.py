@@ -236,7 +236,7 @@ class EventParser(NodeParserMixin):
         builder = OpTreeBuilder()
         tid2tree = builder.build_tree(
             tid2list, tid2zero_rt_list, staled_device_nodes, tid2cncl_annos, id2opinfo
-                    )
+        )
         pl_tid2tree = builder.build_tree(pl_tid2list, {}, [], {})
 
         return tid2tree, pl_tid2tree, comm_node_list, builder.external_id_to_anno
