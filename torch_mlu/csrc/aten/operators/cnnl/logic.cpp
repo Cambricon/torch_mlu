@@ -144,11 +144,13 @@ void logical_not_mlu_kernel(at::TensorIteratorBase& iter) {
     return;
   TensorIteratorBridge iter_bridge;
   iter_bridge.to_build(iter, "logical_not");
-  auto output = iter.output(0);
-  auto compute_type = iter.common_dtype();
-  compute_type = compute_type == at::kLong ? at::kInt : compute_type;
-  common_mlu_kernel(
-      output, iter.input(0), iter.input(0), CNNL_LOGIC_OP_NOT, compute_type);
+  auto output_ = iter.output(0);
+  auto input_ = iter.input(0);
+
+  auto input = cast_long_to_int_if_needed(input_);
+  auto output = create_int_tensor_if_needed(output_);
+  cnnl_logic_not_internal(output, input);
+  cast_int_to_long_if_needed(output, output_);
   iter_bridge.cast_outputs(iter);
 }
 

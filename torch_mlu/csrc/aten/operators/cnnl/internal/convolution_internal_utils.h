@@ -55,7 +55,6 @@ inline bool is_can_coalesce_second_dim(
 inline void coalesce_conv_second_dim(
     const at::Tensor& self,
     cnnlDataType_t data_type,
-    cnnlDataType_t on_chip_type,
     tensorDescPtr_t& desc,
     std::vector<int64_t>& shape) {
   auto combine_second_dims = [](const at::IntArrayRef& sizes,
@@ -67,8 +66,7 @@ inline void coalesce_conv_second_dim(
   };
   combine_second_dims(self.sizes(), shape);
   auto stride = std::move(get_channels_last_strides(shape));
-  desc =
-      getTensorDesc(shape, stride, data_type, CNNL_LAYOUT_NHWC, on_chip_type);
+  desc = getTensorDesc(shape, stride, data_type, CNNL_LAYOUT_NHWC);
 }
 
 inline bool is_can_coalesce_last_dim(
@@ -88,7 +86,6 @@ inline bool is_can_coalesce_last_dim(
 inline void coalesce_conv_last_dim(
     const at::Tensor& self,
     cnnlDataType_t data_type,
-    cnnlDataType_t on_chip_type,
     tensorDescPtr_t& desc,
     std::vector<int64_t>& shape) {
   auto combine_last_dims = [](const at::IntArrayRef& sizes,
@@ -100,8 +97,7 @@ inline void coalesce_conv_last_dim(
   };
   combine_last_dims(self.sizes(), shape);
   auto stride = std::move(get_channels_last_strides(shape));
-  desc =
-      getTensorDesc(shape, stride, data_type, CNNL_LAYOUT_NHWC, on_chip_type);
+  desc = getTensorDesc(shape, stride, data_type, CNNL_LAYOUT_NHWC);
 }
 
 } // namespace ops

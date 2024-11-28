@@ -119,9 +119,15 @@ class CnnlActivationDescriptor : public CnnlDescriptor<
  public:
   CnnlActivationDescriptor() {}
 
+  void set_attr(
+      cnnlActivationDescAttribute_t attr,
+      const void* buf,
+      size_t size_in_bytes);
+
   void set(
       cnnlActivationMode_t mode,
-      cnnlActivationPreference_t prefer,
+      cnnlComputationPreference_t prefer,
+      cnnlNanPropagation_t nan_prop,
       float ceof,
       int64_t sliced_dim,
       float gamma,
@@ -252,13 +258,15 @@ class CnnlNmsDescriptor : public CnnlDescriptor<
                               &cnnlDestroyNmsDescriptor> {
  public:
   CnnlNmsDescriptor() {}
+  void set_attr(
+      cnnlNmsDescAttribute_t attr,
+      const void* buf,
+      size_t size_in_bytes);
+
   void set(
       const cnnlNmsBoxPointMode_t box_mode,
       const cnnlNmsOutputMode_t output_mode,
-      const cnnlNmsAlgo_t algo,
-      const cnnlNmsMethodMode_t method_mode,
       const float iou_threshold,
-      const float soft_nms_sigma,
       const int max_output_size,
       const float confidence_threshold,
       const float offset,
@@ -412,13 +420,13 @@ class CnnlRNNTLossDescriptor : public CnnlDescriptor<
 };
 
 class CnnlEmbeddingBagDescriptor : public CnnlDescriptor<
-                                       cnnlEmbeddingBagStruct,
-                                       &cnnlCreateEmbeddingBagDescriptor,
-                                       &cnnlDestroyEmbeddingBagDescriptor> {
+                                       cnnlEmbeddingBagStruct_v2,
+                                       &cnnlCreateEmbeddingBagDescriptor_v2,
+                                       &cnnlDestroyEmbeddingBagDescriptor_v2> {
  public:
   CnnlEmbeddingBagDescriptor() {}
   void set(
-      const cnnlReduceMode_t mode,
+      const cnnlEmbeddingBagReduceMode_t mode,
       const void* max_norm,
       const void* norm_type,
       const void* padding_idx,

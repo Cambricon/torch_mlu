@@ -110,11 +110,9 @@ void cnnl_bce_with_logits_internal(
       pos_weight_flag ? pos_weight_desc.get() : nullptr,
       &sz));
   auto ws_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(sz);
-  cnnlComputationPreference_t mode = CNNL_COMPUTATION_FAST;
 
-  TORCH_CNNL_CHECK(cnnlBceWithLogits_v2(
+  TORCH_CNNL_CHECK(cnnlBceWithLogits(
       handle,
-      mode,
       self_desc.get(),
       self_ptr,
       target_desc.get(),

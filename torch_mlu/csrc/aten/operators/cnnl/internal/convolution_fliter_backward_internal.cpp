@@ -84,20 +84,11 @@ at::Tensor& cnnl_convolution_backward_weight_internal(
     constexpr int64_t fixed_dim = 4;
     std::vector<int64_t> tensor_shape;
     tensor_shape.resize(fixed_dim);
+    coalesce_conv_second_dim(input, input_cnnl_type, input_desc, tensor_shape);
     coalesce_conv_second_dim(
-        input, input_cnnl_type, CNNL_DTYPE_INVALID, input_desc, tensor_shape);
+        grad_weight, grad_weight_cnnl_type, grad_weight_desc, tensor_shape);
     coalesce_conv_second_dim(
-        grad_weight,
-        grad_weight_cnnl_type,
-        compute_dtype,
-        grad_weight_desc,
-        tensor_shape);
-    coalesce_conv_second_dim(
-        output_grad,
-        output_grad_cnnl_type,
-        CNNL_DTYPE_INVALID,
-        output_grad_desc,
-        tensor_shape);
+        output_grad, output_grad_cnnl_type, output_grad_desc, tensor_shape);
     int64_t padding_t[2] = {padding[1], padding[2]};
     int64_t stride_t[2] = {stride[1], stride[2]};
     int64_t dilation_t[2] = {dilation[1], dilation[2]};
@@ -114,20 +105,11 @@ at::Tensor& cnnl_convolution_backward_weight_internal(
     constexpr int64_t fixed_dim = 4;
     std::vector<int64_t> tensor_shape;
     tensor_shape.resize(fixed_dim);
+    coalesce_conv_last_dim(input, input_cnnl_type, input_desc, tensor_shape);
     coalesce_conv_last_dim(
-        input, input_cnnl_type, CNNL_DTYPE_INVALID, input_desc, tensor_shape);
+        grad_weight, grad_weight_cnnl_type, grad_weight_desc, tensor_shape);
     coalesce_conv_last_dim(
-        grad_weight,
-        grad_weight_cnnl_type,
-        compute_dtype,
-        grad_weight_desc,
-        tensor_shape);
-    coalesce_conv_last_dim(
-        output_grad,
-        output_grad_cnnl_type,
-        CNNL_DTYPE_INVALID,
-        output_grad_desc,
-        tensor_shape);
+        output_grad, output_grad_cnnl_type, output_grad_desc, tensor_shape);
     int64_t padding_t[2] = {padding[0], 0};
     int64_t stride_t[2] = {stride[0], 1};
     int64_t dilation_t[2] = {dilation[0], 1};
@@ -141,8 +123,8 @@ at::Tensor& cnnl_convolution_backward_weight_internal(
         allow_tf32);
   } else {
     input_desc = getTensorDesc(input_impl, input_cnnl_type, layout);
-    grad_weight_desc = getTensorDesc(
-        grad_weight_impl, grad_weight_cnnl_type, layout, compute_dtype);
+    grad_weight_desc =
+        getTensorDesc(grad_weight_impl, grad_weight_cnnl_type, layout);
     output_grad_desc =
         getTensorDesc(output_grad_impl, output_grad_cnnl_type, layout);
     conv_desc.set(
@@ -159,7 +141,7 @@ at::Tensor& cnnl_convolution_backward_weight_internal(
   cnnlConvolutionBwdFilterPreference_t pre_t =
       CNNL_CONVOLUTION_BWD_FILTER_FASTEST;
   cnnlConvolutionBwdFilterAlgo_t algo_t;
-  TORCH_CNNL_CHECK(cnnlGetConvolutionBackwardFilterAlgorithm(
+  TORCH_CNNL_CHECK(cnnlGetConvolutionBackwardFilterAlgo(
       handle,
       conv_desc.desc(),
       input_desc.get(),

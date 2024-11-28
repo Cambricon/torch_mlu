@@ -22,15 +22,9 @@ at::Tensor& cnnl_log1p_internal(at::Tensor& output, const at::Tensor& input) {
   // get current handle
   auto handle = getCurrentHandle();
 
-  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
   // set descriptor config
-  TORCH_CNNL_CHECK(cnnlLog1p(
-      handle,
-      prefer,
-      desc_input.get(),
-      input_ptr,
-      desc_output.get(),
-      output_ptr));
+  TORCH_CNNL_CHECK(cnnlLog1p_v2(
+      handle, desc_input.get(), input_ptr, desc_output.get(), output_ptr));
   return output;
 }
 

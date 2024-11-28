@@ -104,15 +104,21 @@ at::Tensor& cnnl_roi_align_backward_internal(
       grad.scalar_type(),
       "mlu_roi_align_backward",
       [&] {
-        TORCH_CNNL_CHECK(cnnlRoiAlignBackward(
+        TORCH_CNNL_CHECK(cnnlRoiAlignBackward_v2(
             handle,
-            spatial_scale,
-            sampling_ratio,
-            aligned,
             desc_grad.get(),
             grad_ptr,
             desc_rois.get(),
             rois_ptr,
+            // pytorch not support max mode
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            spatial_scale,
+            sampling_ratio,
+            aligned,
+            1,
             desc_grad_input.get(),
             grad_input_ptr));
       });

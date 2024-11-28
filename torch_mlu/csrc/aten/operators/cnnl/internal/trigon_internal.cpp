@@ -28,21 +28,11 @@ at::Tensor& cnnl_trigon_internal(
 
   // set descriptor config
   if (mode == CNNL_TRIGON_COS) {
-    TORCH_CNNL_CHECK(cnnlCos_v2(
-        handle,
-        CNNL_COMPUTATION_HIGH_PRECISION,
-        input_desc.get(),
-        input_ptr,
-        output_desc.get(),
-        output_ptr));
+    TORCH_CNNL_CHECK(cnnlCos(
+        handle, input_desc.get(), input_ptr, output_desc.get(), output_ptr));
   } else if (mode == CNNL_TRIGON_SIN) {
-    TORCH_CNNL_CHECK(cnnlSin_v2(
-        handle,
-        CNNL_COMPUTATION_HIGH_PRECISION,
-        input_desc.get(),
-        input_ptr,
-        output_desc.get(),
-        output_ptr));
+    TORCH_CNNL_CHECK(cnnlSin(
+        handle, input_desc.get(), input_ptr, output_desc.get(), output_ptr));
   } else {
     TORCH_CNNL_CHECK(cnnlTrigonForward(
         handle,

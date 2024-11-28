@@ -70,8 +70,6 @@ void cnnl_addmm_bias_out_internal(
 
   auto result_impl = getMluTensorImpl(result);
   auto result_desc = getTensorDesc(result_impl);
-  TORCH_CNNL_CHECK(cnnlSetTensorDescriptorOnchipDataType(
-      result_desc.get(), CNNL_DTYPE_FLOAT));
   auto result_ptr = mlu_data_ptr(result_impl);
 
   // create desc
@@ -116,6 +114,12 @@ void cnnl_addmm_bias_out_internal(
     }
   }
 
+  auto compute_cnnl_type = CNNL_DTYPE_FLOAT;
+
+  matmul_desc.set_attr(
+      CNNL_MATMUL_EX_DESC_COMPUTE_TYPE,
+      &(compute_cnnl_type),
+      sizeof(compute_cnnl_type));
   matmul_desc.set_attr(
       CNNL_MATMUL_EX_ALLOW_TF32, &(allow_tf32), sizeof(int32_t));
   matmul_desc.set_attr(
@@ -126,13 +130,12 @@ void cnnl_addmm_bias_out_internal(
   matmul_desc.set_attr(CNNL_MATMUL_EX_DESC_LDB, &(ldb), sizeof(int32_t));
   matmul_desc.set_attr(CNNL_MATMUL_EX_DESC_LDC, &(ldc), sizeof(int32_t));
 
-  // set activation info.
-  cnnlActivationDescriptor_t desc_activation = nullptr;
-  TORCH_CNNL_CHECK(cnnlCreateActivationDescriptor(&desc_activation));
-  cnnlActivationPreference_t prefer = CNNL_ACTIVATION_HIGH_PRECISION;
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
   cnnlNanPropagation_t nan_prop = CNNL_NOT_PROPAGATE_NAN;
-  TORCH_CNNL_CHECK(cnnlSetActivationDescriptor_v6(
-      desc_activation, mode, prefer, nan_prop, 0, 0, 0, 0, false, true));
+
+  // set activation info.
+  CnnlActivationDescriptor desc_activation;
+  desc_activation.set(mode, prefer, nan_prop, 0, 0, 0, 0, false, true);
 
   // bias => self*beta(1.0) => self
   cnnlMatMulEpilogueType_t epilogue_type =
@@ -156,7 +159,7 @@ void cnnl_addmm_bias_out_internal(
       0,
       0,
       0,
-      desc_activation));
+      desc_activation.desc()));
 
   auto handle = getCurrentHandle();
   matmul_hr.get(
@@ -206,7 +209,6 @@ void cnnl_addmm_bias_out_internal(
             workspace_ptr.get(),
             workspace_size));
       });
-  TORCH_CNNL_CHECK(cnnlDestroyActivationDescriptor(desc_activation));
 }
 
 } // namespace ops

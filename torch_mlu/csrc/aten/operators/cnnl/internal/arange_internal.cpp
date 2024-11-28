@@ -44,10 +44,8 @@ at::Tensor& cnnl_arange_internal(
   // get current handle
   auto handle = getCurrentHandle();
 
-  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
-
-  TORCH_CNNL_CHECK(cnnlArange_v2(
-      handle, prefer, start_ptr, step_ptr, desc_out.get(), out_ptr));
+  TORCH_CNNL_CHECK(
+      cnnlArange_v3(handle, start_ptr, step_ptr, desc_out.get(), out_ptr));
   return out;
 }
 

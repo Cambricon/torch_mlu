@@ -149,6 +149,7 @@ tensorDescPtr_t getTensorDesc(
 // Using specific off-chip dtype, tensor layout and on-chip
 // dtype to create a desc, and size, stride info is based on
 // input tensor impl.
+
 tensorDescPtr_t getTensorDesc(
     const c10::TensorImpl* self,
     cnnlDataType_t data_type,

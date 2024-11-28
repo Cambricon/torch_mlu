@@ -107,21 +107,21 @@ void cnnl_native_batch_norm_internal(
   cnnlActivationMode_t active_mode = CNNL_ACTIVATION_IDENTITY;
 
   if (training) {
-    cnnlActivationDescriptor_t activation_desc = nullptr;
-    cnnlCreateActivationDescriptor(&activation_desc);
-    cnnlSetActivationDescriptor_v5(
-        activation_desc,
+    CnnlActivationDescriptor activation_desc;
+    activation_desc.set(
         active_mode,
-        CNNL_ACTIVATION_HIGH_PRECISION,
+        CNNL_COMPUTATION_HIGH_PRECISION,
         CNNL_NOT_PROPAGATE_NAN,
         1.0,
         -1,
         1.0,
         1.0,
+        false,
         false);
+
     TORCH_CNNL_CHECK(cnnlBatchNormForwardTraining_v2(
         /* handle            */ handle,
-        /* activation_desc   */ activation_desc,
+        /* activation_desc   */ activation_desc.desc(),
         /* mode              */ mode,
         /* bnOps             */ bnOps,
         /* alpha             */ alpha,
@@ -148,7 +148,6 @@ void cnnl_native_batch_norm_internal(
         /* reservespace      */ NULL,
         /* reservespace_size */ 0));
     // release activation descriptor
-    cnnlDestroyActivationDescriptor(activation_desc);
   } else {
     // TODO(PYTORCH-9290): We can not calc save_invstd due to lack of kernel.
     TORCH_CNNL_CHECK(cnnlBatchNormForwardInference(

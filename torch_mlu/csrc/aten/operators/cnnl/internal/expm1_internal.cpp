@@ -23,13 +23,8 @@ at::Tensor& cnnl_expm1_internal(at::Tensor& output, const at::Tensor& input) {
 
   // set descriptor config
   const cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
-  TORCH_CNNL_CHECK(cnnlExpm1(
-      handle,
-      prefer,
-      descInput.get(),
-      input_ptr,
-      descOutput.get(),
-      output_ptr));
+  TORCH_CNNL_CHECK(cnnlExpm1_v2(
+      handle, descInput.get(), input_ptr, descOutput.get(), output_ptr));
   return output;
 }
 

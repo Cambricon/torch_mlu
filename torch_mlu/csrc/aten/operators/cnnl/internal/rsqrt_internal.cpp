@@ -23,18 +23,8 @@ at::Tensor& cnnl_rsqrt_internal(at::Tensor& output, const at::Tensor& input) {
   // get current handle
   auto handle = getCurrentHandle();
 
-  // use fast mode by default, if precision does not meet requirements,
-  // use high precision mode CNNL_COMPUTATION_HIGH_PRECISION
-  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_FAST;
-
-  // set descriptor config
-  TORCH_CNNL_CHECK(cnnlRsqrt_v2(
-      handle,
-      prefer,
-      input_desc.get(),
-      input_ptr,
-      output_desc.get(),
-      output_ptr));
+  TORCH_CNNL_CHECK(cnnlRsqrt(
+      handle, input_desc.get(), input_ptr, output_desc.get(), output_ptr));
   return output;
 }
 

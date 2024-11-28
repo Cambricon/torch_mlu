@@ -176,7 +176,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_fwd_internal(
   int window_size_right = -1;
 
   auto compute_dtype = CNNL_DTYPE_FLOAT;
-  auto prefer = CNNL_ACTIVATION_HIGH_PRECISION;
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
 
   MaskParamsFwd mask_params{
       window_size_left,
@@ -187,11 +187,12 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_fwd_internal(
 
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
       fa_desc, mask_params.left_size, mask_params.right_size, dilation));
-  TORCH_CNNL_CHECK(cnnlSetFlashAttentionDescriptor(
+  TORCH_CNNL_CHECK(cnnlSetFlashAttentionDescriptor_v2(
       fa_desc,
       compute_dtype,
       prefer,
       mask_params.attn_mask_mode,
+      CNNL_ATTN_TENSOR_LAYOUT_PACKED,
       /*is_pack_mode = */ true,
       zero_tensors,
       return_softmax,
@@ -242,7 +243,9 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_fwd_internal(
   auto rng_tensor = at::empty({2}, rng_opts.dtype(at::kLong));
   auto rng_state = reinterpret_cast<uint64_t*>(rng_tensor.data_ptr());
   int thread_num = 0;
-  TORCH_CNNL_CHECK(cnnlRandGetSimulateThreadNum(handle, &thread_num));
+  cnnlRandRngType_t rng_type = CNNL_RAND_RNG_PHILOX;
+  TORCH_CNNL_CHECK(
+      cnnlGetRandSimulateThreadNum_v2(handle, rng_type, &thread_num));
   auto counter_offset =
       getCounterOffset(fa_counter_offset, (int64_t)thread_num);
   if (p_dropout > 0.0) {
@@ -440,8 +443,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_bwd_internal(
   int32_t dilation = 1;
 
   auto compute_dtype = CNNL_DTYPE_FLOAT;
-  auto prefer = CNNL_ACTIVATION_HIGH_PRECISION;
-
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
   MaskParamsBwd mask_params{
       window_size_left,
       window_size_right,
@@ -450,12 +452,12 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_bwd_internal(
       (int)is_causal};
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
       fa_desc, mask_params.left_size, mask_params.right_size, dilation));
-
-  TORCH_CNNL_CHECK(cnnlSetFlashAttentionBackwardDescriptor(
+  TORCH_CNNL_CHECK(cnnlSetFlashAttentionBackwardDescriptor_v2(
       fa_desc,
       compute_dtype,
       prefer,
       mask_params.attn_mask_mode,
+      CNNL_ATTN_TENSOR_LAYOUT_PACKED,
       /*is_pack_mode = */ true,
       /*is_out_zero = */ false,
       /*is_store_softmax_d = */ false,
@@ -499,7 +501,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_bwd_internal(
   auto workspace_ptr =
       torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
 
-  TORCH_CNNL_CHECK(cnnlFlashAttentionBackward(
+  TORCH_CNNL_CHECK(cnnlFlashAttentionBackward_v2(
       handle,
       fa_desc,
       diff_out_desc.get(),
@@ -518,6 +520,10 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor, at::Tensor> cnnl_fa_bwd_internal(
       csq_ptr,
       csk_desc.get(),
       csk_ptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
       rng_tensor,
       workspace_ptr.get(),
       workspace_size,
@@ -679,7 +685,9 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_fwd_internal(
   auto rng_tensor = at::empty({2}, rng_opts.dtype(at::kLong));
   auto rng_state = reinterpret_cast<uint64_t*>(rng_tensor.data_ptr());
   int thread_num = 0;
-  TORCH_CNNL_CHECK(cnnlRandGetSimulateThreadNum(handle, &thread_num));
+  cnnlRandRngType_t rng_type = CNNL_RAND_RNG_PHILOX;
+  TORCH_CNNL_CHECK(
+      cnnlGetRandSimulateThreadNum_v2(handle, rng_type, &thread_num));
   auto counter_offset =
       getCounterOffset(me_counter_offset, (int64_t)thread_num);
   if (dropout_p > 0.0) {

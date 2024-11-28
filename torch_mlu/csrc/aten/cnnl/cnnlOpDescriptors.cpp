@@ -126,28 +126,33 @@ void CnnlOpTensorDescriptor::set(
       this->mut_desc(), op_type, op_tensor_comp_type, op_tensor_nan_opt));
 }
 
-// For cnnlSetActivationDescriptor_v6 API, ceof, gamma, scale
-// only support float type.
+void CnnlActivationDescriptor::set_attr(
+    cnnlActivationDescAttribute_t attr,
+    const void* buf,
+    size_t size_in_bytes) {
+  TORCH_CNNL_CHECK(
+      cnnlSetActivationDescAttr(this->mut_desc(), attr, buf, size_in_bytes));
+}
+
 void CnnlActivationDescriptor::set(
     cnnlActivationMode_t mode,
-    cnnlActivationPreference_t prefer,
+    cnnlComputationPreference_t prefer,
+    cnnlNanPropagation_t nan_prop,
     float ceof,
     int64_t sliced_dim,
     float gamma,
     float scale,
     bool is_result,
     bool approximate) {
-  TORCH_CNNL_CHECK(cnnlSetActivationDescriptor_v6(
-      this->mut_desc(),
-      mode,
-      prefer,
-      CNNL_PROPAGATE_NAN,
-      ceof,
-      static_cast<int>(sliced_dim),
-      gamma,
-      scale,
-      is_result,
-      approximate));
+  set_attr(CNNL_ACTIVATION_MODE, &(mode), sizeof(mode));
+  set_attr(CNNL_ACTIVATION_PREFERENCE, &(prefer), sizeof(prefer));
+  set_attr(CNNL_ACTIVATION_NAN_PROP, &(nan_prop), sizeof(nan_prop));
+  set_attr(CNNL_ACTIVATION_COEF, &(ceof), sizeof(ceof));
+  set_attr(CNNL_ACTIVATION_SLICED_DIM, &(sliced_dim), sizeof(sliced_dim));
+  set_attr(CNNL_ACTIVATION_GAMMA, &(gamma), sizeof(gamma));
+  set_attr(CNNL_ACTIVATION_SCALE, &(scale), sizeof(scale));
+  set_attr(CNNL_ACTIVATION_IS_RESULT, &(is_result), sizeof(is_result));
+  set_attr(CNNL_ACTIVATION_APPROXIMATE, &(approximate), sizeof(approximate));
 }
 
 void CnnlGridSampleDescriptor::set(
@@ -220,31 +225,41 @@ void CnnlCTCLossDescriptor::set(
       max_label_length));
 }
 
+void CnnlNmsDescriptor::set_attr(
+    cnnlNmsDescAttribute_t attr,
+    const void* buf,
+    size_t size_in_bytes) {
+  TORCH_CNNL_CHECK(
+      cnnlSetNmsDescAttr(this->mut_desc(), attr, buf, size_in_bytes));
+}
+
 void CnnlNmsDescriptor::set(
     const cnnlNmsBoxPointMode_t box_mode,
     const cnnlNmsOutputMode_t output_mode,
-    const cnnlNmsAlgo_t algo,
-    const cnnlNmsMethodMode_t method_mode,
     const float iou_threshold,
-    const float soft_nms_sigma,
     const int max_output_size,
     const float confidence_threshold,
     const float offset,
     const int input_layout,
     const bool pad_to_max_output_size) {
-  TORCH_CNNL_CHECK(cnnlSetNmsDescriptor_v5(
-      this->mut_desc(),
-      box_mode,
-      output_mode,
-      algo,
-      method_mode,
-      iou_threshold,
-      soft_nms_sigma,
-      max_output_size,
-      confidence_threshold,
-      offset,
-      input_layout,
-      pad_to_max_output_size));
+  set_attr(CNNL_NMS_DESC_BOX_MODE, &(box_mode), sizeof(box_mode));
+  set_attr(CNNL_NMS_DESC_OUTPUT_MODE, &(output_mode), sizeof(output_mode));
+  set_attr(
+      CNNL_NMS_DESC_IOU_THRESHOLD, &(iou_threshold), sizeof(iou_threshold));
+  set_attr(
+      CNNL_NMS_DESC_MAX_OUTPUT_SIZE,
+      &(max_output_size),
+      sizeof(max_output_size));
+  set_attr(
+      CNNL_NMS_DESC_CONFIDENCE_THRESHOLD,
+      &(confidence_threshold),
+      sizeof(confidence_threshold));
+  set_attr(CNNL_NMS_DESC_OFFSET, &(offset), sizeof(offset));
+  set_attr(CNNL_NMS_DESC_INPUT_LAYOUT, &(input_layout), sizeof(input_layout));
+  set_attr(
+      CNNL_NMS_DESC_PAD_TO_MAX_OUTPUT_SIZE,
+      &(pad_to_max_output_size),
+      sizeof(pad_to_max_output_size));
 }
 
 void CnnlRoiAlignDescriptor::set(
@@ -460,13 +475,13 @@ void CnnlRNNTLossDescriptor::set(
 }
 
 void CnnlEmbeddingBagDescriptor::set(
-    const cnnlReduceMode_t mode,
+    const cnnlEmbeddingBagReduceMode_t mode,
     const void* max_norm,
     const void* norm_type,
     const void* padding_idx,
     const bool scale_grad_by_freq,
     const bool include_last_offset) {
-  TORCH_CNNL_CHECK(cnnlSetEmbeddingBagDescriptor(
+  TORCH_CNNL_CHECK(cnnlSetEmbeddingBagDescriptor_v2(
       this->mut_desc(),
       mode,
       max_norm,
