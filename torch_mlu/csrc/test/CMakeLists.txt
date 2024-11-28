@@ -25,8 +25,16 @@ if(USE_PYTHON)
   # the variables we have set like PYTHON_EXECUTABLE, PYTHON_INCLUDE_DIR and
   # PYTHON_LIARARY in setup.py
   set(Python_ADDITIONAL_VERSIONS ${PYTHON_VERSION} 3.8 3.7)
-  find_package(PythonInterp 3.0)
-  find_package(PythonLibs 3.0)
+  if(${CMAKE_VERSION} VERSION_LESS 3.12)
+    # Deprecated since version 3.12, and Changed in version 3.27
+    find_package(PythonInterp 3.0)
+    find_package(PythonLibs 3.0)
+  else()
+    find_package(Python3 COMPONENTS Interpreter Development)
+    set(PYTHONLIBS_VERSION_STRING ${Python3_VERSION})
+    set(PYTHON_INCLUDE_DIRS ${Python3_INCLUDE_DIRS})
+    set(PYTHON_LIBRARIES ${Python3_LIBRARIES})
+  endif()
 
   if(${PYTHONLIBS_VERSION_STRING} VERSION_LESS 3)
     message(FATAL_ERROR

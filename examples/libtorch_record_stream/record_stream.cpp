@@ -33,7 +33,7 @@ int main() {
     // stream when tmp goes out of scope. E1 will be checked when
     // caching allocator tries to malloc.
     tmp.record_stream(torch_mlu::getCurrentMLUStream());
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10000; i++) {
       at::matmul(input_x, input_y);
     }
     result.copy_(tmp);
