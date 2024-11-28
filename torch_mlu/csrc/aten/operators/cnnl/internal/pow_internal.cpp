@@ -7,54 +7,74 @@ namespace ops {
 at::Tensor& cnnl_pow_internal(
     at::Tensor& output,
     const at::Tensor& input,
-    const at::Tensor& exponent) {
-  if (input.numel() == 0 || exponent.numel() == 0) {
+    const std::optional<at::Tensor>& exponent_t,
+    const std::optional<at::Scalar>& exponent_s) {
+  at::Tensor exp_t;
+  at::Scalar exp_s;
+
+  if (input.numel() == 0 ||
+      (exponent_t.has_value() && (exponent_t.value().numel() == 0))) {
     return output;
   }
-  TORCH_MLU_CHECK(
-      at::isFloatingType(input.scalar_type()),
-      "pow input only support floating type");
-  TORCH_MLU_CHECK(
-      at::isFloatingType(exponent.scalar_type()) ||
-          at::isIntegralType(exponent.scalar_type()),
-      "pow exponent only support floating/integral type");
-
-  CnnlTensorDescriptor descInput;
-  CnnlTensorDescriptor descExp;
-  CnnlTensorDescriptor descOutput;
 
   auto cnnl_layout = suggest_cnnl_layout(input);
 
-  descInput.set(input, cnnl_layout);
-  descExp.set(exponent, cnnl_layout);
-  descOutput.set(output, cnnl_layout);
   size_t sz = 0;
   auto handle = getCurrentHandle();
-  TORCH_CNNL_CHECK(cnnlGetPowWorkspaceSize(
-      handle, descInput.desc(), descExp.desc(), descOutput.desc(), &sz));
 
   auto input_impl = getMluTensorImpl(input);
-  auto exp_impl = getMluTensorImpl(exponent);
-  auto output_impl = getMluTensorImpl(output);
-  // malloc mlu memory
+  auto descInput = getTensorDesc(input_impl, cnnl_layout);
   auto input_ptr = input_impl->mlu_data_ptr();
-  auto exp_ptr = exp_impl->mlu_data_ptr();
+
+  auto output_impl = getMluTensorImpl(output);
+  auto descOutput = getTensorDesc(output_impl, cnnl_layout);
   auto output_ptr = output_impl->mlu_data_ptr();
-  auto workspace_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(sz);
-  // set descriptor config
+
+  tensorDescPtr_t descExp;
+  void* exp_ptr;
   cnnlComputationPreference_t high_precision = CNNL_COMPUTATION_HIGH_PRECISION;
-  TORCH_CNNL_CHECK(cnnlPow(
-      handle,
-      high_precision,
-      descInput.desc(),
-      input_ptr,
-      descExp.desc(),
-      exp_ptr,
-      workspace_ptr.get(),
-      sz,
-      descOutput.desc(),
-      output_ptr));
+
+  TORCH_CHECK(
+      exponent_t.has_value() || exponent_s.has_value(),
+      "pow requires exponent to be specified");
+
+  AT_DISPATCH_ALL_TYPES_AND2(
+      at::kHalf, at::kBFloat16, input.scalar_type(), "pow_mlu", [&]() {
+        if (exponent_t.has_value()) {
+          exp_t = exponent_t.value();
+
+          auto exp_impl = getMluTensorImpl(exp_t);
+          descExp = getTensorDesc(exp_impl, cnnl_layout);
+          exp_ptr = exp_impl->mlu_data_ptr();
+        } else {
+          exp_s = exponent_s.value();
+          exp_ptr = new torch_mlu::Convert64BitTo32Bit_t<scalar_t>(
+              exp_s.to<torch_mlu::Convert64BitTo32Bit_t<scalar_t>>());
+          auto cnnl_type = getCnnlDataType(input.scalar_type());
+          descExp = getCpuTensorDesc(
+              cnnl_type, CNNL_POINTER_MODE_HOST);
+        }
+
+        TORCH_CNNL_CHECK(cnnlGetPowWorkspaceSize(
+            handle, descInput.get(), descExp.get(), descOutput.get(), &sz));
+        auto workspace_ptr =
+            torch_mlu::MLUCachingAllocator::get()->allocate(sz);
+
+        TORCH_CNNL_CHECK(cnnlPow(
+            handle,
+            high_precision,
+            descInput.get(),
+            input_ptr,
+            descExp.get(),
+            exp_ptr,
+            workspace_ptr.get(),
+            sz,
+            descOutput.get(),
+            output_ptr));
+      });
+
   return output;
+
 }
 
 } // namespace ops

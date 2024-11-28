@@ -678,7 +678,8 @@ void cnnl_index_add_internal(
 at::Tensor& cnnl_pow_internal(
     at::Tensor& output,
     const at::Tensor& input,
-    const at::Tensor& exponent);
+    const std::optional<at::Tensor>& exponent_t = std::nullopt,
+    const std::optional<at::Scalar>& exponent_s = std::nullopt);
 
 at::Tensor cnnl_pool2d_internal(
     at::Tensor& output,

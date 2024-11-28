@@ -23,10 +23,7 @@ void pow_tensor_scalar_mlu_kernel(
     const at::Scalar& exp_scalar) {
   auto output = iter.output(0);
   auto self = iter.input(0);
-  // TODO(PYTORCH-9320): support tensor input + scalar exp value to avoid
-  // calling full op
-  at::Tensor tensor_exp = at::full({1}, exp_scalar, self.options());
-  cnnl_pow_internal(output, self, tensor_exp);
+  cnnl_pow_internal(output, self, std::nullopt, exp_scalar);
   iter.cast_outputs();
 }
 
