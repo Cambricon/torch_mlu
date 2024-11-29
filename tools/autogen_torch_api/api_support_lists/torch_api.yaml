@@ -1848,15 +1848,15 @@
 
   - api: torch.nn.MaxPool1d
     supported: true
-    limitations: 不支持 dilation 参数大于1。输出的index为池化窗口内的局部坐标即kernel内的相对索引。
+    limitations: 输出的index为池化窗口内的局部坐标即kernel内的相对索引。
 
   - api: torch.nn.MaxPool2d
     supported: true
-    limitations: 不支持 dilation 参数大于1。输出的index为池化窗口内的局部坐标即kernel内的相对索引。half数据类型的tensor输⼊时，输出indices为short类型。
+    limitations: 输出的index为池化窗口内的局部坐标即kernel内的相对索引。half数据类型的tensor输⼊时，输出indices为short类型。
 
   - api: torch.nn.MaxPool3d
     supported: true
-    limitations: 不支持 dilation 参数大于1。输出的index为池化窗口内的局部坐标即kernel内的相对索引。half数据类型的tensor输⼊时，输出indices为short类型。
+    limitations: 输出的index为池化窗口内的局部坐标即kernel内的相对索引。half数据类型的tensor输⼊时，输出indices为short类型。
 
   - api: torch.nn.MaxUnpool1d
     supported: false
