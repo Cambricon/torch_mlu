@@ -81,13 +81,18 @@ void cnnl_baddbmm_out_internal(
           input_cnnl_type == CNNL_DTYPE_BFLOAT16
       ? CNNL_DTYPE_FLOAT
       : input_cnnl_type;
+  bmm_desc.set_attr(
+      CNNL_STRIDE_BMM_COMPUTE_TYPE,
+      &(compute_cnnl_type),
+      sizeof(compute_cnnl_type));
+
   auto self_desc = getTensorDesc(self_impl, input_cnnl_type, CNNL_LAYOUT_ARRAY);
   auto batch1_desc =
       getTensorDesc(batch1_impl, input_cnnl_type, CNNL_LAYOUT_ARRAY);
   auto batch2_desc =
       getTensorDesc(batch2_impl, input_cnnl_type, CNNL_LAYOUT_ARRAY);
-  auto result_desc = getTensorDesc(
-      result_impl, input_cnnl_type, CNNL_LAYOUT_ARRAY, compute_cnnl_type);
+  auto result_desc =
+      getTensorDesc(result_impl, input_cnnl_type, CNNL_LAYOUT_ARRAY);
 
   int batch_size_array = {batch_size};
   auto alpha_ = alpha.to<float>();

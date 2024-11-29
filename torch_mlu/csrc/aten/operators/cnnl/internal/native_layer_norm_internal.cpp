@@ -77,22 +77,23 @@ void cnnl_native_layer_norm_internal(
   auto rstd_ptr = rstd_impl->mlu_data_ptr();
   auto bias_ptr = bias.defined() ? bias_impl->mlu_data_ptr() : nullptr;
 
-  TORCH_CNNL_CHECK(cnnlLayerNormForward(
-      /*handle    */ handle,
-      /*x_desc    */ input_desc.desc(),
-      /*x         */ input_ptr,
-      /*axis      */ axis,
-      /*w_b_desc  */ weight_bias_desc.desc(),
-      /*weight    */ weight_ptr,
-      /*bias      */ bias_ptr,
-      /*eps       */ eps,
-      /*workspace */ workspace_ptr.get(),
-      /*work_size */ workspace_size,
-      /*y_desc    */ output_desc.desc(),
-      /*y         */ output_ptr,
-      /*m_r_desc  */ mean_rstd_desc.desc(),
-      /*saved_mean*/ mean_ptr,
-      /*saved_rstd*/ rstd_ptr));
+  TORCH_CNNL_CHECK(cnnlLayerNormForward_v2(
+      /*handle        */ handle,
+      /*layernorm_desc*/ NULL,
+      /*x_desc        */ input_desc.desc(),
+      /*x             */ input_ptr,
+      /*axis          */ axis,
+      /*w_b_desc      */ weight_bias_desc.desc(),
+      /*weight        */ weight_ptr,
+      /*bias          */ bias_ptr,
+      /*eps           */ eps,
+      /*workspace     */ workspace_ptr.get(),
+      /*work_size     */ workspace_size,
+      /*y_desc        */ output_desc.desc(),
+      /*y             */ output_ptr,
+      /*m_r_desc      */ mean_rstd_desc.desc(),
+      /*saved_mean    */ mean_ptr,
+      /*saved_rstd    */ rstd_ptr));
 
   return;
 }

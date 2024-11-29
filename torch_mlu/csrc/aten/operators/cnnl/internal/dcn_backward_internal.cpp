@@ -78,13 +78,6 @@ cnnl_dcn_backward_internal(
       conv_group,
       im2col_step,
       CNNL_DTYPE_FLOAT);
-  // set onchip dtype
-  cnnlSetTensorDescriptorOnchipDataType(
-      grad_desc.desc(), getCnnlDataType(grad.dtype()));
-  cnnlSetTensorDescriptorOnchipDataType(
-      input_desc.desc(), getCnnlDataType(input.dtype()));
-  cnnlSetTensorDescriptorOnchipDataType(
-      weight_desc.desc(), getCnnlDataType(weight.dtype()));
   // prepare mask desc
   void* mask_ptr = nullptr;
   void* grad_mask_ptr = nullptr;

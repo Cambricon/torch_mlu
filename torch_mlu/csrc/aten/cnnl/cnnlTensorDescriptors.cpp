@@ -288,6 +288,9 @@ void CnnlTensorDescriptor::set_array(
 }
 
 void CnnlTensorDescriptor::set_onchip_dtype(cnnlDataType_t onchip_dtype) {
+  TORCH_WARN_ONCE(
+      "The function 'set_onchip_dtype' will be deprecated in cnnl v2.0. ");
+
   TORCH_CNNL_CHECK(
       cnnlSetTensorDescriptorOnchipDataType(this->mut_desc(), onchip_dtype));
 }

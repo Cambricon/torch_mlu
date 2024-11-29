@@ -81,16 +81,11 @@ at::Tensor& cnnl_convolution_forward_internal(
     constexpr int64_t fixed_dim = 4;
     std::vector<int64_t> tensor_shape;
     tensor_shape.resize(fixed_dim);
+    coalesce_conv_second_dim(input, input_cnnl_type, input_desc, tensor_shape);
     coalesce_conv_second_dim(
-        input, input_cnnl_type, CNNL_DTYPE_INVALID, input_desc, tensor_shape);
+        weight, weight_cnnl_type, weight_desc, tensor_shape);
     coalesce_conv_second_dim(
-        weight,
-        weight_cnnl_type,
-        CNNL_DTYPE_INVALID,
-        weight_desc,
-        tensor_shape);
-    coalesce_conv_second_dim(
-        output, output_cnnl_type, compute_dtype, output_desc, tensor_shape);
+        output, output_cnnl_type, output_desc, tensor_shape);
     int64_t padding_t[2] = {padding[1], padding[2]};
     int64_t stride_t[2] = {stride[1], stride[2]};
     int64_t dilation_t[2] = {dilation[1], dilation[2]};
@@ -107,16 +102,9 @@ at::Tensor& cnnl_convolution_forward_internal(
     constexpr int64_t fixed_dim = 4;
     std::vector<int64_t> tensor_shape;
     tensor_shape.resize(fixed_dim);
-    coalesce_conv_last_dim(
-        input, input_cnnl_type, CNNL_DTYPE_INVALID, input_desc, tensor_shape);
-    coalesce_conv_last_dim(
-        weight,
-        weight_cnnl_type,
-        CNNL_DTYPE_INVALID,
-        weight_desc,
-        tensor_shape);
-    coalesce_conv_last_dim(
-        output, output_cnnl_type, compute_dtype, output_desc, tensor_shape);
+    coalesce_conv_last_dim(input, input_cnnl_type, input_desc, tensor_shape);
+    coalesce_conv_last_dim(weight, weight_cnnl_type, weight_desc, tensor_shape);
+    coalesce_conv_last_dim(output, output_cnnl_type, output_desc, tensor_shape);
     int64_t padding_t[2] = {padding[0], 0};
     int64_t stride_t[2] = {stride[0], 1};
     int64_t dilation_t[2] = {dilation[0], 1};
@@ -137,8 +125,7 @@ at::Tensor& cnnl_convolution_forward_internal(
     } else {
       weight_desc = getTensorDesc(weight_impl, weight_cnnl_type, layout);
     }
-    output_desc =
-        getTensorDesc(output_impl, output_cnnl_type, layout, compute_dtype);
+    output_desc = getTensorDesc(output_impl, output_cnnl_type, layout);
     conv_desc.set(
         input_dim,
         stride,

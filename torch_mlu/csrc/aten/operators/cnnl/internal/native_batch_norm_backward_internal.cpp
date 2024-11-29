@@ -96,17 +96,16 @@ cnnl_native_batch_norm_backward_internal(
   cnnlBatchNormOps_t bnOps = CNNL_BATCHNORM_OPS_BN;
   cnnlActivationMode_t active_mode = CNNL_ACTIVATION_IDENTITY;
 
-  cnnlActivationDescriptor_t activation_desc = nullptr;
-  cnnlCreateActivationDescriptor(&activation_desc);
-  cnnlSetActivationDescriptor_v5(
-      activation_desc,
+  CnnlActivationDescriptor activation_desc;
+  activation_desc.set(
       active_mode,
-      CNNL_ACTIVATION_HIGH_PRECISION,
+      CNNL_COMPUTATION_HIGH_PRECISION,
       CNNL_NOT_PROPAGATE_NAN,
       1.0,
       -1,
       1.0,
       1.0,
+      false,
       false);
 
   if (training) {
@@ -120,7 +119,7 @@ cnnl_native_batch_norm_backward_internal(
 
     TORCH_CNNL_CHECK(cnnlBatchNormBackward_v2(
         /* handle                     */ handle,
-        /* cnnlActivationDescriptor_t */ activation_desc,
+        /* cnnlActivationDescriptor_t */ activation_desc.desc(),
         /* cnnlBatchNormMode_t        */ mode,
         /* cnnlBatchNormOps_t         */ bnOps,
         /* alpha_data_diff            */ alpha_data_diff,
@@ -165,7 +164,7 @@ cnnl_native_batch_norm_backward_internal(
 
     TORCH_CNNL_CHECK(cnnlFrozenBatchNormBackward_v2(
         /* handle                     */ handle,
-        /* cnnlActivationDescriptor_t */ activation_desc,
+        /* cnnlActivationDescriptor_t */ activation_desc.desc(),
         /* cnnlBatchNormMode_t        */ mode,
         /* cnnlBatchNormOps_t         */ bnOps,
         /* x_desc                     */ input_desc.get(),
@@ -190,8 +189,6 @@ cnnl_native_batch_norm_backward_internal(
         /* diff_filter                */ diff_weight_ptr,
         /* diff_bias                  */ diff_bias_ptr));
   }
-  // release activation descriptor
-  cnnlDestroyActivationDescriptor(activation_desc);
   return std::make_tuple(diff_x, diff_weight, diff_bias);
 }
 

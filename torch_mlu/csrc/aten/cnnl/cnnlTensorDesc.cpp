@@ -95,6 +95,7 @@ static tensorDescPtr_t getTensorDescWithAllValues(
   if (on_chip_type != CNNL_DTYPE_INVALID) {
     TORCH_CNNL_CHECK(cnnlSetTensorDescriptorOnchipDataType(desc, on_chip_type));
   }
+
   tensorDescPtr_t ptr(desc);
   return ptr;
 }
@@ -151,6 +152,8 @@ tensorDescPtr_t getTensorDesc(
     cnnlDataType_t data_type,
     cnnlTensorLayout_t layout,
     cnnlDataType_t on_chip_type) {
+  TORCH_WARN_ONCE(
+      "The getTensorDesc function with on_chip_type parameter will be deprecated in CNNL v2.0 ");
   if (self == nullptr)
     return nullptr;
   if (self->dim() == 0)
@@ -165,6 +168,8 @@ tensorDescPtr_t getTensorDesc(
     cnnlDataType_t data_type,
     cnnlTensorLayout_t layout,
     cnnlDataType_t on_chip_type) {
+  TORCH_WARN_ONCE(
+      "The getTensorDesc function with on_chip_type parameter will be deprecated in CNNL v2.0 ");
   if (shape_info.size() == 0)
     return getZeroDimTensorDesc(data_type);
   return getTensorDescWithAllValues(

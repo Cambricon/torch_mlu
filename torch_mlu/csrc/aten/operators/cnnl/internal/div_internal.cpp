@@ -104,13 +104,10 @@ at::Tensor& cnnl_div_out_internal(
   auto temp_ptr =
       torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
 
-  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_FAST;
-
   // set descriptor config
   if (rounding_mode == "true") {
-    TORCH_CNNL_CHECK(cnnlDiv_v2(
+    TORCH_CNNL_CHECK(cnnlDiv(
         handle,
-        prefer,
         desc_input.get(),
         input_ptr,
         desc_other.get(),
@@ -120,9 +117,8 @@ at::Tensor& cnnl_div_out_internal(
         desc_output.get(),
         output_ptr));
   } else if (rounding_mode == "trunc") {
-    TORCH_CNNL_CHECK(cnnlFloorDivTrunc(
+    TORCH_CNNL_CHECK(cnnlFloorDivTrunc_v2(
         handle,
-        CNNL_COMPUTATION_HIGH_PRECISION,
         desc_input.get(),
         input_ptr,
         desc_other.get(),
@@ -134,7 +130,7 @@ at::Tensor& cnnl_div_out_internal(
   } else if (rounding_mode == "floor") {
     // cnnl FloorDiv_v2 use CNNL_COMPUTATION_FAST mode will cause
     // performace go down, use CNNL_COMPUTATION_HIGH_PRECISION instead;
-    prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+    cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
     TORCH_CNNL_CHECK(cnnlFloorDivV2(
         handle,
         prefer,

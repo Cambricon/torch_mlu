@@ -22,15 +22,10 @@ at::Tensor& cnnl_log1p_internal(at::Tensor& output, const at::Tensor& input) {
   // malloc mlu memory
   auto input_ptr = input_impl->mlu_data_ptr();
   auto output_ptr = output_impl->mlu_data_ptr();
-  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+
   // set descriptor config
-  TORCH_CNNL_CHECK(cnnlLog1p(
-      handle,
-      prefer,
-      desc_input.desc(),
-      input_ptr,
-      desc_output.desc(),
-      output_ptr));
+  TORCH_CNNL_CHECK(cnnlLog1p_v2(
+      handle, desc_input.desc(), input_ptr, desc_output.desc(), output_ptr));
   return output;
 }
 

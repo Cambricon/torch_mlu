@@ -32,7 +32,6 @@ at::Tensor& cnnl_pow_internal(
 
   tensorDescPtr_t descExp;
   void* exp_ptr;
-  cnnlComputationPreference_t high_precision = CNNL_COMPUTATION_HIGH_PRECISION;
 
   TORCH_CHECK(
       exponent_t.has_value() || exponent_s.has_value(),
@@ -60,9 +59,8 @@ at::Tensor& cnnl_pow_internal(
         auto workspace_ptr =
             torch_mlu::MLUCachingAllocator::get()->allocate(sz);
 
-        TORCH_CNNL_CHECK(cnnlPow(
+        TORCH_CNNL_CHECK(cnnlPow_v2(
             handle,
-            high_precision,
             descInput.get(),
             input_ptr,
             descExp.get(),

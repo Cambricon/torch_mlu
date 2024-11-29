@@ -101,7 +101,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_group_norm_backward_internal
   // get workspace for GroupNormBackward
   int32_t NC = N * C;
   size_t workspace_size = 0;
-  TORCH_CNNL_CHECK(cnnlGetGroupNormBackwardWorkspaceSizeV2(
+  TORCH_CNNL_CHECK(cnnlGetGroupNormBackwardWorkspaceSize_v2(
       handle, x_desc.desc(), group, &workspace_size));
 
   auto ws_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);

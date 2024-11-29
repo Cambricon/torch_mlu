@@ -45,10 +45,8 @@ at::Tensor& cnnl_arange_internal(
   // malloc mlu memory
   auto out_ptr = out_impl->mlu_data_ptr();
 
-  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
-
-  TORCH_CNNL_CHECK(cnnlArange_v2(
-      handle, prefer, start_ptr, step_ptr, desc_out.desc(), out_ptr));
+  TORCH_CNNL_CHECK(
+      cnnlArange_v3(handle, start_ptr, step_ptr, desc_out.desc(), out_ptr));
   return out;
 }
 

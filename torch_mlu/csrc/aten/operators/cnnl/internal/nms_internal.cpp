@@ -42,9 +42,6 @@ at::Tensor cnnl_nms_internal(
 
   const cnnlNmsBoxPointMode_t box_mode = CNNL_NMS_BOX_DIAGONAL;
   const cnnlNmsOutputMode_t output_mode = CNNL_NMS_OUTPUT_TARGET_INDICES;
-  const cnnlNmsAlgo_t algo = CNNL_NMS_ALGO_EXCLUDE_BOUNDARY;
-  const cnnlNmsMethodMode_t method_mode = CNNL_NMS_HARD_NMS;
-  const float soft_nms_sigma = 0.0;
   const int max_output_size = (int)dets.size(0);
   const float confidence_threshold = 0.0;
   const float offset = 0.0;
@@ -79,10 +76,7 @@ at::Tensor cnnl_nms_internal(
   nms_desc.set(
       box_mode,
       output_mode,
-      algo,
-      method_mode,
       iou_threshold,
-      soft_nms_sigma,
       max_output_size,
       confidence_threshold,
       offset,
@@ -98,8 +92,12 @@ at::Tensor cnnl_nms_internal(
 
   // workspace
   size_t space_size = 0;
-  TORCH_CNNL_CHECK(cnnlGetNmsWorkspaceSize_v3(
-      handle, dets_desc.desc(), scores_cnnl_desc, &space_size));
+  TORCH_CNNL_CHECK(cnnlGetNmsWorkspaceSize_v4(
+      handle,
+      nms_desc.desc(),
+      dets_desc.desc(),
+      scores_cnnl_desc,
+      &space_size));
   auto workspace_ptr =
       torch_mlu::MLUCachingAllocator::get()->allocate(space_size);
 

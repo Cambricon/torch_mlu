@@ -50,8 +50,6 @@ at::Tensor cnnl_dcn_forward_internal(
   desc_set(offset, offset_desc, layout);
   desc_set(weight, weight_desc, layout);
   desc_set(output, output_desc, layout);
-  cnnlSetTensorDescriptorOnchipDataType(
-      output_desc.desc(), getCnnlDataType(output.dtype()));
   dcn_desc.set(
       input.dim(),
       padding,
@@ -61,13 +59,6 @@ at::Tensor cnnl_dcn_forward_internal(
       conv_group,
       im2col_step,
       CNNL_DTYPE_FLOAT);
-  // set onchip dtype
-  cnnlSetTensorDescriptorOnchipDataType(
-      input_desc.desc(), getCnnlDataType(input.dtype()));
-  cnnlSetTensorDescriptorOnchipDataType(
-      offset_desc.desc(), getCnnlDataType(offset.dtype()));
-  cnnlSetTensorDescriptorOnchipDataType(
-      weight_desc.desc(), getCnnlDataType(weight.dtype()));
   // prepare mask desc
   void* mask_ptr = nullptr;
   if (use_mask) {

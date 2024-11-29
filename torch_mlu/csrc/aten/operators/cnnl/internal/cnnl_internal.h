@@ -622,6 +622,8 @@ void cnnl_logic_internal(
     cnnlLogicOp_t logic_type,
     const at::ScalarType& compute_dtype);
 
+void cnnl_logic_not_internal(at::Tensor& output, const at::Tensor& input);
+
 void cnnl_kthvalue_internal(
     at::Tensor& values,
     at::Tensor& indices,

@@ -102,13 +102,13 @@ void cnnl_embedding_bag_internal(
   bag_size_desc.set(bag_size, CNNL_LAYOUT_ARRAY);
 
   // call cnnl embedding interface
-  cnnlReduceMode_t reduce_mode;
+  cnnlEmbeddingBagReduceMode_t reduce_mode;
   if (mode == MODE_SUM) {
-    reduce_mode = CNNL_REDUCEMODE_SUM;
+    reduce_mode = CNNL_EMBEDDING_BAG_REDUCE_SUM;
   } else if (mode == MODE_MEAN) {
-    reduce_mode = CNNL_REDUCEMODE_MEAN;
+    reduce_mode = CNNL_EMBEDDING_BAG_REDUCE_MEAN;
   } else {
-    reduce_mode = CNNL_REDUCEMODE_MAX;
+    reduce_mode = CNNL_EMBEDDING_BAG_REDUCE_MAX;
   }
   CnnlEmbeddingBagDescriptor embeddingBag_desc;
   embeddingBag_desc.set(
@@ -121,7 +121,7 @@ void cnnl_embedding_bag_internal(
 
   auto handle = getCurrentHandle();
   // max_indices unsupport
-  TORCH_CNNL_CHECK(cnnlEmbeddingBag_v2(
+  TORCH_CNNL_CHECK(cnnlEmbeddingBag_v3(
       /* handle                 */ handle,
       /* EmbeddingBag_desc      */ embeddingBag_desc.desc(),
       /* filter_desc            */ weight_desc.desc(),
@@ -195,19 +195,19 @@ void cnnl_embedding_bag_dense_backward_internal(
   CnnlTensorDescriptor output_desc;
   output_desc.set(output, CNNL_LAYOUT_ARRAY);
 
-  cnnlReduceMode_t reduce_mode;
+  cnnlEmbeddingBagReduceMode_t reduce_mode;
   if (mode == 0) {
-    reduce_mode = CNNL_REDUCEMODE_SUM;
+    reduce_mode = CNNL_EMBEDDING_BAG_REDUCE_SUM;
   } else if (mode == 1) {
-    reduce_mode = CNNL_REDUCEMODE_MEAN;
+    reduce_mode = CNNL_EMBEDDING_BAG_REDUCE_MEAN;
   } else {
-    reduce_mode = CNNL_REDUCEMODE_MAX;
+    reduce_mode = CNNL_EMBEDDING_BAG_REDUCE_MAX;
   }
   CnnlEmbeddingBagDescriptor embeddingBag_desc;
   embeddingBag_desc.set(reduce_mode, nullptr, nullptr, nullptr, false, false);
 
   auto handle = getCurrentHandle();
-  TORCH_CNNL_CHECK(cnnlEmbeddingBagBackward(
+  TORCH_CNNL_CHECK(cnnlEmbeddingBagBackward_v2(
       /* handle                 */ handle,
       /* embeddingBag_desc      */ embeddingBag_desc.desc(),
       /* diff_desc              */ grad_desc.desc(),

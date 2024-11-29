@@ -88,24 +88,25 @@ void cnnl_native_layer_norm_backward_internal(
 
   auto ws_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
 
-  TORCH_CNNL_CHECK(cnnlLayerNormBackward_v2(
-      /*handle     */ handle,
-      /*x_desc     */ x_desc.desc(),
-      /*x          */ x_ptr,
-      /*axis       */ axis,
-      /*diff_z_desc*/ diff_z_desc.desc(),
-      /*diff_z     */ diff_z_ptr,
-      /*w_b_desc   */ weight_bias_desc.desc(),
-      /*weight     */ weight_ptr,
-      /*m_rstd_desc*/ mean_rstd_desc.desc(),
-      /*saved_mean */ mean_ptr,
-      /*saved_rstd */ rstd_ptr,
-      /*work_space */ ws_ptr.get(),
-      /* workspace_size */ workspace_size,
-      /*diif_x_desc*/ diff_x_desc.desc(),
-      /*diff_x     */ diff_x_ptr,
-      /*diff_weight*/ diff_weight_ptr,
-      /*diff_bias  */ diff_bias_ptr));
+  TORCH_CNNL_CHECK(cnnlLayerNormBackward_v3(
+      /*handle        */ handle,
+      /*layernorm_desc*/ NULL,
+      /*x_desc        */ x_desc.desc(),
+      /*x             */ x_ptr,
+      /*axis          */ axis,
+      /*diff_z_desc   */ diff_z_desc.desc(),
+      /*diff_z        */ diff_z_ptr,
+      /*w_b_desc      */ weight_bias_desc.desc(),
+      /*weight        */ weight_ptr,
+      /*m_rstd_desc   */ mean_rstd_desc.desc(),
+      /*saved_mean    */ mean_ptr,
+      /*saved_rstd    */ rstd_ptr,
+      /*work_space    */ ws_ptr.get(),
+      /*workspace_size*/ workspace_size,
+      /*diif_x_desc   */ diff_x_desc.desc(),
+      /*diff_x        */ diff_x_ptr,
+      /*diff_weight   */ diff_weight_ptr,
+      /*diff_bias     */ diff_bias_ptr));
 
   return;
 }

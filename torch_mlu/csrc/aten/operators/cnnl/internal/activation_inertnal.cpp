@@ -47,17 +47,27 @@ void set_activation_op_desc(
     /*only for elu, silu*/ const at::Scalar& input_scale = 0.0,
     /*only for elu */ bool is_result = false,
     /*only for gelu*/ bool approximate = true) {
-  cnnlActivationPreference_t prefer = CNNL_ACTIVATION_HIGH_PRECISION;
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+  cnnlNanPropagation_t nan_prop = CNNL_PROPAGATE_NAN;
   if (mode == CNNL_ACTIVATION_GLU) {
     dim = modify_dim_based_on_layout(dim, memory_format);
-    op_desc.set(mode, prefer, 0.0, dim, 0.0, 0.0, false, false);
+    op_desc.set(mode, prefer, nan_prop, 0.0, dim, 0.0, 0.0, false, false);
   } else if (mode == CNNL_ACTIVATION_GELU) {
-    op_desc.set(mode, prefer, 0.0, 0, 0.0, 0.0, false, approximate);
+    op_desc.set(mode, prefer, nan_prop, 0.0, 0, 0.0, 0.0, false, approximate);
   } else if (
       mode == CNNL_ACTIVATION_LEAKYRELU || mode == CNNL_ACTIVATION_SOFTSHRINK ||
       mode == CNNL_ACTIVATION_HARDSHRINK) {
     float negative_slope_value = negative_slope.to<float>();
-    op_desc.set(mode, prefer, negative_slope_value, 0, 0.0, 0.0, false, false);
+    op_desc.set(
+        mode,
+        prefer,
+        nan_prop,
+        negative_slope_value,
+        0,
+        0.0,
+        0.0,
+        false,
+        false);
   } else if (mode == CNNL_ACTIVATION_ELU_V2) {
     // according to gpu kernel, mlu side parameter is:
     // input_scale, scale, negative_slope -> coef, scale, gamma
@@ -68,6 +78,7 @@ void set_activation_op_desc(
     op_desc.set(
         mode,
         prefer,
+        nan_prop,
         coef_value,
         0,
         gamma_value,
@@ -76,11 +87,19 @@ void set_activation_op_desc(
         false);
   } else if (mode == CNNL_ACTIVATION_SELU) {
     op_desc.set(
-        mode, prefer, 0.0, 0, SELU_ALPHA_MLU, SELU_LAMBDA_MLU, false, false);
+        mode,
+        prefer,
+        nan_prop,
+        0.0,
+        0,
+        SELU_ALPHA_MLU,
+        SELU_LAMBDA_MLU,
+        false,
+        false);
   } else if (mode == CNNL_ACTIVATION_HARDSIGMOID) {
-    op_desc.set(mode, prefer, 0.0, 0, 1 / 6.0, 0.5, false, false);
+    op_desc.set(mode, prefer, nan_prop, 0.0, 0, 1 / 6.0, 0.5, false, false);
   } else {
-    op_desc.set(mode, prefer, 0.0, 0, 0.0, 0.0, false, false);
+    op_desc.set(mode, prefer, nan_prop, 0.0, 0, 0.0, 0.0, false, false);
   }
 }
 

@@ -165,5 +165,26 @@ void cnnl_logic_internal(
   }
 }
 
+void cnnl_logic_not_internal(at::Tensor& output, const at::Tensor& input) {
+  TORCH_CHECK(
+      input.dim() <= CNNL_MAX_DIM_SIZE,
+      "all input tensors dimension should less than ",
+      CNNL_MAX_DIM_SIZE,
+      ", but now input dimension is ",
+      input.dim());
+  auto handle = getCurrentHandle();
+
+  auto input_impl = getMluTensorImpl(input);
+  auto input_ptr = input_impl->mlu_data_ptr();
+  auto input_desc = getTensorDesc(input_impl, CNNL_LAYOUT_ARRAY);
+
+  auto output_impl = getMluTensorImpl(output);
+  auto output_ptr = output_impl->mlu_data_ptr();
+  auto output_desc = getTensorDesc(output_impl, CNNL_LAYOUT_ARRAY);
+
+  TORCH_CNNL_CHECK(cnnlLogicOpNot(
+      handle, input_desc.get(), input_ptr, output_desc.get(), output_ptr));
+}
+
 } // namespace ops
 } // namespace torch_mlu
