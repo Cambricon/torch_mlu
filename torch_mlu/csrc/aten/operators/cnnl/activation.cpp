@@ -124,6 +124,7 @@ void GeluBackwardMLUKernelImpl(
       0.0,
       0.0,
       0.0,
+      false,
       approximate_value);
 }
 
