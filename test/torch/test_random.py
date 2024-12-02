@@ -141,9 +141,9 @@ class RNG(TestCase):
             10, 10, dtype=dtype, device=device, requires_grad=True
         )
 
-        seed = torch.random.get_rng_state()
+        seed = torch.mlu.random.get_rng_state()
         y_soft = F.gumbel_softmax(logits_soft, hard=False)
-        torch.random.set_rng_state(seed)
+        torch.mlu.random.set_rng_state(seed)
         y_hard = F.gumbel_softmax(logits_hard, hard=True)
 
         y_soft.sum().backward()
