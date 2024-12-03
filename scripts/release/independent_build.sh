@@ -234,7 +234,7 @@ fetch_cn_dep_func() {
           if [[ ${arr_modules[$i]} == "cnnl" ]] && [[ "$PACKAGE_ARCH" == "aarch64" ]]; then
             PACKAGE_FILE=${arr_modules[$i]}"-mlu220_"${arr_vers[$i]}"."${OS_TYPE}${OS_VERSION}"_${PLATFORM}.deb"
           fi
-          if [[ ${arr_modules[$i]} == "mluops" ]]; then
+          if [[ ${arr_modules[$i]} == "mluops" ]] && [[ ${arr_branch[$i]} != "daily" ]]; then
             PACKAGE_FILE=${arr_modules[$i]}"_"${arr_vers[$i]}"."${OS_TYPE}${OS_VERSION}"_"${PLATFORM}".deb"
           fi
           echo "PACKAGE_FILE: $PACKAGE_FILE"
@@ -278,7 +278,7 @@ fetch_cn_dep_func() {
           else
             PACKAGE_FILE=${arr_modules[$i]}"-"${arr_vers[$i]}".el${PACKAGE_DIST_VER}.x86_64.rpm"
           fi
-          if [[ ${arr_modules[$i]} == "mluops" ]]; then
+          if [[ ${arr_modules[$i]} == "mluops" ]] && [[ ${arr_branch[$i]} != "daily" ]]; then
             PACKAGE_FILE=${arr_modules[$i]}"-"${arr_vers[$i]}".el"${PACKAGE_DIST_VER}".x86_64.rpm"
           fi
           echo "PACKAGE_FILE: $PACKAGE_FILE"
