@@ -1036,7 +1036,7 @@ class TestSDPAThrowException(TestCase):
             with sdpa_kernel(backends=[kernel]):
                 with self.assertWarnsRegex(
                     UserWarning,
-                    "Both fused kernels require valid data ratio greater than or equal 0.6.",
+                    "The valid data required by the Fused kernel is not met.",
                 ):
                     self.assertRaises(
                         RuntimeError,
