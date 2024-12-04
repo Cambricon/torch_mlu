@@ -11,18 +11,24 @@ import numpy as np
 import torch.multiprocessing as mp
 from torch.nn import Parameter
 
-import unittest # pylint: disable=C0411
+import unittest  # pylint: disable=C0411
+
 cur_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(cur_dir+"/../")
-from common_utils import testinfo, TestCase, read_card_info  # pylint: disable=C0413,C0411
+sys.path.append(cur_dir + "/../")
+from common_utils import (
+    testinfo,
+    TestCase,
+    read_card_info,
+)  # pylint: disable=C0413,C0411
+
 logging.basicConfig(level=logging.DEBUG)
 
 MAX_WAITING_TIME_IN_SECONDS = 30
-HAS_SHM_FILES = os.path.isdir('/dev/shm')
+HAS_SHM_FILES = os.path.isdir("/dev/shm")
 TEST_MULTIMLU = torch.mlu.device_count() > 1
 
-class leak_checker:
 
+class leak_checker:
     def __init__(self, test_case):
         self.checked_pids = [os.getpid()]
         self.test_case = test_case
@@ -53,7 +59,7 @@ class leak_checker:
             return False
 
         result = self._has_shm_files()
-        if not result or mp.get_sharing_strategy() != 'file_system' or not wait:
+        if not result or mp.get_sharing_strategy() != "file_system" or not wait:
             return result
 
         total_waiting_time = 0
@@ -68,23 +74,25 @@ class leak_checker:
 
     def _has_shm_files(self):
         gc.collect()
-        names = ['torch_' + str(pid) for pid in self.checked_pids]
-        for filename in os.listdir('/dev/shm'):
+        names = ["torch_" + str(pid) for pid in self.checked_pids]
+        for filename in os.listdir("/dev/shm"):
             for name in names:
                 if filename.startswith(name):
                     return True
         return False
 
+
 def integer_parameter_serialization(iparam):
     result = iparam + 3
     return result
+
 
 def autograd_sharing(queue, ready, master_modified, device, is_parameter):
     var = queue.get()
     ready.set()
     master_modified.wait()
 
-    expected_var = torch.arange(1., 26, device=device).view(5, 5)
+    expected_var = torch.arange(1.0, 26, device=device).view(5, 5)
     expected_var[0, 0] = 1000
     is_ok = var.data.equal(expected_var)
     var.data[:] = torch.ones(5, 5, device=device)
@@ -99,6 +107,7 @@ def autograd_sharing(queue, ready, master_modified, device, is_parameter):
 
     queue.put(is_ok)
 
+
 def mixed_type_producer(queue, event):
     for _ in range(10):
         float_tensor = torch.ones(16, 1024, 1024).float().mlu()
@@ -108,6 +117,7 @@ def mixed_type_producer(queue, event):
         event.wait()
         event.clear()
 
+
 def ipc_producer(queue, event):
     float_tensor = torch.ones(16, 16).float().mlu()
     for _ in range(10):
@@ -115,28 +125,39 @@ def ipc_producer(queue, event):
         event.wait()
         event.clear()
 
+
 def requires_grad_variable_sharing(queue, ready):
     var = queue.get()
     ready.set()
     queue.put(var.requires_grad)
 
+
 def sum_tensors(inq, outq):
     with torch.mlu.device(1):
         tensors = inq.get()
         for tensor in tensors:
-            outq.put((tensor.sum(), tensor.get_device(),
-                      tensor.numel(), tensor.storage().size()))
+            outq.put(
+                (
+                    tensor.sum(),
+                    tensor.get_device(),
+                    tensor.numel(),
+                    tensor.storage().size(),
+                )
+            )
+
 
 def simple_fill(queue, event):
     data = queue.get()
     data[0][:] = 4
     event.set()
 
+
 def send_tensor(queue, event, device, dtype):
     t = torch.ones(5, 5, device=device, dtype=dtype)
     queue.put(t)
     queue.put(t)
     event.wait()
+
 
 def send_and_delete_tensors(queue, event, device, dtype, count, size=5):
     for i in range(count):
@@ -145,18 +166,21 @@ def send_and_delete_tensors(queue, event, device, dtype, count, size=5):
         del t
     event.wait()
 
+
 def _test_mlu_ipc_deadlock_actor(queue, iterations):
     for i in range(iterations):
         if not queue.empty():
             queue.get()
-        time.sleep(.01)
+        time.sleep(0.01)
+
 
 def _test_mlu_ipc_deadlock_learner(queue, iterations):
     net = torch.nn.LSTM(1, 1).mlu()
     for i in range(iterations):
         if not queue.full():
             queue.put(copy.deepcopy(net.state_dict()))
-        time.sleep(.01)
+        time.sleep(0.01)
+
 
 def receive_and_send_sum(queue, out_queue, event, device, dtype, count, size=5):
     s = torch.full([size], 0, device=device, dtype=dtype)
@@ -173,6 +197,7 @@ def receive_and_send(queue, out_queue, event, count):
         out_queue.put(t.clone())
     event.wait()
 
+
 # Multiply by two in a separate stream
 def mlu_multiply_two(queue, ready, done):
     ready.set()
@@ -184,15 +209,33 @@ def mlu_multiply_two(queue, ready, done):
         done.set()
         del mlu_event
 
+
 def temporarily_replace__sleep():
-    x = torch.zeros((1024,10240), dtype=torch.float32, device="mlu")
-    y = torch.zeros((10240,1024), dtype=torch.float32, device="mlu")
+    x = torch.zeros((1024, 10240), dtype=torch.float32, device="mlu")
+    y = torch.zeros((10240, 1024), dtype=torch.float32, device="mlu")
     for i in range(1000):
-        torch.matmul(x,y)
+        torch.matmul(x, y)
+
+
+def _test_sub_map(queue1, event, queue2):
+    for i in range(10):
+        ll = []
+        while True:
+            event.wait()
+            event.clear()
+            shape = queue1.get(block=True)
+            if shape is None:
+                break
+            t1 = torch.randn(shape, dtype=torch.float32).mlu()
+            ll.append(t1)
+            t1.mul_(2)
+            queue2.put(t1)
+        del ll
+        torch.mlu.empty_cache()
+
 
 class Multiprocessing(TestCase):
-
-    def _test_sharing(self, ctx=mp, device='mlu', dtype=torch.float, repeat=1):
+    def _test_sharing(self, ctx=mp, device="mlu", dtype=torch.float, repeat=1):
         def test_fill():
             x = torch.zeros(5, 5).to(device, dtype)
             q = ctx.Queue()
@@ -258,47 +301,53 @@ class Multiprocessing(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_integer_parameter_serialization_mlu(self):
-        device='mlu'
+        device = "mlu"
         param = Parameter(
-            torch.tensor(0, dtype=torch.float32).mlu(),
-            requires_grad=False
+            torch.tensor(0, dtype=torch.float32).mlu(), requires_grad=False
         )
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         p = ctx.Process(target=integer_parameter_serialization, args=(param,))
         p.start()
         p.join()
         self.assertEqual(
-            0, p.exitcode,
-            msg=f'Failed to serialize successfully for "{device}" device!'
+            0,
+            p.exitcode,
+            msg=f'Failed to serialize successfully for "{device}" device!',
         )
 
     # @unittest.skip("not test")
     @testinfo()
     def test_integer_variable_serialization_mlu(self):
-        device='mlu'
+        device = "mlu"
         param = torch.tensor(0, dtype=torch.float32, device=device, requires_grad=True)
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         p = ctx.Process(target=integer_parameter_serialization, args=(param,))
         p.start()
         p.join()
         self.assertEqual(
-            0, p.exitcode,
-            msg=f'Failed to serialize successfully for "{device}" device!'
+            0,
+            p.exitcode,
+            msg=f'Failed to serialize successfully for "{device}" device!',
         )
 
     def _test_autograd_sharing(self, var, ctx=mp, is_parameter=False):
-        device = 'mlu'
+        device = "mlu"
         ready = ctx.Event()
         master_modified = ctx.Event()
         queue = ctx.Queue()
-        p = ctx.Process(target=autograd_sharing, args=(queue, ready, master_modified, device, is_parameter))
+        p = ctx.Process(
+            target=autograd_sharing,
+            args=(queue, ready, master_modified, device, is_parameter),
+        )
         p.daemon = True
         p.start()
+
         # This would cause an error if we tried to serialize the hooks,
         # because it's a closure and pickle doesn't support closures.
         @torch.utils.hooks.unserializable_hook
         def hook(*unused):
             pass
+
         if var.requires_grad:
             var.register_hook(hook)
         var._grad = torch.zeros(5, 5, device=device)
@@ -318,20 +367,24 @@ class Multiprocessing(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_mlu_parameter_sharing(self):
-        param = Parameter(torch.arange(1., 26, device='mlu').view(5, 5))
-        self._test_autograd_sharing(param, mp.get_context('spawn'), is_parameter=True)
+        param = Parameter(torch.arange(1.0, 26, device="mlu").view(5, 5))
+        self._test_autograd_sharing(param, mp.get_context("spawn"), is_parameter=True)
 
     # @unittest.skip("not test")
     @testinfo()
     def test_mlu_variable_sharing(self):
         for requires_grad in [True, False]:
-            var = torch.arange(1., 26, device='mlu').view(5, 5).requires_grad_(requires_grad)
-            self._test_autograd_sharing(var, mp.get_context('spawn'))
+            var = (
+                torch.arange(1.0, 26, device="mlu")
+                .view(5, 5)
+                .requires_grad_(requires_grad)
+            )
+            self._test_autograd_sharing(var, mp.get_context("spawn"))
 
     # @unittest.skip("not test")
     @testinfo()
     def test_mixed_types_mlu_sharing(self):
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         all_ones = torch.ones(16, 1024, 1024).float()
         all_zeros = torch.zeros(1024, 1024).byte()
         queue = ctx.Queue()
@@ -357,7 +410,7 @@ class Multiprocessing(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_release_ipc_counter_mlu(self):
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         all_ones = torch.ones(16, 16).float()
         queue = ctx.Queue()
         event = ctx.Event()
@@ -375,11 +428,15 @@ class Multiprocessing(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_leaf_variable_sharing(self):
-        device = 'mlu'
+        device = "mlu"
         for requires_grad in [True, False]:
-            var = torch.arange(1., 26, device=device).view(5, 5).requires_grad_(requires_grad)
+            var = (
+                torch.arange(1.0, 26, device=device)
+                .view(5, 5)
+                .requires_grad_(requires_grad)
+            )
             self.assertTrue(var.is_leaf)
-            ctx = mp.get_context('spawn')
+            ctx = mp.get_context("spawn")
             ready = ctx.Event()
             queue = ctx.Queue()
             p = ctx.Process(target=requires_grad_variable_sharing, args=(queue, ready))
@@ -395,15 +452,17 @@ class Multiprocessing(TestCase):
     @testinfo()
     def test_mlu_simple(self):
         torch.mlu.FloatTensor([1])  # initialize MLU outside of leak checker
-        self._test_sharing(mp.get_context('spawn'), 'mlu', torch.float)
+        self._test_sharing(mp.get_context("spawn"), "mlu", torch.float)
 
     # @unittest.skip("not test")
     @testinfo()
     def test_mlu_memory_allocation(self):
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         q = ctx.Queue()
         e = ctx.Event()
-        p = ctx.Process(target=send_and_delete_tensors, args=(q, e, 'mlu', torch.int, 5))
+        p = ctx.Process(
+            target=send_and_delete_tensors, args=(q, e, "mlu", torch.int, 5)
+        )
         p.start()
         t = []
         for _ in range(5):
@@ -416,11 +475,12 @@ class Multiprocessing(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_mlu_ipc_deadlock(self):
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         queue = ctx.Queue(1)
         processes = dict(
             a=ctx.Process(target=_test_mlu_ipc_deadlock_actor, args=(queue, 100)),
-            l=ctx.Process(target=_test_mlu_ipc_deadlock_learner, args=(queue, 100)))
+            l=ctx.Process(target=_test_mlu_ipc_deadlock_learner, args=(queue, 100)),
+        )
 
         for p in processes.values():
             p.start()
@@ -433,16 +493,16 @@ class Multiprocessing(TestCase):
             self.assertFalse(p.is_alive())
 
     # @unittest.skip("not test")
-    @unittest.skipIf(not TEST_MULTIMLU, 'found only 1 MLU')
+    @unittest.skipIf(not TEST_MULTIMLU, "found only 1 MLU")
     @testinfo()
     def test_mlu_small_tensors(self):
         # Check multiple small tensors which will likely use the same
         # underlying cached allocation
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         tensors = []
         for i in range(5):
             device = i % 2
-            tensors += [torch.arange(i * 5., (i + 1) * 5).mlu(device)]
+            tensors += [torch.arange(i * 5.0, (i + 1) * 5).mlu(device)]
 
         inq = ctx.Queue()
         outq = ctx.Queue()
@@ -457,7 +517,7 @@ class Multiprocessing(TestCase):
 
         for i, _tensor in enumerate(tensors):
             v, device, tensor_size, storage_size = results[i]
-            self.assertEqual(v, torch.arange(i * 5., (i + 1) * 5).sum())
+            self.assertEqual(v, torch.arange(i * 5.0, (i + 1) * 5).sum())
             self.assertEqual(device, i % 2)
             self.assertEqual(tensor_size, 5)
 
@@ -479,16 +539,22 @@ class Multiprocessing(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_mlu_send_many(self, name=None, size=5, count=1000):
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         q1 = ctx.Queue()
         q2 = ctx.Queue()
         q3 = ctx.Queue()
         e1 = ctx.Event()
         e2 = ctx.Event()
         e3 = ctx.Event()
-        p1 = ctx.Process(target=send_and_delete_tensors, args=(q1, e1, 'mlu', torch.float, count, size))
+        p1 = ctx.Process(
+            target=send_and_delete_tensors,
+            args=(q1, e1, "mlu", torch.float, count, size),
+        )
         p2 = ctx.Process(target=receive_and_send, args=(q1, q2, e2, count))
-        p3 = ctx.Process(target=receive_and_send_sum, args=(q2, q3, e3, 'mlu', torch.float, count, size))
+        p3 = ctx.Process(
+            target=receive_and_send_sum,
+            args=(q2, q3, e3, "mlu", torch.float, count, size),
+        )
         p1.start()
         p2.start()
         p3.start()
@@ -505,7 +571,7 @@ class Multiprocessing(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_event(self):
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         queue = ctx.Queue()
         ready = ctx.Event()
         done = ctx.Event()
@@ -524,7 +590,6 @@ class Multiprocessing(TestCase):
             self.assertEqual(list(tensor), [4, 4, 4, 4])
         p.join()
 
-    # @unittest.skip("not test")
     @staticmethod
     def _test_event_multiprocess_child(event, p2c, c2p):
         c2p.put(0)  # notify parent child is ready
@@ -538,12 +603,13 @@ class Multiprocessing(TestCase):
         event = torch.mlu.Event(enable_timing=False, interprocess=True)
         self.assertTrue(event.query())
 
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         p2c = ctx.SimpleQueue()
         c2p = ctx.SimpleQueue()
         p = ctx.Process(
             target=Multiprocessing._test_event_multiprocess_child,
-            args=(event, p2c, c2p))
+            args=(event, p2c, c2p),
+        )
         p.start()
         c2p.get()  # wait for until child process is ready
         # Now mlu not support _sleep ops.
@@ -559,11 +625,11 @@ class Multiprocessing(TestCase):
         p.join()
 
     # @unittest.skip("not test")
-    @unittest.skipIf(not TEST_MULTIMLU, 'found only 1 MLU')
+    @unittest.skipIf(not TEST_MULTIMLU, "found only 1 MLU")
     @testinfo()
     def test_event_handle_multi_mlu(self):
-        d0 = torch.device('mlu:0')
-        d1 = torch.device('mlu:1')
+        d0 = torch.device("mlu:0")
+        d1 = torch.device("mlu:1")
         with torch.mlu.device(d0):
             e0 = torch.mlu.Event(enable_timing=False, interprocess=True)
 
@@ -584,7 +650,6 @@ class Multiprocessing(TestCase):
             # create handle on different device from recorded event
             e1.ipc_handle()
 
-    # @unittest.skip("not test")
     @staticmethod
     def _test_event_handle_importer_consumer(handle, p2c, c2p):
         e1 = torch.mlu.Event.from_ipc_handle(0, handle)
@@ -600,12 +665,13 @@ class Multiprocessing(TestCase):
         e0 = torch.mlu.Event(enable_timing=False, interprocess=True)
         self.assertTrue(e0.query())
 
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         p2c = ctx.SimpleQueue()
         c2p = ctx.SimpleQueue()
         p = ctx.Process(
             target=Multiprocessing._test_event_handle_importer_consumer,
-            args=(e0.ipc_handle(), p2c, c2p))
+            args=(e0.ipc_handle(), p2c, c2p),
+        )
         p.start()
 
         c2p.get()  # wait for child to become ready
@@ -622,13 +688,11 @@ class Multiprocessing(TestCase):
         p2c.put(1)  # notify child that parent is done
         p.join()
 
-    # @unittest.skip("not test")
     @staticmethod
     def _test_event_handle_exporter_consumer(handle, p2c, c2p):
         stream = torch.mlu.Stream()
         with torch.mlu.stream(stream):
-            e1 = torch.mlu.Event.from_ipc_handle(
-                torch.mlu.current_device(), handle)
+            e1 = torch.mlu.Event.from_ipc_handle(torch.mlu.current_device(), handle)
             # Now mlu not support _sleep ops.
             # torch.matmul instead of torch.mlu._sleep
             # torch.mlu._sleep(50000000)  # spin for about 50 ms
@@ -644,12 +708,13 @@ class Multiprocessing(TestCase):
     def test_event_handle_exporter(self):
         e0 = torch.mlu.Event(enable_timing=False, interprocess=True)
 
-        ctx = mp.get_context('spawn')
+        ctx = mp.get_context("spawn")
         p2c = ctx.SimpleQueue()
         c2p = ctx.SimpleQueue()
         p = ctx.Process(
             target=Multiprocessing._test_event_handle_exporter_consumer,
-            args=(e0.ipc_handle(), p2c, c2p))
+            args=(e0.ipc_handle(), p2c, c2p),
+        )
         p.start()
         # wait for event in child process is recorded
         c2p.get()
@@ -659,5 +724,32 @@ class Multiprocessing(TestCase):
         self.assertTrue(e0.query())
         p2c.put(0)
         p.join()
-if __name__ == '__main__':
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_ipc_with_workround(self):
+        ctx = mp.get_context("spawn")
+        q1 = ctx.Queue(maxsize=1)
+        q2 = ctx.Queue(maxsize=1)
+        e1 = ctx.Event()
+        p1 = ctx.Process(
+            target=_test_sub_map,
+            args=(q1, e1, q2),
+        )
+        p1.start()
+        for i in range(10):
+            shape = (32, 1024, 1024)
+            num_iterations = 10
+            l = []
+            for j in range(num_iterations):
+                q1.put(shape, block=True)
+                e1.set()
+                l.append(q2.get(block=True))
+            del l
+            q1.put(None)
+            e1.set()
+        p1.join()
+
+
+if __name__ == "__main__":
     unittest.main()

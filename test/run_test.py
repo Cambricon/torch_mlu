@@ -63,6 +63,7 @@ TESTS = [
     "mlu/test_device",
     "mlu/test_mlu",
     "mlu/test_amp",
+    "multiprocessing/test_multiprocessing",
     "profiler/test_profiler",
     "profiler/test_profiler_pmu",
     "profiler/test_profiler_emit_cnpx",

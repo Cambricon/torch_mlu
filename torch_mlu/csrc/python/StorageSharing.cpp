@@ -17,6 +17,7 @@
 #include "python/Storage.h"
 #include "python/MluIPCTypes.h"
 #include "framework/core/mlu_guard.h"
+#include "framework/core/caching_allocator.h"
 
 static PyObject* THMPStorage_sharedDecref(PyObject* self, PyObject* noargs) {
   HANDLE_TH_ERRORS
@@ -343,9 +344,9 @@ static PyObject* THMPStorage_releaseIPCCounter(
   std::string ref_counter_handle = PyBytes_AS_STRING(_ref_counter);
   ptrdiff_t ref_counter_offset =
       (ptrdiff_t)THPUtils_unpackLong(_ref_counter_offset);
-   //We don't want to break existing code, so resource deletion is best
-   //effort basis. Exception expected if producer process terminated
-   //before consumer released data.
+  // We don't want to break existing code, so resource deletion is best
+  // effort basis. Exception expected if producer process terminated
+  // before consumer released data.
   int flags = at::ALLOCATOR_MAPPED_SHAREDMEM | at::ALLOCATOR_MAPPED_NOCREATE;
   try {
     auto sptr = at::RefcountedMapAllocator::makeDataPtr(
@@ -362,9 +363,6 @@ static PyObject* THMPStorage_releaseIPCCounter(
   END_HANDLE_TH_ERRORS
 }
 
-
-typedef ska::flat_hash_map<void*, const char*> PtrMap;
-static PtrMap ptrMap;
 static std::mutex ptrMapMutex;
 static PyObject* THMPStorage_shareMlu(PyObject* self, PyObject* noargs) {
   HANDLE_TH_ERRORS
@@ -405,15 +403,16 @@ static PyObject* THMPStorage_shareMlu(PyObject* self, PyObject* noargs) {
     // TODO(mengpenghui): Currently, cnrt does not support repeated calls to
     // cnrtAcquireMemHandle for the same base_ptr to obtain the handle.
     // This is temporarily bypassed.
-    PtrMap::iterator it = ptrMap.find(base_ptr);
-    if (it == ptrMap.end()){
+    auto it = ptrMap_ipc.find(base_ptr);
+    if (it == ptrMap_ipc.end()) {
       cnrtIpcMemHandle handle;
       TORCH_CNRT_CHECK(cnrtAcquireMemHandle(&handle, base_ptr));
       char* handleBytes = reinterpret_cast<char*>(&handle);
-      _handle = PyBytes_FromStringAndSize(handleBytes, sizeof(cnrtIpcMemHandle));
+      _handle =
+          PyBytes_FromStringAndSize(handleBytes, sizeof(cnrtIpcMemHandle));
       char* buffer = new char[sizeof(cnrtIpcMemHandle)];
       std::memcpy(buffer, handleBytes, sizeof(cnrtIpcMemHandle));
-      ptrMap.insert({base_ptr, buffer});
+      ptrMap_ipc.insert({base_ptr, buffer});
     } else {
       _handle = PyBytes_FromStringAndSize(it->second, sizeof(cnrtIpcMemHandle));
     }
@@ -423,8 +422,8 @@ static PyObject* THMPStorage_shareMlu(PyObject* self, PyObject* noargs) {
     at::DataPtr sent_data_ptr = torch_mlu::GetNewRefCountedSentData(
         storage.mutable_data(), storage.device());
     auto old_data_ptr = storage.set_data_ptr(std::move(sent_data_ptr));
-    auto sent_data =
-        static_cast<torch_mlu::MluIPCSentData*>(storage.data_ptr().get_context());
+    auto sent_data = static_cast<torch_mlu::MluIPCSentData*>(
+        storage.data_ptr().get_context());
     sent_data->set_original_ptr(std::move(old_data_ptr));
     _ref_counter = PyBytes_FromString((sent_data->handle()).c_str());
     _ref_counter_offset = THPUtils_packUInt64(sent_data->offset());
@@ -465,7 +464,9 @@ static PyObject* THMPStorage_shareMlu(PyObject* self, PyObject* noargs) {
   END_HANDLE_TH_ERRORS
 }
 
-static std::string THMPStorage_bytesAsHandleString(PyObject* handle, size_t size) {
+static std::string THMPStorage_bytesAsHandleString(
+    PyObject* handle,
+    size_t size) {
   HANDLE_TH_ERRORS
   char* buffer = nullptr;
   Py_ssize_t handle_size = 0;
@@ -513,8 +514,8 @@ static PyObject* THMPStorage_newSharedMlu(PyObject* _unused, PyObject* args) {
 
   if (PyObject_IsTrue(_event_sync_required)) {
     // Ensure that producer prepared all tensor's data
-    std::string s_ipc_event_handle =
-        THMPStorage_bytesAsHandleString(_event_handle, sizeof(cnrtIpcNotifierHandle));
+    std::string s_ipc_event_handle = THMPStorage_bytesAsHandleString(
+        _event_handle, sizeof(cnrtIpcNotifierHandle));
     if (s_ipc_event_handle.empty()) {
       return nullptr;
     }
@@ -523,11 +524,12 @@ static PyObject* THMPStorage_newSharedMlu(PyObject* _unused, PyObject* args) {
     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
     cnrtNotifier_t event;
     TORCH_CNRT_CHECK(cnrtIpcOpenNotifierHandle(&event, *ipc_event_handle));
-    TORCH_CNRT_CHECK(
-        cnrtQueueWaitNotifier(event, torch_mlu::getCurrentMLUStream(device), 0));
+    TORCH_CNRT_CHECK(cnrtQueueWaitNotifier(
+        event, torch_mlu::getCurrentMLUStream(device), 0));
     TORCH_CNRT_CHECK(cnrtNotifierDestroy(event));
   }
-  std::string s_handle = THMPStorage_bytesAsHandleString(_handle, sizeof(cnrtIpcMemHandle));
+  std::string s_handle =
+      THMPStorage_bytesAsHandleString(_handle, sizeof(cnrtIpcMemHandle));
   if (s_handle.empty()) {
     return nullptr;
   }
@@ -564,7 +566,8 @@ static PyObject* THMPStorage_newSharedMlu(PyObject* _unused, PyObject* args) {
         std::unique_ptr<IpcDeleterContext> ctx(
             static_cast<IpcDeleterContext*>(ctx_));
         ctx->received_data.shared_ptr_.reset();
-        TORCH_CNRT_CHECK(cnrtQueueSync(torch_mlu::getCurrentMLUStream(ctx->device)));
+        TORCH_CNRT_CHECK(
+            cnrtQueueSync(torch_mlu::getCurrentMLUStream(ctx->device)));
 
         int flags =
             at::ALLOCATOR_MAPPED_SHAREDMEM | at::ALLOCATOR_MAPPED_NOCREATE;
@@ -603,8 +606,14 @@ static PyMethodDef THMPStorage_sharingMethods[] = {
      METH_O | METH_CLASS,
      nullptr},
     {"_share_mlu_", THMPStorage_shareMlu, METH_NOARGS, nullptr},
-    {"_new_shared_mlu",THMPStorage_newSharedMlu, METH_VARARGS | METH_STATIC, nullptr},
-    {"_release_ipc_counter_mlu", THMPStorage_releaseIPCCounter, METH_VARARGS | METH_STATIC, nullptr},
+    {"_new_shared_mlu",
+     THMPStorage_newSharedMlu,
+     METH_VARARGS | METH_STATIC,
+     nullptr},
+    {"_release_ipc_counter_mlu",
+     THMPStorage_releaseIPCCounter,
+     METH_VARARGS | METH_STATIC,
+     nullptr},
     {"_share_fd_cpu_", THMPStorage_shareFd, METH_NOARGS, nullptr},
     {"_new_shared_fd_cpu",
      THMPStorage_newSharedFd,
