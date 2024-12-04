@@ -465,6 +465,8 @@ inline bool check_fused_kernel_mlu_support(
   auto num_heads = params.query.size(1);
   auto seq_len_q = params.query.size(-2);
   auto seq_len_k = params.key.size(-2);
+  auto head_size = params.query.size(-1);
+
   auto split_cond = batch_size * num_heads * ceil(((float)seq_len_k) / 256);
   if (!(split_cond > 12)) {
     if (debug) {
@@ -477,15 +479,12 @@ inline bool check_fused_kernel_mlu_support(
     return false;
   }
 
-  auto valid_data_ratio_cond = seq_len_q * seq_len_k /
-      (ceiling(seq_len_q, 512) * ceiling(seq_len_k, 256));
-  if (!(valid_data_ratio_cond >= 0.6)) {
+  bool valid_cond_1 =
+      (seq_len_q * head_size >= 5190) && (seq_len_k * head_size >= 5190);
+  bool valid_cond_2 = (seq_len_q >= 1024);
+  if (!(valid_cond_1 || valid_cond_2)) {
     if (debug) {
-      TORCH_WARN(
-          "Both fused kernels require valid data ratio greater than or equal 0.6.",
-          "Got ",
-          valid_data_ratio_cond,
-          ".");
+      TORCH_WARN("The valid data required by the Fused kernel is not met.");
     }
     return false;
   }
