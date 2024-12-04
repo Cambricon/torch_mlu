@@ -280,6 +280,7 @@ static const std::vector<std::vector<at::ScalarType>> optensor_input_mix_types(
      {at::kDouble, at::kBFloat16, at::kFloat},
      {at::kDouble, at::kBFloat16, at::kDouble},
      {at::kInt, at::kLong, at::kLong},
+     {at::kFloat, at::kLong, at::kFloat},
      {at::kBFloat16, at::kInt, at::kBFloat16}});
 
 static const std::vector<std::vector<at::ScalarType>> logic_input_mix_types(

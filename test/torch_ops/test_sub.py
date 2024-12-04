@@ -640,6 +640,14 @@ class TestSubOp(TestCase):  # pylint: disable=R0904
             ouput_mlu = torch.sub(a.mlu(), b.mlu())
             self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
 
+            ouput = torch.sub(1, b)
+            ouput_mlu = torch.sub(1, b.mlu())
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+
+            ouput = torch.sub(b, 1)
+            ouput_mlu = torch.sub(b.mlu(), 1)
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+
 
 if __name__ == "__main__":
     run_tests()

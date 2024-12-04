@@ -697,6 +697,14 @@ class TestAddOp(TestCase):  # pylint: disable=R0904
             ouput_mlu = torch.add(a.mlu(), b.mlu())
             self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
 
+            ouput = torch.add(1, b)
+            ouput_mlu = torch.add(1, b.mlu())
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+
+            ouput = torch.add(b, 1)
+            ouput_mlu = torch.add(b.mlu(), 1)
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+
 
 if __name__ == "__main__":
     run_tests()
