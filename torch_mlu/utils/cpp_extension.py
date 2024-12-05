@@ -346,7 +346,7 @@ def _get_bang_arch_flags(cflags: Optional[List[str]] = None) -> List[str]:
         for i in range(torch.mlu.device_count()):
             capability = torch.mlu.get_device_capability(i)
             arch = f"{capability[0]}.{capability[1]}"
-            if torch.mlu.get_device_properties(i).isa_version == "613":
+            if torch.mlu.get_device_properties(i).isa_version == 613:
                 arch = "6.0"
             if arch not in arch_list:
                 arch_list.append(arch)
