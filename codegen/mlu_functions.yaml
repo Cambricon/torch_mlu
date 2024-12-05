@@ -1399,7 +1399,16 @@ aten:
   - func: _foreach_sub_.ScalarList
   - func: _foreach_sqrt
   - func: _foreach_sqrt_
+  - func: _foreach_mul.Scalar
+  - func: _foreach_mul_.Scalar
+  - func: _foreach_mul.List
+  - func: _foreach_mul_.List
+  - func: _foreach_mul.ScalarList
+  - func: _foreach_mul_.ScalarList
+  - func: _foreach_mul.Tensor
+  - func: _foreach_mul_.Tensor
   - func: _foreach_zero_
+  - func: _foreach_norm.Scalar
 
   - func: _coalesce
     dispatch: SparsePrivateUse1

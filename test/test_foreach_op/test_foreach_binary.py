@@ -25,19 +25,21 @@ class TestBinaryForeachOp(TestCase):
             torch._foreach_add_,
             torch._foreach_sub_,
             torch._foreach_sub,
+            torch._foreach_mul,
+            torch._foreach_mul_,
         ]
         foreach_type_list = [
             ForeachType.BinaryOpWithTensor,
             ForeachType.BinaryOpWithScalarList,
             ForeachType.BinaryOpWithScalar,
+            ForeachType.BinaryOpWithScalarTensor,
         ]
         for api_func in api_list:
             for foreach_type in foreach_type_list:
                 test_func = ForeachOpTest(api_func, foreach_type, err=0.003)
                 test_func(self.assertTrue, self.assertTensorsEqual)
 
-    # TODO(CNNLCORE-21331): Foreach op not support graph now.
-    @unittest.skip("not test")
+    # @unittest.skip("not test")
     @testinfo()
     def test_foreach_binary_with_graph(self):
         tensor_num = 5

@@ -1565,6 +1565,11 @@ void cnnl_foreach_lerp_op(
     const scalar_t& scalar,
     const cnnlForeachLerpMode_t& mode);
 
+void cnnl_foreach_norm_internal(
+    at::TensorList tensors,
+    at::TensorList outputs,
+    const float pnorm);
+
 std::tuple<at::Tensor, at::Tensor, at::Tensor, std::vector<at::Tensor>>
 cnnl_rnn_backward_internal(
     const at::Tensor& input_r,

@@ -34,8 +34,7 @@ class TestUnaryForeachOp(TestCase):
             test_func = ForeachOpTest(api_func, ForeachType.UnaryOp, err=0.003)
             test_func(self.assertTrue, self.assertTensorsEqual)
 
-    # TODO(CNNLCORE-21331): Foreach op not support graph now.
-    @unittest.skip("not test")
+    # @unittest.skip("not test")
     @testinfo()
     def test_foreach_unary_with_graph(self):
         input = [torch.randn((2, 3), device="mlu") for _ in range(5)]

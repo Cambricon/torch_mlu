@@ -41,6 +41,7 @@ template <
     int inputNum,
     int outputNum = 1,
     bool isInplace = false,
+    bool isReduceOp = false,
     typename math_t = float,
     std::enable_if_t<!std::is_same_v<math_t, void>, int> = 1>
 class ForeachOPTensorScalarHandle {
@@ -57,6 +58,10 @@ class ForeachOPTensorScalarHandle {
     // init desc container
     this->tensor_desc_.reserve(total_tensor_num);
     this->tensor_desc_unique_ptr_.reserve(total_tensor_num);
+    if constexpr (isReduceOp) {
+      this->reduceop_output_tensor_desc_.reserve(total_tensor_num);
+      this->reduceop_output_tensor_desc_unique_ptr_.reserve(total_tensor_num);
+    }
     // init scalar list container by using self nums.
     const int scalar_list_num = scalar_list.size();
     const bool include_scalar_list = scalar_list_num == 0 ? false : true;
@@ -85,6 +90,14 @@ class ForeachOPTensorScalarHandle {
           {tensor_impl->numel()}, {1}, cnnl_dtype, CNNL_LAYOUT_ARRAY));
       this->tensor_desc_.emplace_back(
           tensor_desc_unique_ptr_[tensor_num_].get());
+      if constexpr (isReduceOp) {
+        auto cnnl_output_dtype =
+            getCnnlDataType(input_output[1][0].scalar_type());
+        this->reduceop_output_tensor_desc_unique_ptr_.emplace_back(
+            getTensorDesc({1}, {1}, cnnl_output_dtype, CNNL_LAYOUT_ARRAY));
+        this->reduceop_output_tensor_desc_.emplace_back(
+            reduceop_output_tensor_desc_unique_ptr_[tensor_num_].get());
+      }
 #pragma unroll
       for (int j = 0; j < total_num; ++j) {
         // Using first input tensor info as inplace output tensor info.
@@ -126,9 +139,16 @@ class ForeachOPTensorScalarHandle {
     if constexpr (isInplace == true && index == 0) {
       return {this->tensor_desc_.data(), this->input_output_ptr_[0].data()};
     }
-    return {
-        this->tensor_desc_.data(),
-        this->input_output_ptr_[index + inputNum].data()};
+
+    if constexpr (isReduceOp) {
+      return {
+          this->reduceop_output_tensor_desc_.data(),
+          this->input_output_ptr_[index + inputNum].data()};
+    } else {
+      return {
+          this->tensor_desc_.data(),
+          this->input_output_ptr_[index + inputNum].data()};
+    }
   }
 
   inline math_t* get_scalar_list_ptr() {
@@ -139,6 +159,8 @@ class ForeachOPTensorScalarHandle {
   // This is used for keep desc ptr alive.
   std::vector<tensorDescPtr_t> tensor_desc_unique_ptr_;
   std::vector<cnnlTensorDescriptor_t> tensor_desc_;
+  std::vector<tensorDescPtr_t> reduceop_output_tensor_desc_unique_ptr_;
+  std::vector<cnnlTensorDescriptor_t> reduceop_output_tensor_desc_;
   std::array<std::vector<void*>, inputNum + outputNum> input_output_ptr_;
   c10::SmallVector<math_t, 10> scalar_list_;
   int64_t tensor_num_ = 0;

@@ -35,8 +35,16 @@ namespace torch_mlu::ops {
 
 std::vector<at::Tensor> all_floating_types_with_half_bfloat16(
     at::TensorList tensors1,
-    at::ArrayRef<at::Scalar> scalars,
-    const cnnlForeachOpMode_t& mode) {
+    const at::Tensor& scalar,
+    const cnnlForeachOpMode_t& mode,
+    const at::Scalar& alpha = 1) {
+  TORCH_CHECK(
+      scalar.dim() == 0 && scalar.numel() == 1,
+      "scalar tensor expected to be 0 dim but it has ",
+      scalar.dim(),
+      " dimensions and ",
+      scalar.numel(),
+      " elements.");
   std::vector<at::Tensor> vec_res;
   vec_res.reserve(tensors1.size());
   for (const auto& t : tensors1) {
@@ -53,20 +61,28 @@ std::vector<at::Tensor> all_floating_types_with_half_bfloat16(
             tensors1,
             {},
             vec_res,
-            scalars,
+            {},
             1.0,
-            at::Tensor(),
+            scalar,
             1.0,
             mode,
-            cnnlForeachBinaryMode_t::FOREACH_BINARY_SCALAR_LIST);
+            cnnlForeachBinaryMode_t::FOREACH_BINARY_SCALAR_TENSOR);
       });
   return vec_res;
 }
 
 void all_floating_types_with_half_bfloat16_(
     at::TensorList tensors1,
-    at::ArrayRef<at::Scalar> scalars,
-    const cnnlForeachOpMode_t& mode) {
+    const at::Tensor& scalar,
+    const cnnlForeachOpMode_t& mode,
+    const at::Scalar& alpha = 1) {
+  TORCH_CHECK(
+      scalar.dim() == 0 && scalar.numel() == 1,
+      "scalar tensor expected to be 0 dim but has ",
+      scalar.dim(),
+      " dimensions and ",
+      scalar.numel(),
+      " elements.");
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
@@ -78,65 +94,47 @@ void all_floating_types_with_half_bfloat16_(
             tensors1,
             {},
             tensors1,
-            scalars,
+            {},
             1.0,
-            at::Tensor(),
+            scalar,
             1.0,
             mode,
-            cnnlForeachBinaryMode_t::FOREACH_BINARY_SCALAR_LIST);
+            cnnlForeachBinaryMode_t::FOREACH_BINARY_SCALAR_TENSOR);
       });
   increment_version(tensors1);
 }
 
-#define FOREACH_BINARY_OP_SCALARLIST(FUNCTION, NAME, MODE, DIVISION_OP)   \
-  void cnnl__foreach_##NAME##_(                                           \
-      at::TensorList tensors, at::ArrayRef<at::Scalar> scalars) {         \
-    at::native::check_foreach_api_restrictions(tensors, scalars);         \
-    if (MODE == CNNL_FOREACH_SUB) {                                       \
-      for (const auto i : c10::irange(tensors.size())) {                  \
-        at::native::sub_check(tensors[i], scalars[i]);                    \
-      }                                                                   \
-    }                                                                     \
-    if (!at::native::can_use_fast_route(tensors, scalars, DIVISION_OP)) { \
-      return at::native::foreach_tensor_##NAME##_scalarlist_kernel_slow_( \
-          tensors, scalars);                                              \
-    }                                                                     \
-    FUNCTION##_(tensors, scalars, MODE);                                  \
-  }                                                                       \
-                                                                          \
-  std::vector<Tensor> cnnl__foreach_##NAME(                               \
-      at::TensorList tensors, at::ArrayRef<at::Scalar> scalars) {         \
-    at::native::check_foreach_api_restrictions(tensors, scalars);         \
-    if (MODE == CNNL_FOREACH_SUB) {                                       \
-      for (const auto i : c10::irange(tensors.size())) {                  \
-        at::native::sub_check(tensors[i], scalars[i]);                    \
-      }                                                                   \
-    }                                                                     \
-    if (!at::native::can_use_fast_route(tensors, scalars, DIVISION_OP)) { \
-      return at::native::foreach_tensor_##NAME##_scalarlist_kernel_slow(  \
-          tensors, scalars);                                              \
-    }                                                                     \
-    return FUNCTION(tensors, scalars, MODE);                              \
+#define FOREACH_BINARY_OP_SCALAR_TENSOR(FUNCTION, NAME, MODE, DIVISION_OP) \
+  void cnnl__foreach_##NAME##_(                                            \
+      at::TensorList tensors, const at::Tensor& scalar) {                  \
+    at::native::check_foreach_api_restrictions(tensors);                   \
+    if (!(at::native::can_use_fast_route(                                  \
+              at::ArrayRef<at::TensorList>{tensors}, {}, DIVISION_OP) &&   \
+          tensors[0].scalar_type() == scalar.scalar_type())) {             \
+      return at::native::foreach_tensor_##NAME##_tensor_kernel_slow_(      \
+          tensors, scalar);                                                \
+    }                                                                      \
+    FUNCTION##_(tensors, scalar, MODE);                                    \
+  }                                                                        \
+                                                                           \
+  std::vector<Tensor> cnnl__foreach_##NAME(                                \
+      at::TensorList tensors, const at::Tensor& scalar) {                  \
+    at::native::check_foreach_api_restrictions(tensors);                   \
+    if (!(at::native::can_use_fast_route(                                  \
+              at::ArrayRef<at::TensorList>{tensors}, {}, DIVISION_OP) &&   \
+          tensors[0].scalar_type() == scalar.scalar_type())) {             \
+      return at::native::foreach_tensor_##NAME##_tensor_kernel_slow(       \
+          tensors, scalar);                                                \
+    }                                                                      \
+    return FUNCTION(tensors, scalar, MODE);                                \
   }
 
-FOREACH_BINARY_OP_SCALARLIST(
-    all_floating_types_with_half_bfloat16,
-    add,
-    CNNL_FOREACH_ADD,
-    /*div_op*/ false);
-
-FOREACH_BINARY_OP_SCALARLIST(
+FOREACH_BINARY_OP_SCALAR_TENSOR(
     all_floating_types_with_half_bfloat16,
     mul,
     CNNL_FOREACH_MUL,
-    /*div_op*/ false);
+    /* div_op */ false);
 
-FOREACH_BINARY_OP_SCALARLIST(
-    all_floating_types_with_half_bfloat16,
-    sub,
-    CNNL_FOREACH_SUB,
-    /*div_op*/ false);
-
-#undef FOREACH_BINARY_OP_SCALARLIST
+#undef FOREACH_BINARY_OP_SCALAR_TENSOR
 
 } // namespace torch_mlu::ops

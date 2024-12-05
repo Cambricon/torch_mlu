@@ -28,18 +28,17 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "cnnl_internal.h"
 #include "aten/operators/cnnl/internal/foreach_common_utils.h"
 
 namespace torch_mlu::ops {
 
-// Kernel compute dtype is decised in cnnl side, and no scalar need to convert.
-template <bool isInplace>
-void cnnl_foreach_unary_op(
+void cnnl_foreach_norm_internal(
     at::TensorList tensors,
     at::TensorList outputs,
-    const cnnlForeachOpMode_t& mode) {
+    const float pnorm) {
   auto handle = getCurrentHandle();
-  ForeachOPTensorScalarHandle<1, 1, isInplace> tensor_desc_ptr(
+  ForeachOPTensorScalarHandle<1, 1, false, true> tensor_desc_ptr(
       {tensors, outputs}, {});
   const int64_t tensor_num = tensor_desc_ptr.get_tensor_num();
   if (tensor_num == 0)
@@ -51,32 +50,22 @@ void cnnl_foreach_unary_op(
 
   size_t workspace_size = 0;
   at::DataPtr workspace_ptr;
-  TORCH_CNNL_CHECK(cnnlGetForeachUnaryOpWorkspaceSize(
+  TORCH_CNNL_CHECK(cnnlGetForeachNormWorkspaceSize(
       handle, tensor_num, input_desc_array, &workspace_size));
   if (workspace_size != 0) {
     workspace_ptr =
         torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
   }
 
-  TORCH_CNNL_CHECK(cnnlForeachUnaryOp(
+  TORCH_CNNL_CHECK(cnnlForeachNorm(
       handle,
-      mode,
       tensor_num,
       input_desc_array,
       input_ptr_array,
+      &pnorm,
       workspace_ptr.get(),
       workspace_size,
       output_desc_array,
       output_ptr_array));
 }
-
-template void cnnl_foreach_unary_op<true>(
-    at::TensorList tensors,
-    at::TensorList outputs,
-    const cnnlForeachOpMode_t& mode);
-template void cnnl_foreach_unary_op<false>(
-    at::TensorList tensors,
-    at::TensorList outputs,
-    const cnnlForeachOpMode_t& mode);
-
 } // namespace torch_mlu::ops
