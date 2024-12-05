@@ -442,6 +442,14 @@ class TestDevice(TestCase):
         # Just call the can_device_access_peer API, to ensure that there are no errors occur.
         torch.mlu.can_device_access_peer(index_samples[0], index_samples[1])
 
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_get_device_properties(self):
+        isa_version = torch.mlu.get_device_properties(
+            torch.mlu.current_device()
+        ).isa_version
+        assert isinstance(isa_version, int)
+
 
 if __name__ == "__main__":
     unittest.main()
