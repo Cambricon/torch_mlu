@@ -85,7 +85,7 @@ class TestFusedOptimizer(unittest.TestCase):
             ref_param.append(torch.nn.Parameter(tensor.clone()))
             tst_param.append(torch.nn.Parameter(tensor.clone()))
         ref_optim = None
-        if options.get("adam_w_mode", False):
+        if options.get("adam_w_mode", False) is False:
             tst_options = copy.deepcopy(options)
             tst_options.pop("adam_w_mode")
             ref_optim = torch.optim.Adam(ref_param, **tst_options)
@@ -163,7 +163,7 @@ class TestFusedOptimizer(unittest.TestCase):
     def run_net_and_compare_weight(self, model, model_, input_size, grad_size):
         for options in self.options_list:
             tst_optim = None
-            if options.get("adam_w_mode", False):
+            if options.get("adam_w_mode", False) is False:
                 tst_options = copy.deepcopy(options)
                 tst_options.pop("adam_w_mode")
                 tst_optim = torch.optim.Adam(model.parameters(), **tst_options)
