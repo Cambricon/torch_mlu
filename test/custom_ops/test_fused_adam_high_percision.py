@@ -69,12 +69,10 @@ class ModelLinear(torch.nn.Module):
 
 
 class TestFusedOptimizer(unittest.TestCase):
-    # After new cnnl package, max_abs_diff and max_rel_diff need set
-    # to zero.
-    def setUp(self, max_abs_diff=1e-3, max_rel_diff=1, iters=7):
+    def setUp(self, max_abs_diff=0.0, iters=10):
         self.max_abs_diff = max_abs_diff
-        self.max_rel_diff = max_rel_diff
         self.iters = iters
+        os.environ["CNNL_ACC_SQRT"] = "1"
         os.environ["TORCH_MLU_APEX_ADAM_HIGH_PRECISION"] = "ON"
         torch.manual_seed(9876)
 
@@ -85,10 +83,10 @@ class TestFusedOptimizer(unittest.TestCase):
         ref_param = []
         tst_param = []
         for tensor in tensors:
-            ref_param.append(torch.nn.Parameter(tensor.clone()))
-            tst_param.append(torch.nn.Parameter(tensor.clone()))
+            ref_param.append(torch.nn.Parameter(tensor.clone().detach()))
+            tst_param.append(torch.nn.Parameter(tensor.clone().detach()))
         ref_optim = None
-        if options.get("adam_w_mode", False):
+        if options.get("adam_w_mode", False) == False:
             tst_options = copy.deepcopy(options)
             tst_options.pop("adam_w_mode")
             tst_options["foreach"] = False
@@ -106,8 +104,9 @@ class TestFusedOptimizer(unittest.TestCase):
 
     def gen_grad(self, ref_param, tst_param):
         for p_ref, p_tst in zip(ref_param, tst_param):
-            p_ref.grad = torch.rand_like(p_ref)
-            p_tst.grad = p_ref.grad
+            grad = torch.rand_like(p_ref)
+            p_ref.grad = grad.clone().detach()
+            p_tst.grad = grad.clone().detach()
 
     def gen_mixed_grad(self, ref_param, tst_param, scale=1.0):
         half_grads = []
@@ -117,17 +116,25 @@ class TestFusedOptimizer(unittest.TestCase):
         return half_grads
 
     def get_max_diff(self, ref_param, tst_param):
-        max_abs_diff = max_rel_diff = 0
+        max_abs_diff = 0
         for p_ref, p_tst in zip(ref_param, tst_param):
             max_abs_diff_p = (p_ref - p_tst).abs().max().item()
-            max_rel_diff_p = ((p_ref - p_tst) / p_ref).abs().max().item()
 
             if max_abs_diff_p > max_abs_diff:
                 max_abs_diff = max_abs_diff_p
-            if max_rel_diff_p > max_rel_diff:
-                max_rel_diff = max_rel_diff_p
 
-        return max_abs_diff, max_rel_diff
+        return max_abs_diff
+
+    def gather_opti_init_tensor(self, opti, name):
+        collect = []
+        for index1 in range(len(opti.param_groups)):
+            for index in range(len(opti.param_groups[index1]["params"])):
+                op1_p = opti.param_groups[index1]["params"][index]
+                if op1_p.grad is None:
+                    continue
+                op1_state = opti.state[op1_p]
+                collect.append(op1_state[name])
+        return collect
 
     def gen_single_type_test(
         self,
@@ -137,7 +144,7 @@ class TestFusedOptimizer(unittest.TestCase):
         *,
         skip_assert: bool = False
     ):
-        nelem = 278011
+        nelem = 27
         # Some ref and test optimizers may require different set of options.
         # This is a quick workaround to add that functionality while making
         # minimum changes in existing code.
@@ -147,11 +154,7 @@ class TestFusedOptimizer(unittest.TestCase):
             tensors = []
             for _ in range(tensor_num):
                 tensors.append(
-                    torch.clamp(
-                        torch.rand(nelem).to(dtype=param_type, device=device),
-                        min=0.01,
-                        max=100.0,
-                    )
+                    torch.rand(nelem).to(dtype=param_type, device=device),
                 )
             ref_param, tst_param, ref_optim, tst_optim = self.gen_param_optim(
                 tensors, options
@@ -163,14 +166,30 @@ class TestFusedOptimizer(unittest.TestCase):
                 tst_optim.step()
                 if skip_assert:
                     return
-                max_abs_diff, max_rel_diff = self.get_max_diff(ref_param, tst_param)
+                max_abs_diff = self.get_max_diff(ref_param, tst_param)
                 self.assertLessEqual(max_abs_diff, self.max_abs_diff)
-                self.assertLessEqual(max_rel_diff, self.max_rel_diff)
+
+                # compare exp_avg
+                ref_optim_exp_avg = self.gather_opti_init_tensor(ref_optim, "exp_avg")
+                tst_optim_exp_avg = self.gather_opti_init_tensor(tst_optim, "exp_avg")
+                max_abs_diff = self.get_max_diff(ref_optim_exp_avg, tst_optim_exp_avg)
+                self.assertLessEqual(max_abs_diff, self.max_abs_diff)
+                # compare exp_avg_sq
+                ref_optim_exp_avg_sq = self.gather_opti_init_tensor(
+                    ref_optim, "exp_avg_sq"
+                )
+                tst_optim_exp_avg_sq = self.gather_opti_init_tensor(
+                    tst_optim, "exp_avg_sq"
+                )
+                max_abs_diff = self.get_max_diff(
+                    ref_optim_exp_avg_sq, tst_optim_exp_avg_sq
+                )
+                self.assertLessEqual(max_abs_diff, self.max_abs_diff)
 
     def run_net_and_compare_weight(self, model, model_, input_size, grad_size):
         for options in self.options_list:
             tst_optim = None
-            if options.get("adam_w_mode", False):
+            if options.get("adam_w_mode", False) is False:
                 tst_options = copy.deepcopy(options)
                 tst_options["foreach"] = False
                 tst_options["fused"] = False
@@ -213,29 +232,24 @@ class TestFusedOptimizer(unittest.TestCase):
                     if isinstance(m, torch.nn.Conv2d) or isinstance(
                         m_, torch.nn.Linear
                     ):
-                        # After new cnnl package, max_abs_diff and max_rel_diff need set
-                        # to zero.
                         torch.testing.assert_close(
                             m.weight.cpu(),
                             m_.weight.cpu(),
-                            atol=1e-3,
-                            rtol=1e-3,
+                            atol=0.0,
+                            rtol=0.0,
                             equal_nan=True,
                         )
                         torch.testing.assert_close(
                             m.weight.grad.cpu(),
                             m_.weight.grad.cpu(),
-                            atol=1e-3,
-                            rtol=1e-3,
+                            atol=0.0,
+                            rtol=0.0,
                             equal_nan=True,
                         )
 
                 # Init for next iteration
                 tst_optim.zero_grad()
                 fused_optim.zero_grad()
-                # After new cnnl package, max_abs_diff and max_rel_diff need set
-                # to delete.
-                model_.load_state_dict(copy.deepcopy(model.state_dict()))
 
 
 class TestFusedAdam(TestFusedOptimizer):
@@ -314,10 +328,9 @@ class TestFusedAdam(TestFusedOptimizer):
                 self.gen_grad(ref_param, tst_param)
                 ref_optim.step()
                 tst_optim.step()
-                max_abs_diff, max_rel_diff = self.get_max_diff(ref_param, tst_param)
+                max_abs_diff = self.get_max_diff(ref_param, tst_param)
 
                 self.assertLessEqual(max_abs_diff, self.max_abs_diff)
-                self.assertLessEqual(max_rel_diff, self.max_rel_diff)
 
                 # Init for next iteration
                 ref_optim.zero_grad()
