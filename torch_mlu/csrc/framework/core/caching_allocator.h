@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #pragma once
 
 #include <atomic>
+#include <c10/util/flat_hash_map.h>
 #include <c10/core/Allocator.h>
 #include <c10/core/Device.h>
 #include <c10/util/ApproximateClock.h>
@@ -41,6 +42,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "aten/utils/exceptions.h"
 #include "framework/core/MLUStream.h"
+
+extern ska::flat_hash_map<void*, const char*> ptrMap_ipc;
 
 namespace torch_mlu::MLUCachingAllocator {
 

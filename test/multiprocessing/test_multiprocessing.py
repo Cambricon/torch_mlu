@@ -217,6 +217,23 @@ def temporarily_replace__sleep():
         torch.matmul(x, y)
 
 
+def _test_sub_map(q1, e1, q2):
+    for i in range(10):
+        ll = []
+        while True:
+            e1.wait()
+            e1.clear()
+            shape = q1.get(block=True)
+            if shape is None:
+                break
+            t1 = torch.randn(shape, dtype=torch.float32).mlu()
+            ll.append(t1)
+            t1.mul_(2)
+            q2.put(t1)
+        del ll
+        torch.mlu.empty_cache()
+
+
 class Multiprocessing(TestCase):
     def _test_sharing(self, ctx=mp, device="mlu", dtype=torch.float, repeat=1):
         def test_fill():
@@ -707,6 +724,43 @@ class Multiprocessing(TestCase):
         self.assertTrue(e0.query())
         p2c.put(0)
         p.join()
+
+    # See Note [ipc handle ptrmap]
+    # Here, it is simulated that after a piece of memory ptr_a is cnrtFreed, when the
+    # memory address applied again is the same as ptr_a, the internal ptrmap_ipc can
+    # update the key-value pair of {ptr, handle}. The order of the test is:
+
+    # 1) The tensor performs ipc communication and is stored in the list After the first for loop,
+    # the tensor memory is released uniformly. At this time, the internal ptrmap_ipc should sense
+    # that ptr is released and delete the key-value pair of {ptr, handle}
+
+    # 2) In the second for loop, the tensor creation will apply for the same memory address. At this time,
+    # because the previous key-value pair of ptr has been deleted in ptrmap_ipc, it is necessary to
+    # call cnrtAcquireMemHandle again to obtain the correct handle when performing ipc.
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_ipc_with_workround(self):
+        ctx = mp.get_context("spawn")
+        q1 = ctx.Queue(maxsize=1)
+        q2 = ctx.Queue(maxsize=1)
+        e1 = ctx.Event()
+        p1 = ctx.Process(
+            target=_test_sub_map,
+            args=(q1, e1, q2),
+        )
+        p1.start()
+        for i in range(10):
+            shape = (32, 1024, 1024)
+            num_iterations = 10
+            l = []
+            for j in range(num_iterations):
+                q1.put(shape, block=True)
+                e1.set()
+                l.append(q2.get(block=True))
+            del l
+            q1.put(None)
+            e1.set()
+        p1.join()
 
 
 if __name__ == "__main__":

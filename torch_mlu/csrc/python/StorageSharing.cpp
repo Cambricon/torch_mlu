@@ -11,6 +11,7 @@
 #include "python/MluIPCTypes.h"
 #include "aten/utils/exceptions.h"
 #include "python/StorageSharing.h"
+#include "framework/core/caching_allocator.h"
 
 static PyObject* THMPStorage_releaseIPCCounter(
     PyObject* _unused,
@@ -51,8 +52,6 @@ static PyObject* THMPStorage_releaseIPCCounter(
   END_HANDLE_TH_ERRORS
 }
 
-typedef ska::flat_hash_map<void*, const char*> PtrMap;
-static PtrMap ptrMap;
 static std::mutex ptrMapMutex;
 static PyObject* THMPStorage_shareMlu(PyObject* Module, PyObject* args) {
   HANDLE_TH_ERRORS
@@ -91,11 +90,14 @@ static PyObject* THMPStorage_shareMlu(PyObject* Module, PyObject* args) {
         storage.mutable_data(), &base_size);
     ptrdiff_t offset_bytes = (char*)storage.data() - (char*)base_ptr;
 
-    // TODO(mengpenghui): Currently, cnrt does not support repeated calls to
-    // cnrtAcquireMemHandle for the same base_ptr to obtain the handle.
-    // This is temporarily bypassed.
-    PtrMap::iterator it = ptrMap.find(base_ptr);
-    if (it == ptrMap.end()) {
+    // See Note [ipc handle ptrmap]
+    // Driver of v6.2 and earlier versions do not support
+    // repeated calls to cnrtAcquireMemHandle for the same base_ptr to obtain
+    // the handle. However, if ptr is cnrtFree, if the same ptr is input later,
+    // then need to get the handle again through cnrtAcquireMemHandle. This is
+    // temporarily bypassed.
+    auto it = ptrMap_ipc.find(base_ptr);
+    if (it == ptrMap_ipc.end()) {
       cnrtIpcMemHandle handle;
       TORCH_CNRT_CHECK(cnrtAcquireMemHandle(&handle, base_ptr));
       char* handleBytes = reinterpret_cast<char*>(&handle);
@@ -103,7 +105,7 @@ static PyObject* THMPStorage_shareMlu(PyObject* Module, PyObject* args) {
           PyBytes_FromStringAndSize(handleBytes, sizeof(cnrtIpcMemHandle));
       char* buffer = new char[sizeof(cnrtIpcMemHandle)];
       std::memcpy(buffer, handleBytes, sizeof(cnrtIpcMemHandle));
-      ptrMap.insert({base_ptr, buffer});
+      ptrMap_ipc.insert({base_ptr, buffer});
     } else {
       _handle = PyBytes_FromStringAndSize(it->second, sizeof(cnrtIpcMemHandle));
     }

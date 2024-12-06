@@ -28,7 +28,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <c10/util/flat_hash_map.h>
 #include <c10/util/irange.h>
 #include <c10/util/llvmMathExtras.h>
 #include <c10/util/static_tracepoint.h>
@@ -58,6 +57,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 TORCH_SDT_DEFINE_SEMAPHORE(malloc)
 TORCH_SDT_DEFINE_SEMAPHORE(free)
+
+// Note [ipc handle ptrmap]
+// Driver of v6.2 and earlier versions do not support
+// repeated calls to cnrtAcquireMemHandle for the same base_ptr to obtain
+// the handle. However, if ptr is cnrtFree, if the same ptr is input later,
+// then need to get the handle again through cnrtAcquireMemHandle. This is
+// temporarily bypassed. We use a global ptrMap_ipc to record the ipc-related
+// {ptr, handle}. When ptr is cnrtFreed, the key-value needs to be deleted from
+// ptrMap_ipc through removeKeyIfExists to ensure that the next time the ptr is
+// the same as the freed ptr, the handle can be retrieved through
+// cnrtAcquireMemHandle.
+ska::flat_hash_map<void*, const char*> ptrMap_ipc
+    __attribute__((visibility("default")));
+
+static std::mutex ptrMapMutex;
+void removeKeyIfExists(void* key) {
+  std::unique_lock<std::mutex> lock(ptrMapMutex);
+  auto it = ptrMap_ipc.find(key);
+  if (it != ptrMap_ipc.end()) {
+    ptrMap_ipc.erase(it);
+  }
+  lock.unlock();
+}
 
 namespace torch_mlu::MLUCachingAllocator {
 
@@ -2312,6 +2334,7 @@ class DeviceCachingAllocator {
     TORCH_CNRT_CHECK(cnrtSyncDevice());
     // std::lock_guard<std::mutex> lock(mlu_free_mutex);
     TORCH_CNRT_CHECK(cnrtFree((void*)chunk->ptr));
+    removeKeyIfExists((void*)chunk->ptr);
     total_allocated_memory -= chunk->size;
 
     auto* pool = chunk->pool;
