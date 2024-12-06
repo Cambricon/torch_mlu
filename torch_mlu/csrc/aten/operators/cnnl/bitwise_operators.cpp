@@ -61,12 +61,6 @@ void bitwise_operators_impl(
   auto self = iter.input(0);
   auto other = iter.input(1);
 
-  // only support int64 when optype is CNNL_CYCLE_BAND_OP, CNNL_CYCLE_BOR_OP or
-  // CNNL_CYCLE_BXOR_OP
-  if (output.scalar_type() == at::kLong &&
-      (op == CNNL_BLEFT_SHIFT_OP_V2 || op == CNNL_BRIGHT_SHIFT_OP_V2)) {
-    output = at::empty_like(output, output.options().dtype(at::kInt));
-  }
   // self and other must have the same dtype as output
   if (other.scalar_type() != output.scalar_type()) {
     other = other.to(output.scalar_type());
@@ -84,7 +78,6 @@ void bitwise_operators_impl(
     AT_DISPATCH_INTEGRAL_TYPES(iter.dtype(), "mlu bitwise shift op:", [&]() {
       cnnl_bitwise_op_out_internal(output, self, other, op);
     });
-    cast_int_to_long_if_needed(output, iter.output(0));
   }
 }
 
@@ -111,11 +104,8 @@ void rshift_mlu_kernel(at::TensorIteratorBase& iter) {
 void bitwise_not_mlu_kernel(at::TensorIteratorBase& iter) {
   auto output = iter.output(0);
   auto self = iter.input(0);
-  self = cast_long_to_int_if_needed(self);
-  output = create_int_tensor_if_needed(output);
   at::Tensor input2;
   cnnl_bitwise_op_out_internal(output, self, input2, CNNL_BNOT_OP);
-  cast_int_to_long_if_needed(output, iter.output(0));
 }
 
 at::Tensor cnnl___lshift__(const at::Tensor& self, const at::Scalar& other) {

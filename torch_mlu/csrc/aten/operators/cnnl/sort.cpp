@@ -76,10 +76,8 @@ void sort_mlu_kernel(
   if (self.numel() == 0)
     return;
   auto memory_format = self.suggest_memory_format();
-  auto self_contiguous =
-      cast_long_to_int_if_needed(cnnl_contiguous(self, memory_format));
-  auto values_contiguous =
-      create_int_tensor_if_needed(cnnl_contiguous(values, memory_format));
+  auto self_contiguous = cnnl_contiguous(self, memory_format);
+  auto values_contiguous = cnnl_contiguous(values, memory_format);
   at::Tensor indices_contiguous;
   if (indices_support_long) {
     indices_contiguous = cnnl_contiguous(indices, memory_format);
