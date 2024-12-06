@@ -550,6 +550,14 @@ class TestMulOps(TestCase):
             ouput_mlu = torch.mul(a.mlu(), b.mlu())
             self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
 
+            ouput = torch.mul(2, b)
+            ouput_mlu = torch.mul(2, b.mlu())
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+
+            ouput = torch.mul(b, 2)
+            ouput_mlu = torch.mul(b.mlu(), 2)
+            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+
 
 if __name__ == "__main__":
     run_tests()
