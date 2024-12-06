@@ -10,7 +10,8 @@
 
 int main(int argc, const char* argv[]) {
   if (argc != 2) {
-    TORCH_CHECK(false, "Please input the model name!");
+    std::cerr << "Please input the model name!\n";
+    return 0;
   }
 
   std::cout << "module: " << argv[1] << std::endl;

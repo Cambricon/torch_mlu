@@ -60,8 +60,8 @@ void run_model_in_thread(
 
 int main(int argc, char* argv[]) {
   if (argc != 4) {
-    TORCH_CHECK(
-        false, "Usage: program <model_path> <num_threads> <loop_count>");
+    std::cerr << "Usage: program <model_path> <num_threads> <loop_count>\n";
+    return 0;
   }
 
   std::string pt_model_path = argv[1];
