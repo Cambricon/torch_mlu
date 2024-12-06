@@ -7,7 +7,9 @@
 python resnet_trace.py
 ```
 
-2. 编译torch_mlu_demo, 注意需要手动修改`CMakeLists.txt`中的`torch_path`及`torch_mlu_path`所指向的路径, 以及`build.sh`中`DCMAKE_PREFIX_PATH`所指向的路径.
+2. （可选）设置环境变量`TORCH_MLU_HOME`指向编译`torch_mlu`的目录或者`torch_mlu`wheel包所在的目录，`Torch_DIR`指向编译`torch`的目录或者`torch`wheel包所在的目录，如果已安装`torch`以及`torch_mlu`的wheel包则可跳过此步骤.
+
+3. 编译torch_mlu_demo.
 ```
 mkdir build
 cp build.sh build/
@@ -17,13 +19,8 @@ cd build
 
 ## 执行demo
 
-1. 设置动态库地址来查找`libtorch.so`.
+1. 执行demo.
 ```
-export LD_LIBRARY_PATH=path/to/your/pytorch/torch/lib:$LD_LIBRARY_PATH
-```
-
-2. 执行demo.
-```
-#program <model_path>
-./libtorch_resnet ../resnet_model.pt
+cp ../run.sh .
+./run.sh
 ```
