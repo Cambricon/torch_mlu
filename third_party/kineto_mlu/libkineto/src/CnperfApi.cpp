@@ -304,6 +304,7 @@ void CnperfApi::process(
 
   CNPERF_CALL(cnperfParserDestroy(parser_));
   CNPERF_CALL(cnperfSessionDestroy(session_));
+  CNPERF_CALL(cnperfConfigDestroy(config_));
 }
 
 void CnperfApi::clearTraceData() {

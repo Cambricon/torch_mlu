@@ -13,6 +13,7 @@ static const std::vector<std::string> SELECTED_PMU_EVENTS_LIST = {
   "llc__eviction",
   "tp_core__lt_cycles",
   "tp_core__csimd_post_cycles",
+  "tp_core__vfu_computing_cycles",
   "tp_core__alu_cycles",
   "tp_core__mv_inst_cycles",
   "tp_core__read_bytes",

@@ -445,10 +445,15 @@ class CounterType(IntEnum):
 
 class DeviceUtils:
     def __init__(
-        self, header: str = None, counter: str = None, counter_type: CounterType = None
+        self,
+        header: str = None,
+        counters: List[str] = None,
+        counter_type: CounterType = None,
     ):
         self.header: str = header
-        self.counter: str = counter
+        # The counter names may vary across different boards,
+        # with priority from high to low.
+        self.counters: List[str] = counters
         self.counter_type: CounterType = counter_type
 
 
@@ -497,44 +502,48 @@ class DeviceNode(BaseNode):
         if pmus:
             if not DeviceNode.header_init:
                 DeviceNode.utils_list = [
-                    DeviceUtils("lt_utils(%)", "tp_core__lt_cycles", CounterType.IPU),
+                    DeviceUtils("lt_utils(%)", ["tp_core__lt_cycles"], CounterType.IPU),
                     DeviceUtils(
-                        "ct_utils(%)", "tp_core__csimd_post_cycles", CounterType.IPU
+                        "ct_utils(%)",
+                        ["tp_core__csimd_post_cycles", "tp_core__vfu_computing_cycles"],
+                        CounterType.IPU,
                     ),
                     DeviceUtils(
                         "dram_read_utils(%)",
-                        "tp_core__dram_read_cycles",
+                        ["tp_core__dram_read_cycles"],
                         CounterType.IPU,
                     ),
                     DeviceUtils(
                         "dram_write_utils(%)",
-                        "tp_core__dram_write_cycles",
+                        ["tp_core__dram_write_cycles"],
                         CounterType.IPU,
                     ),
                     DeviceUtils(
                         "bandwidth_read_utils(%)",
-                        "tp_cluster__read_bytes",
+                        ["tp_cluster__read_bytes"],
                         CounterType.BANDWIDTH,
                     ),
                     DeviceUtils(
                         "bandwidth_write_utils(%)",
-                        "tp_cluster__write_bytes",
+                        ["tp_cluster__write_bytes"],
                         CounterType.BANDWIDTH,
                     ),
                     DeviceUtils(
                         "memcore_io_read_utils(%)",
-                        "tp_memcore__dram_read_cycles",
+                        ["tp_memcore__dram_read_cycles"],
                         CounterType.MEMCORE,
                     ),
                     DeviceUtils(
                         "memcore_io_write_utils(%)",
-                        "tp_memcore__dram_write_cycles",
+                        ["tp_memcore__dram_write_cycles"],
                         CounterType.MEMCORE,
                     ),
                     DeviceUtils(
-                        "mv_utils(%)", "tp_core__mv_inst_cycles", CounterType.IPU
+                        "mv_utils(%)", ["tp_core__mv_inst_cycles"], CounterType.IPU
                     ),
-                    DeviceUtils("alu_utils(%)", "tp_core__alu_cycles", CounterType.IPU),
+                    DeviceUtils(
+                        "alu_utils(%)", ["tp_core__alu_cycles"], CounterType.IPU
+                    ),
                 ]
                 DeviceNode.utils_header = [
                     utils.header for utils in DeviceNode.utils_list
@@ -562,7 +571,11 @@ class DeviceNode(BaseNode):
             get_utils = lambda x, y: round(x / y * 100, 3) if y != 0 else None
 
             for utils in DeviceNode.utils_list:
-                if utils.counter in pmus:
+                counter_names = [
+                    counter for counter in utils.counters if counter in pmus
+                ]
+                counter_name = counter_names[0] if len(counter_names) > 0 else None
+                if counter_name in pmus:
                     total = 0
                     if utils.counter_type is CounterType.IPU:
                         total = total_cycles_approximation
@@ -570,7 +583,7 @@ class DeviceNode(BaseNode):
                         total = total_cycles_approximation / 4
                     elif utils.counter_type is CounterType.BANDWIDTH:
                         total = total_bandwidth_approximation
-                    self.utils_data.append(get_utils(pmus[utils.counter], total))
+                    self.utils_data.append(get_utils(pmus[counter_name], total))
                 else:
                     self.utils_data.append("N/A")
 
