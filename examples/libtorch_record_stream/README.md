@@ -24,12 +24,6 @@ cp ../run.sh .
 2. 标准输出流输出如下内容则证明运行成功.
 ```
 Allocation not reused.
-The value of reuslt:
- 1
- 2
- 3
- 4
-[ mluFloatType{4} ]
 Allocation reused.
 The demo ran successfully.
 ```

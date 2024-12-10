@@ -8,14 +8,11 @@
 
 int main() {
   auto device = at::Device("mlu:0");
-  auto t = torch::tensor({1, 2, 3, 4}).pin_memory();
+  auto t = at::randn({1024, 1024}).pin_memory();
   auto result = at::randn(t.sizes()).to(device);
   auto stream = torch_mlu::getStreamFromPool();
   void* tensor_ptr = nullptr;
-  auto input_x =
-      at::randn({1024, 1024}, at::kFloat, c10::nullopt, device, c10::nullopt);
-  auto input_y =
-      at::randn({1024, 1024}, at::kFloat, c10::nullopt, device, c10::nullopt);
+  auto input_x = at::randn({1024, 1024}).to(device);
 
   auto event = torch_mlu::MLUEvent();
   {
@@ -34,7 +31,10 @@ int main() {
     // caching allocator tries to malloc.
     tmp.record_stream(torch_mlu::getCurrentMLUStream());
     for (int i = 0; i < 10000; i++) {
-      at::matmul(input_x, input_y);
+      // out style op is needed if tmp used as output
+      // the loop needs to be long enough so that that chunk wont be freed when
+      // tmps2 is created.
+      at::matmul_out(tmp, tmp, input_x);
     }
     result.copy_(tmp);
   }
@@ -47,13 +47,11 @@ int main() {
     std::cout << "Allocation not reused.\n";
   }
 
-  std::cout << "The value of reuslt:\n" << result << "\n";
-
   // Event E1 is ready, the chunk of memory of tmp will be reused.
   torch_mlu::getCurrentMLUStream().synchronize();
   {
     torch_mlu::mlu::MLUStreamGuard guard(stream);
-    auto tmp3 = torch::tensor(t.sizes()).to(device);
+    auto tmp3 = at::randn(t.sizes()).to(device);
     TORCH_CHECK_EQ(tmp3.data_ptr(), tensor_ptr);
     std::cout << "Allocation reused.\n";
   }
