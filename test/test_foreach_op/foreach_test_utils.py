@@ -23,7 +23,10 @@ class ForeachFuncWrapper:
         with torch.profiler.profile() as p:
             actual = self.func(*inputs, **kwargs)
         keys = tuple([e.key for e in p.key_averages()])
-        mta_called = any("ForeachBinaryOp" in k or "ForeachUnaryOp" in k for k in keys)
+        mta_called = any(
+            "ForeachBinaryOp" in k or "ForeachUnaryOp" in k or "ForeachLerp" in k
+            for k in keys
+        )
         assert mta_called == True
         return inputs[0] if self.is_inplace else actual
 
@@ -34,6 +37,8 @@ class ForeachType(Enum):
     BinaryOpWithScalar = auto()
     BinaryOpWithScalarList = auto()
     BinaryOpWithScalarTensor = auto()
+    LerpWithTensor = auto()
+    LerpWithScalar = auto()
 
 
 class ForeachOpTest(object):
@@ -138,6 +143,24 @@ class ForeachOpTest(object):
             return (left_inputs[0], cpu_scalar_tensor), (
                 left_inputs[1],
                 mlu_scalar_tensor,
+            )
+        elif self.foreach_type == ForeachType.LerpWithTensor:
+            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            right_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            weights = self.generate_cpu_and_mlu_tenors(dtype)
+            return (left_inputs[0], right_inputs[0], weights[0]), (
+                left_inputs[1],
+                right_inputs[1],
+                weights[1],
+            )
+        elif self.foreach_type == ForeachType.LerpWithScalar:
+            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            right_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            weight_scalr_inputs = self.generate_scalar()
+            return (left_inputs[0], right_inputs[0], weight_scalr_inputs[0]), (
+                left_inputs[1],
+                right_inputs[1],
+                weight_scalr_inputs[1],
             )
         else:
             raise Exception("Invalid ForeachType")

@@ -1555,6 +1555,16 @@ void cnnl_foreach_binary_tensors_op(
     const cnnlForeachOpMode_t& op_mode,
     const cnnlForeachBinaryMode_t& mode);
 
+template <typename scalar_t, bool isInplace>
+void cnnl_foreach_lerp_op(
+    at::TensorList tensors1,
+    at::TensorList tensors2,
+    at::TensorList tensors3,
+    at::TensorList outputs,
+    const at::ArrayRef<at::Scalar>& scalar_list,
+    const scalar_t& scalar,
+    const cnnlForeachLerpMode_t& mode);
+
 std::tuple<at::Tensor, at::Tensor, at::Tensor, std::vector<at::Tensor>>
 cnnl_rnn_backward_internal(
     const at::Tensor& input_r,

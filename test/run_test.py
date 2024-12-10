@@ -31,6 +31,7 @@ TESTS = [
     "custom_ops/",
     "test_foreach_op/test_foreach_binary",
     "test_foreach_op/test_foreach_unary",
+    "test_foreach_op/test_foreach_lerp",
     "torch/test_save_and_load",
     "torch/test_random",
     "distributed/test_distributed",
