@@ -410,51 +410,47 @@ class TestConv3dOps(TestCase):
     )
     @largeTensorTest("46GB")
     def test_conv3d_bp_large(self):
-        # [CNNL] [Error]:[cnnlConvolutionBackwardData] overflow max supported tensor num 2147483647,
-        # now tensor's total num is 4299161600.
-        ref_msg = "CNNL error: CNNL_STATUS_NOT_SUPPORTED"
-        with self.assertRaisesRegex(RuntimeError, ref_msg):
-            b = False
-            N = 4 * 1025
-            Ci = 32
-            D = 32
-            DHW = 32
-            Co = 32
-            K = (1, 2, 2)
-            pad = 1
-            stride = (1, 2, 2)
-            dilation = (1, 1, 1)
-            groups = 1
-            dtype = torch.half
-            err = 0.003
-            x = torch.randn(N, Ci, D, DHW, DHW, dtype=dtype, requires_grad=True)
-            cm = nn.Conv3d(
-                Ci,
-                Co,
-                K,
-                stride=stride,
-                bias=b,
-                dilation=dilation,
-                padding=pad,
-                groups=groups,
-            ).to(dtype=dtype)
-            cpu_cm = copy.deepcopy(cm).float()
-            output_cpu = cpu_cm(x.float())
-            grad_cpu = torch.randn(output_cpu.shape, dtype=dtype)
-            output_cpu.backward(grad_cpu)
-            x_grad_cpu = copy.deepcopy(x.grad.float())
-            w_grad_cpu = copy.deepcopy(cpu_cm.weight.grad.float())
-            x.grad.zero_()
-            qcm = cm.mlu()
-            output_mlu = qcm(to_mlu(x))
-            output_mlu.backward(to_mlu(grad_cpu))
-            x_grad_mlu = x.grad.contiguous().float()
-            w_grad_mlu = qcm.weight.grad.cpu().contiguous().float()
-            self.assertTensorsEqual(
-                output_cpu, output_mlu.cpu().contiguous().float(), err, use_MSE=True
-            )
-            self.assertTensorsEqual(x_grad_cpu, x_grad_mlu, err, use_MSE=True)
-            self.assertTensorsEqual(w_grad_cpu, w_grad_mlu, err, use_MSE=True)
+        b = False
+        N = 4 * 1025
+        Ci = 32
+        D = 32
+        DHW = 32
+        Co = 32
+        K = (1, 2, 2)
+        pad = 1
+        stride = (1, 2, 2)
+        dilation = (1, 1, 1)
+        groups = 1
+        dtype = torch.half
+        err = 0.003
+        x = torch.randn(N, Ci, D, DHW, DHW, dtype=dtype, requires_grad=True)
+        cm = nn.Conv3d(
+            Ci,
+            Co,
+            K,
+            stride=stride,
+            bias=b,
+            dilation=dilation,
+            padding=pad,
+            groups=groups,
+        ).to(dtype=dtype)
+        cpu_cm = copy.deepcopy(cm).float()
+        output_cpu = cpu_cm(x.float())
+        grad_cpu = torch.randn(output_cpu.shape, dtype=dtype)
+        output_cpu.backward(grad_cpu)
+        x_grad_cpu = copy.deepcopy(x.grad.float())
+        w_grad_cpu = copy.deepcopy(cpu_cm.weight.grad.float())
+        x.grad.zero_()
+        qcm = cm.mlu()
+        output_mlu = qcm(to_mlu(x))
+        output_mlu.backward(to_mlu(grad_cpu))
+        x_grad_mlu = x.grad.contiguous().float()
+        w_grad_mlu = qcm.weight.grad.cpu().contiguous().float()
+        self.assertTensorsEqual(
+            output_cpu, output_mlu.cpu().contiguous().float(), err, use_MSE=True
+        )
+        self.assertTensorsEqual(x_grad_cpu, x_grad_mlu, err, use_MSE=True)
+        self.assertTensorsEqual(w_grad_cpu, w_grad_mlu, err, use_MSE=True)
 
 
 if __name__ == "__main__":
