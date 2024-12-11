@@ -1406,12 +1406,18 @@ aten:
   - func: _foreach_add_.List
   - func: _foreach_add.ScalarList
   - func: _foreach_add_.ScalarList
+  - func: _foreach_lerp.Scalar
+  - func: _foreach_lerp_.Scalar
+  - func: _foreach_lerp.List
+  - func: _foreach_lerp_.List
   - func: _foreach_sub.Scalar
   - func: _foreach_sub_.Scalar
   - func: _foreach_sub.List
   - func: _foreach_sub_.List
   - func: _foreach_sub.ScalarList
   - func: _foreach_sub_.ScalarList
+  - func: _foreach_sqrt
+  - func: _foreach_sqrt_
   - func: _foreach_zero_
 
   - func: _coalesce

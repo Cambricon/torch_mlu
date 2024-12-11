@@ -1567,6 +1567,16 @@ void cnnl_foreach_binary_tensors_op(
     const cnnlForeachOpMode_t& op_mode,
     const cnnlForeachBinaryMode_t& mode);
 
+template <typename scalar_t, bool isInplace>
+void cnnl_foreach_lerp_op(
+    at::TensorList tensors1,
+    at::TensorList tensors2,
+    at::TensorList tensors3,
+    at::TensorList outputs,
+    const at::ArrayRef<at::Scalar>& scalar_list,
+    const scalar_t& scalar,
+    const cnnlForeachLerpMode_t& mode);
+
 void cnnl_rrelu_with_noise_internal(
     at::Tensor& output,
     const at::Tensor& noise,

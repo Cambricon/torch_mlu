@@ -129,6 +129,14 @@
   - api: torch._foreach_frac_
     supported: false
 
+  - api: torch._foreach_lerp
+    supported: true
+    limitations: 不支持使能torch.mlu.MLUGraph下运行。
+
+  - api: torch._foreach_lerp_
+    supported: true
+    limitations: 不支持使能torch.mlu.MLUGraph下运行。
+
   - api: torch._foreach_lgamma
     supported: false
 
@@ -196,10 +204,10 @@
     supported: false
 
   - api: torch._foreach_sqrt
-    supported: false
+    supported: true
 
   - api: torch._foreach_sqrt_
-    supported: false
+    supported: true
 
   - api: torch._foreach_tan
     supported: false

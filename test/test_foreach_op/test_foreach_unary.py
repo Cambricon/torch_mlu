@@ -19,9 +19,20 @@ logging.basicConfig(level=logging.DEBUG)
 class TestUnaryForeachOp(TestCase):
     # @unittest.skip("not test")
     @testinfo()
-    def test_foreach_unary(self):
+    def test_foreach_unary_equal(self):
         test_func = ForeachOpTest(torch._foreach_zero_, ForeachType.UnaryOp, err=0.0)
         test_func(self.assertTrue, self.assertTensorsEqual)
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_foreach_unary_has_err(self):
+        api_list = [
+            torch._foreach_sqrt,
+            torch._foreach_sqrt_,
+        ]
+        for api_func in api_list:
+            test_func = ForeachOpTest(api_func, ForeachType.UnaryOp, err=0.003)
+            test_func(self.assertTrue, self.assertTensorsEqual)
 
     # TODO(CNNLCORE-21331): Foreach op not support graph now.
     @unittest.skip("not test")
