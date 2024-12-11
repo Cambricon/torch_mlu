@@ -158,7 +158,6 @@ class TestUpsampleNearest1dOp(TestCase):
             )
 
     @testinfo()
-    @unittest.skip("not test, see CNNLCORE-18736")
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )

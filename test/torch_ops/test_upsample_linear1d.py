@@ -148,8 +148,9 @@ class TestUpsampleLinear1dOp(TestCase):
         grad_cpu = x.grad
         out_mlu.backward(grad.mlu())
         grad_mlu = x_mlu.grad
-        # TODO: see CNNLCORE-18736, accuracy problem when input large tensor
-        # self.assertTensorsEqual(out_cpu.float(), out_mlu.cpu().float(), 0.003, use_MSE=True)
+        self.assertTensorsEqual(
+            out_cpu.float(), out_mlu.cpu().float(), 0.003, use_MSE=True
+        )
         self.assertTensorsEqual(
             grad_cpu.float(), grad_mlu.cpu().float(), 0.003, use_MSE=True
         )

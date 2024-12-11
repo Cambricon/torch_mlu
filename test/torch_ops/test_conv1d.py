@@ -265,7 +265,6 @@ class TestConvOps(TestCase):
                 self.assertEqual(out.size(), out_no_detach.size(), message)
 
     @testinfo()
-    @unittest.skip("not test, see CNNLCORE-18739")
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
@@ -302,13 +301,11 @@ class TestConvOps(TestCase):
         self.assertTensorsEqual(output_cpu, output_mlu.cpu().float(), er, use_MSE=True)
 
     @testinfo()
-    @unittest.skip("not test, see CNNLCORE-18739")
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
     @largeTensorTest("57GB")
     def test_conv1d_bp_large(self):
-        # TODO: Floating point exception (core dumped)
         bias_t = False
         N = 4 * 1025
         Ci = 32 * 1024
@@ -319,34 +316,41 @@ class TestConvOps(TestCase):
         stride = 1
         dilation = 1
         groups = 1
-        dtype = torch.half
-        x = torch.randn(N, Ci, HW, dtype=dtype, requires_grad=True)
-        er = 0.003
-        cm = nn.Conv1d(
-            Ci,
-            Co,
-            K,
-            bias=bias_t,
-            stride=stride,
-            padding=padding,
-            dilation=dilation,
-            groups=groups,
-        ).to(dtype=dtype)
-        cm_cpu = copy.deepcopy(cm).float()
-        output_cpu = cm_cpu(x.float())
-        grad = torch.randn(output_cpu.shape, dtype=dtype)
-        output_cpu.backward(grad.float())
-        x_grad_cpu = copy.deepcopy(x.grad.float())
-        w_grad_cpu = copy.deepcopy(cm_cpu.weight.grad.float())
-        x.grad.zero_()
-        cm.mlu()
-        output_mlu = cm(to_mlu(x))
-        output_mlu.backward(to_mlu(grad))
-        x_grad_mlu = x.grad.cpu().float()
-        w_grad_mlu = cm.weight.grad.cpu().float()
-        self.assertTensorsEqual(output_cpu, output_mlu.cpu().float(), er, use_MSE=True)
-        self.assertTensorsEqual(x_grad_cpu, x_grad_mlu, er, use_MSE=True)
-        self.assertTensorsEqual(w_grad_cpu, w_grad_mlu, er, use_MSE=True)
+        dtypes = [torch.half, torch.float]
+        for dtype in dtypes:
+            x = torch.randn(N, Ci, HW, dtype=dtype, requires_grad=True)
+            er = 0.003
+            cm = nn.Conv1d(
+                Ci,
+                Co,
+                K,
+                bias=bias_t,
+                stride=stride,
+                padding=padding,
+                dilation=dilation,
+                groups=groups,
+            ).to(dtype=dtype)
+            cm_cpu = copy.deepcopy(cm).float()
+            output_cpu = cm_cpu(x.float())
+            grad = torch.randn(output_cpu.shape, dtype=dtype)
+            output_cpu.backward(grad.float())
+            x_grad_cpu = copy.deepcopy(x.grad.float())
+            w_grad_cpu = copy.deepcopy(cm_cpu.weight.grad.float())
+            x.grad.zero_()
+            cm.mlu()
+            output_mlu = cm(to_mlu(x))
+            output_mlu.backward(to_mlu(grad))
+            x_grad_mlu = x.grad.cpu().float()
+            w_grad_mlu = cm.weight.grad.cpu().float()
+            self.assertTensorsEqual(
+                output_cpu, output_mlu.cpu().float(), er, use_MSE=True
+            )
+            self.assertTensorsEqual(x_grad_cpu, x_grad_mlu, er, use_MSE=True)
+            self.assertTensorsEqual(w_grad_cpu, w_grad_mlu, er, use_MSE=True)
+            del x
+            del output_mlu
+            del x_grad_mlu
+            del w_grad_mlu
 
 
 if __name__ == "__main__":

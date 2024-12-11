@@ -339,7 +339,8 @@ void cnnl_median_internal(
     int64_t dim,
     at::Tensor& values,
     at::Tensor& indices,
-    bool is_dim_none);
+    bool is_dim_none,
+    bool ignore_nan);
 
 void cnnl_addmm_out_internal(
     at::Tensor& result,

@@ -16,6 +16,9 @@ from common_utils import (
     testinfo,
     TestCase,
     read_card_info,
+    run_tests,
+    TEST_LARGETENSOR,
+    largeTensorTest,
 )  # pylint: disable=C0413,C0411
 
 TEST_BFLOAT16 = read_card_info()
@@ -81,25 +84,6 @@ class TestMedianOps(TestCase):
         self.assertTensorsEqual(out_cpu, out_mlu.cpu(), 0.003, use_MSE=True)
 
     # @unittest.skip("not test")
-    @testinfo()
-    def test_median_exception(self):
-        a = torch.randn(167936, 2).to("mlu")
-        b = torch.randn(335872, 2).to(torch.half).to("mlu")
-        ref_msg = (
-            f"MLU median: elements number of input tensor should be less than 167936"
-        )
-        with self.assertRaisesRegex(RuntimeError, ref_msg):
-            torch.median(a)
-        ref_msg = (
-            f"MLU median: elements number of input tensor should be less than 335872"
-        )
-        with self.assertRaisesRegex(RuntimeError, ref_msg):
-            torch.median(b)
-        ref_msg = "MLU median: elements number of input tensor in the dimension 0 should be less than 41984"
-        with self.assertRaisesRegex(RuntimeError, ref_msg):
-            torch.median(a, dim=0)
-
-    # @unittest.skip("not test")
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     @testinfo()
     def test_median_bfloat16(self):
@@ -108,6 +92,34 @@ class TestMedianOps(TestCase):
         out_mlu = torch.median(self.to_mlu(x))
         self.assertTensorsEqual(out_cpu, out_mlu.cpu(), 0.003, use_MSE=True)
 
+    @unittest.skip("TODO: CNNLCORE-22873")
+    @testinfo()
+    @unittest.skipUnless(
+        TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
+    )
+    @largeTensorTest("26GB")
+    def test_median_large(self):
+        x = torch.tensor([4, 1026, 1024, 1024], dtype=torch.float)
+        out_cpu = torch.median(x)
+        out_mlu = torch.median(self.to_mlu(x))
+        self.assertTensorsEqual(out_cpu, out_mlu.cpu(), 0.003, use_MSE=True)
+
+    # @unittest.skip("not test")
+    @testinfo()
+    @unittest.skipUnless(
+        TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
+    )
+    def test_median_dim_large(self):
+        x = torch.tensor([4, 1026, 1024, 1024], dtype=torch.float)
+        shape_list = [[4, 1026, 1024, 1024]]
+        type_list = [True, False]
+        for test_type, shape in itertools.product(type_list, shape_list):
+            x = torch.randn(shape, dtype=torch.float)
+            out_cpu = torch.median(x, dim=1, keepdim=test_type)
+            out_mlu = torch.median(self.to_mlu(x), dim=1, keepdim=test_type)
+            self.assertTensorsEqual(out_cpu[0], out_mlu[0].cpu(), 0.003, use_MSE=True)
+            self.assertTensorsEqual(out_cpu[1], out_mlu[1].cpu())
+
 
 if __name__ == "__main__":
-    unittest.main()
+    run_tests()
