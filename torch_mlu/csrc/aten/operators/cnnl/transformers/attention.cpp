@@ -420,7 +420,7 @@ at::Tensor preprocess_mask(
     const at::Tensor& query,
     const at::Tensor& key,
     const at::Tensor& value) {
-  at::Tensor result_mask = mask;
+  at::Tensor result_mask = cnnl_contiguous(mask);
   return result_mask.expand_symint(
       {query.sym_size(0),
        query.sym_size(1),
@@ -1017,7 +1017,7 @@ cnnl__efficient_attention_forward(
   at::Tensor value_reshaped = v_t_c.view({Nnz_kv, num_heads, embedding_value});
   std::optional<Tensor> bias_c;
   if (bias.has_value()) {
-    bias_c = cnnl_contiguous(bias.value());
+    bias_c = bias.value();
   }
   const auto softmax_scale =
       sdp::calculate_scale(query_reshaped, scale).as_float_unchecked();
@@ -1206,7 +1206,7 @@ cnnl__efficient_attention_backward(
   at::Tensor value_reshaped = v_c.view({Nnz_kv, num_heads, embedding_value});
   std::optional<Tensor> bias_c;
   if (bias.has_value()) {
-    bias_c = cnnl_contiguous(bias.value());
+    bias_c = bias.value();
   }
   at::Tensor grad_q = at::empty_like(query_reshaped);
   at::Tensor grad_k = at::empty_like(key_reshaped);
