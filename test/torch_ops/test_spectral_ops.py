@@ -473,6 +473,38 @@ class TestSpectralOps(TestCase):
 
     # @unittest.skip("not test")
     @testinfo()
+    def test_stft_edge_case(self):
+        wav_cpu = torch.randn([4, 1, 65536])
+        wav_mlu = wav_cpu.mlu()
+        window_length = 2048
+        hop_length = 512
+        window_cpu = torch.randn([2048])
+        window_mlu = window_cpu.mlu()
+        T = 65536
+
+        output_cpu = torch.stft(
+            wav_cpu.reshape(-1, T),
+            n_fft=window_length,
+            hop_length=hop_length,
+            window=window_cpu,
+            return_complex=True,
+            center=True,
+        )
+        result_cpu = torch.view_as_real(output_cpu)
+
+        output_mlu = torch.stft(
+            wav_mlu.reshape(-1, T),
+            n_fft=window_length,
+            hop_length=hop_length,
+            window=window_mlu,
+            return_complex=True,
+            center=True,
+        )
+        result_mlu = torch.view_as_real(output_mlu)
+        self.assertTensorsEqual(result_cpu, result_mlu.cpu(), 0.003)
+
+    # @unittest.skip("not test")
+    @testinfo()
     def test_fft_c2c_exception(self):
         x = torch.randn(0, 16, device="mlu", dtype=torch.complex64)
         ref_msg = "currently do not support empty Tensor input"
