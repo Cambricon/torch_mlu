@@ -194,6 +194,20 @@ class TestReflectionPadOp(TestCase):
             self.assertTensorsEqual(x.grad, x_mlu.grad.float(), err, use_MSE=True)
 
     # @unittest.skip("not test")
+    @testinfo()
+    def test_pad_edge_case(self):
+        input_cpu = torch.randn([4, 1, 65536]).as_strided(
+            size=[4, 1, 65536], stride=[65536, 65536, 1]
+        )
+        input_mlu = input_cpu.mlu()
+        n_pad = 2
+
+        output_cpu = torch.nn.functional.pad(input_cpu, (0, n_pad), "reflect")
+        output_mlu = torch.nn.functional.pad(input_mlu, (0, n_pad), "reflect")
+
+        self.assertTensorsEqual(output_cpu, output_mlu.cpu(), 0.003, use_MSE=True)
+
+    # @unittest.skip("not test")
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     @testinfo()
     def test_reflection_pad1d_bfloat16(self):
