@@ -1,7 +1,16 @@
 diff --git a/aten/src/ATen/native/transformers/attention.cpp b/aten/src/ATen/native/transformers/attention.cpp
-index 81498f97ff..63e9bb8d0c 100644
+index 81498f97ffa..6640eae8da2 100644
 --- a/aten/src/ATen/native/transformers/attention.cpp
 +++ b/aten/src/ATen/native/transformers/attention.cpp
+@@ -610,7 +610,7 @@ at::Tensor preprocess_mask(
+     const at::Tensor& value) {
+   constexpr int mem_eff_alignment = 16;
+   // Expand to 4d case
+-  at::Tensor attn_mask = mask.expand_symint(
++  at::Tensor attn_mask = mask.contiguous().expand_symint(
+       {query.sym_size(0),
+        query.sym_size(1),
+        query.sym_size(2),
 @@ -671,7 +671,8 @@ Tensor scaled_dot_product_attention(
    validate_sdpa_input(query_, key, value, attn_mask_, dropout_p, is_causal, scale);
    int64_t choice_int = static_cast<int64_t>(sdp::SDPBackend::math);

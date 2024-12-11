@@ -477,7 +477,7 @@ cnnl__efficient_attention_forward(
   at::Tensor value_reshaped = v_t_c.view({Nnz_kv, num_heads, embedding_value});
   c10::optional<Tensor> bias_c;
   if (bias.has_value()) {
-    bias_c = cnnl_contiguous(bias.value());
+    bias_c = bias.value();
   }
   const auto softmax_scale =
       sdp::calculate_scale(query_reshaped, scale).as_float_unchecked();
@@ -644,7 +644,7 @@ cnnl__efficient_attention_backward(
   at::Tensor value_reshaped = v_c.view({Nnz_kv, num_heads, embedding_value});
   c10::optional<Tensor> bias_c;
   if (bias.has_value()) {
-    bias_c = cnnl_contiguous(bias.value());
+    bias_c = bias.value();
   }
   at::Tensor grad_q = at::empty_like(query_reshaped);
   at::Tensor grad_k = at::empty_like(key_reshaped);
