@@ -44,7 +44,13 @@ popd
 
 TORCH_MLU_HOME="/torch_mlu"
 
-bash torch_mlu/scripts/release/independent_build.sh -r dep -o centos -v 7
+distribution=`uname -a`
+if [[ "$distribution" == *"aarch64"* ]]; then
+    bash torch_mlu/scripts/release/independent_build.sh -r dep -o anolis -v 8.8 -a aarch64
+else
+    bash torch_mlu/scripts/release/independent_build.sh -r dep -o centos -v 7
+fi
+
 export NEUWARE_HOME="/neuware_home"
 
 WHEELHOUSE_DIR="wheelhouse"
@@ -75,7 +81,7 @@ fi
 pydir="/opt/python/$PYTHON_VERSION"
 export PATH="$pydir/bin:$PATH"
 
-if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null; then
+if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null || [[ "$distribution" == *"aarch64"* ]]; then
     echo "There are patches to apply, clone pytorch source..."
     bash ${TORCH_MLU_HOME}/.jenkins/pipeline/enable_git_url_cache.sh
     export PYTORCH_HOME="/pytorch"
@@ -123,6 +129,10 @@ if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null; then
     DEPS_SONAME=("libgomp.so.1")
 
     mkdir -p /tmp/$WHEELHOUSE_DIR
+    if [[ "$distribution" == *"aarch64"* ]]; then
+        yum install -y patchelf sox && ln -s /usr/bin/patchelf /usr/local/bin/patchelf && \
+        yum remove -y lame-libs
+    fi
     export PATCHELF_BIN=/usr/local/bin/patchelf
     patchelf_version=$($PATCHELF_BIN --version)
     echo "patchelf version: " $patchelf_version
@@ -324,14 +334,14 @@ fi
 ########################################################
 # Compile torch_mlu wheels
 #######################################################
-pip install /$WHEELHOUSE_DIR/torch-*.whl
+pip uninstall -y torch && pip install /$WHEELHOUSE_DIR/torch-*.whl
 export LD_LIBRARY_PATH=${NEUWARE_HOME}/lib64/:${LD_LIBRARY_PATH}
 pushd "$TORCH_MLU_HOME"
 retry pip install -qr requirements.txt
 python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
 mv /tmp/$WHEELHOUSE_DIR/torch_mlu*linux*.whl /$WHEELHOUSE_DIR/
 popd
-pip install /$WHEELHOUSE_DIR/torch_mlu*linux*.whl
+pip uninstall -y torch_mlu && pip install /$WHEELHOUSE_DIR/torch_mlu*linux*.whl
 
 ########################################################
 # Compile torchaudio_mlu wheels
@@ -352,7 +362,7 @@ popd
 pip install /$WHEELHOUSE_DIR/torchaudio_mlu*linux*.whl
 export LD_LIBRARY_PATH=/ffmpeg_mlu/install/lib:${LD_LIBRARY_PATH}
 
-if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null; then
+if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null || [[ "$distribution" == *"aarch64"* ]]; then
     if [[ "$PYTORCH_VERSION" == "main" ]] || [[ "$PYTORCH_VERSION" == "release"* ]]; then
         unset PYTORCH_VERSION    # This env may influence the deps of vision/audio
         yum update -y && yum install libjpeg-turbo-devel -y   # Only needed when compile torchvision
@@ -363,7 +373,7 @@ if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null; then
         python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
         mv /tmp/$WHEELHOUSE_DIR/torchvision*linux*.whl /$WHEELHOUSE_DIR/
         popd
-        pip install /$WHEELHOUSE_DIR/torchvision*linux*.whl
+        pip uninstall -y torchvision && pip install /$WHEELHOUSE_DIR/torchvision*linux*.whl
 
         ########################################################
         # Compile torchaudio wheels
@@ -372,7 +382,7 @@ if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null; then
         python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
         mv /tmp/$WHEELHOUSE_DIR/torchaudio*linux*.whl /$WHEELHOUSE_DIR/
         popd
-        pip install /$WHEELHOUSE_DIR/torchaudio*linux*.whl
+        pip uninstall -y torchaudio && pip install /$WHEELHOUSE_DIR/torchaudio-*linux*.whl
         ########################################################
         # Smoke tests
         #######################################################
@@ -396,3 +406,6 @@ fi
 # Smoke test torchaudio_mlu
 #######################################################
 python -c "import torchaudio; import torchaudio_mlu; print(torchaudio.utils.ffmpeg_utils.get_video_decoders()['h264_mludec'])"
+if [[ "$distribution" == *"aarch64"* ]]; then
+    pip freeze > /$WHEELHOUSE_DIR/requirements.txt
+fi

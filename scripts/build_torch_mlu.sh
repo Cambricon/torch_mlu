@@ -19,6 +19,12 @@ install_pytorch() {
     pytorch=`cat ./scripts/version.info | grep pytorch | awk -F ":" '{print $2}'`
     vision=`cat ./scripts/version.info | grep vision | awk -F ":" '{print $2}'`
     audio=`cat ./scripts/version.info | grep audio | awk -F ":" '{print $2}'`
+    distribution=`uname -a`
+    if [[ "$distribution" == *"aarch64"* ]]; then
+        pytorch=`echo "$pytorch" | awk -F "+" '{print $1}'`
+        vision=`echo "$vision" | awk -F "+" '{print $1}'`
+        audio=`echo "$audio" | awk -F "+" '{print $1}'`
+    fi
     pip uninstall -y torch torchvision torchaudio
     if [ "$version_type" == "main" ]; then
         echo "Install preview version of PyTorch ..."

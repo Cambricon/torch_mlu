@@ -74,6 +74,9 @@ do
   esac
 done
 
+if [ ${PACKAGE_ARCH} == "aarch64" ];then
+    BUILDER_DOCKER="yellow.hub.cambricon.com/pytorch/pytorch:v1.23.1-torch2.4.0-runtime-anolis8.8-py310"
+fi
 
 echo "======================================="
 echo "RELEASE_TYPE: "$RELEASE_TYPE
@@ -322,6 +325,45 @@ fetch_cn_dep_func() {
           popd
         fi
       done
+    elif [ ${OS_TYPE} == "anolis" ]; then
+      for (( i =0; i < ${n}; i++))
+      do
+        PACKAGE_DIST="Anolis"
+        PACKAGE_DIST_VER=${OS_VERSION}
+        if [ ${arr_modules[$i]} == "cntoolkit" ]; then
+          PACKAGE_FILE=${arr_modules[$i]}"-"${arr_vers[$i]}".an8.${PACKAGE_ARCH}.rpm"
+          echo "PACKAGE_FILE: $PACKAGE_FILE"
+          PACKAGE_PATH=${PACKAGE_SERVER}"/"${arr_branch[$i]}"/"${arr_modules[$i]}"/"${PACKAGE_OS}"/"${PACKAGE_ARCH}"/"${PACKAGE_DIST}"/"${PACKAGE_DIST_VER}"/"${arr_vers[$i]}"/"${PACKAGE_FILE}
+          echo "PACKAGE_PATH: $PACKAGE_PATH"
+          MODULE_PURE_VER=`echo ${arr_vers[$i]} | cut -d '-' -f 1`
+          wget ${PACKAGE_PATH} -P ${PACKAGE_DOWNLOAD_DIR} -nv
+          # extract in extract dir
+          pushd ${PACKAGE_DOWNLOAD_DIR}
+          rpm2cpio $PACKAGE_FILE | cpio -div
+          popd
+          pushd ${PACKAGE_EXTRACT_DIR}
+          for filename in ../${PACKAGE_DOWNLOAD_DIR}/var/${arr_modules[$i]}"-"$MODULE_PURE_VER/*.rpm; do
+            rpm2cpio $filename | cpio -div
+          done
+          popd
+        else
+          if [[ ${arr_branch[$i]} == "daily" || ${arr_branch[$i]} == "temp" ]];then
+            VERSION_FILE_PATH=${PACKAGE_SERVER}"/"${arr_branch[$i]}"/"${arr_modules[$i]}"/"${PACKAGE_OS}"/"${PACKAGE_ARCH}"/"${PACKAGE_DIST}"/"${PACKAGE_DIST_VER}"/"${arr_vers[$i]}"/version.txt"
+            wget $VERSION_FILE_PATH -P ${PACKAGE_DOWNLOAD_DIR} -nv
+            PACKAGE_FILE=$(cat ${PACKAGE_DOWNLOAD_DIR}"/version.txt" | awk -F '=' '{if($1=="file") print $2}')
+            rm ${PACKAGE_DOWNLOAD_DIR}"/version.txt"
+          else
+            PACKAGE_FILE=${arr_modules[$i]}"-"${arr_vers[$i]}".an8.${PACKAGE_ARCH}.rpm"
+          fi
+          echo "PACKAGE_FILE: $PACKAGE_FILE"
+          PACKAGE_PATH=${PACKAGE_SERVER}"/"${arr_branch[$i]}"/"${arr_modules[$i]}"/"${PACKAGE_OS}"/"${PACKAGE_ARCH}"/"${PACKAGE_DIST}"/"${PACKAGE_DIST_VER}"/"${arr_vers[$i]}"/"${PACKAGE_FILE}
+          echo "PACKAGE_PATH: $PACKAGE_PATH"
+          wget ${PACKAGE_PATH} -P ${PACKAGE_DOWNLOAD_DIR} -nv
+          pushd ${PACKAGE_EXTRACT_DIR}
+          rpm2cpio ../${PACKAGE_DOWNLOAD_DIR}/$PACKAGE_FILE | cpio -div
+          popd
+        fi
+      done
     fi
   fi
 
@@ -366,9 +408,9 @@ build_wheel_func(){
 install_docker_func(){
   install_docker_cmd="docker build --no-cache --pull --network=host --rm          \
                       --build-arg pytorch_version=${PYTORCH_VERSION}              \
-                      --build-arg torch_mlu_branch=${TORCH_MLU_BRANCH}                    \
-                      --build-arg torchaudio_mlu_branch=${TORCHAUDIO_MLU_BRANCH}                    \
-                      --build-arg torch_mlu_commit_id=${TORCH_MLU_COMMIT_ID}              \
+                      --build-arg torch_mlu_branch=${TORCH_MLU_BRANCH}            \
+                      --build-arg torchaudio_mlu_branch=${TORCHAUDIO_MLU_BRANCH}  \
+                      --build-arg torch_mlu_commit_id=${TORCH_MLU_COMMIT_ID}      \
                       --build-arg vision_version=${VISION_VERSION}                \
                       --build-arg audio_version=${AUDIO_VERSION}                  \
                       --build-arg pytorch_models_branch=${PYTORCH_MODELS_BRANCH}  \
@@ -382,7 +424,7 @@ install_docker_func(){
                       --build-arg cndali_version=${CNDALI_VERSION}                \
                       --build-arg python_version=${PYTHON_VERSION}                \
                       --build-arg py_suffix=${PY_SUFFIX}                          \
-		      --build-arg genesis_version=${GENESIS_VERSION}              \
+                      --build-arg genesis_version=${GENESIS_VERSION}              \
                       -t ${IMAGE_DOCKER_NAME}:${TAG} -f ${DOCKER_FILE} ."
   echo "install_docker_func command: "$install_docker_cmd
   eval $install_docker_cmd
