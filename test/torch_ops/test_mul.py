@@ -538,7 +538,7 @@ class TestMulOps(TestCase):
     @testinfo()
     def test_mul_mixed_type(self):
         input1_types = [torch.long]
-        input2_types = [torch.float]
+        input2_types = [torch.float, torch.int]
         shapes = [((), ()), ((), (1,)), ((2, 3, 4, 6), (3, 4, 6))]
         product_list = product(input1_types, input2_types, shapes)
         for input1_type, input2_type, shape in product_list:
