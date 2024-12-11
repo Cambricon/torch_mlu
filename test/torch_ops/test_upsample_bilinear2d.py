@@ -133,7 +133,6 @@ class TestUpsampleBilinear2dOp(TestCase):
             )
 
     @testinfo()
-    @unittest.skip("not test, see CNNLCORE-18736")
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
@@ -145,7 +144,6 @@ class TestUpsampleBilinear2dOp(TestCase):
         x = torch.randn(shape, dtype=dtype)
         out_cpu = m(x.float())
         out_mlu = m(x.mlu())
-        # TODO: cnnlInterp_v3::bilinear has accuracy problem when input large tensor
         self.assertTensorsEqual(
             out_cpu.float(), out_mlu.cpu().float(), 0.003, use_MSE=True
         )

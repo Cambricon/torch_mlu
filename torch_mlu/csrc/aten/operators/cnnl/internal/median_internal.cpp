@@ -38,7 +38,8 @@ void cnnl_median_internal(
     int64_t dim,
     at::Tensor& values,
     at::Tensor& indices,
-    bool is_dim_none) {
+    bool is_dim_none,
+    bool ignore_nan) {
   auto input_impl = getMluTensorImpl(input);
   auto values_impl = getMluTensorImpl(values);
   auto indices_impl = getMluTensorImpl(indices);
@@ -56,6 +57,20 @@ void cnnl_median_internal(
   auto values_ptr = values_impl->mlu_data_ptr();
   auto indices_ptr = indices_impl->mlu_data_ptr();
 
+  size_t workspace_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetMedianWorkspaceSize(
+      handle,
+      dim,
+      is_dim_none,
+      ignore_nan,
+      desc_input.desc(),
+      desc_values.desc(),
+      desc_indices.desc(),
+      &workspace_size));
+
+  auto workspace_ptr =
+      torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+
   // int8, uint8, int16, int32, int64 are not supported
   AT_DISPATCH_FLOATING_TYPES_AND2(
       at::ScalarType::Half,
@@ -63,16 +78,19 @@ void cnnl_median_internal(
       input.scalar_type(),
       "MLU median",
       [&] {
-        TORCH_CNNL_CHECK(cnnlMedian(
+        TORCH_CNNL_CHECK(cnnlMedian_v2(
             handle,
+            dim,
+            is_dim_none,
+            ignore_nan,
             desc_input.desc(),
             input_ptr,
+            workspace_ptr.get(),
+            workspace_size,
             desc_values.desc(),
             values_ptr,
             desc_indices.desc(),
-            indices_ptr,
-            dim,
-            is_dim_none));
+            indices_ptr));
       });
 }
 

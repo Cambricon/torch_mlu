@@ -16,6 +16,9 @@ from common_utils import (
     testinfo,
     TestCase,
     read_card_info,
+    run_tests,
+    TEST_LARGETENSOR,
+    largeTensorTest,
 )  # pylint: disable=C0413,C0411
 
 TEST_BFLOAT16 = read_card_info()
@@ -362,6 +365,92 @@ class TestConv3dOps(TestCase):
             message = "MLU Tensor Size and Detach Tensor are not equal !"
             self.assertEqual(out.size(), out_no_detach.size(), message)
 
+    @testinfo()
+    @unittest.skipUnless(
+        TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
+    )
+    @largeTensorTest("23GB")
+    def test_conv3d_large(self):
+        b = False
+        N = 4 * 1025
+        Ci = 32
+        D = 32
+        DHW = 32
+        Co = 32
+        K = (1, 2, 2)
+        pad = 1
+        stride = (1, 2, 2)
+        dilation = (1, 1, 1)
+        groups = 1
+        dtype = torch.half
+        err = 0.003
+        x = torch.randn(N, Ci, D, DHW, DHW, dtype=dtype)
+        cm = nn.Conv3d(
+            Ci,
+            Co,
+            K,
+            stride=stride,
+            bias=b,
+            dilation=dilation,
+            padding=pad,
+            groups=groups,
+        ).to(dtype=dtype)
+        cpu_cm = copy.deepcopy(cm).float()
+        output_cpu = cpu_cm(x.float())
+        qcm = cm.mlu()
+        output_mlu = qcm(to_mlu(x))
+        self.assertTensorsEqual(
+            output_cpu, output_mlu.cpu().contiguous().float(), err, use_MSE=True
+        )
+
+    @testinfo()
+    @unittest.skipUnless(
+        TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
+    )
+    @largeTensorTest("46GB")
+    def test_conv3d_bp_large(self):
+        b = False
+        N = 4 * 1025
+        Ci = 32
+        D = 32
+        DHW = 32
+        Co = 32
+        K = (1, 2, 2)
+        pad = 1
+        stride = (1, 2, 2)
+        dilation = (1, 1, 1)
+        groups = 1
+        dtype = torch.half
+        err = 0.003
+        x = torch.randn(N, Ci, D, DHW, DHW, dtype=dtype, requires_grad=True)
+        cm = nn.Conv3d(
+            Ci,
+            Co,
+            K,
+            stride=stride,
+            bias=b,
+            dilation=dilation,
+            padding=pad,
+            groups=groups,
+        ).to(dtype=dtype)
+        cpu_cm = copy.deepcopy(cm).float()
+        output_cpu = cpu_cm(x.float())
+        grad_cpu = torch.randn(output_cpu.shape, dtype=dtype)
+        output_cpu.backward(grad_cpu)
+        x_grad_cpu = copy.deepcopy(x.grad.float())
+        w_grad_cpu = copy.deepcopy(cpu_cm.weight.grad.float())
+        x.grad.zero_()
+        qcm = cm.mlu()
+        output_mlu = qcm(to_mlu(x))
+        output_mlu.backward(to_mlu(grad_cpu))
+        x_grad_mlu = x.grad.contiguous().float()
+        w_grad_mlu = qcm.weight.grad.cpu().contiguous().float()
+        self.assertTensorsEqual(
+            output_cpu, output_mlu.cpu().contiguous().float(), err, use_MSE=True
+        )
+        self.assertTensorsEqual(x_grad_cpu, x_grad_mlu, err, use_MSE=True)
+        self.assertTensorsEqual(w_grad_cpu, w_grad_mlu, err, use_MSE=True)
+
 
 if __name__ == "__main__":
-    unittest.main()
+    run_tests()

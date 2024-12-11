@@ -34,43 +34,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 namespace ops {
 
-// CNNL limits:
-// When is_dim_none is false, the total size of input in dimension dim should be
-// less than 167936 bytes. When is_dim_none is true, the total size of input
-// should be less than 671744 bytes.
-static void median_shape_check(
-    const at::Tensor& input,
-    int64_t dim,
-    bool is_dim_none) {
-  int64_t half_max_size = (is_dim_none) ? 335872 : 83968;
-  int64_t float_max_size = (is_dim_none) ? 167936 : 41984;
-  std::unordered_map<at::ScalarType, int64_t> m = {
-      {at::ScalarType::Half, half_max_size},
-      {at::ScalarType::BFloat16, half_max_size},
-      {at::ScalarType::Float, float_max_size},
-      {at::ScalarType::Double, float_max_size},
-  };
-  TORCH_CHECK(
-      m.count(input.scalar_type()) > 0,
-      "MLU median not implemented for ",
-      input.scalar_type());
-  int64_t size_dim = (is_dim_none) ? input.numel() : input.sizes()[dim];
-  if (is_dim_none) {
-    TORCH_CHECK(
-        size_dim < m[input.scalar_type()],
-        "MLU median: elements number of input tensor ",
-        "should be less than ",
-        m[input.scalar_type()]);
-  } else {
-    TORCH_CHECK(
-        size_dim < m[input.scalar_type()],
-        "MLU median: elements number of input tensor in the dimension ",
-        dim,
-        " should be less than ",
-        m[input.scalar_type()]);
-  }
-}
-
 at::Tensor median_impl(const Tensor& self, bool ignore_nan) {
   at::NoNamesGuard guard;
 
@@ -81,13 +44,16 @@ at::Tensor median_impl(const Tensor& self, bool ignore_nan) {
         .to(self.options());
   }
 
-  median_shape_check(self, 0, true);
-
   auto result = at::empty({}, self.options());
   auto indices = at::empty({0}, self.options().dtype(at::kInt));
   auto self_contiguous = cnnl_contiguous(self);
   cnnl_median_internal(
-      self_contiguous, /*dim=*/0, result, indices, /*is_dim_none=*/true);
+      self_contiguous,
+      /*dim=*/0,
+      result,
+      indices,
+      /*is_dim_none=*/true,
+      ignore_nan);
   return result;
 }
 
@@ -123,7 +89,6 @@ std::tuple<at::Tensor&, at::Tensor&> median_with_indices_impl(
 
   // Only launch kernel for non-empty tensors
   if (self.numel() > 0) {
-    median_shape_check(self, dim, false);
     auto self_contiguous = cnnl_contiguous(self);
     auto values_contiguous = cnnl_contiguous(values);
     auto indices_contiguous =
@@ -133,7 +98,8 @@ std::tuple<at::Tensor&, at::Tensor&> median_with_indices_impl(
         dim,
         values_contiguous,
         indices_contiguous,
-        /*is_dim_none=*/false);
+        /*is_dim_none=*/false,
+        ignore_nan);
     if (!values.is_same(values_contiguous)) {
       values.copy_(values_contiguous);
     }

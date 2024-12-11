@@ -16,6 +16,9 @@ from common_utils import (
     testinfo,
     TestCase,
     read_card_info,
+    run_tests,
+    TEST_LARGETENSOR,
+    largeTensorTest,
 )  # pylint: disable=C0413, C0411
 
 TEST_BFLOAT16 = read_card_info()
@@ -154,6 +157,53 @@ class TestUpsampleNearest1dOp(TestCase):
                 grad_cpu.float(), grad_mlu.cpu().float(), 0.003, use_MSE=True
             )
 
+    @testinfo()
+    @unittest.skipUnless(
+        TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
+    )
+    @largeTensorTest("73GB")
+    def test_upsample_nearest1d_large(self):
+        shape = (4 * 1025, 1024, 1024)
+        dtype = torch.float
+        m = nn.Upsample(scale_factor=2, mode="nearest")
+        x = torch.randn(shape, dtype=dtype)
+        out_cpu = m(x.float())
+        out_mlu = m(x.mlu())
+        # TODO: cnnlInterp_v3::nearest has accuracy problem when input large tensor
+        self.assertTensorsEqual(
+            out_cpu.float(), out_mlu.cpu().float(), 0.003, use_MSE=True
+        )
+
+    @testinfo()
+    @unittest.skipUnless(
+        TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
+    )
+    @largeTensorTest("57GB")
+    def test_upsample_nearest1d_bp_large(self):
+        # TODO: see CNNLCORE-18738
+        # [CNNL] [Error]:[cnnlInterpBackward_v3] overflow max supported tensor num 2147483647,
+        # now tensor's total num is 4299161600.
+        ref_msg = "CNNL error: CNNL_STATUS_NOT_SUPPORTED"
+        with self.assertRaisesRegex(RuntimeError, ref_msg):
+            shape = (1025, 1024, 1024)
+            dtype = torch.float
+            m = nn.Upsample(scale_factor=4, mode="nearest")
+            x = torch.randn(shape, requires_grad=True, dtype=dtype)
+            x_mlu = copy.deepcopy(x)
+            out_cpu = m(x.float())
+            out_mlu = m(x_mlu.mlu())
+            grad = torch.randn(out_cpu.shape, dtype=dtype)
+            out_cpu.backward(grad.float())
+            grad_cpu = x.grad
+            out_mlu.backward(grad.mlu())
+            grad_mlu = x_mlu.grad
+            self.assertTensorsEqual(
+                out_cpu.float(), out_mlu.cpu().float(), 0.003, use_MSE=True
+            )
+            self.assertTensorsEqual(
+                grad_cpu.float(), grad_mlu.cpu().float(), 0.003, use_MSE=True
+            )
+
 
 if __name__ == "__main__":
-    unittest.main()
+    run_tests()
