@@ -546,17 +546,26 @@ class TestMulOps(TestCase):
             a = torch.randint(low=1, high=10, size=shape1).to(input1_type)
             b = torch.randn(shape2, dtype=torch.float).to(input2_type)
 
-            ouput = torch.mul(a, b)
-            ouput_mlu = torch.mul(a.mlu(), b.mlu())
-            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+            output = torch.mul(a, b)
+            output_mlu = torch.mul(a.mlu(), b.mlu())
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
 
-            ouput = torch.mul(2, b)
-            ouput_mlu = torch.mul(2, b.mlu())
-            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+            output = torch.mul(2, b)
+            output_mlu = torch.mul(2, b.mlu())
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
 
-            ouput = torch.mul(b, 2)
-            ouput_mlu = torch.mul(b.mlu(), 2)
-            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+            output = torch.mul(b, 2)
+            output_mlu = torch.mul(b.mlu(), 2)
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
+
+            c = torch.tensor(2, dtype=torch.int)
+            output = torch.mul(c, a)
+            output_mlu = torch.mul(c, a.mlu())
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
+
+            output = torch.mul(a, c)
+            output_mlu = torch.mul(a.mlu(), c)
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
 
 
 if __name__ == "__main__":
