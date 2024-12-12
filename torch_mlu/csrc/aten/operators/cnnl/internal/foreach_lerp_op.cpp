@@ -70,7 +70,7 @@ void cnnl_foreach_lerp_op(
       tensor_desc_ptr.template get_input_tensor_desc_and_ptr<0>();
   auto [input2_desc_array, input2_ptr_array] =
       tensor_desc_ptr.template get_input_tensor_desc_and_ptr<1>();
-  // Only mode 1 will get real pointer, oterhs are nullptr.
+  // Only mode 1 will get real pointer, others are nullptr.
   auto [input3_desc_array, input3_ptr_array] =
       tensor_desc_ptr.template get_input_tensor_desc_and_ptr<2>();
   auto [output_desc_array, output_ptr_array] =
