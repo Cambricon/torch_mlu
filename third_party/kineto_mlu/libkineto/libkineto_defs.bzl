@@ -16,6 +16,7 @@ def get_libkineto_cnperf_srcs(with_api = True):
         "src/CnperfApi.cpp",
         "src/CnperfActivity.cpp",
         "src/CnperfPmuApi.cpp",
+        "src/CnperfPmuConfig.cpp",
         "src/TimeGapCleaner.cpp",
         "src/profile_mlu.cpp",
         "src/AbstractConfig.cpp",

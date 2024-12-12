@@ -45,7 +45,7 @@ void addDeviceTaskMetaData(GenericTraceActivity& generic_activity,
   if (!device_task->extra.empty()) {
     generic_activity.addMetadata("extra", device_task->extra);
   }
-  if (pmu_data) {
+  if (pmu_data && !pmu_data->empty()) {
     generic_activity.addMetadata("pmus", getPmuMetadataJson(pmu_data));
   }
 }

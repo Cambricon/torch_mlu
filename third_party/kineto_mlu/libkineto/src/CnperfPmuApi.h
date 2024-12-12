@@ -8,6 +8,8 @@
 #include <variant>
 #include <vector>
 
+#include "CnperfPmuConfig.h"
+
 namespace KINETO_NAMESPACE {
 
 struct CnperfPmuData {
@@ -23,6 +25,8 @@ class CnperfPmuApi {
   public:
     static CnperfPmuApi& singleton();
 
+    void init(const std::string& config);
+
     bool enabled() const { return enabled_; }
 
     void updateConfig(cnperfConfig_t config);
@@ -36,6 +40,7 @@ class CnperfPmuApi {
 
     int dev_id_;
     bool enabled_ = false;
+    std::string selected_pmu_counters_;
     std::unique_ptr<PmuDataMap> pmu_datamap_;
 };
 

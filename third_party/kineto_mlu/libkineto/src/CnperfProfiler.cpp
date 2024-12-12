@@ -464,6 +464,7 @@ void CnperfProfiler::configure(
 
   if (!cpuOnly_) {
     LOG(INFO) << "Enabling MLU tracing";
+    CnperfPmuApi::singleton().init(config.source());
     cnperf_.prepare();
   }
 
