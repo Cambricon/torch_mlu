@@ -40,15 +40,15 @@ namespace torch_mlu::ops {
  * 1) tensor_list mode: aten/src/ATen/native/cuda/ForeachBinaryOpList.cu
  *    left and right tensor list is equal and with alpha, scalar_list is
  *    empty and scalar is not used;
- * 2) scalar mode: aten/src/ATen/native/cuda/ForeachBinaryOpScalar.cu
- *    only left tensor list is used, right tensor list and scalar list are
- *    empty, scalar is used for each left tensor, and scalar type promote to
- *    op math type in torch-mlu side;
- * 3) scalar list mode: aten/src/ATen/native/cuda/ForeachBinaryOpScalarList.cu
+ * 2) scalar list mode: aten/src/ATen/native/cuda/ForeachBinaryOpScalarList.cu
  *    only left tensor list is used, each item in scalar list is used for each
  *    tensor in left tensor list, and each value in scalar list will promote to
  *    op match type in torch-mlu side. right tensor list is empty, and scalar is
  *    not used;
+ * 3) scalar mode: aten/src/ATen/native/cuda/ForeachBinaryOpScalar.cu
+ *    only left tensor list is used, right tensor list and scalar list are
+ *    empty, scalar is used for each left tensor, and scalar type promote to
+ *    op math type in torch-mlu side;
  * 4) scalar tensor mode:
  * aten/src/ATen/native/cuda/ForeachBinaryOpScalarTensor.cu Now only used for
  * mul op. Similar to scalar mode, but the scalar is device scalar tensor, and
@@ -76,7 +76,7 @@ void cnnl_foreach_binary_tensors_op(
     return;
   auto [input1_desc_array, input1_ptr_array] =
       tensor_desc_ptr.template get_input_tensor_desc_and_ptr<0>();
-  // Only mode 1 will get real pointer, oterhs are nullptr.
+  // Only mode 1 will get real pointer, others are nullptr.
   auto [input2_desc_array, input2_ptr_array] =
       tensor_desc_ptr.template get_input_tensor_desc_and_ptr<1>();
   auto [output_desc_array, output_ptr_array] =
