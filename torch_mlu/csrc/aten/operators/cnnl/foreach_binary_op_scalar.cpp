@@ -122,6 +122,11 @@ FOREACH_BINARY_OP_SCALAR(
     /*div_op*/ false);
 FOREACH_BINARY_OP_SCALAR(
     all_floating_types_with_half_bfloat16,
+    div,
+    CNNL_FOREACH_DIV,
+    /*div_op*/ true);
+FOREACH_BINARY_OP_SCALAR(
+    all_floating_types_with_half_bfloat16,
     mul,
     CNNL_FOREACH_MUL,
     /*div_op*/ false);

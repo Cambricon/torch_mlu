@@ -146,6 +146,11 @@ FOREACH_BINARY_OP_LIST_ALPHA(
     CNNL_FOREACH_ADD);
 FOREACH_BINARY_OP_LIST(
     all_floating_types_with_half_bfloat16,
+    div,
+    CNNL_FOREACH_DIV,
+    /*division_op*/ true);
+FOREACH_BINARY_OP_LIST(
+    all_floating_types_with_half_bfloat16,
     mul,
     CNNL_FOREACH_MUL,
     /*division_op*/ false);

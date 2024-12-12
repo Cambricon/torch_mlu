@@ -1387,6 +1387,12 @@ aten:
   - func: _foreach_add_.List
   - func: _foreach_add.ScalarList
   - func: _foreach_add_.ScalarList
+  - func: _foreach_div.Scalar
+  - func: _foreach_div_.Scalar
+  - func: _foreach_div.List
+  - func: _foreach_div_.List
+  - func: _foreach_div.ScalarList
+  - func: _foreach_div_.ScalarList
   - func: _foreach_lerp.Scalar
   - func: _foreach_lerp_.Scalar
   - func: _foreach_lerp.List

@@ -81,6 +81,12 @@
   - api: torch._foreach_cosh_
     supported: false
 
+  - api: torch._foreach_div
+    supported: true
+
+  - api: torch._foreach_div_
+    supported: true
+
   - api: torch._foreach_erf
     supported: false
 
