@@ -693,17 +693,26 @@ class TestAddOp(TestCase):  # pylint: disable=R0904
             a = torch.randint(low=1, high=10, size=shape1).to(input1_type)
             b = torch.randn(shape2, dtype=torch.float).to(input2_type)
 
-            ouput = torch.add(a, b)
-            ouput_mlu = torch.add(a.mlu(), b.mlu())
-            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+            output = torch.add(a, b)
+            output_mlu = torch.add(a.mlu(), b.mlu())
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
 
-            ouput = torch.add(1, b)
-            ouput_mlu = torch.add(1, b.mlu())
-            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+            output = torch.add(1, b)
+            output_mlu = torch.add(1, b.mlu())
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
 
-            ouput = torch.add(b, 1)
-            ouput_mlu = torch.add(b.mlu(), 1)
-            self.assertTensorsEqual(ouput, ouput_mlu.cpu(), 3e-3, use_MSE=True)
+            output = torch.add(b, 1)
+            output_mlu = torch.add(b.mlu(), 1)
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
+
+            c = torch.tensor(1, dtype=torch.int)
+            output = torch.add(c, a)
+            output_mlu = torch.add(c, a.mlu())
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
+
+            output = torch.add(a, c)
+            output_mlu = torch.add(a.mlu(), c)
+            self.assertTensorsEqual(output, output_mlu.cpu(), 3e-3, use_MSE=True)
 
 
 if __name__ == "__main__":
