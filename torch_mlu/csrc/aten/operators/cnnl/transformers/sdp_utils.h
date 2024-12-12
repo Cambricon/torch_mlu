@@ -581,10 +581,14 @@ inline bool check_fused_kernel_mlu_support(
     return false;
   }
 
+  auto valid_data_ratio_cond = seq_len_q * seq_len_k /
+      (ceiling(seq_len_q, 512) * ceiling(seq_len_k, 256));
   bool valid_cond_1 =
       (seq_len_q * head_size >= 5190) && (seq_len_k * head_size >= 5190);
-  bool valid_cond_2 = (seq_len_q >= 1024);
-  if (!(valid_cond_1 || valid_cond_2)) {
+  bool valid_cond_2 = (seq_len_q >= 1024) && (seq_len_k * head_size >= 5190);
+  bool valid_cond_3 = !params.attn_mask.has_value();
+  if (!(((valid_cond_1 || valid_cond_2) && valid_cond_3) ||
+        (valid_data_ratio_cond >= 0.6))) {
     if (debug) {
       TORCH_WARN("The valid data required by the Fused kernel is not met.");
     }
