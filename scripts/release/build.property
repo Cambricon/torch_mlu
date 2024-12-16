@@ -4,7 +4,7 @@
   "build_requires": {
     "cnnl": ["release", "1.28.1-1"],
     "cntoolkit": ["release","3.15.3-1"],
-    "cncl": ["daily", "master/1.24.0-20241210_143930-8e86f16"],
+    "cncl": ["release", "1.24.0-1"],
     "cncv": ["release", "2.8.0-1"],
     "cndali": ["release", "0.11.0"],
     "cnnlextra": ["release", "1.12.1-1"],
