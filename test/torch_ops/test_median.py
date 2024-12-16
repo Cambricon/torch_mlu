@@ -109,6 +109,7 @@ class TestMedianOps(TestCase):
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
+    @largeTensorTest("65GB")
     def test_median_dim_large(self):
         x = torch.tensor([4, 1026, 1024, 1024], dtype=torch.float)
         shape_list = [[4, 1026, 1024, 1024]]
@@ -118,7 +119,8 @@ class TestMedianOps(TestCase):
             out_cpu = torch.median(x, dim=1, keepdim=test_type)
             out_mlu = torch.median(self.to_mlu(x), dim=1, keepdim=test_type)
             self.assertTensorsEqual(out_cpu[0], out_mlu[0].cpu(), 0.003, use_MSE=True)
-            self.assertTensorsEqual(out_cpu[1], out_mlu[1].cpu())
+            self.assertTensorsEqual(out_cpu[1], out_mlu[1].cpu(), 0.0)
+            del out_mlu
 
 
 if __name__ == "__main__":
