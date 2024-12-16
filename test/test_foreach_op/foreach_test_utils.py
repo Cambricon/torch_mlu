@@ -116,7 +116,10 @@ class ForeachOpTest(object):
 
     def generate_cpu_and_mlu_tenors(self, dtype):
         tensors = self.generate_cpu_inputs(dtype)
-        if self.foreach_type == ForeachType.ReduceOp:
+        if (
+            self.foreach_type == ForeachType.ReduceOp
+            or "div" in self.mlu_func.func.__repr__()
+        ):
             cpu_tensor = self.trans_tensors([item for item in tensors])
         else:
             cpu_tensor = self.trans_tensors([item.float() for item in tensors])
