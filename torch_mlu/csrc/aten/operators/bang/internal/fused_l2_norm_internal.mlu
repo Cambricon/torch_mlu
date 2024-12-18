@@ -386,7 +386,8 @@ __mlu_global__ void MLUCleanUp(
     const float* output_buffer_per_tensor_ptr,
     const bool per_tensor,
     const bool amp_opt,
-    int32_t* overflow) {
+    int32_t* overflow,
+    bool high_sqrt_precision) {
   int pad_num_of_output = num_of_output;
   #if __BANG_ARCH__ < 520
   if (num_of_output % L2NormTempNum != 0) {
@@ -425,7 +426,11 @@ __mlu_global__ void MLUCleanUp(
       __bang_add(tensor_nram_per_tensor, tensor_nram_per_tensor,
                  tensor_nram_per_tensor + i * tensor_size, tensor_size);
     }
-    __bang_sqrt(tensor_nram_per_tensor, tensor_nram_per_tensor, tensor_size);
+    if (high_sqrt_precision) {
+      __cn_vector_accurate_sqrt_f32(tensor_size, tensor_nram_per_tensor, tensor_nram_per_tensor);
+    } else {
+      __bang_sqrt(tensor_nram_per_tensor, tensor_nram_per_tensor, tensor_size);
+    }
   }
   __sync_compute();
   #if __BANG_ARCH__ < 520
@@ -445,7 +450,7 @@ __mlu_global__ void MLUCleanUp(
       __bang_write_value(tensor_nram_per_tensor, tensor_size, 0);
     }
   }
-  __store_gdram(output_ptr, std::sqrtf(final_value));
+  __store_gdram(output_ptr, high_sqrt_precision ? __cn_scalar_accurate_sqrt_f32(final_value) : std::sqrtf(final_value));
 
   if (per_tensor) {
     __memcpy_async(output_per_tensor_ptr, tensor_nram_per_tensor,
@@ -467,7 +472,8 @@ void bang_fused_l2_norm_clean_internal(
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    bool amp_opt) {
+    bool amp_opt,
+    bool high_sqrt_precision) {
   MLUCleanUp<<<k_dim, k_type, queue>>>(
       num_of_output,
       output_ptr,
@@ -478,7 +484,8 @@ void bang_fused_l2_norm_clean_internal(
       output_buffer_per_tensor_ptr,
       per_tensor,
       amp_opt,
-      overflow);
+      overflow,
+      high_sqrt_precision);
 }
 
 } // namespace ops

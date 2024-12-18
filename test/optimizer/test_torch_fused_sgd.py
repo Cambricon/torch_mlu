@@ -225,7 +225,7 @@ class TestFusedOptimizer(unittest.TestCase):
                 model_.load_state_dict(copy.deepcopy(model.state_dict()))
 
 
-class TestFusedAdam(TestFusedOptimizer):
+class TestFusedSGD(TestFusedOptimizer):
     def setUp(self):
         super().setUp()
         self.options_list = [
@@ -342,7 +342,7 @@ class TestFusedAdam(TestFusedOptimizer):
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
     )
     @largeTensorTest("44GB")
-    def test_fused_adamw_large(self):
+    def test_fused_sgd_large(self):
         tensor = torch.clamp(
             torch.rand(2147483660).to(dtype=torch.float, device="mlu"),
             min=0.01,

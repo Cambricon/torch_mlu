@@ -225,7 +225,7 @@ class TestFusedOptimizer(unittest.TestCase):
                 model_.load_state_dict(copy.deepcopy(model.state_dict()))
 
 
-class TestFusedAdam(TestFusedOptimizer):
+class TestFusedAdamW(TestFusedOptimizer):
     def setUp(self):
         super().setUp()
         self.options_list = [

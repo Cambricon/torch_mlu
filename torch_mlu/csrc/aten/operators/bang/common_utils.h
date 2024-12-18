@@ -69,4 +69,18 @@ static inline void check_device_and_numel(
   check_device_and_numel(device, tensor_numel, args...);
 }
 
+static bool is_high_sqrt_precision() {
+  static auto value = []() {
+    auto str = std::getenv("TORCH_MLU_SQRT_HIGH_PRECISION");
+    if (str != nullptr) {
+      std::string value(str);
+      if (value == "ON" || value == "on" || value == "1") {
+        return true;
+      }
+    }
+    return false;
+  }();
+  return value;
+}
+
 } // end of namespace torch_mlu::ops

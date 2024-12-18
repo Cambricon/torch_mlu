@@ -1,6 +1,7 @@
 #include "aten/operators/bang/bang_kernel.h"
 #include "aten/operators/bang/internal/bang_internal.h"
 #include "aten/utils/utils.h"
+#include "aten/operators/bang/common_utils.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -44,6 +45,8 @@ void _fused_lamb_amp_common(
       exp_avg_sqs[0].scalar_type() == at::ScalarType::Float,
       "MultiTensorLAMBAMP: The data type of exp_avg_sqs must be float");
 
+  // add high sqrt percision control.
+  static bool high_sqrt_precision = is_high_sqrt_precision();
   auto beta1_cvt = c10::checked_convert<float, double>(beta1, "float");
   auto beta2_cvt = c10::checked_convert<float, double>(beta2, "float");
   auto epsilon_cvt = c10::checked_convert<float, double>(epsilon, "float");
@@ -158,7 +161,8 @@ void _fused_lamb_amp_common(
           k_type,
           stream,
           grad_cnrt_type,
-          param_cnrt_type);
+          param_cnrt_type,
+          high_sqrt_precision);
       tensor_count = 0;
       tensor_offset = tensor_id + 1;
     }
@@ -193,7 +197,8 @@ void _fused_lamb_amp_common(
         k_type,
         stream,
         grad_cnrt_type,
-        param_cnrt_type);
+        param_cnrt_type,
+        high_sqrt_precision);
   }
 
   const auto n_tensors_list = contiguous_tensors_list[0].size();
