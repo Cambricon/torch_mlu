@@ -4,9 +4,10 @@ All rights reserved.
 All other contributions:
 Copyright (c) 2014--2023, the respective contributors
 All rights reserved.
-For the list of contributors go to https://github.com/pytorch/pytorch/graphs/contributors
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+For the list of contributors go to
+https://github.com/pytorch/pytorch/graphs/contributors Redistribution and use in
+source and binary forms, with or without modification, are permitted provided
+that the following conditions are met:
     * Redistributions of source code must retain the above copyright notice,
       this list of conditions and the following disclaimer.
     * Redistributions in binary form must reproduce the above copyright
@@ -33,29 +34,53 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace torch_mlu::ops {
 
-static inline void check_device_and_numel(const c10::Device& device,
-                                          const int64_t tensor_numel,
-                                          const at::Tensor& tensor) {
-  if (!tensor.defined()) return;
+static inline void check_device_and_numel(
+    const c10::Device& device,
+    const int64_t tensor_numel,
+    const at::Tensor& tensor) {
+  if (!tensor.defined())
+    return;
   TORCH_CHECK(tensor.device() == device, "Device need be same.");
   TORCH_CHECK(tensor.numel() == tensor_numel, "Tensor element need be same.");
 }
 
-static inline void check_device_and_numel(const c10::Device& device,
-                                          const int64_t tensor_numel,
-                                          const std::optional<at::Tensor>& tensor) {
-  if (!tensor.has_value()) return;
+static inline void check_device_and_numel(
+    const c10::Device& device,
+    const int64_t tensor_numel,
+    const std::optional<at::Tensor>& tensor) {
+  if (!tensor.has_value())
+    return;
   check_device_and_numel(device, tensor_numel, tensor.value());
 }
 
-template<typename T, std::enable_if_t<std::is_same_v<T, at::Tensor>
-                     || std::is_same_v<T, std::optional<at::Tensor>>, int> = 1, typename... ARGS>
-static inline void check_device_and_numel(const c10::Device& device,
-                                          const int64_t tensor_numel,
-                                          const T& tensor,
-                                          ARGS... args) {
+template <
+    typename T,
+    std::enable_if_t<
+        std::is_same_v<T, at::Tensor> ||
+            std::is_same_v<T, std::optional<at::Tensor>>,
+        int> = 1,
+    typename... ARGS>
+static inline void check_device_and_numel(
+    const c10::Device& device,
+    const int64_t tensor_numel,
+    const T& tensor,
+    ARGS... args) {
   check_device_and_numel(device, tensor_numel, tensor);
   check_device_and_numel(device, tensor_numel, args...);
 }
 
-}  // end of namespace torch_mlu::ops
+static bool is_high_sqrt_precision() {
+  static auto value = []() {
+    auto str = std::getenv("TORCH_MLU_SQRT_HIGH_PRECISION");
+    if (str != nullptr) {
+      std::string value(str);
+      if (value == "ON" || value == "on" || value == "1") {
+        return true;
+      }
+    }
+    return false;
+  }();
+  return value;
+}
+
+} // end of namespace torch_mlu::ops

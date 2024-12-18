@@ -54,6 +54,8 @@ TESTS = [
     "utils/test_monkey_patch_ref_leak.py",
     "optimizer/test_torch_fused_adamw",
     "optimizer/test_torch_fused_adam",
+    "optimizer/test_torch_fused_adam_high_precision",
+    "optimizer/test_torch_fused_adamw_high_precision",
     "distributions/test_distributions",
     "fallback/test_fallback",
     "view_chain/test_close_view_chain",

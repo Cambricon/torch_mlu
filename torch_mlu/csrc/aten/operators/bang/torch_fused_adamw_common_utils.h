@@ -51,6 +51,8 @@ void _fused_adam_common_mlu_impl_(
     const bool maximize,
     const c10::optional<at::Tensor>& grad_scale,
     const c10::optional<at::Tensor>& found_inf) {
+  // add high sqrt percision control.
+  static bool high_sqrt_precision = is_high_sqrt_precision();
   float* grad_scale_ptr =
       grad_scale.has_value() ? grad_scale->data_ptr<float>() : nullptr;
   float* found_inf_ptr =
@@ -134,7 +136,8 @@ void _fused_adam_common_mlu_impl_(
             stream,
             k_type,
             k_dim,
-            nram_size);
+            nram_size,
+            high_sqrt_precision);
       });
 }
 

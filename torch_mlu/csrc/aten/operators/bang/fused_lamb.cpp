@@ -1,6 +1,7 @@
 #include "aten/operators/bang/bang_kernel.h"
 #include "aten/operators/bang/internal/bang_internal.h"
 #include "aten/utils/utils.h"
+#include "aten/operators/bang/common_utils.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -23,6 +24,8 @@ bool bang_fused_lamb(
     const at::Tensor& global_grad_norm,
     double max_grad_norm,
     bool use_nvlamb_python) {
+  // add high sqrt percision control.
+  static bool high_sqrt_precision = is_high_sqrt_precision();
   auto stream = getCurMLUStream();
   auto tensor_num = grads.size();
   cnrtDataType_V2_t cnrt_type =
@@ -131,7 +134,8 @@ bool bang_fused_lamb(
           k_dim,
           k_type,
           stream,
-          cnrt_type);
+          cnrt_type,
+          high_sqrt_precision);
       tensor_count = 0;
       tensor_offset = tensor_id + 1;
     }
@@ -162,7 +166,8 @@ bool bang_fused_lamb(
         k_dim,
         k_type,
         stream,
-        cnrt_type);
+        cnrt_type,
+        high_sqrt_precision);
   }
 
   for (int64_t i = 0; i < tensor_num; ++i) {

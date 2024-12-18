@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "aten/operators/bang/bang_kernel.h"
 #include "aten/operators/bang/internal/bang_internal.h"
+#include "aten/operators/bang/common_utils.h"
 
 namespace torch_mlu {
 namespace ops {
@@ -39,6 +40,8 @@ std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm_common(
     at::TensorList& inputs,
     c10::optional<bool>& per_tensor_python,
     const bool& is_amp) {
+  // add high sqrt percision control.
+  static bool high_sqrt_precision = is_high_sqrt_precision();
   bool per_tensor =
       per_tensor_python.has_value() ? per_tensor_python.value() : false;
   auto tensor_num = inputs.size();
@@ -179,7 +182,8 @@ std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm_common(
               k_dim,
               k_type,
               stream,
-              is_amp);
+              is_amp,
+              high_sqrt_precision);
         }
       });
   return {output, output_per_tensor};

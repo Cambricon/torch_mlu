@@ -252,7 +252,7 @@ class TestFusedOptimizer(unittest.TestCase):
                 fused_optim.zero_grad()
 
 
-class TestFusedAdam(TestFusedOptimizer):
+class TestFusedAdamHighPrecision(TestFusedOptimizer):
     def setUp(self):
         super().setUp()
         self.options_list = [

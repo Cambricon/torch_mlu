@@ -87,7 +87,8 @@ void bang_fused_l2_norm_clean_internal(
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    bool amp_opt);
+    bool amp_opt,
+    bool high_sqrt_precision);
 
 template <cnrtDataType_V2_t value, int depth>
 void apex_fused_adam_internal(
@@ -128,7 +129,8 @@ void bang_torch_fused_adamw_internal(
     cnrtQueue_t stream,
     cnrtFunctionType_t k_type,
     cnrtDim3_t k_dim,
-    const int nram_size);
+    const int nram_size,
+    bool high_sqrt_precision);
 
 void bang_fused_sgd_internal(
     AddressList g,
@@ -177,7 +179,8 @@ void bang_fused_lamb_internal(
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    cnrtDataType_V2_t cnrt_type);
+    cnrtDataType_V2_t cnrt_type,
+    bool high_sqrt_precision);
 
 void bang_fused_lamb_amp_internal(
     AddressList grad,
@@ -207,7 +210,8 @@ void bang_fused_lamb_amp_internal(
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
     cnrtDataType_V2_t grad_cnrt_type,
-    cnrtDataType_V2_t param_cnrt_type);
+    cnrtDataType_V2_t param_cnrt_type,
+    bool high_sqrt_precision);
 
 } // namespace ops
 } // namespace torch_mlu
