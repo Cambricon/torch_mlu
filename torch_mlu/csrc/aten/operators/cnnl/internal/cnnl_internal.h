@@ -948,6 +948,19 @@ at::Tensor& cnnl_boxes_overlap_bev_out_internal(
     const at::Tensor& self,
     const at::Tensor& other);
 
+void cnnl_dynamic_stitch_internal(
+    at::Tensor& out,
+    at::TensorList indices_list,
+    at::TensorList data_list,
+    int indices_num);
+
+void cnnl_dynamic_partition_internal(
+    at::Tensor& out_counts,
+    at::Tensor& output,
+    const at::Tensor& data,
+    const at::Tensor& partitions,
+    const int num_partitions);
+
 at::Tensor& cnnl_div_out_internal(
     at::Tensor& output,
     const at::Tensor& self,
@@ -1149,6 +1162,12 @@ at::Tensor& cnnl_bitwise_op_out_internal(
     const cnnlBitComputeOp_t& op_type);
 
 at::Tensor& cnnl_sign_internal(at::Tensor& output, const at::Tensor& input);
+
+void cnnl_split_internal(
+    std::vector<at::Tensor>& outputs,
+    const at::Tensor& data,
+    const int split_num,
+    const int split_dim);
 
 void cnnl_index_copy_internal(
     at::Tensor& output,

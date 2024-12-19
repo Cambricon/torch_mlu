@@ -57,6 +57,21 @@ namespace torch_mlu {
     }                                                                        \
   }()
 
+#define AT_DISPATCH_MLU_FLOAT_AND_INT(TYPE, NAME, ...)                       \
+  [&] {                                                                      \
+    const auto& the_type = TYPE;                                             \
+    constexpr const char* at_dispatch_name = NAME;                           \
+    at::ScalarType _st = ::detail::scalar_type(the_type);                    \
+    switch (_st) {                                                           \
+      AT_DISPATCH_CASE_MLU(at::ScalarType::Float, float, __VA_ARGS__)        \
+      AT_DISPATCH_CASE_MLU(at::ScalarType::Int, int32_t, __VA_ARGS__)        \
+      AT_DISPATCH_CASE_MLU(at::ScalarType::Long, int64_t, __VA_ARGS__)       \
+      AT_DISPATCH_CASE_MLU(at::ScalarType::Double, float, __VA_ARGS__)       \
+      default:                                                               \
+        AT_ERROR(#NAME, " not implemented for '", c10::toString(TYPE), "'"); \
+    }                                                                        \
+  }()
+
 #define AT_DISPATCH_MLU_FLOAT_HALF_INT_AND_BFLOAT16(TYPE, NAME, ...)         \
   [&] {                                                                      \
     const auto& the_type = TYPE;                                             \

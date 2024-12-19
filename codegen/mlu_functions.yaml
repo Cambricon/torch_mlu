@@ -1495,3 +1495,5 @@ custom:
   - func: linalg_det_backward(Tensor grad, Tensor self, Tensor det) -> Tensor
   - func: linalg_slogdet_backward(Tensor grad_logabsdet, Tensor self, Tensor signdet, Tensor logabsdet) -> Tensor
   - func: repeat_backward(Tensor self, Tensor(a!) grad, int[] repeats) -> Tensor
+  - func: dynamic_stitch(Tensor[] indices, Tensor[] data) -> Tensor
+  - func: dynamic_partition(Tensor data, Tensor partitions, int num_partitions) -> Tensor[]

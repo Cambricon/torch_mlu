@@ -240,3 +240,31 @@
     limitations:
       - input_list中任何一个Tensor的元素个数都不能超过2^31。
     calculation lib: Cambricon BANG。
+
+  - api: torch.ops.torch_mlu.dynamic_partition
+    usage: torch.ops.torch_mlu.dynamic_partition(data, partitions, num_partitions)
+    functionality: 该操作将输入张量 data 根据 partitions 中指定的分区索引，将其分割为 num_partitions 个子张量。每个子张量包含与对应分区索引匹配的元素。此操作可广泛用于分区任务，例如对数据进行分类或按照指定条件分配数据。此操作原始版本在 TensorFlow 上。
+    args:
+      data (Tensor): 要分割的输入张量。支持的数据类型包括float、int、int64。
+      partitions (Tensor): 分区索引张量，其长度与 data 中元素的数量相同。该张量中的每个元素表示 data 中对应位置的元素应该属于哪个分区。其数据类型必须为 int。
+      num_partitions (int): 要生成的分区数量。根据 partitions 张量中的索引，将输入数据分为 num_partitions 个子张量。
+    limitations:
+      - partitions 张量中的索引值必须小于 num_partitions。
+      - data的维度必须大于等于partitions的维度。
+      - data的size必须以partitions的size开头。
+      - 所有输入必须是连续的。
+    calculation lib: Cambricon CNNL。
+
+  - api: torch.ops.torch_mlu.dynamic_stitch
+    usage: torch.ops.torch_mlu.dynamic_stitch(indices, tensors)
+    functionality: 该操作将输入的多个张量根据指定的索引 indices 动态拼接。每个张量中的元素会根据其对应的 indices 中的索引位置被“粘贴”到一个新的输出张量中。此操作常用于在特定位置插入或合并张量数据。它可以根据动态变化的索引对多个张量进行选择性拼接。此操作原始版本在 TensorFlow 上。
+    args:
+      indices (List[Tensor]): 一组张量，每个张量中的元素表示要插入到输出张量中的位置。每个张量的长度应该与其对应的 tensors 中的张量元素数量匹配。indices 的数据类型必须为 int。
+      tensors (List[Tensor]): 一组张量，支持的数据类型包括float, half, int, int64, tensors 中的张量可以是任意形状和数据类型，但每个张量的数据类型应该相同。
+    limitations:
+      - indices和tensors列表的tensor个数必须相等。
+      - 每个tensor的维度必须大于等于对应indice的维度。
+      - 每个tensor的size必须以对应indice的size开头。
+      - 每个tensor大于对应indice维度的所有dims必须相等。
+      - 所有输入必须是连续的。
+    calculation lib: Cambricon CNNL。
