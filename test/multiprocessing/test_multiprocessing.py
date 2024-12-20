@@ -19,6 +19,7 @@ from common_utils import (
     testinfo,
     TestCase,
     read_card_info,
+    get_cycles_per_ms,
 )  # pylint: disable=C0413,C0411
 
 logging.basicConfig(level=logging.DEBUG)
@@ -208,13 +209,6 @@ def mlu_multiply_two(queue, ready, done):
         mlu_event.record()
         done.set()
         del mlu_event
-
-
-def temporarily_replace__sleep():
-    x = torch.zeros((1024, 10240), dtype=torch.float32, device="mlu")
-    y = torch.zeros((10240, 1024), dtype=torch.float32, device="mlu")
-    for i in range(1000):
-        torch.matmul(x, y)
 
 
 def _test_sub_map(queue1, event, queue2):
@@ -612,10 +606,7 @@ class Multiprocessing(TestCase):
         )
         p.start()
         c2p.get()  # wait for until child process is ready
-        # Now mlu not support _sleep ops.
-        # torch.matmul instead of torch.mlu._sleep
-        # torch.mlu._sleep(50000000)  # spin for about 50 ms
-        temporarily_replace__sleep()
+        torch.mlu._sleep(int(50 * get_cycles_per_ms()))  # spin for about 50 ms
 
         event.record()
         p2c.put(0)  # notify child event is recorded
@@ -640,10 +631,7 @@ class Multiprocessing(TestCase):
         with torch.mlu.device(d0):
             e1 = torch.mlu.Event(enable_timing=False, interprocess=True)
             stream = torch.mlu.Stream()
-            # Now mlu not support _sleep ops.
-            # torch.matmul instead of torch.mlu._sleep
-            # torch.mlu._sleep(50000000)  # spin for about 50 ms
-            temporarily_replace__sleep()
+            torch.mlu._sleep(int(50 * get_cycles_per_ms()))  # spin for about 50 ms
             e1.record(stream)
 
         with torch.mlu.device(d1):
@@ -675,10 +663,7 @@ class Multiprocessing(TestCase):
         p.start()
 
         c2p.get()  # wait for child to become ready
-        # Now mlu not support _sleep ops.
-        # torch.matmul instead of torch.mlu._sleep
-        # torch.mlu._sleep(50000000)  # spin for about 50 ms
-        temporarily_replace__sleep()
+        torch.mlu._sleep(int(50 * get_cycles_per_ms()))  # spin for about 50 ms
         e0.record()
         p2c.put(0)  # notify child event is recorded
 
@@ -693,10 +678,7 @@ class Multiprocessing(TestCase):
         stream = torch.mlu.Stream()
         with torch.mlu.stream(stream):
             e1 = torch.mlu.Event.from_ipc_handle(torch.mlu.current_device(), handle)
-            # Now mlu not support _sleep ops.
-            # torch.matmul instead of torch.mlu._sleep
-            # torch.mlu._sleep(50000000)  # spin for about 50 ms
-            temporarily_replace__sleep()
+            torch.mlu._sleep(int(50 * get_cycles_per_ms()))  # spin for about 50 ms
             e1.record()
             c2p.put(0)
             # wait for parent process finished synchronization before

@@ -216,7 +216,7 @@ add_subdirectory(framework)
 if (USE_BANG)
     # Set the header files' path of bangc kernel
     # Build bangc op
-    file(GLOB_RECURSE bang_op_files FOLLOW_SYMLINKS "${CMAKE_CURRENT_SOURCE_DIR}/aten/operators/bang/internal/*.mlu")
+    file(GLOB_RECURSE bang_op_files FOLLOW_SYMLINKS "${CMAKE_CURRENT_SOURCE_DIR}/aten/operators/bang/internal/*.mlu" "${CMAKE_CURRENT_SOURCE_DIR}/aten/utils/sleep.mlu")
     bang_add_library(bangc SHARED "${bang_op_files}")
 endif()
 

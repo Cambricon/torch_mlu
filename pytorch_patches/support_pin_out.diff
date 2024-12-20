@@ -1,0 +1,13 @@
+diff --git a/aten/src/ATen/native/TensorConversions.cpp b/aten/src/ATen/native/TensorConversions.cpp
+index b48ab4c4a9..cc2f4536f2 100644
+--- a/aten/src/ATen/native/TensorConversions.cpp
++++ b/aten/src/ATen/native/TensorConversions.cpp
+@@ -299,7 +299,7 @@ Tensor _to_copy(
+         new_values.device());
+   }
+ 
+-  bool pin_out = (non_blocking && self.is_cuda() && options.device().is_cpu() &&
++  bool pin_out = (non_blocking && (self.is_cuda() || self.device().is_privateuseone()) && options.device().is_cpu() &&
+                   (options.layout() == c10::kStrided));
+ 
+   if (memory_format == MemoryFormat::Preserve) {
