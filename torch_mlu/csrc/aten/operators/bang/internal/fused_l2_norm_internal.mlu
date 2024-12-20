@@ -62,7 +62,7 @@ inline __mlu_func__ void fused_l2_norm_internal(AccT* tensor_nram,
     // pad up
     const int last_part_num = L2NormTempNum - remainder;
     ci_align_num = num_align + last_part_num;
-    __bang_write_zero(tensor_nram + num_align, last_part_num);
+    __bang_write_value(tensor_nram + num_align, last_part_num, 0);
   }
   __bang_sumpool(
       first_sumpool_temp_nram,
@@ -172,7 +172,7 @@ __mlu_func__ static void call_internal(const torch_mlu::bangcommon::BlockInfoWit
         sizeof(FULL_T) * each_cluster_per_tensor_num,
         mluMemcpyDirection_t::GDRAM2NRAM);
     } else {
-      __bang_write_zero(output_nram_buffer_per_tensor, each_cluster_per_tensor_num);
+      __bang_write_value(output_nram_buffer_per_tensor, each_cluster_per_tensor_num, 0);
     }
     __sync_io_move_compute();
   }
@@ -408,7 +408,7 @@ __mlu_global__ void MLUCleanUp(
   #if __BANG_ARCH__ >= 520
   final_value = __bang_sum(tensor_nram, num_of_output);
   #else
-  __bang_write_zero(tensor_nram + num_of_output, pad_num_of_output - num_of_output);
+  __bang_write_value(tensor_nram + num_of_output, pad_num_of_output - num_of_output, 0);
   __bang_sumpool(
       second_sumpool_temp_nram,
       tensor_nram,
@@ -442,7 +442,7 @@ __mlu_global__ void MLUCleanUp(
       // to all zero when malloc. MLU don't do this now. So need to write zero
       // in overflow situation. And other situation no need do thie.
       final_value = 0.0f;
-      __bang_write_zero(tensor_nram_per_tensor, tensor_size);
+      __bang_write_value(tensor_nram_per_tensor, tensor_size, 0);
     }
   }
   __store_gdram(output_ptr, std::sqrtf(final_value));

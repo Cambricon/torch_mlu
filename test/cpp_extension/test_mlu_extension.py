@@ -189,7 +189,7 @@ at::Tensor bang_cos_add(const at::Tensor& x, const at::Tensor& y)
   k_dim.y = 1;
   k_dim.z = 1;
   int32_t tensor_num = x.numel();
-  cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_BLOCK;
+  cnrtFunctionType_t k_type = cnrtFuncTypeBlock;
   auto queue = torch_mlu::getCurMLUStream();
   auto x_impl = torch_mlu::getMluTensorImpl(x);
   auto x_ptr = torch_mlu::mlu_data_ptr(x_impl);

@@ -558,7 +558,7 @@ cnnl__cudnn_rnn_backward(
         (void*)batch_sizes_int_ptr,
         copy_size,
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_HOST2DEV));
+        cnrtMemcpyHostToDev));
     stream.synchronize();
   }
 

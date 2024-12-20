@@ -25,10 +25,10 @@ bool bang_fused_lamb(
     bool use_nvlamb_python) {
   auto stream = getCurMLUStream();
   auto tensor_num = grads.size();
-  cnrtDataType_t cnrt_type =
-      cnnlType2CnrtType(getCnnlType(getMluTensorImpl(grads[0])));
+  cnrtDataType_V2_t cnrt_type =
+      cnnlType2CnrtType_V2(getCnnlType(getMluTensorImpl(grads[0])));
 
-  cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
+  cnrtFunctionType_t k_type = cnrtFuncTypeUnion1;
   cnrtDim3_t k_dim;
   uint32_t union_number = torch_mlu::getDeviceAttr(cnrtAttrClusterCount);
   uint32_t core_dim = torch_mlu::getDeviceAttr(cnrtAttrMcorePerCluster);

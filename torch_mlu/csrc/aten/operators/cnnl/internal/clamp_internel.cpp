@@ -35,58 +35,22 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 namespace ops {
 
-template <typename T, cnrtDataType_V2_t U = cnrtHalf>
+template <typename T>
 T get_bound(at::optional<at::Scalar> input) {
   if (input.has_value())
     return input->to<T>();
   return 0;
 }
 
-template <>
-uint16_t get_bound<uint16_t, cnrtHalf>(at::optional<at::Scalar> input) {
-  if (input.has_value()) {
-    auto temp = input->to<float>();
-    uint16_t result = 0;
-    TORCH_CNRT_CHECK(cnrtCastDataType_V2(
-        static_cast<void*>(&temp),
-        cnrtFloat,
-        static_cast<void*>(&result),
-        cnrtHalf,
-        1,
-        nullptr,
-        cnrtRounding_rm));
-    return result;
-  }
-  return 0;
-}
-
-template <>
-uint16_t get_bound<uint16_t, cnrtBfloat>(at::optional<at::Scalar> input) {
-  if (input.has_value()) {
-    auto temp = input->to<float>();
-    uint16_t result = 0;
-    TORCH_CNRT_CHECK(cnrtCastDataType_V2(
-        static_cast<void*>(&temp),
-        cnrtFloat,
-        static_cast<void*>(&result),
-        cnrtBfloat,
-        1,
-        nullptr,
-        cnrtRounding_rm));
-    return result;
-  }
-  return 0;
-}
-
-template <typename T, cnrtDataType_V2_t U = cnrtHalf>
+template <typename T>
 void clip(
     at::Tensor& output,
     const at::Tensor& self,
     at::optional<at::Scalar> min,
     at::optional<at::Scalar> max) {
   // get bound
-  T min_bound = get_bound<T, U>(min);
-  T max_bound = get_bound<T, U>(max);
+  T min_bound = get_bound<T>(min);
+  T max_bound = get_bound<T>(max);
   // get tensor impl
   auto self_impl = getMluTensorImpl(self);
   auto output_impl = getMluTensorImpl(output);
@@ -174,13 +138,13 @@ void cnnl_clamp_internal(
       clip<int>(output, self, min, max);
       break;
     case 3:
-      clip<uint16_t>(output, self, min, max);
+      clip<at::Half>(output, self, min, max);
       break;
     case 4:
-      clip<uint16_t>(output, self, min, max);
+      clip<at::Half>(output, self, min, max);
       break;
     case 5:
-      clip<uint16_t, cnrtBfloat>(output, self, min, max);
+      clip<at::BFloat16>(output, self, min, max);
       break;
     case 6:
       clip<long>(output, self, min, max);

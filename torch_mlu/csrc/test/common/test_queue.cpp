@@ -167,11 +167,7 @@ TEST(StreamTest, StreamQuery) {
   auto src_ptr = ca->allocate(size);
   auto dst_ptr = ca->allocate(size);
   cnrtMemcpyAsync_V2(
-      dst_ptr.get(),
-      src_ptr.get(),
-      size,
-      stream.stream(),
-      CNRT_MEM_TRANS_DIR_DEV2DEV);
+      dst_ptr.get(), src_ptr.get(), size, stream.stream(), cnrtMemcpyDevToDev);
   ASSERT_FALSE(stream.query());
   stream.synchronize();
   ASSERT_TRUE(stream.query());

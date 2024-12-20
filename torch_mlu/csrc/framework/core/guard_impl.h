@@ -60,7 +60,7 @@ struct TORCH_MLU_API MLUGuardImpl : public c10::impl::DeviceGuardImplInterface {
     int device;
     const auto err = TORCH_CNRT_ERROR_HANDLED(cnrtGetDevice(&device));
     TORCH_CNRT_WARN(err);
-    if (err != CNRT_RET_SUCCESS) {
+    if (err != cnrtSuccess) {
       return c10::nullopt;
     }
     return c10::Device(at::DeviceType::PrivateUse1, device);

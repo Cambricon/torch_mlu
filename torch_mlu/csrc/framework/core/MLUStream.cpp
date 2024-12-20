@@ -36,13 +36,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 
 // Global stream state and constants
-static c10::once_flag init_flag[MLU_DEVICE_NUM_MAX];
+static c10::once_flag init_flag;
 static c10::DeviceIndex num_mlus = -1;
 static constexpr int kStreamsPerPoolBits = 5;
 static constexpr int kStreamsPerPool = 1 << kStreamsPerPoolBits;
 static constexpr int kStreamTypeBits = 4;
 
-static int kLowPriority = 3;
+static int max_stream_priorities;
 
 // Non-default streams
 // Note: the number of MLU devices is determined at run time,
@@ -54,13 +54,12 @@ static int kLowPriority = 3;
 // , see the note in MLUStream.h).
 // The streams are "leaked": they are created but never destroyed because the
 // destruction of global variables could happen after the CNRT has
-// already been destroyed and thus invoking cudaStreamDestroy could lead to a
-// crash. It's likely an issue in CUDA, but to be safe - let's just "forget"
+// already been destroyed and thus invoking cnrtQueueDestroy could lead to a
+// crash. It's likely an issue in MLU, but to be safe - let's just "forget"
 // the destruction.
 
 static c10::once_flag device_flags[MLU_DEVICE_NUM_MAX];
-// See Note [Initializes default streams]
-static cnrtQueue_t default_streams[MLU_DEVICE_NUM_MAX];
+
 static std::atomic<uint32_t>
     priority_counters[max_compile_time_stream_priorities][MLU_DEVICE_NUM_MAX];
 
@@ -162,7 +161,7 @@ static thread_local std::unique_ptr<c10::StreamId[]> current_streams = nullptr;
 
 // Populates global values.
 // Warning: this function must only be called once!
-static void initGlobalStreamState(DeviceIndex device_index) {
+static void initGlobalStreamState() {
   num_mlus = device_count();
   // Check if the number of MLUs matches the expected compile-time max number
   // of MLUs.
@@ -172,25 +171,13 @@ static void initGlobalStreamState(DeviceIndex device_index) {
       "max number of mlus expected (",
       MLU_DEVICE_NUM_MAX,
       "). Increase that and recompile.");
-
-  c10::DeviceGuard device_guard{
-      c10::Device(c10::DeviceType::PrivateUse1, device_index)};
-
-  // Note: [Initializes default streams]
-  // CNRT doesn't support legacy default stream(like cuda legacy default stream,
-  // which means each device has a single NULL stream used for all host
-  // threads), the per-thread default stream is the only one supported by
-  // CNRT(per-thread means each host thread has it's own default stream). To
-  // avoid using the CNRT's default stream, we create and maintain a stream per
-  // device to be used as the default stream. It's worth nothing that creating
-  // streams with CNRT api will trigger cnModuleLoadFatbin and thus takes up MLU
-  // memory, so we use driver's api to create streams, which effectively avoids
-  // this problem.
-  CNcontext pctx;
-  TORCH_CNDRV_CHECK(cnSharedContextAcquire(&pctx, device_index));
-  TORCH_CNDRV_CHECK(cnCtxSetCurrent(pctx));
-  TORCH_CNDRV_CHECK(cnCreateQueueWithPriority(
-      &default_streams[device_index], 0, kLowPriority));
+  int leastPriority = -1, greatestPriority = -1;
+  TORCH_CNRT_CHECK(
+      cnrtDeviceGetQueuePriorityRange(&leastPriority, &greatestPriority);)
+  auto range = leastPriority - greatestPriority + 1;
+  max_stream_priorities = range >= max_compile_time_stream_priorities
+      ? max_compile_time_stream_priorities
+      : range;
 }
 
 // Creates the low and high priority stream pools for the specified device
@@ -202,9 +189,9 @@ static void initDeviceStreamState(DeviceIndex device_index) {
       c10::Device(c10::DeviceType::PrivateUse1, device_index)};
 
   for (const auto i : c10::irange(kStreamsPerPool)) {
-    for (const auto p : c10::irange(max_compile_time_stream_priorities)) {
+    for (const auto p : c10::irange(max_stream_priorities)) {
       auto& stream = streams[p][device_index][i];
-      auto pri = max_compile_time_stream_priorities - 1 - p;
+      auto pri = max_stream_priorities - 1 - p;
       TORCH_CNRT_CHECK(cnrtQueueCreateWithPriority(&stream, 0, pri));
       priority_counters[p][device_index] = 0;
     }
@@ -212,9 +199,9 @@ static void initDeviceStreamState(DeviceIndex device_index) {
 }
 
 // Init front-end to ensure initialization only occurs once
-static void initMLUStreamsOnce(DeviceIndex device_index) {
+static void initMLUStreamsOnce() {
   // Inits default streams (once, globally)
-  c10::call_once(init_flag[device_index], initGlobalStreamState, device_index);
+  c10::call_once(init_flag, initGlobalStreamState);
 
   if (current_streams) {
     return;
@@ -264,13 +251,17 @@ cnrtQueue_t MLUStream::stream() const {
         ").",
         " Did you manufacture the StreamId yourself?  Don't do that; use the",
         " official API like torch_mlu::getStreamFromPool() to get a new stream.");
-    return default_streams[device_index];
+    // cndrv2.x, default stream is per-thread stream,
+    // cndrv>=3.x, default stream is legacy stream.
+    // We return the legacy stream as default stream
+    // forcely to make the behavior same with cuda.
+    return cnrtQueueLegacy;
   } else if (st.isExt()) {
     return reinterpret_cast<cnrtQueue_t>(stream_id);
   } else {
     auto streamType = st.getStreamType();
     TORCH_INTERNAL_ASSERT(
-        streamType >= 1 && streamType <= max_compile_time_stream_priorities,
+        streamType >= 1 && streamType <= max_stream_priorities,
         "Unrecognized stream ",
         stream_,
         " (I didn't recognize the stream type, ",
@@ -286,6 +277,7 @@ cnrtQueue_t MLUStream::stream() const {
 // Note: when called the first time on a device, this will create the
 // stream pools for that device.
 MLUStream getStreamFromPool(const int priority, DeviceIndex device_index) {
+  initMLUStreamsOnce();
   if (device_index == -1) {
     device_index = current_device();
   }
@@ -295,8 +287,6 @@ MLUStream getStreamFromPool(const int priority, DeviceIndex device_index) {
       "Expected mlu stream priority to be less than or equal to 0, got ",
       priority);
 
-  initMLUStreamsOnce(device_index);
-
   check_mlu(device_index);
 
   // Initializes the stream pools (once)
@@ -304,7 +294,7 @@ MLUStream getStreamFromPool(const int priority, DeviceIndex device_index) {
       device_flags[device_index], initDeviceStreamState, device_index);
 
   auto pri_idx = -priority;
-  pri_idx = std::min(pri_idx, max_compile_time_stream_priorities - 1);
+  pri_idx = std::min(pri_idx, max_stream_priorities - 1);
   const auto idx = get_idx(priority_counters[pri_idx][device_index]);
   StreamIdType id_type = StreamIdType(pri_idx + 1);
   return MLUStreamForId(device_index, makeStreamId(id_type, idx));
@@ -313,11 +303,11 @@ MLUStream getStreamFromPool(const int priority, DeviceIndex device_index) {
 MLUStream getStreamFromPool(
     const bool isHighPriority,
     DeviceIndex device_index) {
+  initMLUStreamsOnce();
   if (device_index == -1) {
     device_index = current_device();
   }
-  initMLUStreamsOnce(device_index);
-  int priority = isHighPriority ? -max_compile_time_stream_priorities + 1 : 0;
+  int priority = isHighPriority ? -max_stream_priorities + 1 : 0;
   return getStreamFromPool(priority, device_index);
 }
 
@@ -329,19 +319,19 @@ MLUStream getStreamFromExternal(
 }
 
 MLUStream getDefaultMLUStream(DeviceIndex device_index) {
+  initMLUStreamsOnce();
   if (device_index == -1) {
     device_index = current_device();
   }
-  initMLUStreamsOnce(device_index);
   check_mlu(device_index);
   return MLUStreamForId(device_index, makeStreamId(StreamIdType::DEFAULT, 0));
 }
 
 MLUStream getCurrentMLUStream(DeviceIndex device_index) {
+  initMLUStreamsOnce();
   if (device_index == -1) {
     device_index = current_device();
   }
-  initMLUStreamsOnce(device_index);
   check_mlu(device_index);
   return MLUStreamForId(device_index, current_streams[device_index]);
 }
@@ -351,7 +341,7 @@ cnrtQueue_t getCurMLUStream(DeviceIndex device_index) {
 }
 
 void setCurrentMLUStream(MLUStream stream) {
-  initMLUStreamsOnce(stream.device_index());
+  initMLUStreamsOnce();
   current_streams[stream.device_index()] = stream.id();
 }
 

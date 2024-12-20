@@ -48,7 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TORCH_CNRT_CHECK(EXPR)                                    \
   do {                                                            \
     cnrtRet_t __err = EXPR;                                       \
-    if (C10_UNLIKELY(__err != CNRT_RET_SUCCESS)) {                \
+    if (C10_UNLIKELY(__err != cnrtSuccess)) {                     \
       auto error_unused C10_UNUSED = cnrtGetLastError();          \
       (void)error_unused;                                         \
       TORCH_CHECK(false, "CNRT error: ", cnrtGetErrorStr(__err)); \
@@ -58,7 +58,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TORCH_CNRT_WARN(EXPR)                               \
   do {                                                      \
     cnrtRet_t __err = EXPR;                                 \
-    if (C10_UNLIKELY(__err != CNRT_RET_SUCCESS)) {          \
+    if (C10_UNLIKELY(__err != cnrtSuccess)) {               \
       auto error_unused C10_UNUSED = cnrtGetLastError();    \
       (void)error_unused;                                   \
       TORCH_WARN("CNRT warning: ", cnrtGetErrorStr(__err)); \

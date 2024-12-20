@@ -20,7 +20,7 @@ void dump(
     cnrtDim3_t dim,
     cnrtFunctionType_t ktype,
     cnrtQueue_t queue,
-    cnrtDataType_t cnrt_type);
+    cnrtDataType_V2_t cnrt_type);
 
 void amp_update_scale_internal(
     void* new_scale,
@@ -44,7 +44,7 @@ bool amp_unscale_internal(
     cnrtFunctionType_t k_type,
     cnrtDim3_t k_dim,
     cnrtQueue_t queue,
-    cnrtDataType_t cnrt_type);
+    cnrtDataType_V2_t cnrt_type);
 
 bool amp_unscale_internal(
     const void* const* scaled_grads,
@@ -56,7 +56,7 @@ bool amp_unscale_internal(
     cnrtFunctionType_t k_type,
     cnrtDim3_t k_dim,
     cnrtQueue_t queue,
-    cnrtDataType_t cnrt_type);
+    cnrtDataType_V2_t cnrt_type);
 
 template <cnrtDataType_V2_t value, int depth>
 void bang_fused_l2_norm_internal(
@@ -168,8 +168,8 @@ void bang_fused_sgd_internal(
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    cnrtDataType_t in_type,
-    cnrtDataType_t out_type,
+    cnrtDataType_V2_t in_type,
+    cnrtDataType_V2_t out_type,
     int N);
 
 void bang_fused_lamb_internal(
@@ -196,7 +196,7 @@ void bang_fused_lamb_internal(
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    cnrtDataType_t cnrt_type);
+    cnrtDataType_V2_t cnrt_type);
 
 void bang_fused_lamb_amp_internal(
     AddressList grad,
@@ -225,8 +225,8 @@ void bang_fused_lamb_amp_internal(
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    cnrtDataType_t grad_cnrt_type,
-    cnrtDataType_t param_cnrt_type);
+    cnrtDataType_V2_t grad_cnrt_type,
+    cnrtDataType_V2_t param_cnrt_type);
 
 } // namespace ops
 } // namespace torch_mlu

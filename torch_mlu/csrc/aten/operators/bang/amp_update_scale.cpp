@@ -92,7 +92,7 @@ at::Tensor& bang__amp_update_scale_(
 
   // amp unscale
   cnrtDim3_t dim = {1, 1, 1};
-  cnrtFunctionType_t ktype = CNRT_FUNC_TYPE_BLOCK;
+  cnrtFunctionType_t ktype = cnrtFuncTypeBlock;
   auto compute_stream = getCurrentMLUStream();
 
   amp_update_scale_internal(

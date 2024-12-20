@@ -110,7 +110,7 @@ at::Tensor cnnl_pool2d_internal(
         extra_host_input,
         extra_input_size,
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_HOST2DEV));
+        cnrtMemcpyHostToDev));
     stream.synchronize();
   }
 

@@ -41,11 +41,11 @@ void amp_unscale_impl(
     const std::vector<uint64_t>& tensors_numel,
     void* found_inf_ptr,
     void* inv_scale_ptr,
-    cnrtDataType_t cnrt_type) {
+    cnrtDataType_V2_t cnrt_type) {
   // get current stream
   auto compute_stream = getCurrentMLUStream();
 
-  cnrtFunctionType_t func_type = CNRT_FUNC_TYPE_UNION1;
+  cnrtFunctionType_t func_type = cnrtFuncTypeUnion1;
   uint32_t union_number = torch_mlu::getDeviceAttr(cnrtAttrClusterCount);
   uint32_t core_dim = torch_mlu::getDeviceAttr(cnrtAttrMcorePerCluster);
   cnrtDim3_t k_dim = {core_dim, union_number, 1};
@@ -115,9 +115,9 @@ void bang__amp_foreach_non_finite_check_and_unscale_(
   auto device = scaled_grads[0].device();
   auto scalar_type = scaled_grads[0].scalar_type();
   auto cnrt_type =
-      cnnlType2CnrtType(getCnnlType(getMluTensorImpl(scaled_grads[0])));
+      cnnlType2CnrtType_V2(getCnnlType(getMluTensorImpl(scaled_grads[0])));
   TORCH_CHECK(
-      CNRT_FLOAT32 == cnrt_type || CNRT_FLOAT16 == cnrt_type,
+      cnrtFloat == cnrt_type || cnrtHalf == cnrt_type,
       "Currently amp_unscale only support float32 and float16 dtype, not implemented for ",
       toString(scalar_type));
 

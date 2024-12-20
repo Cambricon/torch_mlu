@@ -92,16 +92,6 @@ at::ScalarType cnnlType2ScalarType(cnnlDataType_t cnnl_dtype) {
   }
 }
 
-#define CNNL_TYPE_AND_CNRT_TYPE(_)  \
-  _(CNNL_DTYPE_FLOAT, CNRT_FLOAT32) \
-  _(CNNL_DTYPE_HALF, CNRT_FLOAT16)  \
-  _(CNNL_DTYPE_INT32, CNRT_INT32)   \
-  _(CNNL_DTYPE_INT8, CNRT_INT8)     \
-  _(CNNL_DTYPE_UINT8, CNRT_UINT8)   \
-  _(CNNL_DTYPE_BOOL, CNRT_BOOL)     \
-  _(CNNL_DTYPE_INT16, CNRT_INT16)   \
-  _(CNNL_DTYPE_INT64, CNRT_INT64)
-
 #define CNNL_TYPE_AND_CNRT_TYPE_V2(_)                   \
   _(CNNL_DTYPE_BFLOAT16, (cnrtDataType_V2_t)cnrtBfloat) \
   _(CNNL_DTYPE_INT16, (cnrtDataType_V2_t)cnrtShort)     \
@@ -112,20 +102,6 @@ at::ScalarType cnnlType2ScalarType(cnnlDataType_t cnnl_dtype) {
   _(CNNL_DTYPE_INT8, (cnrtDataType_V2_t)cnrtChar)       \
   _(CNNL_DTYPE_UINT8, (cnrtDataType_V2_t)cnrtUchar)     \
   _(CNNL_DTYPE_BOOL, (cnrtDataType_V2_t)cnrtBoolean)
-
-cnrtDataType_t cnnlType2CnrtType(cnnlDataType_t cnnl_data_type) {
-  switch (cnnl_data_type) {
-#define DEFINE_CASE(cnnl_dtype, cnrt_dtype) \
-  case cnnl_dtype:                          \
-    return cnrt_dtype;
-    CNNL_TYPE_AND_CNRT_TYPE(DEFINE_CASE)
-#undef DEFINE_CASE
-    default: {
-      CNLOG(ERROR) << "Invalid data type from cnnl to cnrt!";
-      return CNRT_INVALID;
-    }
-  }
-}
 
 cnrtDataType_V2_t cnnlType2CnrtType_V2(cnnlDataType_t cnnl_data_type) {
   switch (cnnl_data_type) {

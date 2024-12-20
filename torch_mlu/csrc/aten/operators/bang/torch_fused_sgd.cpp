@@ -59,7 +59,7 @@ void _fused_sgd_mlu_internal_(
   auto stream = getCurMLUStream();
   const int64_t device_index = params[0].get_device();
   // compute kernel dim
-  cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
+  cnrtFunctionType_t k_type = cnrtFuncTypeUnion1;
   cnrtDim3_t k_dim;
   k_dim.x = torch_mlu::getDeviceProperties(device_index)->core_num_per_cluster;
   k_dim.y = torch_mlu::getDeviceProperties(device_index)->cluster_count;

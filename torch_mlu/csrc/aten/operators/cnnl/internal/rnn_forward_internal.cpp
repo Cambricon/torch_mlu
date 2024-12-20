@@ -87,7 +87,7 @@ cnnl_rnn_training_internal(
         (void*)batch_sizes_int_ptr,
         copy_size,
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_HOST2DEV));
+        cnrtMemcpyHostToDev));
     stream.synchronize();
   }
 

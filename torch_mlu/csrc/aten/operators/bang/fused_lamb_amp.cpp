@@ -55,7 +55,7 @@ void _fused_lamb_amp_common(
       c10::checked_convert<int, int64_t>(grad_averaging, "int");
   auto mode_cvt = c10::checked_convert<int, int64_t>(mode, "int");
 
-  cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
+  cnrtFunctionType_t k_type = cnrtFuncTypeUnion1;
   cnrtDim3_t k_dim;
   uint32_t union_number = torch_mlu::getDeviceAttr(cnrtAttrClusterCount);
   uint32_t core_dim = torch_mlu::getDeviceAttr(cnrtAttrMcorePerCluster);
@@ -84,10 +84,10 @@ void _fused_lamb_amp_common(
   float* fp_workspace =
       static_cast<float*>(mlu_data_ptr(getMluTensorImpl(workspace)));
 
-  cnrtDataType_t grad_cnrt_type =
-      cnnlType2CnrtType(getCnnlType(getMluTensorImpl(grads[0])));
-  cnrtDataType_t param_cnrt_type =
-      cnnlType2CnrtType(getCnnlType(getMluTensorImpl(params[0])));
+  cnrtDataType_V2_t grad_cnrt_type =
+      cnnlType2CnrtType_V2(getCnnlType(getMluTensorImpl(grads[0])));
+  cnrtDataType_V2_t param_cnrt_type =
+      cnnlType2CnrtType_V2(getCnnlType(getMluTensorImpl(params[0])));
   auto stream = getCurMLUStream();
   AddressList g, m, v, p, half_p;
   SizeList sizes;

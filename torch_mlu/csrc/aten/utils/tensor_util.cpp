@@ -125,7 +125,7 @@ void copy_to_cpu(at::Tensor& dst, const at::Tensor& src, bool non_blocking) {
         mlu_data_ptr(src_impl),
         descriptor_size,
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_DEV2HOST));
+        cnrtMemcpyDevToHost));
   } else {
     cast_src_cpu_tensor = at::empty_strided(
         src.sizes(),
@@ -139,7 +139,7 @@ void copy_to_cpu(at::Tensor& dst, const at::Tensor& src, bool non_blocking) {
         mlu_data_ptr(src_impl),
         descriptor_size,
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_DEV2HOST));
+        cnrtMemcpyDevToHost));
   }
   bool is_pinned = isPinnedPtr(output_ptr);
   if (!(non_blocking && is_pinned)) {
@@ -218,7 +218,7 @@ void copy_from_cpu(at::Tensor& dst, const at::Tensor& src, bool non_blocking) {
         cast_cpu_ptr,
         cast_cpu_tensor.nbytes(),
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_HOST2DEV));
+        cnrtMemcpyHostToDev));
     bool is_pinned = isPinnedPtr(cast_cpu_ptr);
     if (!(non_blocking && is_pinned)) {
       stream.synchronize();

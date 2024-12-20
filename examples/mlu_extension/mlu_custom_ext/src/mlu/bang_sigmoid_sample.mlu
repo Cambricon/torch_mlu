@@ -44,11 +44,11 @@ __mlu_global__ void bang_sigmoid_kernel(T *d_dst, T *d_src, int N) {
   }
 }
 template<typename T>
-void bang_sigmoid_kernel_entry(cnrtQueue *queue, T *d_dst, T *d_src,
+void bang_sigmoid_kernel_entry(cnrtQueue_t queue, T *d_dst, T *d_src,
                            int elem_count) {
   cnrtDim3_t dim = {1, 1, 1};
   int taskDims = dim.x * dim.y * dim.z;
-  cnrtFunctionType_t c = CNRT_FUNC_TYPE_BLOCK;
+  cnrtFunctionType_t c = cnrtFuncTypeBlock;
   if (elem_count < taskDims) {
     dim.x = 1;
     dim.y = 1;
@@ -69,15 +69,15 @@ void bang_sigmoid_sample(T *h_dst, T *h_src, const int elem_count) {
       cnrtMalloc(reinterpret_cast<void **>(&d_dst), elem_count * sizeof(T));
 
   ret = cnrtMemcpy(d_src, h_src, elem_count * sizeof(T),
-                   CNRT_MEM_TRANS_DIR_HOST2DEV);
+                   cnrtMemcpyHostToDev);
 
   bang_sigmoid_kernel_entry(queue, d_dst, d_src, elem_count);
   cnrtQueueSync(queue);
   ret = cnrtMemcpy(h_dst, d_dst, elem_count * sizeof(T),
-                   CNRT_MEM_TRANS_DIR_DEV2HOST);
+                   cnrtMemcpyDevToHost);
 
   ret = cnrtQueueDestroy(queue);
 }
 template void bang_sigmoid_sample(float*, float*, int);
-template void bang_sigmoid_kernel_entry(cnrtQueue *, float *, float *, int);
+template void bang_sigmoid_kernel_entry(cnrtQueue_t, float *, float *, int);
 

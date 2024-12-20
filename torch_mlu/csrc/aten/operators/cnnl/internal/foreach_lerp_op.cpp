@@ -123,7 +123,7 @@ void cnnl_foreach_lerp_op(
         cpu_workspace_ptr.get(),
         workspace_size,
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_HOST2DEV));
+        cnrtMemcpyHostToDev));
     CachingHostAllocator_recordEvent(
         cpu_workspace_ptr.get(), cpu_workspace_ptr.get_context(), stream);
   }
