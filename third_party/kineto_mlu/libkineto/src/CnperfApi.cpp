@@ -104,8 +104,11 @@ void CnperfApi::fillCpuActivities(
 void CnperfApi::saveExternalId(
     cnperfDataOpRange_t* data,
     std::vector<std::pair<uint64_t, uint64_t>>* time_to_external_id) {
-  time_to_external_id->emplace_back(
-      std::make_pair(data->start, data->external_correlation_id));
+  if (data->external_correlation_id > 0 &&
+      static_cast<int64_t>(data->start) > 0) {
+    time_to_external_id->emplace_back(
+        std::make_pair(data->start, data->external_correlation_id));
+  }
 }
 
 // static
