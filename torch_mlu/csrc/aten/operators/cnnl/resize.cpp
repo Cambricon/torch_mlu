@@ -72,7 +72,7 @@ void resize_bytes_mlu(
         const_cast<void*>(storage->data()),
         std::min(mlu_nbytes, mlu_size_bytes),
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_DEV2DEV));
+        cnrtMemcpyDevToDev));
   }
   // Destructively overwrite data_ptr
   storage->set_data_ptr_noswap(std::move(data));

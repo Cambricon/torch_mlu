@@ -46,8 +46,6 @@ TORCH_MLU_API cnnlDataType_t getCnnlDataType(const at::ScalarType& data_type);
 
 TORCH_MLU_API at::ScalarType cnnlType2ScalarType(cnnlDataType_t cnnl_dtype);
 
-TORCH_MLU_API cnrtDataType_t cnnlType2CnrtType(cnnlDataType_t cnnl_data_type);
-
 TORCH_MLU_API cnrtDataType_V2_t
 cnnlType2CnrtType_V2(cnnlDataType_t cnnl_data_type);
 
@@ -92,6 +90,7 @@ struct CPPTypeToCNRTTypeValue<double> {
 };
 
 template <typename scalar_t>
-inline constexpr cnrtDataType_V2_t CPPTypeToCNRTTypeValue_v = CPPTypeToCNRTTypeValue<scalar_t>::value;
+inline constexpr cnrtDataType_V2_t CPPTypeToCNRTTypeValue_v =
+    CPPTypeToCNRTTypeValue<scalar_t>::value;
 
 } // namespace torch_mlu

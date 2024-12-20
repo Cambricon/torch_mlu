@@ -46,7 +46,7 @@ void resize_bytes_mlu(c10::StorageImpl* storage, size_t size_bytes) {
           const_cast<void*>(storage->data()),
           std::min(storage->nbytes(), size_bytes),
           stream.stream(),
-          CNRT_MEM_TRANS_DIR_DEV2DEV));
+          cnrtMemcpyDevToDev));
     }
     storage->set_data_ptr(std::move(data));
     storage->set_nbytes(size_bytes);

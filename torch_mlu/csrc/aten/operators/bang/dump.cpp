@@ -8,14 +8,14 @@ bool bang_dump(const at::Tensor& input) {
   auto input_impl = getMluTensorImpl(input);
   auto input_ptr = input_impl->mlu_data_ptr();
   int32_t size = input.numel();
-  cnrtDataType_t cnrt_type = cnnlType2CnrtType(getCnnlType(input_impl));
+  cnrtDataType_V2_t cnrt_type = cnnlType2CnrtType_V2(getCnnlType(input_impl));
   TORCH_MLU_CHECK(
-      CNRT_FLOAT32 == cnrt_type || CNRT_FLOAT16 == cnrt_type,
+      cnrtFloat == cnrt_type || cnrtHalf == cnrt_type,
       "Currently only support float32 and float16 dtype, ",
       "not implemented for ",
       toString(input.scalar_type()));
   cnrtDim3_t dim = {1, 1, 1};
-  cnrtFunctionType_t ktype = CNRT_FUNC_TYPE_BLOCK;
+  cnrtFunctionType_t ktype = cnrtFuncTypeBlock;
   auto stream = getCurMLUStream();
   dump(input_ptr, size, dim, ktype, stream, cnrt_type);
   cnrtQueueSync(stream);

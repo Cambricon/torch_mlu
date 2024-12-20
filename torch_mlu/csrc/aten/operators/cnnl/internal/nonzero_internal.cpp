@@ -79,7 +79,7 @@ at::Tensor& cnnl_nonzero_internal(at::Tensor& out, const at::Tensor& self) {
       num_true_ptr,
       sizeof(uint32_t),
       stream.stream(),
-      CNRT_MEM_TRANS_DIR_DEV2HOST));
+      cnrtMemcpyDevToHost));
   stream.synchronize();
   std::vector<int64_t> outshape = {num_nonzeros, dim_num};
 

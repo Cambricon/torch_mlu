@@ -86,9 +86,9 @@ bool MLUEvent::query() const {
     return true;
   }
   cnrtRet_t err = cnrtQueryNotifier(event_);
-  if (err == CNRT_RET_SUCCESS) {
+  if (err == cnrtSuccess) {
     return true;
-  } else if (err != CNRT_RET_WARNING_FAKE_DEVICE) {
+  } else if (err != cnrtErrorNotReady) {
     TORCH_CNRT_CHECK(err);
   }
   return false;

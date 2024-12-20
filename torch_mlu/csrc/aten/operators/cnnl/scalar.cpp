@@ -48,7 +48,7 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
         tensor_ptr,
         sizeof(float),
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_DEV2HOST);
+        cnrtMemcpyDevToHost);
     stream.synchronize();
     return at::Scalar(static_cast<double>(value));
   }
@@ -62,7 +62,7 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
         tensor_ptr,
         2 * sizeof(float),
         stream.stream(),
-        CNRT_MEM_TRANS_DIR_DEV2HOST);
+        cnrtMemcpyDevToHost);
     stream.synchronize();
     c10::complex<double> valueDouble = value;
     return at::Scalar(valueDouble);
@@ -84,7 +84,7 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
             tensor_ptr,
             sizeof(scalar_t),
             stream.stream(),
-            CNRT_MEM_TRANS_DIR_DEV2HOST);
+            cnrtMemcpyDevToHost);
         stream.synchronize();
         r = at::Scalar(value);
       });

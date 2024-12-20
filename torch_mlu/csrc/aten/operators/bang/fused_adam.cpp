@@ -76,7 +76,7 @@ bool bang_fused_adam(
   auto stream = getCurMLUStream();
   const int64_t device_index = ref_device.index();
   // compute kernel dim
-  cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
+  cnrtFunctionType_t k_type = cnrtFuncTypeUnion1;
   cnrtDim3_t k_dim;
   k_dim.x = torch_mlu::getDeviceProperties(device_index)->core_num_per_cluster;
   k_dim.y = torch_mlu::getDeviceProperties(device_index)->cluster_count;

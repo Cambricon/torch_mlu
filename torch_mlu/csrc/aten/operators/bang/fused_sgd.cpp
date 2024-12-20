@@ -27,13 +27,13 @@ bool bang_fused_sgd(
     double scale) {
   auto stream = getCurMLUStream();
   auto tensor_num = grads.size();
-  cnrtDataType_t in_type =
-      cnnlType2CnrtType(getCnnlType(getMluTensorImpl(grads[0])));
-  cnrtDataType_t out_type =
-      cnnlType2CnrtType(getCnnlType(getMluTensorImpl(params_in[0])));
+  cnrtDataType_V2_t in_type =
+      cnnlType2CnrtType_V2(getCnnlType(getMluTensorImpl(grads[0])));
+  cnrtDataType_V2_t out_type =
+      cnnlType2CnrtType_V2(getCnnlType(getMluTensorImpl(params_in[0])));
   int N = params_out.empty() ? 3 : 4;
 
-  cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
+  cnrtFunctionType_t k_type = cnrtFuncTypeUnion1;
   cnrtDim3_t k_dim;
   uint32_t union_number = torch_mlu::getDeviceAttr(cnrtAttrClusterCount);
   uint32_t core_dim = torch_mlu::getDeviceAttr(cnrtAttrMcorePerCluster);

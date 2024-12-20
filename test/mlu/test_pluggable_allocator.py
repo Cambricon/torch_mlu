@@ -181,16 +181,17 @@ class PluggableAllocatorTestCases(TestCase):
         # test set begin_allocate_to_pool
         import torch_mlu
 
-        torch_mlu._MLUC._mlu_beginAllocateCurrentStreamToPool(0, [0, 0])
-        self.assertEqual(enable_alloc_pool.value, True)
-
-        # test set end_allocate_to_pool
-        torch_mlu._MLUC._mlu_endAllocateCurrentStreamToPool(0, [0, 0])
-        self.assertEqual(end_alloc_pool.value, True)
-
-        # test set set_release_pool
-        torch_mlu._MLUC._mlu_releasePool(0, [0, 0])
-        self.assertEqual(release_pool.value, True)
+        s = torch.mlu.Stream()
+        pool = torch.mlu.graph_pool_handle()
+        with torch.mlu.stream(s):
+            torch_mlu._MLUC._mlu_beginAllocateCurrentStreamToPool(0, pool)
+            self.assertEqual(enable_alloc_pool.value, True)
+            # test set end_allocate_to_pool
+            torch_mlu._MLUC._mlu_endAllocateCurrentStreamToPool(0, pool)
+            self.assertEqual(end_alloc_pool.value, True)
+            # test set set_release_pool
+            torch_mlu._MLUC._mlu_releasePool(0, pool)
+            self.assertEqual(release_pool.value, True)
 
         # called_dummy_alloc should be 123 if dummy_alloc was used to allocate
         # out tensor

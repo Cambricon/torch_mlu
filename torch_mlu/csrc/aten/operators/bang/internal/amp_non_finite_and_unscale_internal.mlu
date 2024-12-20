@@ -33,7 +33,7 @@ void launch_amp_unscale(void **inputs_addr,
                         cnrtFunctionType_t k_type,
                         cnrtDim3_t k_dim,
                         cnrtQueue_t queue,
-                        cnrtDataType_t cnrt_type) {
+                        cnrtDataType_V2_t cnrt_type) {
   C chunk;
   int32_t count = 0;
   for (int32_t i = 0; i < tensors_num; ++i) {
@@ -41,10 +41,10 @@ void launch_amp_unscale(void **inputs_addr,
     chunk.input_numel[i % chunk_size] = inputs_elem_num[i];
     count++;
     if ((count == chunk_size) || (i == (tensors_num - 1))) {
-      if (CNRT_FLOAT32 == cnrt_type) {
+      if (cnrtFloat == cnrt_type) {
         MLUUnion1KernelAmpNonFiniteCheckAndUnscaleList<float, C><<<k_dim, k_type, queue>>>(chunk,
               (const float *)found_inf, (const float *)inv_scale, (float *)found_inf_out, count);
-      } else if (CNRT_FLOAT16 == cnrt_type) {
+      } else if (cnrtHalf == cnrt_type) {
         MLUUnion1KernelAmpNonFiniteCheckAndUnscaleList<half, C><<<k_dim, k_type, queue>>>(chunk,
               (const float *)found_inf, (const float *)inv_scale, (float *)found_inf_out, count);
       }
@@ -61,14 +61,14 @@ bool amp_unscale_internal(void *scaled_grad,
                           cnrtFunctionType_t k_type,
                           cnrtDim3_t k_dim,
                           cnrtQueue_t queue,
-                          cnrtDataType_t cnrt_type) {
+                          cnrtDataType_V2_t cnrt_type) {
   bool ret = true;
   switch(cnrt_type) {
-    case CNRT_FLOAT32:
+    case cnrtFloat:
       MLUUnion1KernelAmpNonFiniteCheckAndUnscale<float><<<k_dim, k_type, queue>>>((float *)scaled_grad,
         (const float *)found_inf, (const float *)inv_scale, (float *)found_inf_out, elem_num);
       break;
-    case CNRT_FLOAT16:
+    case cnrtHalf:
       MLUUnion1KernelAmpNonFiniteCheckAndUnscale<half><<<k_dim, k_type, queue>>>((half *)scaled_grad,
         (const float *)found_inf, (const float *)inv_scale, (float *)found_inf_out, elem_num);
       break;
@@ -88,7 +88,7 @@ bool amp_unscale_internal(const void *const * scaled_grads,
                           cnrtFunctionType_t k_type,
                           cnrtDim3_t k_dim,
                           cnrtQueue_t queue,
-                          cnrtDataType_t cnrt_type) {
+                          cnrtDataType_V2_t cnrt_type) {
   if (tensors_num <= 0) {
     return false;
   }

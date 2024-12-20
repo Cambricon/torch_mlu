@@ -338,34 +338,35 @@ __mlu_global__ void MLUMultiTensorSGD(
     bool first_run,
     bool wd_after_momentum,
     float scale,
-    cnrtDataType_t in_type,
-    cnrtDataType_t out_type,
+    cnrtDataType_V2_t in_type,
+    cnrtDataType_V2_t out_type,
     int N) {
   if (*overflow) {
     return;
   }
 
+  // cnrtFloat = 0x2, cnrtHalf = 0x3
   int combined_dtype = 100 * N + 10 * static_cast<int>(in_type) + static_cast<int>(out_type);
   switch (combined_dtype) {
-    case 498:
+    case 333:
       ApplySGD<half, half, 3, Casthalf2half3>(
           g, i, m, o, s, tensor_num, weight_decay,
           momentum, dampening, learning_rate, nesterov,
           first_run, wd_after_momentum, scale);
       break;
-    case 509:
+    case 322:
       ApplySGD<float, float, 3, Castfloat2float3>(
           g, i, m, o, s, tensor_num, weight_decay,
           momentum, dampening, learning_rate, nesterov,
           first_run, wd_after_momentum, scale);
       break;
-    case 599:
+    case 432:
       ApplySGD<half, float, 4, Casthalf2float4>(
           g, i, m, o, s, tensor_num, weight_decay,
           momentum, dampening, learning_rate, nesterov,
           first_run, wd_after_momentum, scale);
       break;
-    case 609:
+    case 422:
       ApplySGD<float, float, 4, Castfloat2float4>(
           g, i, m, o, s, tensor_num, weight_decay,
           momentum, dampening, learning_rate, nesterov,
@@ -395,8 +396,8 @@ void bang_fused_sgd_internal(
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    cnrtDataType_t in_type,
-    cnrtDataType_t out_type,
+    cnrtDataType_V2_t in_type,
+    cnrtDataType_V2_t out_type,
     int N) {
   MLUMultiTensorSGD<<<k_dim, k_type, queue>>>(
       g, i, m, o, s, tensor_num, overflow,

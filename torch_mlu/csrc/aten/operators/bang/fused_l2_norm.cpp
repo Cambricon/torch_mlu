@@ -50,7 +50,7 @@ std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm_common(
       ref_device.type() == at::kPrivateUse1, "expected input to be on mlu.");
   auto stream = getCurMLUStream();
   const int64_t device_index = ref_device.index();
-  cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
+  cnrtFunctionType_t k_type = cnrtFuncTypeUnion1;
   cnrtDim3_t k_dim;
   k_dim.x = torch_mlu::getDeviceProperties(device_index)->core_num_per_cluster;
   k_dim.y = torch_mlu::getDeviceProperties(device_index)->cluster_count;
@@ -163,7 +163,7 @@ std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm_common(
           // using block task to reduce cluster data to
           // output and output_per_tensor
           const int cluster_num = k_dim.y;
-          k_type = CNRT_FUNC_TYPE_BLOCK;
+          k_type = cnrtFuncTypeBlock;
           k_dim.x = 1;
           k_dim.y = 1;
           bang_fused_l2_norm_clean_internal(

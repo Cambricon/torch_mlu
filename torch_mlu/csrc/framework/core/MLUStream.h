@@ -103,7 +103,7 @@ class TORCH_MLU_API MLUStream {
   bool query() const {
     c10::DeviceGuard guard{stream_.device()};
     cnrtRet_t err = cnrtQueueQuery(stream());
-    if (err == CNRT_RET_SUCCESS) {
+    if (err == cnrtSuccess) {
       return true;
     } else if (err != cnrtErrorNotReady) {
       TORCH_CNRT_CHECK(err);

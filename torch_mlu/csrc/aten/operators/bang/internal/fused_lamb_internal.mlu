@@ -496,15 +496,15 @@ __mlu_global__ void MLUMultiTensorLAMBStage1(
                       void* global_param_norm,
                       void* global_update_norm,
                       int* overflow,
-                      cnrtDataType_t cnrt_type) {
+                      cnrtDataType_V2_t cnrt_type) {
   switch(cnrt_type) {
-    case CNRT_FLOAT32:
+    case cnrtFloat:
       ApplyLAMB<float, 1>(grad, param, m, v, sizes, global_grad_norm, tensor_num, 
         beta1, beta2, epsilon_correction, 1.f/*learning_rate_*/, decay, correction_rate,
         max_grad_norm, mode, grad_averaging, false,
         (float*)global_param_norm, (float*)global_update_norm);
       break;
-    case CNRT_FLOAT16:
+    case cnrtHalf:
       ApplyLAMB<half, 1>(grad, param, m, v, sizes, global_grad_norm, tensor_num, 
         beta1, beta2, epsilon_correction, 1.f/*learning_rate_*/, decay, correction_rate,
         max_grad_norm, mode, grad_averaging, false,
@@ -527,16 +527,16 @@ __mlu_global__ void MLUMultiTensorLAMBStage2(
                       void* global_param_norm,
                       void* global_update_norm,
                       int* overflow,
-                      cnrtDataType_t cnrt_type) {
+                      cnrtDataType_V2_t cnrt_type) {
   switch(cnrt_type) {
-    case CNRT_FLOAT32:
+    case cnrtFloat:
       ApplyLAMB<float, 2>(grad, param, grad, param, /*just a placeholder*/
         sizes, NULL, tensor_num, 1.f/*beta1,*/, 1.f/*beta2,*/, 
         0.f/*epsilon_correction*/, learning_rate, decay, correction_rate,
         1.f/*max_grad_norm*/, 0/*mode*/, 0/*grad_averaging*/,
         use_adaptive_lr, (float*)global_param_norm, (float*)global_update_norm);
       break;
-    case CNRT_FLOAT16:
+    case cnrtHalf:
       ApplyLAMB<half, 2>(grad, param, grad, param, /*just a placeholder*/
         sizes, NULL, tensor_num, 1.f/*beta1,*/, 1.f/*beta2,*/, 
         0.f/*epsilon_correction*/, learning_rate, decay, correction_rate,
@@ -572,7 +572,7 @@ void bang_fused_lamb_internal(
     cnrtDim3_t k_dim,
     cnrtFunctionType_t k_type,
     cnrtQueue_t queue,
-    cnrtDataType_t cnrt_type) {
+    cnrtDataType_V2_t cnrt_type) {
   MLUMultiTensorLAMBStage1<<<k_dim, k_type, queue>>>(
       grad, param, m, v,
       sizes, global_grad_norm, tensor_num, beta1, beta2,
