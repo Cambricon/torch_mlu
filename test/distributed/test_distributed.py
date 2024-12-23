@@ -45,6 +45,7 @@ from common_utils import (
     TEST_LARGETENSOR,
     largeTensorTest,
     OutputGrabber,
+    getGCCVersion,
 )
 
 TEST_BFLOAT16 = read_card_info()
@@ -544,6 +545,10 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
         )
 
     # @unittest.skip("not test")
+    @unittest.skipUnless(
+        len(getGCCVersion()) > 0 and getGCCVersion()["major"] >= 9,
+        "\033[1;35m GCC version {version} detected. GCC versions below 9 are not supported for compiling PyTorch. Skipping test case. \033[0m",
+    )
     def test_custom_reduce_sum(self):
         _, rank = self._init_global_test()
         world_size = dist.get_world_size()
