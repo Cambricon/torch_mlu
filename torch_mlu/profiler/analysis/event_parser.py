@@ -206,10 +206,10 @@ class NodeParserMixin:
             if op_node:
                 tid2list[int(tid)].append(op_node)
         elif event.type == EventTypes.USER_ANNOTATION:
-            if event.name in CnclOpNameSet:
+            if event.name.startswith("cncl:"):
                 cncl_anno_node = UserAnnotationNode.create(event)
                 tid2cncl_annos[int(tid)].append(cncl_anno_node)
-            elif event.args.get("op name", None) in CnclOpNameSet:
+            elif event.args.get("op name", "").startswith("cncl:"):
                 comm_node = CommunicationNode.create(event)
                 comm_node_list.append(comm_node)
         elif event.type == EventTypes.PL_PROFILE:

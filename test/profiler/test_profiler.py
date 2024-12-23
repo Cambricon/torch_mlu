@@ -21,6 +21,8 @@ import torch.nn as nn
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
+from torch_mlu.profiler.analysis.api import analyze_data
+
 from utils import (
     get_kernel_total_info_from_json,
     get_kernel_total_info_from_kernel_details_csv,
@@ -43,7 +45,6 @@ from torch.profiler import (
 )
 
 from torch.autograd.profiler import profile as _profile
-from torch.autograd.profiler import record_function as _record_function
 from torch.autograd import _disable_profiler
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
@@ -761,8 +762,6 @@ class TestProfiler(TestCase):
 
             self.assertTrue(os.path.exists(trace_file_path))
 
-            from torch_mlu.profiler.analysis.api import analyze_data
-
             analyze_data(trace_file_path)
 
             kernel_details_csv_file_path = os.path.join(
@@ -1037,6 +1036,99 @@ class TestProfiler(TestCase):
                         self.assertTrue(found_cnrt_memcpy)
                         self.assertTrue(found_invoke_kernel)
                         self.assertFalse(found_cnnl_descripter)
+
+    @testinfo()
+    def test_profiler_analyze_user_annotation(self):
+        # 1. test non-cncl annotation without args(op name) param
+        # 2. test cncl annotation
+        # 3. test user custom annotion but with 'cncl:' prefix
+        json_content = """
+[{
+  "ph": "X", "cat": "user_annotation", "name": "DistributedDataParallel.forward", "pid": 20261, "tid": 20261,
+  "ts": 6952242792010.749, "dur": 1807275.117,
+  "args": {
+    "External id": 2,"Record function id": 0, "Ev Idx": 12544
+  }
+},
+{
+  "ph": "X", "cat": "cpu_op", "name": "c10d::broadcast_", "pid": 20261, "tid": 20261,
+  "ts": 6952242802022.600, "dur": 235.213,
+  "args": {
+    "External id": 111,"Record function id": 0, "Ev Idx": 12653
+  }
+},
+{
+  "ph": "X", "cat": "user_annotation", "name": "cncl:broadcast", "pid": 20261, "tid": 20261,
+  "ts": 6952242802074.985, "dur": 174.351,
+  "args": {
+    "External id": 112,"Record function id": 0, "Ev Idx": 12654
+  }
+},
+{
+  "ph": "X", "cat": "mlu_user_annotation", "name": "cnclRingTcdpBroadcast", "pid": 0, "tid": 20261,
+  "ts": 6952242802137.758, "dur": 102.602,
+  "args": {
+    "External id": 112,"type": "COLLETIVE", "op name": "cncl:broadcast", "clique id": 228118042, "rank": 0, "bytes": 212480
+  }
+},
+{
+  "ph": "X", "cat": "user_annotation", "name": "cncl:custom_user_anno", "pid": 20261, "tid": 20261,
+  "ts": 6952242817958.113, "dur": 137.878,
+  "args": {
+    "External id": 169,"Record function id": 0, "Ev Idx": 12654
+  }
+},
+{
+  "ph": "X", "cat": "mlu_user_annotation", "name": "cncl:custom_user_anno", "pid": 0, "tid": 21,
+  "ts": 6952242818001.305, "dur": 155884.843,
+  "args": {
+    "External id": 169
+  }
+}]
+"""
+        except_comm_line = [
+            "20261",
+            "cnclRingTcdpBroadcast",
+            "6952242802137.758",
+            "212480",
+            "102.6015625",
+            "2070.924",
+            "0",
+            "228118042",
+            "COLLETIVE",
+            "c10d::broadcast_",
+        ]
+        with TemporaryDirectoryName() as dname:
+            trace_json = json.loads(json_content)
+            trace_json = {"schemaVersion": 1, "traceEvents": trace_json}
+            trace_file_path = os.path.join(
+                dname, "default_worker.default_span.pt.trace.json"
+            )
+            with open(trace_file_path, "w") as ofile:
+                json.dump(trace_json, ofile, indent=4)
+
+            self.assertTrue(os.path.exists(trace_file_path))
+
+            analyze_data(trace_file_path)
+
+            comm_csv_file_path = os.path.join(
+                dname,
+                "cambricon_output",
+                "default_worker-default_span",
+                "communication_op_details.csv",
+            )
+            self.assertTrue(os.path.exists(comm_csv_file_path))
+            only_one_line = False
+            with open(comm_csv_file_path, "r", newline="") as csvfile:
+                reader = csv.reader(csvfile)
+                header = next(reader)
+                line1 = next(reader)
+                self.assertEqual(line1, except_comm_line)
+                try:
+                    line2 = next(reader)
+                except StopIteration:
+                    only_one_line = True
+            self.assertTrue(only_one_line)
 
 
 if __name__ == "__main__":
