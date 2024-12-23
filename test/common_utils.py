@@ -140,6 +140,24 @@ def skipBFloat16IfNotSupport():
     return loader
 
 
+def getGCCVersion():
+    import subprocess
+
+    output = subprocess.check_output(["gcc", "--version"], text=True)
+    first_line = output.splitlines()[0]
+    version = first_line.split()[3]
+    try:
+        parts = list(map(int, version.split(".")))
+        return {
+            "major": parts[0],
+            "minor": parts[1] if len(parts) > 1 else 0,
+            "patch": parts[2] if len(parts) > 2 else 0,
+        }
+    except Exception as e:
+        print("An error occured when get gcc version: {e}")
+        return []
+
+
 def skipDtypeNotSupport(*dtypes):
     def loader(func):
         def wrapper(*args, **kwargs):
