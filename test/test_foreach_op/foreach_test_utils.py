@@ -212,6 +212,4 @@ class ForeachOpTest(object):
                 # the result may include INF and NAN. Skip checking for such cases.
                 if not torch.isfinite(each_cpu).all():
                     continue
-                tensor_check(
-                    each_cpu.float(), each_mlu.cpu().float(), self.err, use_MSE=True
-                )
+                tensor_check(each_cpu.to(dtype), each_mlu.cpu(), self.err, use_MSE=True)
