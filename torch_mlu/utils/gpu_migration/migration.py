@@ -283,13 +283,17 @@ other_fn_list = [
 
 
 # add new tuples here to adapt new substitution
-substitution_list = [
-    ("nccl", "cncl"),
-    ("nvtx", "cnpx"),
-    ("CUDAGraph", "MLUGraph"),
-    ("is_available", "is_cncl_available"),
-    ("CUDAPluggableAllocator", "MLUPluggableAllocator"),
-]
+substitution_list = {
+    "torch.cuda": [
+        ("nccl", "cncl"),
+        ("nvtx", "cnpx"),
+        ("CUDAGraph", "MLUGraph"),
+        ("CUDAPluggableAllocator", "MLUPluggableAllocator"),
+    ],
+    "torch.cuda.graphs": [("CUDAGraph", "MLUGraph")],
+    "torch.cuda.nccl": [("is_available", "is_cncl_available")],
+    "torch.cuda.memory": [("CUDAPluggableAllocator", "MLUPluggableAllocator")],
+}
 
 
 # handle profiler, set use_cuda=False
@@ -522,10 +526,11 @@ def rough_type_comparison(obj1, obj2):
 # Check whether all of the modules in __all__ have been wrapped/ patched. If not, a warning will be provided
 def check_patch_succeeded(source_module, dest_module):
     if hasattr(source_module, "__all__"):
+        substitutions = substitution_list.get(dest_module.__name__, [])
         for attr in source_module.__all__:
             # process substitution list
             attr_dst = attr
-            for dst_sub, src_sub in substitution_list:
+            for dst_sub, src_sub in substitutions:
                 if attr == src_sub:
                     attr_dst = dst_sub
             try:
@@ -599,6 +604,7 @@ def warning_wrapper(obj, obj_name):
 def update_dict(source_module, dest_module):
     source_dict = source_module.__dict__
     dest_dict = dest_module.__dict__
+    substitutions = substitution_list.get(dest_module.__name__, [])
     # torch.cuda
     updates = {}
     for dest_key in dest_dict.copy():
@@ -608,7 +614,7 @@ def update_dict(source_module, dest_module):
             continue
         # torch_mlu.mlu
         for source_key in source_dict:
-            if source_key == dest_key or (dest_key, source_key) in substitution_list:
+            if source_key == dest_key or (dest_key, source_key) in substitutions:
                 # Report a warning and skip the current substitution when two eponymous have different types
                 if not rough_type_comparison(
                     source_dict[source_key], dest_dict[dest_key]
