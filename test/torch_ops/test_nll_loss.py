@@ -182,6 +182,7 @@ class TestOps(TestCase):
             reduct_lst, N_lst, C_lst, ignore_lst, weight_lst, dtype_err_lst
         )
         for reduct, N, C, ignore, weight_flag, dtype_err in product_lst:
+            torch.manual_seed(1)
             dtype, err = dtype_err
             x_t = torch.randn(N, C, dtype=dtype)
             x_t.requires_grad = True
