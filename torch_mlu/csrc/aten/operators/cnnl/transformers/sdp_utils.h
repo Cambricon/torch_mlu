@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include <cmath>
 #include "ATen/Context.h"
 #include "ATen/core/Tensor.h"
@@ -449,8 +450,10 @@ inline double ceiling(double number, double significance) {
 inline bool check_fused_kernel_mlu_support(
     sdp_params const& params,
     bool debug) {
+  // TODO:PYTORCH-13387
+  const std::set<int> supported_versions{5, 6};
   DeviceProp* prop = torch_mlu::getDeviceProperties(params.query.get_device());
-  if ((*prop).major != 5) {
+  if (supported_versions.find((*prop).major) == supported_versions.end()) {
     if (debug) {
       TORCH_WARN(
           "Both fused kernels only supports specified MLU series.",
