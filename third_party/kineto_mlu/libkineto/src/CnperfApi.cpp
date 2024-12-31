@@ -28,7 +28,8 @@ CnperfApi& CnperfApi::singleton() {
 CnperfApi::CnperfApi() {
   // define the folder path to save cnperf data
   const char* raw_data_path = std::getenv("TORCH_MLU_PROFILER_OUTPUT_PATH");
-  const char* data_path = raw_data_path ? raw_data_path : "./TORCH_PROFILER_RAW_DATA";
+  const char* data_path =
+      raw_data_path ? raw_data_path : "./TORCH_PROFILER_RAW_DATA";
   const std::filesystem::path root_path{data_path};
   const std::filesystem::path pid{std::to_string(processId())};
   const std::filesystem::path fspath = root_path / pid;
@@ -36,14 +37,14 @@ CnperfApi::CnperfApi() {
     int ret = access(fspath.c_str(), W_OK);
     // return 0 means ok with write permission
     if (ret != 0) {
-      LOG(ERROR) << "Write permission denied for directory: [" << data_path << "]";
+      LOG(ERROR) << "Write permission denied for directory: [" << data_path
+                 << "]";
       exit(1);
     }
   } else {
     try {
       std::filesystem::create_directories(fspath);
-    }
-    catch (std::filesystem::filesystem_error const& ex) {
+    } catch (std::filesystem::filesystem_error const& ex) {
       LOG(ERROR) << ex.what();
       exit(1);
     }
@@ -62,8 +63,10 @@ CnperfApi::CnperfApi() {
     const auto env = std::getenv("TORCH_MLU_ENABLE_CATCHING_MLUGRAPH_OP");
     if (env) {
       std::string env_str = env;
-      std::transform(env_str.begin(), env_str.end(), env_str.begin(),
-                    [](unsigned char c) { return std::tolower(c); });
+      std::transform(
+          env_str.begin(), env_str.end(), env_str.begin(), [](unsigned char c) {
+            return std::tolower(c);
+          });
       if (env_str == "true" || env_str == "1" || env_str == "on") {
         result = true;
       }
@@ -90,10 +93,12 @@ void CnperfApi::fillCpuActivities(
     // Here set param start_ts of transCPUTimeToCnperfTime to 0 because
     // of Cnperf internal will minus start_ts.
     op_range.start = transCPUTimeToCnperfTime(cpu_act->timestamp(), 0);
-    op_range.end = transCPUTimeToCnperfTime(
-        cpu_act->timestamp() + cpu_act->duration(), 0);
+    op_range.end =
+        transCPUTimeToCnperfTime(cpu_act->timestamp() + cpu_act->duration(), 0);
     op_range.thread_id = cpu_act->resourceId();
-    op_range.name = cpu_act->name().c_str();
+    // avoid using rvalue std::string here.
+    auto temp_name = cpu_act->name();
+    op_range.name = temp_name.c_str();
     op_range.extra = "";
     CNPERF_CALL(cnperfSessionRecordData(
         session_, CNPERF_RECORD_DATA_TYPE_OP_RANGE, &op_range));
@@ -114,23 +119,25 @@ void CnperfApi::saveExternalId(
 // static
 void CnperfApi::saveTasktopoExternalOp(
     cnperfDataOpRange_t* data,
-    std::vector<std::pair<uint64_t, std::pair<uint64_t, std::string>>>* time_to_external_op) {
+    std::vector<std::pair<uint64_t, std::pair<uint64_t, std::string>>>*
+        time_to_external_op) {
   // Don't need link user_annotation to mlugraph kernels
-  if (singleton().user_external_ids_.find(data->external_correlation_id)
-      == singleton().user_external_ids_.end()) {
-    time_to_external_op->emplace_back(
-        std::make_pair(data->start,
-            std::make_pair(data->external_correlation_id, data->name)));
+  if (singleton().user_external_ids_.find(data->external_correlation_id) ==
+      singleton().user_external_ids_.end()) {
+    time_to_external_op->emplace_back(std::make_pair(
+        data->start,
+        std::make_pair(data->external_correlation_id, data->name)));
   }
 }
 
-//static
+// static
 void CnperfApi::savePmuData(
     const cnperfDataPmuInfo_t* pmu_info,
     const cnperfDataPmuValue_t* value,
     uint64_t* corrid) {
   // -1 represents all clusters/cores' total value
-  if (pmu_info->cluster_id != -1 || pmu_info->core_id != -1) return;
+  if (pmu_info->cluster_id != -1 || pmu_info->core_id != -1)
+    return;
   uint64_t cast_value = 0;
   CnperfPmuData cur_pmu{pmu_info->name, uint64_t(0)};
   switch (pmu_info->type) {
@@ -156,7 +163,8 @@ void CnperfApi::processFunction(cnperfDataFunction_t* data, void* userdata) {
       transCnperfTimeToCPUTime(data->start, singleton().cnperf_start_ts_),
       transCnperfTimeToCPUTime(data->end, singleton().cnperf_start_ts_),
       data->thread_id,
-      data->name, data->extra);
+      data->name,
+      data->extra);
   // Find the external_id for each runtime api base on corrid.
   // CnperfApi will return all external apis. We only pick top
   // of stack, that 'start' is bigest.
@@ -173,20 +181,24 @@ void CnperfApi::processFunction(cnperfDataFunction_t* data, void* userdata) {
     std::pair<uint64_t, uint64_t> default_id = {0, 0};
     std::pair<uint64_t, uint64_t> user_id = {0, 0};
     for (const auto& [time, id] : time_to_external_id) {
-      if (singleton().user_external_ids_.find(id) != singleton().user_external_ids_.end()
-          && user_id.first < time) {
+      if (singleton().user_external_ids_.find(id) !=
+              singleton().user_external_ids_.end() &&
+          user_id.first < time) {
         user_id = {time, id};
       }
-      if (singleton().user_external_ids_.find(id) == singleton().user_external_ids_.end()
-          && default_id.first < time) {
+      if (singleton().user_external_ids_.find(id) ==
+              singleton().user_external_ids_.end() &&
+          default_id.first < time) {
         default_id = {time, id};
       }
     }
     if (user_id.second > 0) {
-      singleton().user_correlation_map_.insert({data->correlation_id, user_id.second});
+      singleton().user_correlation_map_.insert(
+          {data->correlation_id, user_id.second});
     }
     if (default_id.second > 0) {
-      singleton().cpu_correlation_map_.insert({data->correlation_id, default_id.second});
+      singleton().cpu_correlation_map_.insert(
+          {data->correlation_id, default_id.second});
     }
   }
 }
@@ -198,7 +210,8 @@ void CnperfApi::processDeviceTask(
   std::pair<uint64_t, std::string> tasktopo_external_op;
   if (singleton().enable_catching_mlugraph_op_) {
     // Time to op id and op name
-    std::vector<std::pair<uint64_t, std::pair<uint64_t, std::string>>> time_to_external_op;
+    std::vector<std::pair<uint64_t, std::pair<uint64_t, std::string>>>
+        time_to_external_op;
     // Usually the external call stack is not too deep,
     // set to 32 here to reduce the overhead of reallocating memory.
     time_to_external_op.reserve(32);
@@ -210,36 +223,42 @@ void CnperfApi::processDeviceTask(
         &time_to_external_op));
     if (!time_to_external_op.empty()) {
       auto top_external_op_iter = std::max_element(
-          time_to_external_op.begin(), time_to_external_op.end(),
-          [](const auto& a, const auto& b) {
-            return a.first < b.first;
-          });
+          time_to_external_op.begin(),
+          time_to_external_op.end(),
+          [](const auto& a, const auto& b) { return a.first < b.first; });
       if (top_external_op_iter != time_to_external_op.end()) {
-        tasktopo_external_op = {top_external_op_iter->second.first,
-                                top_external_op_iter->second.second};
+        tasktopo_external_op = {
+            top_external_op_iter->second.first,
+            top_external_op_iter->second.second};
       }
     }
   }
   singleton().all_records_->device_task_records.emplace_back(
-      data->type, data->process_id, data->correlation_id,
+      data->type,
+      data->process_id,
+      data->correlation_id,
       transCnperfTimeToCPUTime(data->start, singleton().cnperf_start_ts_),
       transCnperfTimeToCPUTime(data->end, singleton().cnperf_start_ts_),
-      data->device_id, data->context_id, data->queue_id,
-      data->tasktopo_id, data->tasktopo_node_id,
+      data->device_id,
+      data->context_id,
+      data->queue_id,
+      data->tasktopo_id,
+      data->tasktopo_node_id,
       data->is_async,
-      data->name, data->extra,
+      data->name,
+      data->extra,
       tasktopo_external_op.first,
       std::move(tasktopo_external_op.second));
   singleton().device_task_correlations_->emplace(data->correlation_id);
   if (CnperfPmuApi::singleton().enabled()) {
     uint64_t cur_corrid = data->correlation_id;
     CNPERF_CALL(cnperfParserGetKernelPmuData(
-          singleton().parser_,
-          data->correlation_id,
-          data->tasktopo_id,
-          data->tasktopo_node_id,
-          (cnperfParserKernelPmuDataCallback)CnperfApi::savePmuData,
-          &cur_corrid));
+        singleton().parser_,
+        data->correlation_id,
+        data->tasktopo_id,
+        data->tasktopo_node_id,
+        (cnperfParserKernelPmuDataCallback)CnperfApi::savePmuData,
+        &cur_corrid));
   }
 }
 
@@ -248,8 +267,8 @@ void CnperfApi::processCommData(
     const cnperfDataOpRange_t* op_range,
     const cnperfDataCommTask_t* data,
     void* userdata) {
-  if (singleton().user_external_ids_.find(
-          op_range->external_correlation_id) != singleton().user_external_ids_.end() &&
+  if (singleton().user_external_ids_.find(op_range->external_correlation_id) !=
+          singleton().user_external_ids_.end() &&
       std::string(op_range->name).find("cncl:") == 0) {
     singleton().all_records_->comm_records.emplace_back(
         op_range->thread_id,
@@ -300,10 +319,8 @@ void CnperfApi::process(
       CNPERF_PARSER_DATA_TYPE_DEVICE_TASK,
       (cnperfParserDataCallback)CnperfApi::processDeviceTask,
       nullptr));
-  CNPERF_CALL(cnperfParserGetCommDataInOpRange(
-      parser_,
-      processCommData,
-      nullptr));
+  CNPERF_CALL(
+      cnperfParserGetCommDataInOpRange(parser_, processCommData, nullptr));
 
   CNPERF_CALL(cnperfParserDestroy(parser_));
   CNPERF_CALL(cnperfSessionDestroy(session_));
