@@ -68,19 +68,29 @@ class TestEnd2End(unittest.TestCase):
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     if s.connect_ex(("localhost", port)) != 0:
                         return port
-        port = find_free_port()
 
         try:
-            if env:
-                env_copy = os.environ.copy()
-                env_copy.update(env)
-                env = env_copy
-            if not path_prefix:
-                tb = Popen(['tensorboard', '--logdir='+test_folder, '--port='+str(port)], env=env)
-            else:
-                tb = Popen(['tensorboard', '--logdir='+test_folder, '--port='+str(port),
-                           '--path_prefix='+path_prefix], env=env)
-            self._test_tensorboard(host, port, expected_runs, path_prefix)
+            retry_times = 10
+            while True:
+                try:
+                    port = find_free_port()
+                    if env:
+                        env_copy = os.environ.copy()
+                        env_copy.update(env)
+                        env = env_copy
+                    if not path_prefix:
+                        tb = Popen(['tensorboard', '--logdir='+test_folder, '--port='+str(port)], env=env)
+                    else:
+                        tb = Popen(['tensorboard', '--logdir='+test_folder, '--port='+str(port),
+                                '--path_prefix='+path_prefix], env=env)
+                    self._test_tensorboard(host, port, expected_runs, path_prefix)
+                    break
+                except Exception:
+                    time.sleep(2)
+                    retry_times -= 1
+                    if retry_times < 0:
+                        self.fail('tensorboard server start timeout')
+                    continue
         finally:
             pid = tb.pid
             print('tensorboard process {} is terminating.'.format(pid))
