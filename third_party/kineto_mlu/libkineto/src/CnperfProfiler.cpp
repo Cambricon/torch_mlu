@@ -469,7 +469,8 @@ void CnperfProfiler::configure(
   }
 
   if (libkineto::api().client()) {
-    libkineto::api().client()->warmup(config_->isOpInputsCollectionEnabled());
+    // kineto_mlu not support client profiler.
+    libkineto::api().client()->prepare(false, false, false, false, false);
   }
 
   if (derivedConfig_->isProfilingByIteration()) {
