@@ -618,7 +618,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_fwd_internal(
   int window_size_right = -1;
 
   auto compute_dtype = CNNL_DTYPE_FLOAT;
-  auto prefer = CNNL_ACTIVATION_HIGH_PRECISION;
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
 
   MaskParamsFwd mask_params{
       window_size_left,
@@ -629,11 +629,12 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_fwd_internal(
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
       me_desc, mask_params.left_size, mask_params.right_size, dilation));
 
-  TORCH_CNNL_CHECK(cnnlSetFlashAttentionDescriptor(
+  TORCH_CNNL_CHECK(cnnlSetFlashAttentionDescriptor_v2(
       me_desc,
       compute_dtype,
       prefer,
       mask_params.attn_mask_mode,
+      CNNL_ATTN_TENSOR_LAYOUT_PACKED,
       /*is_pack_mode = */ true,
       false,
       false,
@@ -873,7 +874,7 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_bwd_internal(
   int32_t dilation = 1;
 
   auto compute_dtype = CNNL_DTYPE_FLOAT;
-  auto prefer = CNNL_ACTIVATION_HIGH_PRECISION;
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
   MaskParamsBwd mask_params{
       window_size_left,
       window_size_right,
@@ -883,11 +884,12 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_bwd_internal(
   TORCH_CNNL_CHECK(cnnlSetFlashAttentionSlidingWindowSize(
       me_desc, mask_params.left_size, mask_params.right_size, dilation));
 
-  TORCH_CNNL_CHECK(cnnlSetFlashAttentionBackwardDescriptor(
+  TORCH_CNNL_CHECK(cnnlSetFlashAttentionBackwardDescriptor_v2(
       me_desc,
       compute_dtype,
       prefer,
       mask_params.attn_mask_mode,
+      CNNL_ATTN_TENSOR_LAYOUT_PACKED,
       /*is_pack_mode = */ true,
       /*is_out_zero = */ false,
       /*is_store_softmax_d = */ false,
