@@ -40,9 +40,9 @@ at::Tensor& cnnl_convolution_backward_input_internal(
     at::Tensor& input_grad,
     const at::Tensor& output_grad,
     const at::Tensor& weight,
-    const int64_t* stride,
-    const int64_t* padding,
-    const int64_t* dilation,
+    const std::vector<int64_t>& stride,
+    const std::vector<int64_t>& padding,
+    const std::vector<int64_t>& dilation,
     int64_t groups,
     bool benchmark,
     bool deterministic,
@@ -124,9 +124,9 @@ at::Tensor& cnnl_convolution_backward_input_internal(
         getTensorDesc(output_grad_impl, output_grad_cnnl_type, layout);
     conv_desc.set(
         input_dim,
-        stride,
-        padding,
-        dilation,
+        stride.data(),
+        padding.data(),
+        dilation.data(),
         groups,
         compute_dtype,
         allow_tf32);
