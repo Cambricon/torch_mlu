@@ -34,14 +34,107 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace torch_mlu {
 namespace ops {
 
+BenchmarkCache<cnnlConvolutionFwdAlgoPerf_t> fwd_algos;
+
+template <>
+struct algorithm_search<cnnlConvolutionFwdAlgoPerf_t> {
+  using perf_t = cnnlConvolutionFwdAlgoPerf_t;
+  using algo_t = cnnlConvolutionForwardAlgo_t;
+
+  static constexpr auto DEFAULT_ALGO = CNNL_CONVOLUTION_FWD_ALGO_DIRECT;
+
+  static BenchmarkCache<perf_t>& cache() {
+    return fwd_algos;
+  }
+
+  static std::vector<perf_t> findAlgorithms(
+      const ConvolutionArgs& args,
+      bool benchmark) {
+    // TODO(CNNLCORE-23840): need cnnl give CUDNN_CONVOLUTION_FWD_ALGO_COUNT
+    static constexpr int num_algos = 23;
+    int returned_algo_count;
+
+    std::unique_ptr<perf_t[]> perf_results(new perf_t[num_algos]);
+    if (!benchmark) {
+      returned_algo_count = 1;
+      // TODO(CNNLCORE-23840): When deterministic==false && benchmark==false,
+      // non-deterministic training cannot be guaranteed.
+      perf_results[0].algo = CNNL_CONVOLUTION_FWD_ALGO_DIRECT;
+      getWorkspaceSize(args, perf_results[0].algo, &(perf_results[0].memory));
+    } else {
+      // Sets the algorithm search strategy
+      // This mode guarantees to return global optimal algorithm, but might be
+      // time-consuming.
+      cnnlConvolutionFwdAlgoSearchMode_t search_mode =
+          CNNL_CONVOLUTION_FWD_ALGO_SEARCH_EXHAUSTIVE;
+      TORCH_CNNL_CHECK(cnnlSetConvolutionDescriptorAlgoSearchMode(
+          args.cdesc.desc(), search_mode));
+
+      // Use the algo with the largest mlu memory
+      // CNNL_CONVOLUTION_FWD_ALGO_DIRECT to ensure that there is enough
+      // memory during the search for the optimal algorithm.
+      size_t workspace_size = 0;
+      cnnlConvolutionForwardAlgo_t algo_max_space =
+          CNNL_CONVOLUTION_FWD_ALGO_DIRECT;
+      getWorkspaceSize(args, algo_max_space, &workspace_size);
+      auto workspace_ptr =
+          torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+
+      // cnnl will go through all possible kernels and find the algo with the
+      // shortest hardware time.
+      TORCH_CNNL_CHECK(cnnlFindConvolutionForwardAlgo(
+          /* handle               */ args.handle,
+          /* args.cdesc           */ args.cdesc.desc(),
+          /* alpha                */ nullptr,
+          /* x_desc               */ args.idesc.get(),
+          /* x                    */ args.input_ptr,
+          /* w_desc               */ args.wdesc.get(),
+          /* w                    */ args.weight_ptr,
+          /* bias_desc            */ args.bdesc.get(),
+          /* bias                 */ args.bias_ptr,
+          /* beta                 */ nullptr,
+          /* y_desc               */ args.odesc.get(),
+          /* y                    */ args.output_ptr,
+          /* requested_algo_count */ num_algos,
+          /* returned_algo_count  */ &returned_algo_count,
+          /* perf_results         */ perf_results.get(),
+          /* workspace            */ workspace_ptr.get(),
+          /* workspace_size       */ workspace_size));
+
+      // Free the cached blocks in our caching allocator. They are
+      // needed here because the above benchmarking uses a huge amount of
+      // memory, e.g. a few GBs.
+      torch_mlu::MLUCachingAllocator::emptyCache();
+    }
+    return getValidAlgorithms<perf_t>(
+        perf_results.get(), args, returned_algo_count);
+  }
+
+  // get algo.memory when not call cnnlFindConvolutionForwardAlgo to get algo
+  static void getWorkspaceSize(
+      const ConvolutionArgs& args,
+      algo_t algo,
+      size_t* workspace_size) {
+    TORCH_CNNL_CHECK(cnnlGetConvolutionForwardWorkspaceSize(
+        args.handle,
+        args.idesc.get(),
+        args.wdesc.get(),
+        args.odesc.get(),
+        args.bdesc.get(),
+        args.cdesc.desc(),
+        algo,
+        workspace_size));
+  }
+};
+
 at::Tensor& cnnl_convolution_forward_internal(
     at::Tensor& output,
     const at::Tensor& input,
     const at::Tensor& weight,
     const at::Tensor& bias,
-    const int64_t* padding,
-    const int64_t* stride,
-    const int64_t* dilation,
+    const std::vector<int64_t>& padding,
+    const std::vector<int64_t>& stride,
+    const std::vector<int64_t>& dilation,
     int64_t groups,
     bool benchmark,
     bool deterministic,
@@ -50,14 +143,14 @@ at::Tensor& cnnl_convolution_forward_internal(
   auto input_impl = getMluTensorImpl(input);
   auto weight_impl = getMluTensorImpl(weight);
   auto output_impl = getMluTensorImpl(output);
-  tensorDescPtr_t input_desc;
-  tensorDescPtr_t weight_desc;
-  tensorDescPtr_t bias_desc;
-  tensorDescPtr_t output_desc;
-  CnnlConvolutionDescriptor conv_desc;
-  size_t workspace_size = 0;
-  // get current handle
-  auto handle = getCurrentHandle();
+
+  ConvolutionArgs args{
+      mlu_data_ptr(input_impl),
+      mlu_data_ptr(output_impl),
+      mlu_data_ptr(weight_impl)};
+
+  // get current args.handle
+  args.handle = getCurrentHandle();
 
   // prepare desc
   const int64_t input_dim = input.dim();
@@ -76,20 +169,21 @@ at::Tensor& cnnl_convolution_forward_internal(
   if (input_scalar_type != at::kFloat)
     allow_tf32 = false;
   const auto& weight_size = weight.sizes();
+
   if (is_can_coalesce_second_dim(
           weight_size, input_dim, padding, stride, dilation)) {
     constexpr int64_t fixed_dim = 4;
     std::vector<int64_t> tensor_shape;
     tensor_shape.resize(fixed_dim);
-    coalesce_conv_second_dim(input, input_cnnl_type, input_desc, tensor_shape);
+    coalesce_conv_second_dim(input, input_cnnl_type, args.idesc, tensor_shape);
     coalesce_conv_second_dim(
-        weight, weight_cnnl_type, weight_desc, tensor_shape);
+        weight, weight_cnnl_type, args.wdesc, tensor_shape);
     coalesce_conv_second_dim(
-        output, output_cnnl_type, output_desc, tensor_shape);
+        output, output_cnnl_type, args.odesc, tensor_shape);
     int64_t padding_t[2] = {padding[1], padding[2]};
     int64_t stride_t[2] = {stride[1], stride[2]};
     int64_t dilation_t[2] = {dilation[1], dilation[2]};
-    conv_desc.set(
+    args.cdesc.set(
         fixed_dim,
         stride_t,
         padding_t,
@@ -102,13 +196,13 @@ at::Tensor& cnnl_convolution_forward_internal(
     constexpr int64_t fixed_dim = 4;
     std::vector<int64_t> tensor_shape;
     tensor_shape.resize(fixed_dim);
-    coalesce_conv_last_dim(input, input_cnnl_type, input_desc, tensor_shape);
-    coalesce_conv_last_dim(weight, weight_cnnl_type, weight_desc, tensor_shape);
-    coalesce_conv_last_dim(output, output_cnnl_type, output_desc, tensor_shape);
+    coalesce_conv_last_dim(input, input_cnnl_type, args.idesc, tensor_shape);
+    coalesce_conv_last_dim(weight, weight_cnnl_type, args.wdesc, tensor_shape);
+    coalesce_conv_last_dim(output, output_cnnl_type, args.odesc, tensor_shape);
     int64_t padding_t[2] = {padding[0], 0};
     int64_t stride_t[2] = {stride[0], 1};
     int64_t dilation_t[2] = {dilation[0], 1};
-    conv_desc.set(
+    args.cdesc.set(
         fixed_dim,
         stride_t,
         padding_t,
@@ -117,40 +211,27 @@ at::Tensor& cnnl_convolution_forward_internal(
         compute_dtype,
         allow_tf32);
   } else {
-    input_desc = getTensorDesc(input_impl, input_cnnl_type, layout);
+    args.idesc = getTensorDesc(input_impl, input_cnnl_type, layout);
     // depth wise only support 4 dimension.
     if (is_depth_wise_conv) {
-      weight_desc =
+      args.wdesc =
           getTensorDesc(weight_impl, weight_cnnl_type, CNNL_LAYOUT_HWCN);
     } else {
-      weight_desc = getTensorDesc(weight_impl, weight_cnnl_type, layout);
+      args.wdesc = getTensorDesc(weight_impl, weight_cnnl_type, layout);
     }
-    output_desc = getTensorDesc(output_impl, output_cnnl_type, layout);
-    conv_desc.set(
+    args.odesc = getTensorDesc(output_impl, output_cnnl_type, layout);
+    args.cdesc.set(
         input_dim,
-        stride,
-        padding,
-        dilation,
+        stride.data(),
+        padding.data(),
+        dilation.data(),
         groups,
         compute_dtype,
         allow_tf32);
   }
 
-  // prepare conv desc
-  cnnlConvolutionFwdPreference_t pre_t = CNNL_CONVOLUTION_FWD_FASTEST;
-  cnnlConvolutionForwardAlgo_t algo_t;
-
-  TORCH_CNNL_CHECK(cnnlGetConvolutionForwardAlgorithm(
-      handle,
-      conv_desc.desc(),
-      input_desc.get(),
-      weight_desc.get(),
-      output_desc.get(),
-      pre_t,
-      &algo_t));
-
   // prepare bias
-  void* bias_ptr = nullptr;
+  args.bias_ptr = nullptr;
   if (bias.defined() && bias.dim() != 0 && bias.numel() != 0) {
     TORCH_CHECK(
         bias.dim() == 1,
@@ -159,47 +240,49 @@ at::Tensor& cnnl_convolution_forward_internal(
         bias.dim(),
         " dim.");
     auto bias_impl = getMluTensorImpl(bias);
-    bias_desc = getTensorDesc(bias_impl, CNNL_LAYOUT_ARRAY);
-    bias_ptr = mlu_data_ptr(bias_impl);
+    args.bdesc = getTensorDesc(bias_impl, CNNL_LAYOUT_ARRAY);
+    args.bias_ptr = mlu_data_ptr(bias_impl);
   }
 
-  // prepare workspace
-  TORCH_CNNL_CHECK(cnnlGetConvolutionForwardWorkspaceSize(
-      handle,
-      input_desc.get(),
-      weight_desc.get(),
-      output_desc.get(),
-      bias_desc.get(),
-      conv_desc.desc(),
-      algo_t,
-      &workspace_size));
-  auto workspace_ptr =
-      torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+  // set conv params for search.
+  setConvolutionParams(
+      &args.params,
+      input,
+      weight,
+      // the condition for triggering cnnlFindConvolutionForwardAlgo must also
+      // check for bias.
+      bias,
+      padding,
+      stride,
+      dilation,
+      groups,
+      deterministic,
+      allow_tf32,
+      layout);
 
-  // malloc mlu memory
-  auto input_ptr = mlu_data_ptr(input_impl);
-  auto weight_ptr = mlu_data_ptr(weight_impl);
-  auto output_ptr = mlu_data_ptr(output_impl);
+  AlgoIterator<cnnlConvolutionFwdAlgoPerf_t>(args, benchmark)
+      .try_all([&](const cnnlConvolutionFwdAlgoPerf_t& fwdAlgPerf) {
+        auto workspace_ptr =
+            torch_mlu::MLUCachingAllocator::get()->allocate(fwdAlgPerf.memory);
 
-  const void* alpha = nullptr;
-  const void* beta = nullptr;
+        TORCH_CNNL_CHECK(cnnlConvolutionForward(
+            /* handle         */ args.handle,
+            /* conv_desc      */ args.cdesc.desc(),
+            /* algo           */ fwdAlgPerf.algo,
+            /* alpha          */ nullptr,
+            /* x_desc         */ args.idesc.get(),
+            /* x_ptr          */ args.input_ptr,
+            /* w_desc         */ args.wdesc.get(),
+            /* w_ptr          */ args.weight_ptr,
+            /* bias_desc      */ args.bdesc.get(),
+            /* bias_ptr       */ args.bias_ptr,
+            /* workspace      */ workspace_ptr.get(),
+            /* workspace_size */ fwdAlgPerf.memory,
+            /* beta           */ nullptr,
+            /* y_desc         */ args.odesc.get(),
+            /* y_ptr          */ args.output_ptr));
+      });
 
-  TORCH_CNNL_CHECK(cnnlConvolutionForward(
-      /* handle         */ handle,
-      /* conv_desc      */ conv_desc.desc(),
-      /* algo           */ algo_t,
-      /* alpha          */ alpha,
-      /* x_desc         */ input_desc.get(),
-      /* x_ptr          */ input_ptr,
-      /* w_desc         */ weight_desc.get(),
-      /* w_ptr          */ weight_ptr,
-      /* bias_desc      */ bias_desc.get(),
-      /* bias_ptr       */ bias_ptr,
-      /* workspace      */ workspace_ptr.get(),
-      /* workspace_size */ workspace_size,
-      /* beta           */ beta,
-      /* y_desc         */ output_desc.get(),
-      /* y_ptr          */ output_ptr));
   return output;
 }
 
