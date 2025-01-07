@@ -65,7 +65,7 @@ void cnnl_upsample_internal(
   auto input_ptr = mlu_data_ptr(input_impl);
   auto output_ptr = mlu_data_ptr(output_impl);
 
-  c10::SmallVector<float, 4> scales;
+  c10::SmallVector<double, 4> scales;
   if (scales_d.has_value()) {
     scales.push_back(scales_d.value());
   }
