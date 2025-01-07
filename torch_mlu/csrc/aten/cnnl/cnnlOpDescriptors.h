@@ -363,12 +363,12 @@ class CnnlInterpDescriptor : public CnnlDescriptor<
  public:
   CnnlInterpDescriptor() {}
   void set(
-      const cnnlTensorDescriptor_t input_desc,
-      const cnnlInterpMode_t mode,
+      cnnlTensorDescriptor_t input_desc,
+      cnnlInterpMode_t mode,
       bool align_corners,
       bool align_center,
-      float* scales,
-      bool is_exact = false);
+      double* scales,
+      bool is_exact);
 };
 
 class CnnlInterpBackwardDescriptor : public CnnlDescriptor<

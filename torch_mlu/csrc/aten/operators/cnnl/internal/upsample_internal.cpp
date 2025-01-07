@@ -59,7 +59,7 @@ void cnnl_upsample_internal(
   descInput.set(self, layout);
   descOutput.set(output, layout);
 
-  std::vector<float> scales;
+  std::vector<double> scales;
   if (scales_d.has_value()) {
     scales.push_back(scales_d.value());
   }

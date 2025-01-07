@@ -390,38 +390,23 @@ void CnnlInterpDescriptor::set(
     cnnlInterpMode_t mode,
     bool align_corners,
     bool align_center,
-    float* scales,
+    double* scales,
     bool is_exact) {
-  cnnlInterpCoordinateTransformationMode_t coordinate_trans_mode;
+  cnnlInterpAlgo_t coordinate_trans_mode;
   // only used for nearest
-  cnnlInterpRoundMode_t nearest_round_mode;
   if (!align_corners && align_center) {
-    coordinate_trans_mode = CNNL_INTERP_COORDINATE_TRANSFORMATION_ALGO0;
-    nearest_round_mode = CNNL_INTERP_CEIL;
+    coordinate_trans_mode = CNNL_INTERP_ALGO_1;
   } else if (align_corners && !align_center) {
-    coordinate_trans_mode = CNNL_INTERP_COORDINATE_TRANSFORMATION_ALGO2;
-    nearest_round_mode = CNNL_INTERP_ROUND_PERFER_CEIL;
+    coordinate_trans_mode = CNNL_INTERP_ALGO_2;
   } else if (!align_corners && !align_center) {
-    coordinate_trans_mode = CNNL_INTERP_COORDINATE_TRANSFORMATION_ALGO3;
-    nearest_round_mode = CNNL_INTERP_FLOOR;
+    coordinate_trans_mode = CNNL_INTERP_ALGO_0;
   } else {
     TORCH_CHECK(
         false, "unsupported combination of align_corners and align_centers");
   }
-  // especially, TRANSFORMATION_ALGO7 for 'nearest-exact'
-  if (is_exact) {
-    coordinate_trans_mode = CNNL_INTERP_COORDINATE_TRANSFORMATION_ALGO7;
-  }
-  TORCH_CNNL_CHECK(
-      cnnlSetInterpDescriptor(this->mut_desc(), mode, coordinate_trans_mode));
-  TORCH_CNNL_CHECK(cnnlSetInterpDescriptorEx(
-      this->mut_desc(),
-      input_desc,
-      nearest_round_mode,
-      scales,
-      nullptr,
-      -0.75,
-      false));
+
+  TORCH_CNNL_CHECK(cnnlSetInterpDescriptor_v2(
+      this->mut_desc(), input_desc, mode, coordinate_trans_mode, scales));
 }
 
 void CnnlInterpBackwardDescriptor::set(
