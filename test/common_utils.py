@@ -170,7 +170,7 @@ def getGCCVersion():
 
     output = subprocess.check_output(["gcc", "--version"], text=True)
     first_line = output.splitlines()[0]
-    version = first_line.split()[3]
+    version = first_line.split()[-1]
     try:
         parts = list(map(int, version.split(".")))
         return {
