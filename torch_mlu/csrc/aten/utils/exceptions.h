@@ -42,7 +42,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TORCH_BANGC_CHECK(EXPR)                                   \
   do {                                                            \
     cnrtRet_t __err = EXPR;                                       \
-    if (C10_UNLIKELY(__err != CNRT_RET_SUCCESS)) {                \
+    if (C10_UNLIKELY(__err != cnrtRet_t::cnrtSuccess)) {          \
       TORCH_CHECK(false, "CNRT error: ", cnrtGetErrorStr(__err)); \
     }                                                             \
   } while (0);
