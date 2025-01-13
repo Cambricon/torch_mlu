@@ -15,6 +15,7 @@
 
 #include "aten/cnnl/cnnlDescriptors.h"
 #include "aten/cnnl/cnnlTensorDesc.h"
+#include "aten/cnnl/cnnlTensorDesc_internal.h"
 #include "aten/cnnl/cnnlHandle.h"
 #include "aten/cnnl/cnnlHeuristicResult.h"
 #include "aten/cnnl/cnnlAlgorithms.h"

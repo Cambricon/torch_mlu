@@ -46,6 +46,7 @@ TESTS = [
     "utils/test_counter",
     "utils/test_fakecase_print_log",
     "utils/test_utils",
+    "utils/test_cxx_apis",
     "utils/test_dumptool",
     "utils/test_collect_env",
     "utils/test_torch_gpu2mlu",

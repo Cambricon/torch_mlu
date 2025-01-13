@@ -417,7 +417,7 @@ class TORCH_MLU_API ProcessGroupCNCL : public c10d::Backend {
     // for tests.
     virtual std::exception_ptr checkForCNCLErrors();
 
-    friend std::ostream& operator<<(
+    friend TORCH_MLU_API std::ostream& operator<<(
         std::ostream& output,
         const WorkCNCL& workCNCL);
 
