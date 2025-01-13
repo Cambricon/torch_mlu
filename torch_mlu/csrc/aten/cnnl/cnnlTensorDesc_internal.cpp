@@ -31,7 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "aten/utils/exceptions.h"
 #include "aten/utils/tensor_util.h"
 #include "aten/utils/utils.h"
-#include "aten/cnnl/cnnlTensorDesc.h"
+#include "aten/cnnl/cnnlTensorDesc_internal.h"
 #include "aten/utils/internal_util.h"
 
 namespace torch_mlu::ops {
