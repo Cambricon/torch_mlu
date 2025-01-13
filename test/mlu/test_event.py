@@ -13,7 +13,12 @@ from torch.testing._internal.common_utils import NO_MULTIPROCESSING_SPAWN
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
-from common_utils import testinfo, TestCase, run_tests  # pylint: disable=C0413
+from common_utils import (
+    testinfo,
+    TestCase,
+    run_tests,
+    get_cycles_per_ms,
+)  # pylint: disable=C0413
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -36,10 +41,6 @@ def mlu_multiply_two(queue, ready, done):
         mlu_event.record()
         done.set()
         del mlu_event
-
-
-def _sleep(shape=1):
-    tmp = torch.ones((shape, shape)).pin_memory().mlu(non_blocking=True)
 
 
 class TestEvent(TestCase):
@@ -92,11 +93,11 @@ class TestEvent(TestCase):
         start = torch.mlu.Event()
         queue = torch.mlu.current_stream()
         user_queue = torch.mlu.Stream()
-        _sleep(8000)
+        torch.mlu._sleep(int(800 * get_cycles_per_ms()))
         start.record(queue)
         start.wait(user_queue)
         with torch.mlu.stream(user_queue):
-            _sleep(200)
+            torch.mlu._sleep(int(200 * get_cycles_per_ms()))
         user_queue.synchronize()
         self.assertTrue(start.query())
         self.assertTrue(queue.query())
@@ -174,8 +175,7 @@ class TestEvent(TestCase):
         p.start()
 
         c2p.get()  # wait for child to become ready
-        # TODO(CNNLCORE-19088)
-        _sleep(50000)  # spin for about 50 ms
+        torch.mlu._sleep(int(50 * get_cycles_per_ms()))
         e0.record()
         p2c.put(0)  # notify child event is recorded
 
@@ -190,8 +190,7 @@ class TestEvent(TestCase):
         stream = torch.mlu.Stream()
         with torch.mlu.stream(stream):
             e1 = torch.mlu.Event.from_ipc_handle(torch.mlu.current_device(), handle)
-            # TODO(CNNLCORE-19088)
-            _sleep(50000)  # spin for about 50 ms
+            torch.mlu._sleep(int(50 * get_cycles_per_ms()))
             e1.record()
             c2p.put(0)
             # wait for parent process finished synchronization before

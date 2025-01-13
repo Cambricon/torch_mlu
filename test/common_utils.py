@@ -5,6 +5,7 @@ import time
 import argparse
 import sys
 import os
+import functools
 import gc
 import subprocess
 import re
@@ -29,6 +30,7 @@ from torch.testing._internal.common_utils import TestCase as BaseTestCase
 import torch_mlu
 from torch.utils._mode_utils import no_dispatch
 from contextlib import closing, contextmanager
+from statistics import mean
 import __main__
 
 try:
@@ -73,6 +75,29 @@ UNITTEST_ARGS = [sys.argv[0]] + remaining
 SIGNALS_TO_NAMES_DICT = {
     getattr(signal, n): n for n in dir(signal) if n.startswith("SIG") and "_" not in n
 }
+
+
+@functools.lru_cache
+def get_cycles_per_ms() -> float:
+    """Measure and return approximate number of cycles per millisecond for torch.mlu._sleep"""
+
+    def measure() -> float:
+        start = torch.mlu.Event(enable_timing=True)
+        end = torch.mlu.Event(enable_timing=True)
+        start.record()
+        torch.mlu._sleep(1000000)
+        end.record()
+        end.synchronize()
+        cycles_per_ms = 1000000 / start.elapsed_time(end)
+        return cycles_per_ms
+
+    # use average time to reduce the effect of hardware scheduling on results
+    num = 10
+    vals = []
+    for _ in range(num):
+        vals.append(measure())
+    vals = sorted(vals)
+    return mean(vals[2 : num - 2])
 
 
 def read_openblas_info():

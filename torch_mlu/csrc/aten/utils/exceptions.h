@@ -39,6 +39,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mlu_op.h" // NOLINT
 #endif
 
+#define TORCH_BANGC_CHECK(EXPR)                                   \
+  do {                                                            \
+    cnrtRet_t __err = EXPR;                                       \
+    if (C10_UNLIKELY(__err != CNRT_RET_SUCCESS)) {                \
+      TORCH_CHECK(false, "CNRT error: ", cnrtGetErrorStr(__err)); \
+    }                                                             \
+  } while (0);
+
 // C10_UNLIKELY is:
 // #define C10_UNLIKELY(expr) (__builtin_expect(static_cast<bool>(expr), 0))
 // The __builtin_expect is a macro function provided in GCC, a popular
@@ -54,6 +62,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       TORCH_CHECK(false, "CNRT error: ", cnrtGetErrorStr(__err)); \
     }                                                             \
   } while (0);
+
+#define TORCH_BANGC_KERNEL_LAUNCH_CHECK() TORCH_BANGC_CHECK(cnrtGetLastError())
 
 #define TORCH_CNRT_WARN(EXPR)                               \
   do {                                                      \

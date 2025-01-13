@@ -1,0 +1,17 @@
+#include "aten/utils/sleep.h"
+#include "cnrt.h"
+namespace torch_mlu {
+__mlu_global__ void spin_kernel(int64_t cycles) {
+  if (__is_mpu())
+    return;
+  for (int64_t i = 0; i < cycles; ++i) {
+    __asm__ volatile("nop;\n\t");
+  }
+}
+
+void sleep_mlu(int64_t cycles, cnrtQueue_t queue) {
+  cnrtFunctionType_t k_type = CNRT_FUNC_TYPE_UNION1;
+  cnrtDim3_t k_dim{4, 1, 1};
+  spin_kernel<<<k_dim, k_type, queue>>>(cycles);
+}
+} // namespace torch_mlu

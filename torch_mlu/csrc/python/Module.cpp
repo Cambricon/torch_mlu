@@ -58,6 +58,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "framework/hooks/MLUHooks.h"
 #include "framework/generator/generator_impl.h" // MLU generator
 #include "framework/graphs/MLUGraph.h"
+#include "aten/utils/sleep.h"
+#include "aten/utils/exceptions.h"
 #include "python/PythonTensor.h"
 #include "python/combined_traceback.h"
 #include "python/MluIPCTypes.h"
@@ -850,6 +852,7 @@ static struct PyMethodDef _THMPModule_methods[] = {
      METH_O,
      nullptr},
     {"_mlu_synchronize", THMPModule_mluSynchronize, METH_NOARGS, nullptr},
+    {"_mlu_sleep", THMPModule_mluSleep, METH_O, nullptr},
     {"_mlu_ipc_collect", THMPModule_mluIPCCollect, METH_NOARGS, nullptr},
     {"_mlu_canDeviceAccessPeer",
      THMPModule_canDeviceAccessPeer_wrap,
@@ -959,6 +962,19 @@ PyObject* THMPModule_mluSynchronize(PyObject* _unused, PyObject* noargs) {
   HANDLE_TH_ERRORS {
     pybind11::gil_scoped_release no_gil;
     torch_mlu::synchronize();
+  }
+  Py_RETURN_NONE;
+  END_HANDLE_TH_ERRORS
+}
+
+PyObject* THMPModule_mluSleep(PyObject* _unused, PyObject* cycles) {
+  HANDLE_TH_ERRORS
+  TORCH_CHECK(THPUtils_checkLong(cycles), "torch.mlu._sleep(): expected 'int'");
+  int64_t unpacked_cycles = THPUtils_unpackLong(cycles);
+  {
+    pybind11::gil_scoped_release no_gil;
+    torch_mlu::sleep(unpacked_cycles);
+    TORCH_BANGC_KERNEL_LAUNCH_CHECK();
   }
   Py_RETURN_NONE;
   END_HANDLE_TH_ERRORS

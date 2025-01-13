@@ -38,6 +38,7 @@ PyObject* THMPModule_setDevice_wrap(PyObject* self, PyObject* arg);
 PyObject* THMPModule_exchangeDevice(PyObject* self, PyObject* arg);
 PyObject* THMPModule_maybeExchangeDevice(PyObject* self, PyObject* arg);
 PyObject* THMPModule_mluSynchronize(PyObject* _unused, PyObject* noargs);
+PyObject* THMPModule_mluSleep(PyObject* _unused, PyObject* cycles);
 void THMPModule_methods(PyObject* module);
 void registerMLUDeviceProperties(PyObject* module);
 void registerMluAllocator(PyObject* module);

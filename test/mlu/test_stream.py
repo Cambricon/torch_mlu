@@ -12,9 +12,15 @@ import torch.nn.functional as F  # pylint: disable=W0611, C0411
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
-from common_utils import testinfo, TestCase  # pylint: disable=C0411, C0413
+from common_utils import (
+    testinfo,
+    TestCase,
+    get_cycles_per_ms,
+)  # pylint: disable=C0411, C0413
 
 logging.basicConfig(level=logging.DEBUG)
+
+FIFTY_MIL_CYCLES = 50000000
 
 
 class TestStream(TestCase):
@@ -170,8 +176,6 @@ class TestStream(TestCase):
     def test_streaming_backwards_sync(self):
         default_stream = torch.mlu.current_stream()
         stream = torch.mlu.Stream()
-        input1 = torch.zeros((1024, 10240), dtype=torch.float32, device="mlu")
-        input2 = torch.zeros((10240, 1024), dtype=torch.float32, device="mlu")
 
         class MultiplyInStream(torch.autograd.Function):
             @staticmethod
@@ -182,9 +186,7 @@ class TestStream(TestCase):
             def backward(ctx, grad):
                 self.assertEqual(torch.mlu.current_stream(), stream)
                 # delays the operation in the the background stream
-                # torch.mlu._sleep(1000 * 1000)
-                # torch.matmul instead of torch.mlu._sleep
-                torch.matmul(input1, input2)
+                torch.mlu._sleep(1000 * 1000)
                 return grad * 2
 
         x = torch.randn(5, 5, device="mlu", requires_grad=True)
@@ -236,7 +238,7 @@ class TestStream(TestCase):
 
         # same dst stream different src streams
         with torch.mlu.stream(s0):
-            # torch.mlu._sleep(TestCuda.FIFTY_MIL_CYCLES)
+            torch.mlu._sleep(FIFTY_MIL_CYCLES)
             with torch.mlu.stream(s1):
                 y.copy_(x_plus_one)
 
@@ -253,7 +255,7 @@ class TestStream(TestCase):
 
         # same src stream different dst streams
         with torch.mlu.stream(s1):
-            # torch.mlu._sleep(TestCuda.FIFTY_MIL_CYCLES)
+            torch.mlu._sleep(FIFTY_MIL_CYCLES)
             with torch.mlu.stream(s0):
                 y.copy_(x_plus_one)
 
@@ -437,17 +439,15 @@ class TestStream(TestCase):
         self.assertTrue(a.grad.sum().item() == 4 * size)
         self.assertTrue(b.grad.sum().item() == 4 * size)
 
-    @unittest.skip("PYTORCH-13058 not test")
+    # @unittest.skip("not test")
     @testinfo()
     def test_record_stream(self):
-        # cycles_per_ms = get_cycles_per_ms()
+        cycles_per_ms = get_cycles_per_ms()
 
         t = torch.FloatTensor([1, 2, 3, 4]).pin_memory()
         result = torch.mlu.FloatTensor(t.size())
         stream = torch.mlu.Stream()
         ptr = [None]
-        x = torch.zeros((1024, 10240), dtype=torch.float32, device="mlu")
-        y = torch.zeros((10240, 1024), dtype=torch.float32, device="mlu")
 
         # Performs the CPU->MLU copy in a background stream
         def perform_copy():
@@ -456,10 +456,7 @@ class TestStream(TestCase):
                 ptr[0] = tmp.data_ptr()
             torch.mlu.current_stream().wait_stream(stream)
             tmp.record_stream(torch.mlu.current_stream())
-            # torch.mlu._sleep(int(50 * cycles_per_ms))  # delay the copy
-            # torch.matmul instead of torch.mlu._sleep
-            for i in range(1, 20):
-                torch.matmul(x, y)
+            torch.mlu._sleep(int(50 * cycles_per_ms))  # delay the copy
             result.copy_(tmp)
 
         perform_copy()

@@ -536,6 +536,9 @@ def is_bf16_supported():
     r"""Returns a bool indicating if MLU is currently support bf16."""
     return torch.mlu.get_device_properties(torch.mlu.current_device()).major >= 5
 
+def _sleep(cycles):
+    torch_mlu._MLUC._mlu_sleep(cycles)
+
 from .memory import *
 from .random import *
 
