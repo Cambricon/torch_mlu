@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace torch_mlu::ops {
 
-std::vector<at::Tensor> all_floating_types_with_half_bfloat16(
+std::vector<at::Tensor> floating_complex_half_bfloat16(
     at::TensorList self,
     const cnnlForeachOpMode_t& mode) {
   std::vector<at::Tensor> vec_res;
@@ -40,35 +40,41 @@ std::vector<at::Tensor> all_floating_types_with_half_bfloat16(
   for (const auto& t : self) {
     vec_res.emplace_back(at::native::empty_like(t));
   }
-  AT_DISPATCH_FLOATING_TYPES_AND2(
+  AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       self[0].scalar_type(),
-      "all_floating_types_with_half_bfloat16",
+      "floating_complex_half_bfloat16",
       [&]() { cnnl_foreach_unary_op<false>(self, vec_res, mode); });
   return vec_res;
 }
 
-void all_floating_types_with_half_bfloat16_(
+void floating_complex_half_bfloat16_(
     at::TensorList self,
     const cnnlForeachOpMode_t& mode) {
-  AT_DISPATCH_FLOATING_TYPES_AND2(
+  AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       self[0].scalar_type(),
-      "all_floating_types_with_half_bfloat16_",
+      "floating_complex_half_bfloat16_",
       [&]() { cnnl_foreach_unary_op<true>(self, self, mode); });
 }
 
-// zero pytorch support AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2 with half
-// and bfloat16, but only support half, bfloat16, float.
 void cnnl__foreach_zero_(at::TensorList tensors) {
   at::native::check_foreach_api_restrictions(tensors);
 
   if (!at::native::can_use_fast_route(tensors)) {
     return at::native::foreach_tensor_zero_slow_(tensors);
   }
-  all_floating_types_with_half_bfloat16_(tensors, CNNL_FOREACH_ZERO);
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
+      at::ScalarType::Bool,
+      at::ScalarType::Half,
+      at::ScalarType::BFloat16,
+      tensors[0].scalar_type(),
+      "cnnl__foreach_zero_",
+      [&]() {
+        cnnl_foreach_unary_op<true>(tensors, tensors, CNNL_FOREACH_ZERO);
+      });
 }
 
 #define FOREACH_UNARY_OP(FUNCTION, NAME, MODE)                           \
@@ -90,12 +96,7 @@ void cnnl__foreach_zero_(at::TensorList tensors) {
     return FUNCTION(self, MODE);                                         \
   }
 
-// sqrt pytorch support AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2 with half
-// and bfloat16, but only support half, bfloat16, float.
-FOREACH_UNARY_OP(
-    all_floating_types_with_half_bfloat16,
-    sqrt,
-    CNNL_FOREACH_SQRT);
+FOREACH_UNARY_OP(floating_complex_half_bfloat16, sqrt, CNNL_FOREACH_SQRT);
 #undef FOREACH_UNARY_OP
 
 } // namespace torch_mlu::ops

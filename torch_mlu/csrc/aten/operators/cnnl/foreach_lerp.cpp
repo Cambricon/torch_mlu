@@ -48,7 +48,7 @@ namespace torch_mlu::ops {
   for (const auto& t : self) {
     vec_res.emplace_back(at::native::empty_like(t));
   }
-  AT_DISPATCH_FLOATING_TYPES_AND2(
+  AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       self[0].scalar_type(),
@@ -76,7 +76,7 @@ void cnnl__foreach_lerp_(
     return at::native::foreach_tensor_ternary_lerp_slow_(
         self, tensors1, weights);
   }
-  AT_DISPATCH_FLOATING_TYPES_AND2(
+  AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       self[0].scalar_type(),
@@ -110,7 +110,7 @@ void cnnl__foreach_lerp_(
   for (const auto& t : self) {
     vec_res.emplace_back(at::native::empty_like(t));
   }
-  AT_DISPATCH_FLOATING_TYPES_AND2(
+  AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       self[0].scalar_type(),
@@ -138,7 +138,7 @@ void cnnl__foreach_lerp_(
     return at::native::foreach_tensor_lerp_list_kernel_slow_(
         self, tensors1, weight);
   }
-  AT_DISPATCH_FLOATING_TYPES_AND2(
+  AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       self[0].scalar_type(),
