@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace torch_mlu::ops {
 
-std::vector<at::Tensor> all_floating_types_with_half_bfloat16(
+std::vector<at::Tensor> all_types_complex_bool_half_bfloat16(
     at::TensorList tensors1,
     at::TensorList tensors2,
     const cnnlForeachOpMode_t& mode,
@@ -42,11 +42,12 @@ std::vector<at::Tensor> all_floating_types_with_half_bfloat16(
   for (const auto& t : tensors1) {
     vec_res.emplace_back(at::native::empty_like(t));
   }
-  AT_DISPATCH_FLOATING_TYPES_AND2(
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
+      at::ScalarType::Bool,
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       tensors1[0].scalar_type(),
-      "all_floating_types_with_half_bfloat16",
+      "all_types_complex_bool_half_bfloat16",
       [&]() {
         using opmath_t = torch_mlu::MLUOpMathType_t<scalar_t>;
         cnnl_foreach_binary_tensors_op<opmath_t, false>(
@@ -63,16 +64,17 @@ std::vector<at::Tensor> all_floating_types_with_half_bfloat16(
   return vec_res;
 }
 
-void all_floating_types_with_half_bfloat16_(
+void all_types_complex_bool_half_bfloat16_(
     at::TensorList tensors1,
     at::TensorList tensors2,
     const cnnlForeachOpMode_t& mode,
     const at::Scalar& alpha = 1) {
-  AT_DISPATCH_FLOATING_TYPES_AND2(
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
+      at::ScalarType::Bool,
       at::ScalarType::Half,
       at::ScalarType::BFloat16,
       tensors1[0].scalar_type(),
-      "all_floating_types_with_half_bfloat16",
+      "all_types_complex_bool_half_bfloat16",
       [&]() {
         using opmath_t = torch_mlu::MLUOpMathType_t<scalar_t>;
         cnnl_foreach_binary_tensors_op<opmath_t, true>(
@@ -141,21 +143,21 @@ void all_floating_types_with_half_bfloat16_(
 // support half, bfloat16, float in mlu side, scalar list support half,
 // bfloat16, float, int32.
 FOREACH_BINARY_OP_LIST_ALPHA(
-    all_floating_types_with_half_bfloat16,
+    all_types_complex_bool_half_bfloat16,
     add,
     CNNL_FOREACH_ADD);
 FOREACH_BINARY_OP_LIST(
-    all_floating_types_with_half_bfloat16,
+    all_types_complex_bool_half_bfloat16,
     div,
     CNNL_FOREACH_DIV,
     /*division_op*/ true);
 FOREACH_BINARY_OP_LIST(
-    all_floating_types_with_half_bfloat16,
+    all_types_complex_bool_half_bfloat16,
     mul,
     CNNL_FOREACH_MUL,
     /*division_op*/ false);
 FOREACH_BINARY_OP_LIST_ALPHA(
-    all_floating_types_with_half_bfloat16,
+    all_types_complex_bool_half_bfloat16,
     sub,
     CNNL_FOREACH_SUB);
 
