@@ -1,14 +1,14 @@
 {
-  "version": "1.24.0-torch2.4.0",
+  "version": "1.25.0-torch2.4.0",
   "driver_requires": ["release", "6.2.8-1"],
   "build_requires": {
-    "cnnl": ["release", "1.28.2-1"],
-    "cntoolkit": ["release","3.15.4-1"],
-    "cncl": ["release", "1.24.0-1"],
+    "cnnl": ["release", "1.28.4-1"],
+    "cntoolkit": ["release","3.15.7-1"],
+    "cncl": ["release", "1.24.1-1"],
     "cncv": ["release", "2.8.0-1"],
-    "cndali": ["release", "0.11.0"],
-    "cnnlextra": ["release", "1.12.1-1"],
-    "mluops": ["release", "1.4.1-1"],
+    "cndali": ["release", "0.12.0"],
+    "cnnlextra": ["release", "1.12.3-1"],
+    "mluops": ["release", "1.4.2-1"],
     "benchmark": ["release", "0.7.1-torch1.13.1"]
   },
   "python_wheel_requires": {
