@@ -42,6 +42,9 @@ const std::vector<std::string> enabledCnrtApiList = {
   "cnrtMemcpy2D",
   "cnrtMemcpy3D",
   "cnrtMemcpyAsync_V2",
+  "cnrtMemcpyAsync_V3",
+  "cnrtMemAllocAsync",
+  "cnrtMemAllocFromPoolAsync",
 };
 
 const std::vector<std::string> enabledCndrvApiList = {
@@ -60,6 +63,7 @@ const std::vector<std::string> enabledCndrvApiList = {
   "cnMemcpyDtoDAsync",
   "cnMemcpyAsync",
   "cnMemcpyAsync_V2",
+  "cnMemcpyAsync_V3",
   "cnMemcpy",
   "cnMemcpy2D",
   "cnMemcpy2DAsync",
@@ -74,6 +78,8 @@ const std::vector<std::string> enabledCndrvApiList = {
   "cnMemsetD8Async",
   "cnMemsetD16Async",
   "cnMemsetD32Async",
+  "cnMemAllocAsync",
+  "cnMemAllocFromPoolAsync",
   "cnMemsetD8",
   "cnMemsetD16",
   "cnMemsetD32",
