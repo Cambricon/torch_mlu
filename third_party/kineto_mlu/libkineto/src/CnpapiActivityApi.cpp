@@ -296,7 +296,10 @@ const std::vector<cnpapi_CallbackIdCNRT> enabledCnrtCbidList = {
   CNPAPI_CNRT_TRACE_CBID_cnrtMemsetAsync,
   CNPAPI_CNRT_TRACE_CBID_cnrtMemcpy2D,
   CNPAPI_CNRT_TRACE_CBID_cnrtMemcpy3D,
-  CNPAPI_CNRT_TRACE_CBID_cnrtMemcpyAsync_V2
+  CNPAPI_CNRT_TRACE_CBID_cnrtMemcpyAsync_V2,
+  CNPAPI_CNRT_TRACE_CBID_cnrtMemcpyAsync_V3,
+  CNPAPI_CNRT_TRACE_CBID_cnrtMemAllocAsync,
+  CNPAPI_CNRT_TRACE_CBID_cnrtMemAllocFromPoolAsync
 };
 
 const std::vector<cnpapi_CallbackIdCNDRV> enabledCndrvCbidList = {
@@ -315,6 +318,7 @@ const std::vector<cnpapi_CallbackIdCNDRV> enabledCndrvCbidList = {
   CNPAPI_CNDRV_TRACE_CBID_cnMemcpyDtoDAsync,
   CNPAPI_CNDRV_TRACE_CBID_cnMemcpyAsync,
   CNPAPI_CNDRV_TRACE_CBID_cnMemcpyAsync_V2,
+  CNPAPI_CNDRV_TRACE_CBID_cnMemcpyAsync_V3,
   CNPAPI_CNDRV_TRACE_CBID_cnMemcpy,
   CNPAPI_CNDRV_TRACE_CBID_cnMemcpy2D,
   CNPAPI_CNDRV_TRACE_CBID_cnMemcpy2DAsync,
@@ -329,6 +333,8 @@ const std::vector<cnpapi_CallbackIdCNDRV> enabledCndrvCbidList = {
   CNPAPI_CNDRV_TRACE_CBID_cnMemsetD8Async,
   CNPAPI_CNDRV_TRACE_CBID_cnMemsetD16Async,
   CNPAPI_CNDRV_TRACE_CBID_cnMemsetD32Async,
+  CNPAPI_CNDRV_TRACE_CBID_cnMemAllocAsync,
+  CNPAPI_CNDRV_TRACE_CBID_cnMemAllocFromPoolAsync,
   CNPAPI_CNDRV_TRACE_CBID_cnMemsetD8,
   CNPAPI_CNDRV_TRACE_CBID_cnMemsetD16,
   CNPAPI_CNDRV_TRACE_CBID_cnMemsetD32,
