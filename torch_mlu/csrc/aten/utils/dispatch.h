@@ -263,26 +263,6 @@ namespace torch_mlu {
     }                                                                    \
   }()
 
-// only for where
-#define AT_DISPATCH_ALL_MLU_TYPES_AND_HALF_AND_BFLOAT16_EXCEPT_UINT8_AND_BOOL( \
-    TYPE, NAME, ...)                                                           \
-  [&] {                                                                        \
-    constexpr const char* at_dispatch_name = NAME;                             \
-    switch (TYPE) {                                                            \
-      AT_DISPATCH_CASE_MLU(at::ScalarType::Char, int8_t, __VA_ARGS__)          \
-      AT_DISPATCH_CASE_MLU(at::ScalarType::Half, at::Half, __VA_ARGS__)        \
-      AT_DISPATCH_CASE_MLU(at::ScalarType::Short, int16_t, __VA_ARGS__)        \
-      AT_DISPATCH_CASE_MLU(at::ScalarType::Float, float, __VA_ARGS__)          \
-      AT_DISPATCH_CASE_MLU(at::ScalarType::Int, int32_t, __VA_ARGS__)          \
-      AT_DISPATCH_CASE_MLU(at::ScalarType::Long, int64_t, __VA_ARGS__)         \
-      AT_DISPATCH_CASE_MLU(at::ScalarType::Double, float, __VA_ARGS__)         \
-      AT_DISPATCH_CASE_MLU(                                                    \
-          at::ScalarType::BFloat16, at::BFloat16, __VA_ARGS__)                 \
-      default:                                                                 \
-        AT_ERROR(#NAME, " not implemented for '", toString(TYPE), "'");        \
-    }                                                                          \
-  }()
-
 // only for unique_consecutive
 #define AT_DISPATCH_MLU_ALL_TYPES_AND_HALF_EXCEPT_INT8_AND_UINT8(       \
     TYPE, NAME, ...)                                                    \

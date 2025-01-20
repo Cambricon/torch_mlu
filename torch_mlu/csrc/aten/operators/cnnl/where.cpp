@@ -30,7 +30,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "aten/operators/cnnl/cnnl_kernel.h"
 #include "aten/utils/cnnl_util.h"
-#include "aten/utils/dispatch.h"
+#include <ATen/Dispatch.h>
+#include <c10/core/ScalarType.h>
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 #include "aten/utils/binaryops_util.h"
 #include "aten/utils/internal_util.h"
@@ -43,8 +44,14 @@ void where_kernel_impl(at::TensorIterator& iter) {
   TensorIteratorBridge iter_bridge;
   iter_bridge.to_build(iter, "where");
   auto output = iter.output(0);
-  AT_DISPATCH_ALL_MLU_TYPES_AND_HALF_AND_BFLOAT16_EXCEPT_UINT8_AND_BOOL(
-      iter.dtype(), "cnnl_where", [&] {
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND4(
+      at::kComplexHalf,
+      at::kHalf,
+      at::kBFloat16,
+      at::kBool,
+      iter.dtype(),
+      "cnnl_where",
+      [&] {
         cnnl_where_internal(
             output, iter.input(0), iter.input(1), iter.input(2));
       });
