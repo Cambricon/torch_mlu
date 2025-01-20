@@ -45,6 +45,7 @@ class TestWhereOp(TestCase):
             torch.int8,
             torch.long,
             torch.double,
+            torch.bool,
         ]
         cond_dtypes = [torch.bool, torch.uint8]
         for con_shape, x_shape, y_shape in zip(
@@ -128,6 +129,7 @@ class TestWhereOp(TestCase):
             torch.double,
             torch.int64,
             torch.long,
+            torch.bool,
         ]
         for cond_shape, cond_dtype in zip(shape, dtype):
             condition = torch.randn(cond_shape).to(dtype=cond_dtype)
@@ -186,14 +188,7 @@ class TestWhereOp(TestCase):
         c = torch.randint(2, (2, 3)).to(torch.bool).to("mlu")
         a = torch.randn((2, 3)).to(torch.uint8).to("mlu")
         b = torch.randn((2, 3)).to(torch.uint8).to("mlu")
-        ref_msg = "\"cnnl_where\" not implemented for 'Byte'"
-        with self.assertRaisesRegex(RuntimeError, ref_msg):
-            torch.where(c, a, b)
-
-        c = torch.randint(2, (2, 3)).to(torch.bool).to("mlu")
-        a = torch.randn((2, 3)).to(torch.bool).to("mlu")
-        b = torch.randn((2, 3)).to(torch.bool).to("mlu")
-        ref_msg = "\"cnnl_where\" not implemented for 'Bool'"
+        ref_msg = "CNNL error: CNNL_STATUS_BAD_PARAM"
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             torch.where(c, a, b)
 
