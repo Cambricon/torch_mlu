@@ -3,7 +3,7 @@
   "driver_requires": ["release", "6.2.8-1"],
   "build_requires": {
     "cnnl": ["release", "1.28.4-1"],
-    "cntoolkit": ["release","3.15.7-1"],
+    "cntoolkit": ["release","4.0.0-1"],
     "cncl": ["release", "1.24.1-1"],
     "cncv": ["release", "2.8.0-1"],
     "cndali": ["release", "0.12.0"],

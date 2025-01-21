@@ -13,18 +13,25 @@ from common_utils import testinfo, TestCase  # pylint: disable=C0411
 
 logging.basicConfig(level=logging.DEBUG)
 
+record_log_file_name = f"cnperf_data_{os.getppid()}.cnperf-rep"
+record_log_file_path = os.path.join(cur_dir, record_log_file_name)
 command_record = (
     os.getenv("NEUWARE_HOME")
-    + "/bin/cnperf-cli record --capture_range=cnProfilerApi python "
+    + "/bin/cnperf-cli record --capture_range=cnProfilerApi -o "
+    + record_log_file_path
+    + " python "
     + cur_dir
     + "/test_cnperf.py"
 )
 
 command_report = (
-    os.getenv("NEUWARE_HOME") + "/bin/cnperf-cli report 2>&1 |tee cnperf_report"
+    os.getenv("NEUWARE_HOME")
+    + "/bin/cnperf-cli report "
+    + record_log_file_path
+    + " 2>&1 |tee cnperf_report"
 )
 
-command_clean = "rm -rf dltrace_data && rm cnperf_report"
+command_clean = f"rm -f cnperf_report && rm -f {record_log_file_path}"
 
 
 def check_string_in_file(file_path, search_string):
