@@ -168,7 +168,7 @@ void CnpapiActivityApi::processRecords(cnpapiActivity* raw_record) {
       all_records_->kernel_records.emplace_back(kernel->correlation_id,
         kernel->start, kernel->end, kernel->queued,
         kernel->device_id, kernel->name, kernel->queue_id,
-        kernel->kernel_type, kernel->dimx, kernel->dimy,
+        kernel->kernel_class, kernel->dimx, kernel->dimy,
         kernel->dimz, kernel->context_id,
         kernel->tasktopo_id, kernel->tasktopo_node_id);
       break;

@@ -3,7 +3,7 @@
   "driver_requires": ["release", "6.2.8-1"],
   "build_requires": {
     "cnnl": ["release", "1.28.4-1"],
-    "cntoolkit": ["release","3.15.7-1"],
+    "cntoolkit": ["release","4.0.0-1"],
     "cncl": ["release", "1.24.1-1"],
     "cncv": ["release", "2.8.0-1"],
     "cndali": ["release", "0.12.0"],
@@ -12,7 +12,7 @@
     "benchmark": ["release", "0.7.1-torch1.13.1"]
   },
   "python_wheel_requires": {
-    "genesis": ["release", "1.3.1", "3.0.0"]
+    "genesis": ["daily", "1.3.1-20250116_154938-1b74e45", "3.0.0"]
   },
   "package_type": ["whl", "docker"]
 }

@@ -19,7 +19,7 @@ if [[ ${GENESIS_TAG} == "release" ]]; then
     pip install triton-${TRITON_VERSION}+mlu${GENESIS_VERSION}-cp310-cp310-${ARCH}.whl
     rm triton-${TRITON_VERSION}+mlu${GENESIS_VERSION}-cp310-cp310-${ARCH}.whl
 else
-    wget -nv http://daily.software.cambricon.com/daily/triton/wheel/python3.10/master/${GENESIS_TAG}/triton-${TRITON_VERSION}+mlu${GENESIS_VERSION}-cp310-cp310-${ARCH}.whl
+    wget -nv http://daily.software.cambricon.com/daily/triton/wheel/python3.10/genesis_2339_update_cntoolkit4/${GENESIS_TAG}/triton-${TRITON_VERSION}+mlu${GENESIS_VERSION}-cp310-cp310-${ARCH}.whl
     pip install triton-${TRITON_VERSION}+mlu${GENESIS_VERSION}-cp310-cp310-${ARCH}.whl
     rm triton-${TRITON_VERSION}+mlu${GENESIS_VERSION}-cp310-cp310-${ARCH}.whl
 fi
