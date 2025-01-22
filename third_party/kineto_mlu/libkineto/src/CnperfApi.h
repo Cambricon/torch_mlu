@@ -63,6 +63,7 @@ class CnperfApi {
     void clearTraceData();
 
   private:
+    int dev_id_;
     cnperfSession_t session_;
     cnperfConfig_t config_;
     cnperfParserHandle_t parser_;

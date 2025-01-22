@@ -90,6 +90,7 @@ struct CommunicationRecord {
   cnperfDataCommTaskType_t type;
   int32_t rank;
   uint64_t clique_id;
+  int32_t device_id;
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
@@ -103,6 +104,7 @@ struct CommunicationRecord {
     cnperfDataCommTaskType_t type,
     int32_t rank,
     uint64_t clique_id,
+    int32_t device_id,
     uint64_t start,
     uint64_t end,
     uint64_t bytes,
@@ -113,6 +115,7 @@ struct CommunicationRecord {
     type(type),
     rank(rank),
     clique_id(clique_id),
+    device_id(device_id),
     start(start),
     end(end),
     bytes(bytes),

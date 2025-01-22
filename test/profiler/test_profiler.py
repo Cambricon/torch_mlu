@@ -368,6 +368,27 @@ class TestProfiler(TestCase):
                     and (count == actual_event_count[key])
                 )
 
+        def check_runtime_and_kernel_ids(prof):
+            with TemporaryFileName(mode="w+") as fname:
+                prof.export_chrome_trace(fname)
+                with io.open(fname, "r") as f:
+                    trace = json.load(f)
+                    for event in trace["traceEvents"]:
+                        if (
+                            event.get("cat") == "mlu_runtime"
+                            or event.get("cat") == "kernel"
+                        ):
+                            if event.get("name") == "cnrtSyncDevice":
+                                # There is cnrtSyncDevice called by profiler stop(), has no external op.
+                                continue
+                            else:
+                                self.assertGreater(
+                                    event.get("args").get("External id", 0), 0
+                                )
+                                self.assertGreater(
+                                    event.get("args").get("correlation", 0), 0
+                                )
+
         with profile(
             activities=[
                 torch.profiler.ProfilerActivity.CPU,
@@ -385,6 +406,7 @@ class TestProfiler(TestCase):
             # on_trace_ready=torch.profiler.tensorboard_trace_handler('./log')#dump json文件，没有这句话不会dump
         ) as prof:
             train(prof)
+        check_runtime_and_kernel_ids(prof)
         expected_event_count = {
             # "+1" because the final iteration will enter __next__ but skip the loop body.
             "enumerate(DataLoader)#_SingleProcessDataLoaderIter.__next__": (N + 1),
@@ -402,6 +424,7 @@ class TestProfiler(TestCase):
             ],
         ) as prof:
             train()
+        check_runtime_and_kernel_ids(prof)
         judge(expected_event_count, prof)
 
         # Test on customized optimizer.
@@ -413,6 +436,7 @@ class TestProfiler(TestCase):
             ],
         ) as prof:
             train()
+        check_runtime_and_kernel_ids(prof)
         expected_event_count = {
             "enumerate(DataLoader)#_SingleProcessDataLoaderIter.__next__": (N + 1),
             "Optimizer.step#CustomSGD.step": N,
@@ -805,11 +829,33 @@ class TestProfiler(TestCase):
         TestProfiler.setup(rank, world_size, master_port)
         device = torch.device(f"mlu:{rank}")
         torch.mlu.set_device(device)
+        tensor = torch.randn(world_size, 10, 10, device="mlu")
         with torch.profiler.profile(
             on_trace_ready=torch_mlu.profiler.tensorboard_trace_handler(dname)
         ) as p:
-            a = torch.randn(10, 3, device="mlu")
-            dist.all_reduce(a)
+            dist.all_reduce(tensor)
+            dist.broadcast(tensor, 0)
+            input_tensor_list = list(torch.chunk(tensor, world_size))
+            output_tensor_list = list(torch.chunk(tensor.clone(), world_size))
+            dist.all_gather(input_tensor_list, input_tensor_list[dist.get_rank()])
+            dist.all_to_all(output_tensor_list, input_tensor_list)
+            dist.reduce_scatter(input_tensor_list[dist.get_rank()], input_tensor_list)
+            send_tensor = tensor
+            print(send_tensor.size())
+            recv_tensor = tensor.clone()
+            reqs = []
+            if dist.get_rank() != dist.get_world_size() - 1:
+                send_req = dist.isend(
+                    send_tensor, (dist.get_rank() + 1) % dist.get_world_size()
+                )
+                reqs.append(send_req)
+            if dist.get_rank() != 0:
+                recv_req = dist.irecv(
+                    recv_tensor, (dist.get_rank() - 1) % dist.get_world_size()
+                )
+                reqs.append(recv_req)
+            for req in reqs:
+                req.wait()
             dist.barrier()
         TestProfiler.cleanup()
 
@@ -936,6 +982,19 @@ class TestProfiler(TestCase):
             found_comm_csv_num = 0
             found_rank0 = False
             found_rank1 = False
+            expect_comm_op_list = [
+                "c10d::allreduce_",
+                "c10d::broadcast_",
+                "c10d::allgather_",
+                "c10d::alltoall_",
+                "c10d::reduce_scatter_",
+                "c10d::barrier",
+            ]
+            found_comm_op_list = []
+            found_send_times = 0
+            found_recv_times = 0
+            send_bytes = 0
+            recv_bytes = 0
             for csv_dir in os.listdir(os.path.join(dname, "cambricon_output")):
                 csv_dir_num += 1
                 for csv_file in os.listdir(
@@ -967,17 +1026,22 @@ class TestProfiler(TestCase):
                                     "Bandwidth(MB/s)",
                                     "Rank",
                                     "Clique Id",
+                                    "Device Id",
                                     "Communication Type",
                                     "Operator Name",
                                 ],
                             )
-                            found_all_reduce = False
-                            found_barrier = False
                             for row in reader:
-                                if row[9] == "c10d::allreduce_":
-                                    found_all_reduce = True
-                                elif row[9] == "c10d::barrier":
-                                    found_barrier = True
+                                if row[10] == "c10d::send":
+                                    found_send_times += 1
+                                    self.assertTrue(row[6], 0)  # Rank
+                                    send_bytes = int(row[3])
+                                elif row[10] == "c10d::recv_":
+                                    found_recv_times += 1
+                                    self.assertTrue(row[6], 1)  # Rank
+                                    recv_bytes = int(row[3])
+                                else:
+                                    found_comm_op_list.append(row[10])
                                 if int(row[6]) == 0:
                                     found_rank0 = True
                                 elif int(row[6]) == 1:
@@ -987,8 +1051,11 @@ class TestProfiler(TestCase):
                                     float(row[5]),
                                     places=2,
                                 )
-                            self.assertTrue(found_all_reduce)
-                            self.assertTrue(found_barrier)
+                        self.assertEqual(
+                            set(expect_comm_op_list), set(found_comm_op_list)
+                        )
+                        # reset this to check another rank
+                        found_comm_op_list = []
 
             self.assertTrue(found_rank0)
             self.assertTrue(found_rank1)
@@ -996,6 +1063,12 @@ class TestProfiler(TestCase):
             self.assertEqual(json_file_num, 2)
             self.assertEqual(csv_dir_num, 2)
             self.assertEqual(found_comm_csv_num, 2)
+            self.assertEqual(found_send_times, 1)  # only rank0 has send
+            self.assertEqual(found_recv_times, 1)  # only rank1 has recv
+            # tensor size is (world_size, 10, 10) in run_comm_op()
+            # TODO(DPF-6016): check comm bytes.
+            # self.assertEqual(send_bytes, recv_bytes)
+            # self.assertEqual(send_bytes, world_size * 10 * 10 * 4)
 
     @testinfo()
     @unittest.skip("Skip due to PYTORCH-13047")
@@ -1068,7 +1141,7 @@ class TestProfiler(TestCase):
   "ph": "X", "cat": "mlu_user_annotation", "name": "cnclRingTcdpBroadcast", "pid": 0, "tid": 20261,
   "ts": 6952242802137.758, "dur": 102.602,
   "args": {
-    "External id": 112,"type": "COLLETIVE", "op name": "cncl:broadcast", "clique id": 228118042, "rank": 0, "bytes": 212480
+    "External id": 112,"type": "COLLETIVE", "op name": "cncl:broadcast", "clique id": 228118042, "device id": 0, "rank": 0, "bytes": 212480
   }
 },
 {
@@ -1095,6 +1168,7 @@ class TestProfiler(TestCase):
             "2070.924",
             "0",
             "228118042",
+            "0",
             "COLLETIVE",
             "c10d::broadcast_",
         ]

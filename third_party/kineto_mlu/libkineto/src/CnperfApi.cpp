@@ -6,6 +6,7 @@
 #include "ThreadUtil.h"
 
 #include <assert.h>
+#include <cnrt.h>
 #include <chrono>
 #include <algorithm>
 #include <cstdlib>
@@ -73,6 +74,8 @@ CnperfApi::CnperfApi() {
     }
     return result;
   }();
+
+  cnrtGetDevice(&dev_id_);
 }
 
 void CnperfApi::pushCorrelationID(int id, CorrelationFlowType type) {
@@ -269,7 +272,8 @@ void CnperfApi::processCommData(
     void* userdata) {
   if (singleton().user_external_ids_.find(op_range->external_correlation_id) !=
           singleton().user_external_ids_.end() &&
-      std::string(op_range->name).find("cncl:") == 0) {
+      std::string(op_range->name).find("cncl:") == 0 &&
+      std::string(data->name).find("cnclGroupEnd") == std::string::npos) {
     singleton().all_records_->comm_records.emplace_back(
         op_range->thread_id,
         op_range->external_correlation_id,
@@ -277,6 +281,7 @@ void CnperfApi::processCommData(
         data->type,
         data->rank,
         data->clique_id,
+        singleton().dev_id_,
         transCnperfTimeToCPUTime(data->start, singleton().cnperf_start_ts_),
         transCnperfTimeToCPUTime(data->end, singleton().cnperf_start_ts_),
         data->bytes,

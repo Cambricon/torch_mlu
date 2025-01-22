@@ -407,7 +407,7 @@ inline void CnperfProfiler::handleCommunicationActivity(
   if (outOfRange(comm_activity)) {
     return;
   }
-  recordCnpxInfo(record.rank, record.thread_id);
+  recordCnpxInfo(record.device_id, record.thread_id);
   logger->handleActivity(comm_activity);
 }
 

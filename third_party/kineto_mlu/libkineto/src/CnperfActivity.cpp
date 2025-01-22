@@ -148,6 +148,7 @@ GenericTraceActivity createCommunicationActivity(
   comm_activity.addMetadata("bytes", activity->bytes);
   comm_activity.addMetadata("rank", activity->rank);
   comm_activity.addMetadata("clique id", activity->clique_id);
+  comm_activity.addMetadata("device id", activity->device_id);
   comm_activity.addMetadataQuoted("type", getCommType(activity->type));
   comm_activity.addMetadataQuoted("op name", activity->op_name);
   return comm_activity;

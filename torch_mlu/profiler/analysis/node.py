@@ -230,6 +230,7 @@ class CommunicationNode(OperatorNode):
         self,
         rank=None,
         clique_id=None,
+        device_id=None,
         comm_bytes=None,
         comm_type: str = None,
         op_name: str = None,
@@ -239,6 +240,7 @@ class CommunicationNode(OperatorNode):
 
         self.rank = rank
         self.clique_id = clique_id
+        self.device_id = device_id
         self.comm_bytes = comm_bytes
         self.comm_type = comm_type
         self.op_name = op_name
@@ -257,6 +259,7 @@ class CommunicationNode(OperatorNode):
             "Bandwidth(MB/s)",
             "Rank",
             "Clique Id",
+            "Device Id",
             "Communication Type",
             "Operator Name",
         ]
@@ -271,6 +274,7 @@ class CommunicationNode(OperatorNode):
             self.bandwidth,
             self.rank,
             self.clique_id,
+            self.device_id,
             self.comm_type,
             self.op_name,
         ]
@@ -286,6 +290,7 @@ class CommunicationNode(OperatorNode):
         return cls(
             rank=event.args.get("rank", None),
             clique_id=event.args.get("clique id", None),
+            device_id=event.args.get("device id", None),
             comm_bytes=event.args.get("bytes", None),
             comm_type=event.args.get("type", None),
             op_name=event.args.get("op name", None),
