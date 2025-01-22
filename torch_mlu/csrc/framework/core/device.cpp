@@ -52,9 +52,6 @@ c10::DeviceIndex device_count_impl() {
 }
 
 c10::DeviceIndex device_count() {
-  // CN_MODULE_LOADING will only take effect if it is set before cnInit,
-  // otherwise the default is EAGER mode
-  maybe_set_mlu_module_loading("LAZY");
   return device_count_impl();
 }
 

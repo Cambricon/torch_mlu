@@ -49,22 +49,7 @@ at::Device MLUHooksInterface::getDeviceFromPtr(void* ptr) const {
   return {at::kPrivateUse1, static_cast<c10::DeviceIndex>(attr.device)};
 }
 
-// Sets the CN_MODULE_LOADING environment variable
-// if it's not set by the user.
-void maybe_set_mlu_module_loading(const std::string& def_value) {
-  auto value = std::getenv("CN_MODULE_LOADING");
-  if (!value) {
-#ifdef _WIN32
-    auto env_var = "CN_MODULE_LOADING=" + def_value;
-    _putenv(env_var.c_str());
-#else
-    setenv("CN_MODULE_LOADING", def_value.c_str(), 1);
-#endif
-  }
-}
-
 void MLUHooksInterface::initPrivateUse1() const {
-  maybe_set_mlu_module_loading("LAZY");
   const auto num_devices = device_count_ensure_non_zero();
   torch_mlu::MLUCachingAllocator::init(num_devices);
 }

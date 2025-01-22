@@ -14,7 +14,6 @@ namespace torch_mlu {
 TORCH_MLU_API bool hasPrimaryContext(int64_t device_index);
 std::optional<int64_t> getDeviceIndexWithSharedContext();
 int register_hook();
-void maybe_set_mlu_module_loading(const std::string& def_value);
 
 struct MLUHooksArgs : public at::PrivateUse1HooksArgs {};
 
