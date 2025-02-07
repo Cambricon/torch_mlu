@@ -1415,6 +1415,7 @@ aten:
   - func: _foreach_mul_.Tensor
   - func: _foreach_zero_
   - func: _foreach_norm.Scalar
+  - func: _foreach_copy_
 
   - func: _coalesce
     dispatch: SparsePrivateUse1

@@ -33,6 +33,7 @@ TESTS = [
     "test_foreach_op/test_foreach_unary",
     "test_foreach_op/test_foreach_lerp",
     "test_foreach_op/test_foreach_reduce",
+    "test_foreach_op/test_foreach_copy",
     "torch/test_save_and_load",
     "torch/test_random",
     "distributed/test_distributed",
