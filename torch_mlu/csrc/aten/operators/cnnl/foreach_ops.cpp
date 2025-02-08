@@ -118,22 +118,22 @@ std::map<size_t, copy_pair> process_input_params(
   std::map<size_t, copy_pair> copy_map;
   for (const auto i : c10::irange(self.size())) {
     if (self[i].dtype() != src[i].dtype()) {
-      CNLOG(DEBUG) << "src and dst has different dtype"
-                   << " dst dtype " << self[i].dtype() << " and src dtype "
-                   << src[i].dtype();
+      CNLOG(INFO) << "src and dst has different dtype"
+                  << " dst dtype " << self[i].dtype() << " and src dtype "
+                  << src[i].dtype();
       copy_map[0].first.push_back(self[i]);
       copy_map[0].second.push_back(src[i]);
     } else if (self[i].sizes() != src[i].sizes()) {
-      CNLOG(DEBUG) << "src and dst has different sizes"
-                   << " dst sizes " << self[i].sizes() << " and src sizes "
-                   << src[i].sizes();
+      CNLOG(INFO) << "src and dst has different sizes"
+                  << " dst sizes " << self[i].sizes() << " and src sizes "
+                  << src[i].sizes();
       copy_map[0].first.push_back(self[i]);
       copy_map[0].second.push_back(src[i]);
     } else if (is_diff_stride(
                    self[i].sizes(), self[i].strides(), src[i].strides())) {
-      CNLOG(DEBUG) << "src and dst has different strides"
-                   << " dst strides " << self[i].strides() << " and src strides "
-                   << src[i].strides();
+      CNLOG(INFO) << "src and dst has different strides"
+                  << " dst strides " << self[i].strides() << " and src strides "
+                  << src[i].strides();
       copy_map[0].first.push_back(self[i]);
       copy_map[0].second.push_back(src[i]);
     } else {
