@@ -9,9 +9,11 @@ import torch
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
-from common_utils import testinfo, run_tests, TestCase
+from common_utils import testinfo, run_tests, TestCase, read_card_info
 
 logging.basicConfig(level=logging.DEBUG)
+
+TEST_BFLOAT16 = read_card_info()
 
 
 class ForeachCopyOpTest(object):
@@ -77,11 +79,13 @@ class ForeachCopyOpTest(object):
 
 
 class TestForeachCopyOp(TestCase):
+    @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     @testinfo()
     def test_foreach_copy(self):
         test_func = ForeachCopyOpTest()
         test_func(self.assertTensorsEqual)
 
+    @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
     @testinfo()
     def test_foreach_copy_mixed_dtype(self):
         test_func = ForeachCopyOpTest(is_mixed_dtype=True)
