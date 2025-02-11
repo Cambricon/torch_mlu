@@ -132,6 +132,8 @@ const std::map<c10d::ReduceOp, cnclReduceOp_t> cncl_op = {
     {c10d::ReduceOp::MAX, cnclMax},
     {c10d::ReduceOp::SUM, cnclSum},
     {c10d::ReduceOp::PRODUCT, cnclProd},
+    // average operation is done in pre or post process
+    {c10d::ReduceOp::AVG, cnclSum},
 };
 
 // CNCL type typing
@@ -159,18 +161,21 @@ cnclReduceOp_t getCnclReduceOp(
     const c10d::ReduceOp reduce_op,
     at::Tensor& input) {
   try {
-    if (reduce_op == c10d::ReduceOp::SUM && input.scalar_type() == at::kBool) {
-      // For bool tensors, map sum to max, which both represent a bitwise or.
-      // This is to prevent overflow issues with sum, since we use uint8 to
-      // represent a bool (see cnclDataType mapping).
-      return cnclMax;
+    if (input.scalar_type() == at::kBool) {
+      if (reduce_op == c10d::ReduceOp::SUM) {
+        // For bool tensors, map sum to max, which both represent a bitwise or.
+        // This is to prevent overflow issues with sum, since we use uint8 to
+        // represent a bool (see cnclDataType mapping).
+        return cnclMax;
+      }
+      if (reduce_op == c10d::ReduceOp::AVG) {
+        C10_THROW_ERROR(
+            TypeError, "Cannot use ReduceOp.AVG with boolean inputs");
+      }
     }
     return cncl_op.at(reduce_op);
   } catch (const std::out_of_range& e) {
     switch (reduce_op) {
-      case c10d::ReduceOp::AVG:
-        throw std::runtime_error("Cannot use ReduceOp.AVG with CNCL");
-        break;
       case c10d::ReduceOp::BAND:
         throw std::runtime_error("Cannot use ReduceOp.BAND with CNCL");
         break;
@@ -316,6 +321,163 @@ bool checkTensorsNeedFlatten(
 
 } // namespace
 
+namespace cncl::detail {
+
+template <typename Options>
+at::Tensor procReduceInput(
+    at::Tensor& input,
+    Options& opts,
+    bool canModifyInput,
+    int world_size,
+    bool avoidRecordStreams,
+    c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work,
+    torch_mlu::MLUStream& stream) {
+  torch_mlu::mlu::MLUStreamGuard guard(stream);
+  at::Tensor prep_input = input;
+  if (opts.reduceOp == c10d::ReduceOp::AVG &&
+      !at::isIntegralType(input.scalar_type(), true /*include bool*/)) {
+    if (canModifyInput) {
+      prep_input.div_(world_size);
+    } else {
+      // create new input tensor
+      prep_input = at::native::div(input, world_size);
+      if (avoidRecordStreams) {
+        work->addStashedTesnor(prep_input);
+      } else {
+        torch_mlu::MLUCachingAllocator::recordStream(
+            prep_input.storage().data_ptr(), stream);
+      }
+    }
+  }
+  return prep_input;
+}
+template <typename Options>
+void procReduceOutput(
+    at::Tensor& input,
+    at::Tensor& output,
+    Options opts,
+    torch_mlu::MLUStream& stream,
+    int world_size) {
+  if (opts.reduceOp == c10d::ReduceOp::AVG &&
+      at::isIntegralType(input.scalar_type(), false /*include bool*/)) {
+    // Here we don't need to record output's stream because fn has
+    // recorded
+    torch_mlu::mlu::MLUStreamGuard guard(stream);
+    output.floor_divide_(world_size);
+  }
+}
+
+cnclResult_t reduce_scatter(
+    at::Tensor& input,
+    at::Tensor& output,
+    cnclComm_t comm,
+    torch_mlu::MLUStream& stream,
+    c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work,
+    bool avoidRecordStreams,
+    bool canModifyInput,
+    int world_size,
+    const c10d::ReduceScatterOptions& opts) {
+  at::Tensor prep_input = procReduceInput(
+      input,
+      opts,
+      canModifyInput,
+      world_size,
+      avoidRecordStreams,
+      work,
+      stream);
+
+  auto input_impl = torch_mlu::getMluTensorImpl(prep_input);
+  auto input_ptr = input_impl->mlu_data_ptr();
+  auto output_impl = torch_mlu::getMluTensorImpl(output);
+  auto output_ptr = output_impl->mlu_data_ptr();
+  auto status = cnclReduceScatter(
+      input_ptr,
+      output_ptr,
+      output.numel(),
+      getCnclDataType(input.scalar_type()),
+      getCnclReduceOp(opts.reduceOp, input),
+      comm,
+      stream.stream());
+
+  procReduceOutput(input, output, opts, stream, world_size);
+  return status;
+}
+
+cnclResult_t reduce(
+    at::Tensor& input,
+    at::Tensor& output,
+    cnclComm_t comm,
+    torch_mlu::MLUStream& stream,
+    c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work,
+    bool avoidRecordStreams,
+    bool canModifyInput,
+    int world_size,
+    const c10d::ReduceOptions& opts) {
+  at::Tensor prep_input = procReduceInput(
+      input,
+      opts,
+      canModifyInput,
+      world_size,
+      avoidRecordStreams,
+      work,
+      stream);
+  const auto root = opts.rootRank + opts.rootTensor;
+  const auto cncl_data_type = getCnclDataType(input.scalar_type());
+  const auto cncl_reduce_op = getCnclReduceOp(opts.reduceOp, input);
+
+  auto input_impl = torch_mlu::getMluTensorImpl(prep_input);
+  auto input_ptr = input_impl->mlu_data_ptr();
+  auto output_impl = torch_mlu::getMluTensorImpl(output);
+  auto output_ptr = output_impl->mlu_data_ptr();
+  auto status = cnclReduce(
+      input_ptr,
+      output_ptr,
+      input.numel(),
+      cncl_data_type,
+      cncl_reduce_op,
+      (int)root,
+      comm,
+      stream.stream());
+  procReduceOutput(input, output, opts, stream, world_size);
+  return status;
+}
+
+cnclResult_t allreduce(
+    at::Tensor& input,
+    at::Tensor& output,
+    cnclComm_t comm,
+    torch_mlu::MLUStream& stream,
+    c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work,
+    bool avoidRecordStreams,
+    bool canModifyInput,
+    int world_size,
+    const c10d::AllreduceOptions& opts) {
+  at::Tensor prep_input = procReduceInput(
+      input,
+      opts,
+      canModifyInput,
+      world_size,
+      avoidRecordStreams,
+      work,
+      stream);
+  auto input_impl = torch_mlu::getMluTensorImpl(input);
+  auto input_ptr = input_impl->mlu_data_ptr();
+  auto output_impl = torch_mlu::getMluTensorImpl(output);
+  auto output_ptr = output_impl->mlu_data_ptr();
+  auto status = cnclAllReduce(
+      input_ptr,
+      output_ptr,
+      input.numel(),
+      getCnclDataType(input.scalar_type()),
+      getCnclReduceOp(opts.reduceOp, input),
+      comm,
+      stream.stream());
+  procReduceOutput(input, output, opts, stream, world_size);
+  return status;
+}
+
+} // namespace cncl::detail
+
 const int64_t ProcessGroupCNCL::k_watchdog_thread_sleep_millis = 10000;
 const int64_t ProcessGroupCNCL::k_work_cleanup_thread_sleep_millis = 1000;
 constexpr int64_t kWaitForAbortCommStoreKey = 1000;
@@ -384,6 +546,11 @@ ProcessGroupCNCL::WorkCNCL::WorkCNCL(
 }
 
 ProcessGroupCNCL::WorkCNCL::~WorkCNCL() {}
+
+// This is used by custom functions in cncl::detail
+void ProcessGroupCNCL::WorkCNCL::addStashedTesnor(at::Tensor& t) {
+  stashed_for_allocator_safety_->emplace_back(t);
+};
 
 bool ProcessGroupCNCL::WorkCNCL::isCompleted() {
   checkAndSetException();
@@ -631,8 +798,8 @@ ProcessGroupCNCL::ProcessGroupCNCL(
 
   // TODO:[PYTORCH-12498] only get CNCL_ASYNC_ERROR_HANDLING
   if (0) {
-    async_error_handling_ = 
-        static_cast<ErrorHandlingMode>(getCvarInt(CNCL_ASYNC_ERROR_HANDLING, 0));
+    async_error_handling_ = static_cast<ErrorHandlingMode>(
+        getCvarInt(CNCL_ASYNC_ERROR_HANDLING, 0));
   } else {
     async_error_handling_ = static_cast<ErrorHandlingMode>(
         c10d::parseEnvVarIntDefault(CNCL_ASYNC_ERROR_HANDLING[0].c_str(), 0));
@@ -672,7 +839,6 @@ ProcessGroupCNCL::ProcessGroupCNCL(
 
   // Init global rank
   globalRank();
-
 }
 
 ProcessGroupCNCL::~ProcessGroupCNCL() {
@@ -1439,7 +1605,11 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::collective(
       }
 
       C10D_CNCL_CHECK(
-          fn(inputs[i], outputs[i], cncl_comm->getCnclComm(), cncl_stream),
+          fn(inputs[i],
+             outputs[i],
+             cncl_comm->getCnclComm(),
+             cncl_stream,
+             work),
           cncl_comm->getCnclCommFailureReason());
     }
   }
@@ -1512,19 +1682,18 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::allreduce(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
-        auto input_impl = torch_mlu::getMluTensorImpl(input);
-        auto input_ptr = input_impl->mlu_data_ptr();
-        auto output_impl = torch_mlu::getMluTensorImpl(output);
-        auto output_ptr = output_impl->mlu_data_ptr();
-        return cnclAllReduce(
-            input_ptr,
-            output_ptr,
-            input.numel(),
-            getCnclDataType(input.scalar_type()),
-            getCnclReduceOp(opts.reduceOp, input),
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
+        return cncl::detail::allreduce(
+            input,
+            output,
             comm,
-            stream.stream());
+            stream,
+            work,
+            avoid_record_streams_,
+            true, /* allreduce is a inplace op*/
+            getSize(),
+            opts);
       },
       c10d::OpType::ALLREDUCE,
       "cncl:all_reduce");
@@ -1541,17 +1710,18 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::allreduce_coalesced(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
-        auto cnclDataType = getCnclDataType(input.scalar_type());
-        auto cnclReduceOp = getCnclReduceOp(opts.reduceOp, input);
-        return cnclAllReduce(
-            input.data_ptr(),
-            output.data_ptr(),
-            input.numel(),
-            cnclDataType,
-            cnclReduceOp,
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
+        return cncl::detail::allreduce(
+            input,
+            output,
             comm,
-            stream.stream());
+            stream,
+            work,
+            avoid_record_streams_,
+            true, /* allreduce is a inplace op*/
+            getSize(),
+            opts);
       },
       c10d::OpType::COALESCED,
       "cncl:allreduce_coalesced");
@@ -1568,7 +1738,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::broadcast(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         auto input_impl = torch_mlu::getMluTensorImpl(input);
         auto input_ptr = input_impl->mlu_data_ptr();
         auto output_impl = torch_mlu::getMluTensorImpl(output);
@@ -1598,21 +1769,18 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::reduce(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
-        auto input_impl = torch_mlu::getMluTensorImpl(input);
-        auto input_ptr = input_impl->mlu_data_ptr();
-        auto output_impl = torch_mlu::getMluTensorImpl(output);
-        auto output_ptr = output_impl->mlu_data_ptr();
-        const int root = opts.rootRank * tensors.size() + opts.rootTensor;
-        return cnclReduce(
-            input_ptr,
-            output_ptr,
-            input.numel(),
-            getCnclDataType(input.scalar_type()),
-            getCnclReduceOp(opts.reduceOp, input),
-            root,
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
+        return cncl::detail::reduce(
+            input,
+            output,
             comm,
-            stream.stream());
+            stream,
+            work,
+            avoid_record_streams_,
+            true, /*reduce is inplace operation*/
+            getSize(),
+            opts);
       },
       c10d::OpType::REDUCE,
       "cncl:reduce");
@@ -1629,7 +1797,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         return cnclAllGather(
             input.data_ptr(),
             output.data_ptr(),
@@ -1670,7 +1839,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::allgather(
         [&](at::Tensor& input,
             at::Tensor& output,
             cnclComm_t comm,
-            torch_mlu::MLUStream& stream) {
+            torch_mlu::MLUStream& stream,
+            c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
           auto input_impl = torch_mlu::getMluTensorImpl(input);
           auto input_ptr = input_impl->mlu_data_ptr();
           auto output_impl = torch_mlu::getMluTensorImpl(output);
@@ -1766,7 +1936,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::_broadcast_oop(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         const auto root = opts.rootRank * inputTensors.size() + opts.rootTensor;
         return cnclBroadcast(
             input.data_ptr(),
@@ -1808,7 +1979,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::_allgather_base(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         auto input_impl = torch_mlu::getMluTensorImpl(input);
         auto input_ptr = input_impl->mlu_data_ptr();
         auto output_impl = torch_mlu::getMluTensorImpl(output);
@@ -1859,19 +2031,18 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::_reduce_oop(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
-        const auto root = opts.rootRank * inputTensors.size() + opts.rootTensor;
-        const auto cnclDataType = getCnclDataType(input.scalar_type());
-        const auto cnclReduceOp = getCnclReduceOp(opts.reduceOp, input);
-        return cnclReduce(
-            input.data_ptr(),
-            output.data_ptr(),
-            input.numel(),
-            cnclDataType,
-            cnclReduceOp,
-            (int)root,
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
+        return cncl::detail::reduce(
+            input,
+            output,
             comm,
-            stream.stream());
+            stream,
+            work,
+            avoid_record_streams_,
+            false, /*reduce oop is out of place reduce*/
+            getSize(),
+            opts);
       },
       c10d::OpType::REDUCE,
       "cncl:_reduce_oop");
@@ -1898,6 +2069,13 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::reduce_scatter(
     bool flattened =
         checkTensorsNeedFlatten(input_tensors, output_tensors, size_);
 
+    // For AVG and float type tensor
+    if (opts.reduceOp == c10d::ReduceOp::AVG &&
+        !at::isIntegralType(
+            input_tensors_[0].scalar_type(), true /*include bool*/)) {
+      flattened = false;
+    }
+
     // Flatten a vector of tensors into a single, stacked tensor.
     std::vector<at::Tensor> input_flattened;
     if (!flattened) {
@@ -1913,23 +2091,22 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::reduce_scatter(
         [&](at::Tensor& input,
             at::Tensor& output,
             cnclComm_t comm,
-            torch_mlu::MLUStream& stream) {
-          auto input_impl = torch_mlu::getMluTensorImpl(input);
-          auto input_ptr = input_impl->mlu_data_ptr();
-          auto output_impl = torch_mlu::getMluTensorImpl(output);
-          auto output_ptr = output_impl->mlu_data_ptr();
+            torch_mlu::MLUStream& stream,
+            c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
           if (!avoid_record_streams_) {
             torch_mlu::MLUCachingAllocator::recordStream(
                 output.storage().data_ptr(), stream);
           }
-          return cnclReduceScatter(
-              input_ptr,
-              output_ptr,
-              output.numel(),
-              getCnclDataType(input.scalar_type()),
-              getCnclReduceOp(opts.reduceOp, input),
+          return cncl::detail::reduce_scatter(
+              input,
+              output,
               comm,
-              stream.stream());
+              stream,
+              work,
+              avoid_record_streams_,
+              !flattened,
+              getSize(),
+              opts);
         },
         [&](std::vector<torch_mlu::MLUStream>& cncl_streams,
             c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
@@ -2005,21 +2182,22 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         if (!avoid_record_streams_) {
           torch_mlu::MLUCachingAllocator::recordStream(
               output.storage().data_ptr(), stream);
         }
-        auto cnclDataType = getCnclDataType(input.scalar_type());
-        auto cnclReduceOp = getCnclReduceOp(opts.reduceOp, input);
-        return cnclReduceScatter(
-            input.data_ptr(),
-            output.data_ptr(),
-            output.numel(),
-            cnclDataType,
-            cnclReduceOp,
+        return cncl::detail::reduce_scatter(
+            input,
+            output,
             comm,
-            stream.stream());
+            stream,
+            work,
+            avoid_record_streams_,
+            false, /*can not modify input*/
+            getSize(),
+            opts);
       },
       c10d::OpType::COALESCED,
       "cncl:reduce_scatter_tensor_coalesced");
@@ -2049,23 +2227,22 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::_reduce_scatter_base(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
-        auto input_impl = torch_mlu::getMluTensorImpl(input);
-        auto input_ptr = input_impl->mlu_data_ptr();
-        auto output_impl = torch_mlu::getMluTensorImpl(output);
-        auto output_ptr = output_impl->mlu_data_ptr();
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         if (!avoid_record_streams_) {
           torch_mlu::MLUCachingAllocator::recordStream(
               output.storage().data_ptr(), stream);
         }
-        return cnclReduceScatter(
-            input_ptr,
-            output_ptr,
-            output.numel(),
-            getCnclDataType(input.scalar_type()),
-            getCnclReduceOp(opts.reduceOp, input),
+        return cncl::detail::reduce_scatter(
+            input,
+            output,
             comm,
-            stream.stream());
+            stream,
+            work,
+            avoid_record_streams_,
+            false, /*input not copyed can not be modified*/
+            getSize(),
+            opts);
       },
       c10d::OpType::_REDUCE_SCATTER_BASE,
       "cncl:reduce_scatter");
@@ -2097,15 +2274,14 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::barrier(
     // offset wrt the device id if intra-node MLUs are sharded into multiple
     // dimensions.
     barDevIdx = static_cast<int16_t>(globalRank() % localDeviceCount_);
-    LOG(WARNING)
-        << c10::str(
-               "Rank ",
-               this->getRank(),
-               " using MLU ",
-               barDevIdx,
-               " to perform barrier as devices used by this process are currently unknown. ",
-               "This can potentially cause a hang if this rank to MLU mapping is incorrect.",
-               "Specify device_ids in barrier() to force use of a particular device.");
+    LOG(WARNING) << c10::str(
+        "Rank ",
+        this->getRank(),
+        " using MLU ",
+        barDevIdx,
+        " to perform barrier as devices used by this process are currently unknown. ",
+        "This can potentially cause a hang if this rank to MLU mapping is incorrect.",
+        "Specify device_ids in barrier() to force use of a particular device.");
     devices.push_back(at::Device(at::DeviceType::PrivateUse1, barDevIdx));
   } else {
     for (auto usedDeviceIdx : usedDeviceIdxs_) {
@@ -2161,7 +2337,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::alltoall_base(
       [&](at::Tensor& input,
           at::Tensor& output,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         auto input_impl = torch_mlu::getMluTensorImpl(input);
         auto input_ptr = input_impl->mlu_data_ptr();
         auto output_impl = torch_mlu::getMluTensorImpl(output);
@@ -2252,7 +2429,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::alltoall(
       [&](at::Tensor& /* unused */,
           at::Tensor& /* unused */,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         torch_mlu::cncl::detail::all2all(
             output_tensors, input_tensors, comm, stream);
         return CNCL_RET_SUCCESS;
@@ -2328,7 +2506,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::gather(
       [&](at::Tensor& /* unused */,
           at::Tensor& /* unused */,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         const auto root = opts.rootRank;
         if (getRank() == root) {
           if (!avoid_record_streams_) {
@@ -2398,7 +2577,8 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::scatter(
       [&](at::Tensor& /* unused */,
           at::Tensor& /* unused */,
           cnclComm_t comm,
-          torch_mlu::MLUStream& stream) {
+          torch_mlu::MLUStream& stream,
+          c10::intrusive_ptr<ProcessGroupCNCL::WorkCNCL>& work) {
         const auto root = opts.rootRank;
         if (getRank() == root) {
           if (!avoid_record_streams_) {
@@ -2611,7 +2791,6 @@ const int& ProcessGroupCNCL::globalRank() const {
   static int globalRank = rank_;
   return globalRank;
 }
-
 
 c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::recvAnysource(
     std::vector<at::Tensor>& /* unused */,

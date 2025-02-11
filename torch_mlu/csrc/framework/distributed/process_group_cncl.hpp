@@ -250,6 +250,8 @@ class TORCH_MLU_API ProcessGroupCNCL : public c10d::Backend {
 
     std::vector<at::Tensor> result() override;
 
+    void addStashedTesnor(at::Tensor& t);
+
     // Helper function that returns True if the WorkCNCL object has timed out
     // and False otherwise.
     bool timedOut();

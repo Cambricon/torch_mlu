@@ -150,6 +150,12 @@ def parse_args():
         "different environment. So we provide a choice for "
         "user to add additional delay time for all test case.",
     )
+    parser.add_argument(
+        "--avoid_record_streams",
+        default="0",
+        type=str,
+        help="Test avoid record streams",
+    )
 
     parser.add_argument("unittest_args", nargs="*")
 
@@ -494,12 +500,11 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
                     _build_tensor(src + 1, master_value).type(ttype)
                 )
                 dist.reduce(tensor, src, op)
+                expected_tensor = (
+                    _build_tensor(src + 1, expected_value).type(ttype).to("mlu")
+                )
                 self.assertLess(
-                    (tensor.float() - _build_tensor(src + 1, expected_value).to("mlu"))
-                    .abs()
-                    .cpu()
-                    .max()
-                    .item(),
+                    (tensor.float() - expected_tensor.float()).abs().cpu().max().item(),
                     3e-3,
                 )
             else:
@@ -521,6 +526,21 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
             a,
             b,
             a + b * (len(group) - 1),
+        )
+
+    # @unittest.skip("not test")
+    def test_reduce_avg(self):
+        torch.manual_seed(1)
+        group, rank = self._init_global_test()
+        a = 100
+        b = 10
+        self._test_reduce_helper(
+            group,
+            rank,
+            dist.ReduceOp.AVG,
+            a,
+            b,
+            (a + b * (len(group) - 1)) / len(group),
         )
 
     # @unittest.skip("not test")
@@ -627,28 +647,26 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
                 tensor = self.to_device(
                     _build_tensor(src + 1, master_value).type(ttype)
                 )
+                expected_tensor = self.to_device(
+                    _build_tensor(src + 1, expected_value).type(ttype)
+                )
                 dist.all_reduce(tensor, op)
                 # print("sum", rank, src, tensor.cpu().view(-1)[0].item())
                 self.assertLess(
-                    (tensor.float() - _build_tensor(src + 1, expected_value).to("mlu"))
-                    .abs()
-                    .cpu()
-                    .max()
-                    .item(),
+                    (tensor.float() - expected_tensor.float()).abs().cpu().max().item(),
                     3e-3,
                 )
             else:
                 tensor = self.to_device(
                     _build_tensor(src + 1, worker_value).type(ttype)
                 )
+                expected_tensor = self.to_device(
+                    _build_tensor(src + 1, expected_value).type(ttype)
+                )
                 dist.all_reduce(tensor, op)
                 # print("sum", rank, src, tensor.cpu().view(-1)[0].item())
                 self.assertLess(
-                    (tensor.float() - _build_tensor(src + 1, expected_value).to("mlu"))
-                    .abs()
-                    .cpu()
-                    .max()
-                    .item(),
+                    (tensor.float() - expected_tensor.float()).abs().cpu().max().item(),
                     3e-3,
                 )
 
@@ -665,6 +683,20 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
             a,
             b,
             a + b * (len(group) - 1),
+        )
+
+    def test_all_reduce_avg(self):
+        torch.manual_seed(1)
+        group, rank = self._init_global_test()
+        a = 100
+        b = 10
+        self._test_all_reduce_helper(
+            group,
+            rank,
+            dist.ReduceOp.AVG,
+            a,
+            b,
+            (a + b * (len(group) - 1)) / len(group),
         )
 
     # @unittest.skip("not test")
@@ -805,101 +837,183 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
                         self.to_device(torch.tensor([rank + i]).type(ttype))
                         for i in range(0, self.world_size)
                     ]
+                origin_input_list = copy.deepcopy(tensor_list)
                 dist.reduce_scatter(output, tensor_list, op)
+
+                expected_tensor = torch.tensor([expected_value]).type(ttype)
                 # mlu bfloat16 is not support item() now.
-                self.assertEqual(
-                    expected_value.cpu()
-                    if isinstance(expected_value, torch.Tensor)
-                    else expected_value,
-                    output.cpu() if isinstance(output, torch.Tensor) else output,
-                )
+                self.assertEqual(expected_tensor.cpu(), output.cpu())
+                self.assertEqual(origin_input_list, tensor_list)
+
+    def _test_reduce_scatter_helper_specify(
+        self,
+        rank,
+        input_fn,
+        output_fn,
+        expected_fn,
+        op,
+    ):
+        dtype_list = [
+            "torch.FloatTensor",
+            "torch.HalfTensor",
+            "torch.CharTensor",
+            "torch.ByteTensor",
+            "torch.IntTensor",
+            "torch.LongTensor",
+            "torch.DoubleTensor",
+            "torch.BoolTensor",
+        ]
+        if TEST_BFLOAT16:
+            dtype_list.append("torch.BFloat16Tensor")
+
+        torch.mlu.set_device(rank % torch.mlu.device_count())
+        for dtype in dtype_list:
+            input_tensors = input_fn(dtype)
+            origin_input_list = copy.deepcopy(input_tensors)
+            output_tensor = output_fn(dtype)
+            expected_tensor = expected_fn(dtype)
+            if dtype == "torch.BoolTensor" and op == dist.ReduceOp.AVG:
+                with self.assertRaisesRegex(
+                    TypeError,
+                    "Cannot use ReduceOp.AVG with boolean inputs",
+                ):
+                    dist.reduce_scatter(output_tensor, input_tensors, op)
+            else:
+                dist.reduce_scatter(output_tensor, input_tensors, op)
+                self.assertEqual(output_tensor.cpu(), expected_tensor)
+                self.assertEqual(origin_input_list, input_tensors)
 
     def test_reduce_scatter_tensor_continuous(self):
         _, rank = self._init_global_test()
-        dtype_list = [
-            "torch.FloatTensor",
-            "torch.HalfTensor",
-            "torch.CharTensor",
-            "torch.ByteTensor",
-            "torch.IntTensor",
-            "torch.LongTensor",
-            "torch.DoubleTensor",
-            "torch.BoolTensor",
-        ]
-        if TEST_BFLOAT16:
-            dtype_list.append("torch.BFloat16Tensor")
+        op_list = [dist.ReduceOp.SUM, dist.ReduceOp.AVG]
+        for op in op_list:
 
-        torch.mlu.set_device(rank % torch.mlu.device_count())
-        for dtype in dtype_list:
-            input_tensors = list(
-                torch.arange(self.world_size).type(dtype).mlu().chunk(self.world_size)
+            def input_fn(dtype):
+                return list(
+                    torch.tensor(
+                        [i for _ in range(self.world_size) for i in range(128)]
+                    )
+                    .type(dtype)
+                    .mlu()
+                    .chunk(self.world_size)
+                )
+
+            def output_fn(dtype):
+                return torch.tensor([0 for i in range(128)]).type(dtype).mlu()
+
+            def expected_fn(dtype):
+                if op == dist.ReduceOp.AVG:
+                    # We need to set dtype before divided world_size to make sure the value will be right when it is overflow in CharTensor
+                    return (
+                        (
+                            torch.tensor(
+                                [i * self.world_size for i in range(128)]
+                            ).type(dtype)
+                        )
+                        / self.world_size
+                    ).type(dtype)
+                else:  # SUM
+                    return (
+                        (
+                            torch.tensor(
+                                [i * self.world_size for i in range(128)]
+                            ).type(dtype)
+                        )
+                    ).type(dtype)
+
+            self._test_reduce_scatter_helper_specify(
+                rank, input_fn, output_fn, expected_fn, op
             )
-            output_tensor = torch.zeros(1).type(dtype).mlu()
-            expected_tensor = torch.tensor([rank * self.world_size]).type(dtype)
-            dist.reduce_scatter(output_tensor, input_tensors, dist.ReduceOp.SUM)
-            self.assertEqual(output_tensor.cpu(), expected_tensor)
 
     def test_reduce_scatter_tensor_not_contiguous(self):
-        group, rank = self._init_global_test()
-        dtype_list = [
-            "torch.FloatTensor",
-            "torch.HalfTensor",
-            "torch.CharTensor",
-            "torch.ByteTensor",
-            "torch.IntTensor",
-            "torch.LongTensor",
-            "torch.DoubleTensor",
-            "torch.BoolTensor",
-        ]
-        if TEST_BFLOAT16:
-            dtype_list.append("torch.BFloat16Tensor")
+        _, rank = self._init_global_test()
+        op_list = [dist.ReduceOp.SUM, dist.ReduceOp.AVG]
+        for op in op_list:
 
-        torch.mlu.set_device(rank % torch.mlu.device_count())
-        for dtype in dtype_list:
-            input_tensors = [
-                torch.tensor([i for i in range(128)])
-                .type(dtype)
-                .mlu()
-                .as_strided([64, 2], [1, 64])
-                for i in range(self.world_size)
-            ]
-            output_tensor = (
-                torch.reshape(torch.tensor([0 for i in range(128)]), (64, 2))
-                .type(dtype)
-                .mlu()
+            def input_fn(dtype):
+                return [
+                    torch.tensor([i for i in range(128)])
+                    .type(dtype)
+                    .mlu()
+                    .as_strided([64, 2], [1, 64])
+                    for i in range(self.world_size)
+                ]
+
+            def output_fn(dtype):
+                return (
+                    torch.reshape(torch.tensor([0 for i in range(128)]), (64, 2))
+                    .type(dtype)
+                    .mlu()
+                )
+
+            def expected_fn(dtype):
+                # if the reduce sum result is overflow for the type, the result will be negtive
+                if op == dist.ReduceOp.AVG:
+                    return (
+                        (
+                            (
+                                (
+                                    torch.tensor(
+                                        [(i * self.world_size) for i in range(128)]
+                                    )
+                                )
+                                .type(dtype)
+                                .as_strided([64, 2], [1, 64])
+                            )
+                            / self.world_size
+                        )
+                    ).type(dtype)
+                else:
+                    return (
+                        (torch.tensor([i * self.world_size for i in range(128)]))
+                        .type(dtype)
+                        .as_strided([64, 2], [1, 64])
+                    )
+
+            self._test_reduce_scatter_helper_specify(
+                rank, input_fn, output_fn, expected_fn, op
             )
-            expected_tensor = (
-                (torch.tensor([i * self.world_size for i in range(128)]))
-                .type(dtype)
-                .as_strided([64, 2], [1, 64])
-            )
-            dist.reduce_scatter(output_tensor, input_tensors)
-            self.assertEqual(output_tensor, expected_tensor)
 
     def test_reduce_scatter_tensor_not_continuous(self):
         _, rank = self._init_global_test()
-        dtype_list = [
-            "torch.FloatTensor",
-            "torch.HalfTensor",
-            "torch.CharTensor",
-            "torch.ByteTensor",
-            "torch.IntTensor",
-            "torch.LongTensor",
-            "torch.DoubleTensor",
-            "torch.BoolTensor",
-        ]
-        if TEST_BFLOAT16:
-            dtype_list.append("torch.BFloat16Tensor")
+        op_list = [dist.ReduceOp.SUM, dist.ReduceOp.AVG]
+        for op in op_list:
 
-        torch.mlu.set_device(rank % torch.mlu.device_count())
-        for dtype in dtype_list:
-            input_tensors = []
-            for i in range(self.world_size):
-                input_tensors.append(torch.tensor([i]).type(dtype).mlu())
-            output_tensor = torch.zeros(1).type(dtype).mlu()
-            expected_tensor = torch.tensor([rank * self.world_size]).type(dtype)
-            dist.reduce_scatter(output_tensor, input_tensors, dist.ReduceOp.SUM)
-            self.assertEqual(output_tensor.cpu(), expected_tensor)
+            def input_fn(dtype):
+                input_tensors = []
+                for i in range(self.world_size):
+                    input_tensors.append(
+                        torch.tensor([i for i in range(128)]).type(dtype).mlu()
+                    )
+                    tmp = torch.zeros(1).mlu()
+                return input_tensors
+
+            def output_fn(dtype):
+                return torch.tensor([0 for i in range(128)]).type(dtype).mlu()
+
+            def expected_fn(dtype):
+                # if the reduce sum result is overflow for the type, the result will be negtive
+                if op == dist.ReduceOp.AVG:
+                    return (
+                        (
+                            (
+                                (
+                                    torch.tensor(
+                                        [(i * self.world_size) for i in range(128)]
+                                    )
+                                ).type(dtype)
+                            )
+                            / self.world_size
+                        )
+                    ).type(dtype)
+                else:
+                    return (
+                        torch.tensor([i * self.world_size for i in range(128)])
+                    ).type(dtype)
+
+            self._test_reduce_scatter_helper_specify(
+                rank, input_fn, output_fn, expected_fn, op
+            )
 
     # @unittest.skip("not test")
     def test_reduce_scatter_sum(self):
@@ -930,6 +1044,19 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
         )
 
     # @unittest.skip("not test")
+    def test_reduce_scatter_avg(self):
+        _, rank = self._init_global_test()
+        self._test_reduce_scatter_helper(
+            rank,
+            dist.ReduceOp.AVG,
+            (
+                float(self.world_size * (self.world_size - 1) / 2)
+                + rank * self.world_size
+            )
+            / self.world_size,
+        )
+
+    # @unittest.skip("not test")
     @unittest.skipUnless(
         TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE`"
     )
@@ -953,30 +1080,45 @@ class _DistTestBase(object):  # pylint: disable=R0205, R0904
     def test_reduce_scatter_tensor(self):
         _, rank = self._init_global_test()
         size = 2
-        tensor_out = torch.zeros(size, dtype=torch.int64).mlu(
-            rank % torch.mlu.device_count()
-        )
 
-        # Concatenated input
-        tensor_in = torch.arange(self.world_size * size).mlu(
-            rank % torch.mlu.device_count()
-        )
-        dist.reduce_scatter_tensor(tensor_out, tensor_in)
-        # Check result
-        expected_tensor = torch.arange(rank * size, (rank + 1) * size) * self.world_size
-        self.assertEqual(tensor_out.cpu(), expected_tensor)
+        op_list = [dist.ReduceOp.SUM, dist.ReduceOp.AVG]
+        dtype_list = [torch.int64, torch.float32]
 
-        # Stacked input
-        tensor_out = torch.zeros(size, dtype=torch.int64).mlu(
-            rank % torch.mlu.device_count()
-        )
-        tensor_in = torch.reshape(tensor_in, (self.world_size, size)).mlu(
-            rank % torch.mlu.device_count()
-        )
-        dist.reduce_scatter_tensor(tensor_out, tensor_in)
-        # Check result
-        # Should be the same as the result in concatenated case
-        self.assertEqual(tensor_out.cpu(), expected_tensor)
+        for op in op_list:
+            for ttype in dtype_list:
+                tensor_out = torch.zeros(size, dtype=ttype).mlu(
+                    rank % torch.mlu.device_count()
+                )
+
+                # Concatenated input
+                tensor_in = torch.arange(self.world_size * size, dtype=ttype).mlu(
+                    rank % torch.mlu.device_count()
+                )
+                if op == dist.ReduceOp.AVG:
+                    expected_tensor = torch.arange(
+                        rank * size, (rank + 1) * size, dtype=ttype
+                    )
+                else:
+                    expected_tensor = (
+                        torch.arange(rank * size, (rank + 1) * size, dtype=ttype)
+                        * self.world_size
+                    )
+
+                dist.reduce_scatter_tensor(tensor_out, tensor_in, op=op)
+                # Check result
+                self.assertEqual(tensor_out.cpu(), expected_tensor)
+
+                # Stacked input
+                tensor_out = torch.zeros(size, dtype=ttype).mlu(
+                    rank % torch.mlu.device_count()
+                )
+                tensor_in = torch.reshape(tensor_in, (self.world_size, size)).mlu(
+                    rank % torch.mlu.device_count()
+                )
+                dist.reduce_scatter_tensor(tensor_out, tensor_in, op=op)
+                # Check result
+                # Should be the same as the result in concatenated case
+                self.assertEqual(tensor_out.cpu(), expected_tensor)
 
     def _test_all_gather_helper(self, group, rank, times=1):
         def _build_tensor(size, value):
@@ -2535,6 +2677,9 @@ class TestDistBackend(MultiProcessTestCase, TestCase):
         os.environ["WORLD_SIZE"] = str(cls.args.nproc_per_node * cls.args.nnodes)
         os.environ["NPROC_PER_NODE"] = str(cls.args.nproc_per_node)
         os.environ["NNODES"] = str(cls.args.nnodes)
+        os.environ["TORCH_CNCL_AVOID_RECORD_STREAMS"] = str(
+            cls.args.avoid_record_streams
+        )
         super().setUpClass()
 
     def setUp(self):
@@ -2559,6 +2704,11 @@ class TestDistBackend(MultiProcessTestCase, TestCase):
         self = cls(test_name)
         self.file_name = file_name
         self.rank = rank
+
+        avoid_record_streams_exclude_list = ["test_ddp_grad_div_uneven_inputs"]
+
+        if test_name in avoid_record_streams_exclude_list:
+            os.environ["TORCH_CNCL_AVOID_RECORD_STREAMS"] = "0"
 
         if torch.mlu.device_count() < self.nproc_per_node:
             print("Lack MLU Device !!!!!!")

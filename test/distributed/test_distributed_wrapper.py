@@ -14,6 +14,11 @@ class TestDistributedWrapper:
         return_code = shell(run_cmd, cwd=test_directory)
         assert return_code == 0, "test_distributed.py failed!"
 
+        # test avoid record stream
+        run_cmd = [sys.executable, "test_distributed.py", "--avoid_record_streams", "1"]
+        return_code = shell(run_cmd, cwd=test_directory)
+        assert return_code == 0, "test_distributed.py avoid record streams failed!"
+
 
 if __name__ == "__main__":
     unittest.main()
