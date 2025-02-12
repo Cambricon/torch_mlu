@@ -43,6 +43,7 @@ TESTS = [
     "torch/test_set_default_type",
     "utils/test_gpu_migration",
     "utils/test_env_migration",
+    "utils/test_check_binary_symbols",
     "utils/test_cnnl_op_exception",
     "utils/test_counter",
     "utils/test_fakecase_print_log",

@@ -1,5 +1,5 @@
 {
-  "version": "1.25.0-torch2.4.0",
+  "version": "1.25.0-torch2.4.1",
   "driver_requires": ["release", "6.2.8-1"],
   "build_requires": {
     "cnnl": ["release", "1.28.8-1"],

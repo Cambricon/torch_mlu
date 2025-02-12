@@ -32,12 +32,12 @@ DOCKER_FILE=NULL
 PACKAGE_ARCH="x86_64"
 LIBRARIES_LIST="cncv cncl cnpapi"
 PLATFORM="amd64"
-ABI_VERSION="old"
+ABI_VERSION="old_abi"
 PY_SUFFIX="py310"
 PYTHON_VERSION="3.10"
 TORCH_MLU_COMMIT_ID=NULL
 
-while getopts "r:b:c:e:p:n:x:y:z:o:v:w:d:t:f:a:m:" opt
+while getopts "r:b:c:e:p:n:x:y:z:o:v:w:d:t:f:a:m:i:" opt
 do
   case $opt in
     r)
@@ -78,6 +78,13 @@ if [ ${PACKAGE_ARCH} == "aarch64" ];then
     BUILDER_DOCKER="yellow.hub.cambricon.com/pytorch/pytorch:v1.23.1-torch2.4.0-runtime-anolis8.8-py310"
 fi
 
+if [ ${ABI_VERSION} == "cxx11_abi" ];then
+    BUILDER_DOCKER="yellow.hub.cambricon.com/pytorch/base/x86_64/manylinux:native-manylinux-builder-cpu-cxx11-abi-2.4"
+    export USE_CXX11_ABI=1
+else
+    export USE_CXX11_ABI=0
+fi
+
 echo "======================================="
 echo "RELEASE_TYPE: "$RELEASE_TYPE
 echo "PYTORCH_VERSION: "$PYTORCH_VERSION
@@ -88,6 +95,8 @@ echo "IMAGE_DOCKER_NAME: "$IMAGE_DOCKER_NAME
 echo "TAG: "$TAG
 echo "DOCKER_FILE: "$DOCKER_FILE
 echo "PYTHON_VERSION: "$PYTHON_VERSION
+echo "ABI_VERSION: "$ABI_VERSION
+echo "USE_CXX11_ABI: "$USE_CXX11_ABI
 echo "========================================"
 
 read_ver_func() {
@@ -390,6 +399,7 @@ build_wheel_func(){
     -e TORCH_MLU_COMMIT_ID=${TORCH_MLU_COMMIT_ID} \
     -e VISION_VERSION=${VISION_VERSION} \
     -e AUDIO_VERSION=${AUDIO_VERSION} \
+    -e USE_CXX11_ABI=${USE_CXX11_ABI} \
     --tty \
     --detach \
     --net=host \

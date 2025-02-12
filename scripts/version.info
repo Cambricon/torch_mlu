@@ -1,4 +1,4 @@
 version_type:release
-pytorch:2.4.0+cpu
-vision:0.19.0+cpu
-audio:2.4.0+cpu
+pytorch:2.4.1+cpu
+vision:0.19.1+cpu
+audio:2.4.1+cpu

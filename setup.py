@@ -304,6 +304,8 @@ if os.path.isfile(json_file):
         # can't pass the format check(https://github.com/pypa/setuptools/issues/3772),
         # so we replace the '-' with '+' in the name to resolve this problem.
         torch_mlu_version = json_dict["version"].replace("-", "+").strip()
+        if torch.compiled_with_cxx11_abi():
+            torch_mlu_version += ".cxx11.abi"
 
 try:
     _git_version = (

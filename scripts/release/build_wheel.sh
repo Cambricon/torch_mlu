@@ -30,6 +30,9 @@ function checkEnv() {
         echo "ERROR : AUDIO_VERSION is not set"
         exit 1
     fi
+    if [ -z "${USE_CXX11_ABI}" ]; then
+        export USE_CXX11_ABI=0
+    fi
 }
 
 checkEnv
@@ -43,15 +46,6 @@ git checkout "${TORCH_MLU_COMMIT_ID}"
 popd
 
 TORCH_MLU_HOME="/torch_mlu"
-
-distribution=`uname -a`
-if [[ "$distribution" == *"aarch64"* ]]; then
-    bash torch_mlu/scripts/release/independent_build.sh -r dep -o anolis -v 8.8 -a aarch64
-else
-    bash torch_mlu/scripts/release/independent_build.sh -r dep -o centos -v 7
-fi
-
-export NEUWARE_HOME="/neuware_home"
 
 WHEELHOUSE_DIR="wheelhouse"
 
@@ -80,6 +74,15 @@ fi
 
 pydir="/opt/python/$PYTHON_VERSION"
 export PATH="$pydir/bin:$PATH"
+
+distribution=`uname -a`
+if [[ "$distribution" == *"aarch64"* ]]; then
+    bash torch_mlu/scripts/release/independent_build.sh -r dep -o anolis -v 8.8 -a aarch64
+else
+    bash torch_mlu/scripts/release/independent_build.sh -r dep -o centos -v 7
+fi
+
+export NEUWARE_HOME="/neuware_home"
 
 if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null || [[ "$distribution" == *"aarch64"* ]]; then
     echo "There are patches to apply, clone pytorch source..."
@@ -164,7 +167,7 @@ if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null || [[ "$dist
             ;;
     esac
 
-    export _GLIBCXX_USE_CXX11_ABI=0
+    export _GLIBCXX_USE_CXX11_ABI=${USE_CXX11_ABI}
 
     echo "Calling setup.py bdist at $(date)"
     BUILD_LIBTORCH_CPU_WITH_DEBUG=0 python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
@@ -305,36 +308,50 @@ if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null || [[ "$dist
     done
     popd  # /tmp_dir
 else
-    # download torch/vision/audio whl.
     version_type=`cat ${TORCH_MLU_HOME}/scripts/version.info | grep version_type | awk -F ":" '{print $2}'`
     pytorch=`cat ${TORCH_MLU_HOME}/scripts/version.info | grep pytorch | awk -F ":" '{print $2}'`
     vision=`cat ${TORCH_MLU_HOME}/scripts/version.info | grep vision | awk -F ":" '{print $2}'`
     audio=`cat ${TORCH_MLU_HOME}/scripts/version.info | grep audio | awk -F ":" '{print $2}'`
+    if [ "${USE_CXX11_ABI}" -eq 1 ]; then
+      pytorch+=".cxx11.abi"
+    fi
+    download_rc_wheel () {
+        local whl="$1-$2-cp$3-cp$3-linux_x86_64.whl"
+        wget -nv -P /$4 "http://mirrors.cambricon.com/pytorch/whl/test/$1/${whl}"
+    }
+    # download torch whl.
     if [ "$version_type" == "main" ]; then
         pip download torch==$pytorch --index-url http://mirrors.cambricon.com/pytorch/whl/nightly/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
-        pip download torchvision==$vision --index-url http://mirrors.cambricon.com/pytorch/whl/nightly/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
-        pip download torchaudio==$audio --index-url http://mirrors.cambricon.com/pytorch/whl/nightly/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
     elif [ "$version_type" == "release" ]; then
         pip download torch==$pytorch --index-url http://mirrors.cambricon.com/pytorch/whl/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
-        pip download torchvision==$vision --index-url http://mirrors.cambricon.com/pytorch/whl/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
-        pip download torchaudio==$audio --index-url http://mirrors.cambricon.com/pytorch/whl/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
     elif [ "$version_type" == "rc" ]; then
-        torch_whl="torch-${pytorch}-cp${python_nodot}-cp${python_nodot}-linux_x86_64.whl"
-        vision_whl="torchvision-${vision}-cp${python_nodot}-cp${python_nodot}-linux_x86_64.whl"
-        audio_whl="torchaudio-${audio}-cp${python_nodot}-cp${python_nodot}-linux_x86_64.whl"
-        wget -nv -P /$WHEELHOUSE_DIR "http://mirrors.cambricon.com/pytorch/whl/test/torch/${torch_whl}"
-        wget -nv -P /$WHEELHOUSE_DIR "http://mirrors.cambricon.com/pytorch/whl/test/torchvision/${vision_whl}"
-        wget -nv -P /$WHEELHOUSE_DIR "http://mirrors.cambricon.com/pytorch/whl/test/torchaudio/${audio_whl}"
+        download_rc_wheel "torch" ${pytorch} ${python_nodot} ${WHEELHOUSE_DIR}
     else
         echo "Unknown install type: $version_type"
         exit 1
+    fi
+    if [ "${USE_CXX11_ABI}" -ne 1 ]; then
+        # download vision/audio whl.
+        if [ "$version_type" == "main" ]; then
+            pip download torchvision==$vision --index-url http://mirrors.cambricon.com/pytorch/whl/nightly/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
+            pip download torchaudio==$audio --index-url http://mirrors.cambricon.com/pytorch/whl/nightly/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
+        elif [ "$version_type" == "release" ]; then
+            pip download torchvision==$vision --index-url http://mirrors.cambricon.com/pytorch/whl/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
+            pip download torchaudio==$audio --index-url http://mirrors.cambricon.com/pytorch/whl/ --trusted-host mirrors.cambricon.com -d /$WHEELHOUSE_DIR/ --no-deps
+        elif [ "$version_type" == "rc" ]; then
+            download_rc_wheel "torchvision" ${vision} ${python_nodot} ${WHEELHOUSE_DIR}
+            download_rc_wheel "torchaudio" ${audio} ${python_nodot} ${WHEELHOUSE_DIR}
+        else
+            echo "Unknown install type: $version_type"
+            exit 1
+        fi
     fi
 fi
 
 ########################################################
 # Compile torch_mlu wheels
 #######################################################
-pip uninstall -y torch && pip install /$WHEELHOUSE_DIR/torch-*.whl
+pip uninstall -y torch && retry pip install /$WHEELHOUSE_DIR/torch-*.whl
 export LD_LIBRARY_PATH=${NEUWARE_HOME}/lib64/:${LD_LIBRARY_PATH}
 pushd "$TORCH_MLU_HOME"
 retry pip install -qr requirements.txt
@@ -362,6 +379,21 @@ popd
 pip install /$WHEELHOUSE_DIR/torchaudio_mlu*linux*.whl
 export LD_LIBRARY_PATH=/ffmpeg_mlu/install/lib:${LD_LIBRARY_PATH}
 
+# Function to run smoke tests for torch_mlu
+smoke_test_torch_mlu () {
+    python -c 'import torch; import torch_mlu; print(torch.randn(3))'
+}
+
+# Function to run smoke tests for torchvision
+smoke_test_torchvision () {
+    python -c 'import torch; import torchvision; print("Is torchvision usable?",all(x is not None for x in [torch.ops.image.decode_png, torch.ops.torchvision.roi_align]))'
+}
+
+# Function to run smoke tests for torchaudio_mlu
+smoke_test_torchaudio_mlu () {
+    python -c "import torchaudio; import torchaudio_mlu; print(torchaudio.utils.ffmpeg_utils.get_video_decoders()['h264_mludec'])"
+}
+
 if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null || [[ "$distribution" == *"aarch64"* ]]; then
     if [[ "$PYTORCH_VERSION" == "main" ]] || [[ "$PYTORCH_VERSION" == "release"* ]]; then
         unset PYTORCH_VERSION    # This env may influence the deps of vision/audio
@@ -383,29 +415,22 @@ if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null || [[ "$dist
         mv /tmp/$WHEELHOUSE_DIR/torchaudio*linux*.whl /$WHEELHOUSE_DIR/
         popd
         pip uninstall -y torchaudio && pip install /$WHEELHOUSE_DIR/torchaudio-*linux*.whl
-        ########################################################
-        # Smoke tests
-        #######################################################
-        python -c 'import torch; import torch_mlu; import torchvision; import torchaudio; print(torch.randn(3))'
+        smoke_test_torch_mlu
+        smoke_test_torchvision
+        smoke_test_torchaudio_mlu
     else
-        ########################################################
-        # Smoke tests
-        #######################################################
-        python -c 'import torch; import torch_mlu; print(torch.randn(3))'
+        smoke_test_torch_mlu
     fi
+elif [ "${USE_CXX11_ABI}" -eq 1 ]; then
+    smoke_test_torch_mlu
 else
     pip install /$WHEELHOUSE_DIR/torchvision-*.whl
     pip install /$WHEELHOUSE_DIR/torchaudio-*.whl
-    ########################################################
-    # Smoke tests
-    #######################################################
-    python -c 'import torch; import torch_mlu; import torchvision; import torchaudio; print(torch.randn(3))'
+    smoke_test_torch_mlu
+    smoke_test_torchvision
+    smoke_test_torchaudio_mlu
 fi
 
-########################################################
-# Smoke test torchaudio_mlu
-#######################################################
-python -c "import torchaudio; import torchaudio_mlu; print(torchaudio.utils.ffmpeg_utils.get_video_decoders()['h264_mludec'])"
 if [[ "$distribution" == *"aarch64"* ]]; then
     pip freeze > /$WHEELHOUSE_DIR/requirements.txt
 fi

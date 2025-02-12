@@ -30,6 +30,7 @@ from torchgen.utils import (
     assert_never,
     mapMaybe,
 )
+from torch import compiled_with_cxx11_abi
 
 from codegen.dest import (
     RegisterMLU,
@@ -211,6 +212,8 @@ def version_collect(path: str) -> List[Dict[str, object]]:
     version_torch_mlu: Dict[str, object] = {}
     version_torch_mlu['package_name'] = 'torch_mlu'
     version_torch_mlu['version_num'] = json_dict['version']
+    if compiled_with_cxx11_abi():
+        version_torch_mlu['version_num'] += '-cxx11-abi'
     version_collects.append(version_torch_mlu)
     for key in versions:
         version_info: Dict[str, object] = {}
