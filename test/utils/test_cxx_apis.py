@@ -174,10 +174,8 @@ class TestApi(TestCase):
                     if node.is_definition():
                         return
                     if str(node.location._data[0]) == header_file:
-                        # Check if the function has parameters
-                        if len(list(node.get_arguments())) > 0:
-                            mangled_func_name = node.mangled_name
-                            functions.append(f"{mangled_func_name}")
+                        mangled_func_name = node.mangled_name
+                        functions.append(f"{mangled_func_name}")
 
                 # Recursively visit children
                 for child in node.get_children():
