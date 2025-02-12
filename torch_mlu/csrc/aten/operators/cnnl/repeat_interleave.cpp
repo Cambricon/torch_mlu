@@ -70,8 +70,7 @@ at::Tensor cnnl_repeat_interleave(
   // Tensor in this function, we need to generate input for internal function
   // which is index:[0, 1, 2, ... , self[dim] - 1]. See [NOTE] for more info.
   int steps = repeats.sizes().vec()[0];
-  at::Tensor index =
-      cast_long_to_int_if_needed(at::empty({steps}, repeats.options()));
+  at::Tensor index = at::empty({steps}, repeats.options());
   int end = (steps - 1 > 0) ? (steps - 1) : 0;
   cnnl_linspace_internal(index, at::Scalar(0), at::Scalar(end), end);
 
@@ -80,7 +79,6 @@ at::Tensor cnnl_repeat_interleave(
   auto repeats_contiguous = cnnl_contiguous(repeats);
   AT_DISPATCH_INDEX_TYPES(
       repeats.scalar_type(), "cnnl_repeat_interleave", [&]() {
-        output_contiguous = create_int_tensor_if_needed(output_contiguous);
         repeats_contiguous = cast_long_to_int_if_needed(repeats_contiguous);
         cnnl_repeat_interleave_internal(
             output_contiguous, index, repeats_contiguous);

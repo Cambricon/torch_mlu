@@ -116,16 +116,33 @@ class TestIndexPut(TestCase):
         # with multiple indices
         # repeatedly writing-in may cause unexpected error,
         # so make sure writing with the same value into same place.
-        param_list = [((16, 3, 13, 13), (132,), torch.long, torch.randn(132))]
-        for input_shape, indices_shape, type_, value_ in param_list:
-            input = torch.randn(input_shape)
+        param_list = [
+            ((16, 3, 13, 13), (132,), torch.float, torch.long, torch.randn(132)),
+            (
+                (16, 3, 13, 13),
+                (132,),
+                torch.long,
+                torch.long,
+                torch.randn(132).to(torch.long),
+            ),
+        ]
+        for input_shape, indices_shape, input_dtype, index_dtype, value_ in param_list:
+            input = torch.randn(input_shape).to(input_dtype)
             input_mlu = self.to_device(input)
             repeat_num = indices_shape[0] // input_shape[1]
-            indice_1 = torch.randperm(input_shape[1], dtype=type_).repeat(repeat_num)
-            indice_2 = torch.randperm(input_shape[1], dtype=type_).repeat(repeat_num)
-            indice_3 = torch.randperm(input_shape[1], dtype=type_).repeat(repeat_num)
-            indice_4 = torch.randperm(input_shape[1], dtype=type_).repeat(repeat_num)
-            value_ = torch.randn(input_shape[1]).repeat(repeat_num)
+            indice_1 = torch.randperm(input_shape[1], dtype=index_dtype).repeat(
+                repeat_num
+            )
+            indice_2 = torch.randperm(input_shape[1], dtype=index_dtype).repeat(
+                repeat_num
+            )
+            indice_3 = torch.randperm(input_shape[1], dtype=index_dtype).repeat(
+                repeat_num
+            )
+            indice_4 = torch.randperm(input_shape[1], dtype=index_dtype).repeat(
+                repeat_num
+            )
+            value_ = torch.randn(input_shape[1]).repeat(repeat_num).to(input_dtype)
             input[indice_1, indice_2, indice_3, indice_4] = value_
             input_mlu[
                 self.to_device(indice_1),
@@ -136,21 +153,28 @@ class TestIndexPut(TestCase):
             self.assertTensorsEqual(input, input_mlu.cpu(), 0.00, use_MSE=True)
 
         # accumulate = True
-        param_list = [((8, 8732, 4), [(8, 8732, 4)], torch.bool, 1)]
-        for input_shape, indices_shape, type_, value_ in param_list:
-            input = torch.randn(input_shape).float()
+        param_list = [
+            ((8, 8732, 4), [(8, 8732, 4)], torch.float, torch.bool, 1),
+            ((8, 8732, 4), [(8, 8732, 4)], torch.long, torch.long, 1),
+        ]
+        for input_shape, indices_shape, input_dtype, index_dtype, value_ in param_list:
+            input = torch.randn(input_shape).to(input_dtype)
             input_mlu = self.to_device(input)
             indices = []
             indices_mlu = []
             for i in range(len(indices_shape)):
-                indice = self._generate_tensor(indices_shape[i], type_, input_shape[i])
+                indice = self._generate_tensor(
+                    indices_shape[i], index_dtype, input_shape[i]
+                )
                 indices.append(indice)
                 indices_mlu.append(self.to_device(indice))
-            output = torch.index_put(input, indices, torch.tensor(value_).float(), True)
+            output = torch.index_put(
+                input, indices, torch.tensor(value_).to(input_dtype), True
+            )
             output_mlu = torch.index_put(
                 input_mlu,
                 indices_mlu,
-                self.to_device(torch.tensor(value_).float()),
+                self.to_device(torch.tensor(value_).to(input_dtype)),
                 True,
             )
             self.assertTensorsEqual(output, output_mlu.cpu(), 0.00, use_MSE=True)
