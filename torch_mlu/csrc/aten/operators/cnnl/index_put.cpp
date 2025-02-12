@@ -179,6 +179,16 @@ at::Tensor& cnnl__index_put_impl_(
       cnnl_contiguous(self_expanded, c10::MemoryFormat::Contiguous);
   auto value_contiguous =
       cnnl_contiguous(values_, c10::MemoryFormat::Contiguous);
+
+  // If accumulate is false, input/values/output support the following data
+  // widths: 1-byte, 2-byte, 4-byte, 8-byte. If accumulate is true,
+  // input/values/output support the following data type: half, bfloat16, float,
+  // int32, int16, int8, uint8.
+  if (accumulate) {
+    self_contiguous = cast_long_to_int_if_needed(self_contiguous);
+    value_contiguous = cast_long_to_int_if_needed(value_contiguous);
+  }
+
   cnnl_index_put_internal(
       self_contiguous,
       self_contiguous,

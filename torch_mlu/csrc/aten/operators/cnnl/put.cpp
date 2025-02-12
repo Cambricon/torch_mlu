@@ -87,12 +87,21 @@ void put_mlu_kernel(
         auto source_reshaped = source.reshape({
             source.numel(),
         });
-        auto input_contiguous = cast_long_to_int_if_needed(
-            cnnl_contiguous(input, c10::MemoryFormat::Contiguous));
+        auto input_contiguous =
+            cnnl_contiguous(input, c10::MemoryFormat::Contiguous);
         auto indices_contiguous =
             cnnl_contiguous(indices, c10::MemoryFormat::Contiguous);
-        auto source_contiguous = cast_long_to_int_if_needed(
-            cnnl_contiguous(source_reshaped, c10::MemoryFormat::Contiguous));
+        auto source_contiguous =
+            cnnl_contiguous(source_reshaped, c10::MemoryFormat::Contiguous);
+
+        // If accumulate is false, input/values/output support the following
+        // data widths: 1-byte, 2-byte, 4-byte, 8-byte. If accumulate is true,
+        // input/values/output support the following data type: half, bfloat16,
+        // float, int32, int16, int8, uint8.
+        if (accumulate) {
+          input_contiguous = cast_long_to_int_if_needed(input_contiguous);
+          source_contiguous = cast_long_to_int_if_needed(source_contiguous);
+        }
 
         // TODO(chentianyi1): reuse the index_put_internal.
         std::vector<at::Tensor> idx_vec;
@@ -103,7 +112,8 @@ void put_mlu_kernel(
             idx_vec,
             source_contiguous,
             accumulate);
-        if (self_tensor.data_ptr() != input_contiguous.data_ptr()) {
+        if (self_tensor.data_ptr() != input_contiguous.data_ptr() ||
+            self_tensor.scalar_type() == at::kLong) {
           self_tensor.copy_(input_contiguous.reshape(self.sizes()));
         }
       });
