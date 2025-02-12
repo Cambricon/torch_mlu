@@ -2969,7 +2969,7 @@
 
   - api: torch.nn.functional.scaled_dot_product_attention
     supported: true
-    limitations: 不支持nested_tensor输入。Memory-Efficient Attention不能对attn_mask求导。MLU300系列板卡不支持融合attention算子。Flash Attention与Memory-Efficient Attention限制query、value的head_size最大为256。
+    limitations: 不支持nested_tensor输入。Memory-Efficient Attention不能对attn_mask求导。MLU300系列板卡不支持融合attention算子。Flash Attention与Memory-Efficient Attention限制query、value的head_size最大为256。如果attn_mask某行全为False或-inf，对应的输出为nan。
 
   - api: torch.nn.functional.selu
     supported: true
