@@ -5462,7 +5462,7 @@
 
   - api: torch.distributed.ReduceOp
     supported: true
-    limitations: 不支持 AVG, BAND, BOR, BXOR, PREMUL_SUM。
+    limitations: 不支持 BAND, BOR, BXOR, PREMUL_SUM。
 
   - api: torch.distributed.Store
     supported: true
@@ -5508,7 +5508,7 @@
 
   - api: torch.distributed.all_reduce
     supported: true
-    limitations: 不支持 AVG, BAND, BOR, BXOR, PREMUL_SUM
+    limitations: 不支持 BAND, BOR, BXOR, PREMUL_SUM
 
   - api: torch.distributed.all_reduce_multigpu
     supported: false
@@ -5601,7 +5601,7 @@
 
   - api: torch.distributed.reduce
     supported: true
-    limitations: 不支持 AVG, BAND, BOR, BXOR, PREMUL_SUM
+    limitations: 不支持 BAND, BOR, BXOR, PREMUL_SUM
 
   - api: torch.distributed.reduce_multigpu
     supported: false
