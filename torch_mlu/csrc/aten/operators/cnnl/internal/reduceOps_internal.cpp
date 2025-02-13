@@ -150,6 +150,69 @@ void cnnl_reduce_internal(
       /* indices              */ index_ptr));
 }
 
+void cnnl_var_mean_internal(
+    const at::Tensor& self,
+    at::Tensor& out1,
+    at::Tensor& out2,
+    at::IntArrayRef dim,
+    double correction_value) {
+  // Currently cnnl only supports correction_value of bool type.
+  bool unbiased = correction_value;
+  int dim_size = dim.size();
+  // init axis for cnnl kernel param, if dim_size is 0, means all dimensions is
+  // reduced, equally axis is set to {0} meanwhile input tensor is set to 1-D.
+  std::vector<int> axis(dim_size > 0 ? dim_size : 1, 0);
+  for (int i = 0; i < dim_size; ++i) {
+    axis[i] = at::maybe_wrap_dim(dim[i], self.dim());
+  }
+  // set CnnlStdVarMeanDescriptor
+  CnnlStdVarMeanDescriptor stdvarmean_desc;
+  stdvarmean_desc.set(axis, CNNL_VAR_MEAN, unbiased);
+
+  auto input_impl = getMluTensorImpl(self);
+  auto input_ptr = input_impl->mlu_data_ptr();
+  auto output1_impl = getMluTensorImpl(out1);
+  auto output2_impl = getMluTensorImpl(out2);
+  auto output1_ptr = output1_impl->mlu_data_ptr();
+  auto output2_ptr = output2_impl->mlu_data_ptr();
+
+  CnnlTensorDescriptor input_desc;
+  CnnlTensorDescriptor output1_desc;
+  CnnlTensorDescriptor output2_desc;
+  if (dim_size > 0) {
+    input_desc.set(self);
+    output1_desc.set(out1);
+    output2_desc.set(out2);
+  } else {
+    // if dim_size is 0, means all dimensions is reduced, equally set 1-D input
+    // tensor for cnnl kernel
+    input_desc.set_dim(self);
+    output1_desc.set_dim(out1);
+    output2_desc.set_dim(out2);
+  }
+
+  auto handle = getCurrentHandle();
+  // get workspace
+  size_t workspace_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetStdVarMeanWorkspaceSize(
+      handle, stdvarmean_desc.desc(), input_desc.desc(), &workspace_size));
+  auto ws_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+
+  TORCH_CNNL_CHECK(cnnlStdVarMean(
+      handle,
+      stdvarmean_desc.desc(),
+      input_desc.desc(),
+      input_ptr,
+      ws_ptr.get(),
+      workspace_size,
+      NULL,
+      NULL,
+      output1_desc.desc(),
+      output1_ptr,
+      output2_desc.desc(),
+      output2_ptr));
+}
+
 void cnnl_var_internal(
     const at::Tensor& self,
     at::Tensor& out,

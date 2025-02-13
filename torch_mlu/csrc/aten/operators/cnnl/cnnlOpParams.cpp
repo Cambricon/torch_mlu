@@ -518,6 +518,7 @@ INDEX_OP_REGISTER(REGISTER_INDEX_OP_PARAM)
   _(mean, f_bf_h_types, OpMluMemoryFormatStrategy::Contiguous, true)      \
   _(nansum, f_bf_h_types, OpMluMemoryFormatStrategy::Contiguous, true)    \
   _(std_var, f_bf_h_types, OpMluMemoryFormatStrategy::Contiguous, true)   \
+  _(var_mean, f_bf_h_types, OpMluMemoryFormatStrategy::Contiguous, true)  \
   _(sum,                                                                  \
     f_bf_h_i_c_types_without_chalf,                                       \
     OpMluMemoryFormatStrategy::Contiguous,                                \

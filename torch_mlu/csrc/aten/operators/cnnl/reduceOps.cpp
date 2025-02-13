@@ -65,6 +65,20 @@ inline at::ScalarType get_dtype_from_result(
   }
 }
 
+inline void warn_invalid_degrees_of_freedom(
+    const char* fname,
+    const at::TensorIterator& iter,
+    double correction) {
+  int64_t reducing_over_num_elements = iter.num_output_elements() == 0
+      ? 0
+      : iter.numel() / iter.num_output_elements();
+  if (reducing_over_num_elements - correction <= 0) {
+    TORCH_WARN(
+        fname,
+        "(): degrees of freedom is <= 0. Correction should be strictly less than the reduction factor (input numel divided by output numel).");
+  }
+}
+
 static at::TensorOptions options_to_value_type(at::TensorOptions opts) {
   auto scalar_type = c10::typeMetaToScalarType(opts.dtype());
   return opts.dtype(c10::toRealValueType(scalar_type));
@@ -339,6 +353,66 @@ void std_var_mlu_kernel(
   iter.cast_outputs();
 }
 
+void var_mean_mlu_kernel(
+    at::TensorIterator& iter,
+    at::OptionalIntArrayRef dim,
+    double correction_value) {
+  TensorIteratorBridge iter_bridge;
+  iter_bridge.to_build(iter, "var_mean");
+  auto result1 = iter_bridge.output(iter, 0);
+  auto result2 = iter_bridge.output(iter, 1);
+  auto self = iter_bridge.input(iter, 0);
+  auto dim_value = dim.value_or(IntArrayRef{});
+  cnnl_var_mean_internal(self, result1, result2, dim_value, correction_value);
+  iter.cast_outputs();
+}
+
+static std::tuple<at::Tensor, at::Tensor> cnnl_var_mean_out(
+    const char* fname,
+    at::Tensor& result1,
+    at::Tensor& result2,
+    const at::Tensor& self,
+    at::OptionalIntArrayRef dim,
+    const c10::optional<at::Scalar>& correction_opt,
+    bool keepdim) {
+  TORCH_CHECK(
+      self.layout() == at::Layout::Strided,
+      "std and var only supports strided layout, got: ",
+      self.layout());
+  TORCH_CHECK(
+      at::isFloatingType(self.scalar_type()),
+      fname,
+      " only support floating point dtypes");
+  TORCH_CHECK(
+      result1.scalar_type() == c10::toRealValueType(result2.scalar_type()),
+      fname,
+      " expected result1 to be real and match the precision of result2. Got ",
+      result1.scalar_type(),
+      " and ",
+      result2.scalar_type(),
+      ".");
+
+  // Computation for floating point
+  const auto correction = correction_opt.value_or(1).toDouble();
+  TORCH_CHECK(
+      correction == 0 || correction == 1,
+      "now correction only supports 0 and 1 but got ",
+      correction);
+  at::ScalarType dtype = get_dtype_from_result(result1, {});
+  auto iter = at::native::make_reduction(
+      fname, result1, result2, self, dim, keepdim, dtype);
+  warn_invalid_degrees_of_freedom(fname, iter, correction);
+
+  if (iter.numel() == 0) {
+    // Trivial reduction
+    result1.fill_(std::numeric_limits<double>::quiet_NaN());
+    result2.fill_(std::numeric_limits<double>::quiet_NaN());
+  } else {
+    var_mean_mlu_kernel(iter, dim, correction);
+  }
+  return std::tuple<Tensor&, Tensor&>(result1, result2);
+}
+
 static at::Tensor& cnnl_std_var_out(
     const char* fname,
     at::Tensor& result,
@@ -419,6 +493,17 @@ at::Tensor& cnnl_var_out(
     bool keepdim,
     at::Tensor& out) {
   return cnnl_std_var_out("var", out, self, dim, correction, keepdim, false);
+}
+
+std::tuple<at::Tensor, at::Tensor> cnnl_var_mean(
+    const at::Tensor& self,
+    at::OptionalIntArrayRef dim,
+    const c10::optional<at::Scalar>& correction,
+    bool keepdim) {
+  at::Tensor result1 = at::empty({0}, options_to_value_type(self.options()));
+  at::Tensor result2 = at::empty({0}, options_to_value_type(self.options()));
+  return cnnl_var_mean_out(
+      "var_mean", result1, result2, self, dim, correction, keepdim);
 }
 
 /***************************************all/any****************************************/

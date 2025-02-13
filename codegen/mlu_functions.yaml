@@ -1241,6 +1241,7 @@ aten:
     structured: True
   - func: std.correction
   - func: std.correction_out
+  - func: var_mean.correction
   - func: var.correction
   - func: var.correction_out
   - func: all
