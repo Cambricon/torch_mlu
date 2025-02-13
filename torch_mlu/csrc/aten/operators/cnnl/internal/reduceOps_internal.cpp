@@ -144,6 +144,70 @@ void cnnl_reduce_internal(
       /* indices              */ index_ptr));
 }
 
+void cnnl_var_mean_internal(
+    const at::Tensor& self,
+    at::Tensor& out1,
+    at::Tensor& out2,
+    at::IntArrayRef dim,
+    double correction_value) {
+  // Currently cnnl only supports correction_value of bool type.
+  bool unbiased = correction_value;
+  int dim_size = dim.size();
+  // init axis for cnnl kernel param, if dim_size is 0, means all dimensions is
+  // reduced, equally axis is set to {0} meanwhile input tensor is set to 1-D.
+  std::vector<int> axis(dim_size > 0 ? dim_size : 1, 0);
+  for (int i = 0; i < dim_size; ++i) {
+    axis[i] = at::maybe_wrap_dim(dim[i], self.dim());
+  }
+  // set CnnlStdVarMeanDescriptor
+  CnnlStdVarMeanDescriptor stdvarmean_desc;
+  stdvarmean_desc.set(axis, CNNL_VAR_MEAN, unbiased);
+
+  auto input_impl = getMluTensorImpl(self);
+  auto input_ptr = mlu_data_ptr(input_impl);
+  tensorDescPtr_t input_desc;
+  if (dim_size > 0) {
+    input_desc = getTensorDesc(input_impl);
+  } else {
+    input_desc = getTensorDescAndCoalesceDims(input_impl);
+  }
+
+  auto output1_impl = getMluTensorImpl(out1);
+  auto output2_impl = getMluTensorImpl(out2);
+  auto output1_ptr = mlu_data_ptr(output1_impl);
+  auto output2_ptr = mlu_data_ptr(output2_impl);
+  tensorDescPtr_t output1_desc;
+  tensorDescPtr_t output2_desc;
+  if (dim_size > 0) {
+    output1_desc = getTensorDesc(output1_impl);
+    output2_desc = getTensorDesc(output2_impl);
+  } else {
+    output1_desc = getTensorDescAndCoalesceDims(output1_impl);
+    output2_desc = getTensorDescAndCoalesceDims(output2_impl);
+  }
+
+  auto handle = getCurrentHandle();
+  // get workspace
+  size_t workspace_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetStdVarMeanWorkspaceSize(
+      handle, stdvarmean_desc.desc(), input_desc.get(), &workspace_size));
+  auto ws_ptr = torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+
+  TORCH_CNNL_CHECK(cnnlStdVarMean(
+      handle,
+      stdvarmean_desc.desc(),
+      input_desc.get(),
+      input_ptr,
+      ws_ptr.get(),
+      workspace_size,
+      NULL,
+      NULL,
+      output1_desc.get(),
+      output1_ptr,
+      output2_desc.get(),
+      output2_ptr));
+}
+
 void cnnl_var_internal(
     const at::Tensor& self,
     at::Tensor& out,

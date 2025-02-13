@@ -1491,7 +1491,8 @@
     limitations: correction参数仅支持0和1。
 
   - api: torch.var_mean
-    supported: false
+    supported: true
+    limitations: correction参数仅支持0和1。
 
   - api: torch.vdot
     supported: false

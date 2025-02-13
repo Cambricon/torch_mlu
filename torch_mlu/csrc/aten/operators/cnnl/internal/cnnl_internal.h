@@ -1262,6 +1262,13 @@ void cnnl_reduce_internal(
     const cnnlReduceIndices_t reduce_indices,
     float norm_p = 0.);
 
+void cnnl_var_mean_internal(
+    const at::Tensor& self,
+    at::Tensor& output1,
+    at::Tensor& output2,
+    at::IntArrayRef dim,
+    double correction_value);
+
 void cnnl_var_internal(
     const at::Tensor& self,
     at::Tensor& output,
