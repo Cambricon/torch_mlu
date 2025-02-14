@@ -4940,7 +4940,8 @@
     supported: true
 
   - api: torch.cuda.clock_rate
-    supported: false
+    corresponding MLU api: torch.mlu.clock_rate
+    supported: true
 
   - api: torch.cuda.comm.broadcast
     supported: false
@@ -5128,7 +5129,9 @@
     supported: true
 
   - api: torch.cuda.power_draw
-    supported: false
+    corresponding MLU api: torch.mlu.power_draw
+    supported: true
+    limitations: 目前MLU接口精度只能到瓦，返回值的单位仍和社区对齐是毫瓦。
 
   - api: torch.cuda.reset_max_memory_allocated
     corresponding MLU api: torch.mlu.reset_max_memory_allocated
@@ -5182,10 +5185,12 @@
     supported: true
 
   - api: torch.cuda.temperature
-    supported: false
+    corresponding MLU api: torch.mlu.temperature
+    supported: true
 
   - api: torch.cuda.utilization
-    supported: false
+    corresponding MLU api: torch.mlu.utilization
+    supported: true
 
 - Understanding CUDA Memory Usage:
 

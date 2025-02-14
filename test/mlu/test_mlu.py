@@ -490,6 +490,10 @@ class AbstractTestCases(TestCase):
             torch.mlu.get_device_properties(current_device).total_memory,
         )
 
+    # @unittest.skip("not test")
+    def test_mlu_utilization(self):
+        self.assertTrue(0 <= torch.mlu.utilization() <= 100)
+
 
 if __name__ == "__main__":
     unittest.main()
