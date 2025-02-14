@@ -6122,7 +6122,7 @@
 
   - api: torch.distributed.ReduceOp
     supported: true
-    limitations: 不支持 AVG, BAND, BOR, BXOR, PREMUL_SUM。
+    limitations: 不支持 BAND, BOR, BXOR, PREMUL_SUM。
 
   - api: torch.distributed.Store
     supported: true
@@ -6168,7 +6168,7 @@
 
   - api: torch.distributed.all_reduce
     supported: true
-    limitations: 不支持 AVG, BAND, BOR, BXOR, PREMUL_SUM
+    limitations: 不支持 BAND, BOR, BXOR, PREMUL_SUM
 
   - api: torch.distributed.all_to_all
     supported: true
@@ -6267,19 +6267,19 @@
 
   - api: torch.distributed.reduce
     supported: true
-    limitations: 不支持 AVG、BAND、BOR、BXOR、PREMUL_SUM。
+    limitations: 不支持 BAND、BOR、BXOR、PREMUL_SUM。
 
   - api: torch.distributed.reduce_op
     supported: true
-    limitations: 不支持 AVG、BAND、BOR、BXOR、PREMUL_SUM。
+    limitations: 不支持 BAND、BOR、BXOR、PREMUL_SUM。
 
   - api: torch.distributed.reduce_scatter
     supported: true
-    limitations: 不支持 AVG、BAND、BOR、BXOR、PREMUL_SUM。
+    limitations: 不支持 BAND、BOR、BXOR、PREMUL_SUM。
 
   - api: torch.distributed.reduce_scatter_tensor
     supported: true
-    limitations: 不支持 AVG、BAND、BOR、BXOR、PREMUL_SUM。
+    limitations: 不支持 BAND、BOR、BXOR、PREMUL_SUM。
 
   - api: torch.distributed.scatter
     supported: true

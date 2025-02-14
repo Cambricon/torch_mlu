@@ -370,6 +370,8 @@ class TORCH_MLU_API ProcessGroupCNCL : public c10d::Backend {
 
     std::vector<at::Tensor> result() override;
 
+    void addStashedTesnor(at::Tensor& t);
+
    protected:
     // The cached list of MLU devices to operate on
     at::Device device_;
@@ -983,6 +985,17 @@ class TORCH_MLU_API ProcessGroupCNCL : public c10d::Backend {
       c10d::OpType op_type,
       const char* profilingTitle = nullptr,
       bool avoid_record_streams = false);
+
+  template <typename Fn, typename PreProcess, typename PostProcess>
+  c10::intrusive_ptr<c10d::Work> collectiveCoalesced(
+      std::vector<at::Tensor>& inputs,
+      std::vector<at::Tensor>& outputs,
+      Fn fn,
+      PreProcess pre,
+      PostProcess post,
+      c10d::OpType op_type,
+      const char* profilingTitle = nullptr,
+      bool avoidRecordStreams = false);
 
   // Helper that encapsulates work shared across point-to-point communication
   // primitives. It is the same structure as the helper used for collective
