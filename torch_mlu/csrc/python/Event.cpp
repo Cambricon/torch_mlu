@@ -36,9 +36,10 @@ static PyObject* THMPEvent_pynew(
   }
 
   THMPEvent* self = (THMPEvent*)ptr.get();
-  TORCH_CHECK(!blocking, "the parametr blocking is not supported.");
-  unsigned int flags = (enable_timing ? CNRT_NOTIFIER_DEFAULT
-                                      : CNRT_NOTIFIER_DISABLE_TIMING_ALL) |
+  unsigned int flags =
+      (blocking ? CNRT_NOTIFIER_SYNC_WAIT : CNRT_NOTIFIER_DEFAULT) |
+      (enable_timing ? CNRT_NOTIFIER_DEFAULT
+                     : CNRT_NOTIFIER_DISABLE_TIMING_ALL) |
       (interprocess
            ? CNRT_NOTIFIER_INTERPROCESS | CNRT_NOTIFIER_DISABLE_TIMING_ALL
            : CNRT_NOTIFIER_DEFAULT);
