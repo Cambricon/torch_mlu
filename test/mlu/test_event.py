@@ -6,6 +6,7 @@ import subprocess
 import sys
 import unittest
 import logging
+import time
 import torch
 import torch_mlu
 import torch.multiprocessing as mp
@@ -70,6 +71,43 @@ class TestEvent(TestCase):
         hardware_time_ms = start.hardware_time(end) / 1000.0
         diff_ms = e2e_time_ms - hardware_time_ms
         self.assertTrue(diff_ms >= 0)
+
+    @testinfo()
+    def test_synchronize_blocking(self):
+        def _test_event_sync(blocking_flag):
+            start = torch.mlu.Event(blocking=blocking_flag)
+            end = torch.mlu.Event(blocking=blocking_flag)
+
+            start.record()
+            torch.mlu._sleep(int(5000 * get_cycles_per_ms()))
+            end.record()
+
+            start_wall = time.time()
+            start_cpu = time.process_time()
+            end.synchronize()
+            end_wall = time.time()
+            end_cpu = time.process_time()
+
+            wall_time = end_wall - start_wall
+            cpu_time = end_cpu - start_cpu
+            print(f"wall_time = {wall_time:.3f}s, cpu_time = {cpu_time:.3f}s")
+
+            return wall_time, cpu_time
+
+        wall_block, cpu_block = _test_event_sync(True)
+        ratio_block = (cpu_block / wall_block * 100) if wall_block > 0 else 0
+        _, _ = _test_event_sync(False)
+        # In theory, if the blocking mode fully puts the thread to sleep,
+        # the CPU time consumed during synchronization should be nearly zero,
+        # resulting in a ratio of (CPU time / wall time) close to 0%.
+        # However, due to OS scheduling, measurement overhead, and other factors,
+        # we relax the threshold: in our test, we expect the CPU time in blocking mode
+        # to be significantly lower than that in non-blocking mode.
+        self.assertLess(
+            ratio_block,
+            10,
+            f"Blocking mode expected CPU time ratio < 10%, but got {ratio_block:.2f}%",
+        )
 
     @testinfo()
     def test_wait(self):
