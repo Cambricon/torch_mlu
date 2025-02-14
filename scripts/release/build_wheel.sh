@@ -372,7 +372,7 @@ pushd ffmpeg_mlu
 bash build_ffmpeg.sh
 popd
 pushd torchaudio_mlu
-pip install ninja
+retry pip install ninja
 FFMPEG_DIR=/ffmpeg_mlu/install python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
 mv /tmp/$WHEELHOUSE_DIR/torchaudio_mlu*linux*.whl /$WHEELHOUSE_DIR/
 popd
@@ -411,7 +411,7 @@ if compgen -G "${TORCH_MLU_HOME}/pytorch_patches/*diff" > /dev/null || [[ "$dist
         # Compile torchaudio wheels
         #######################################################
         pushd "/audio"
-        python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
+        retry python setup.py bdist_wheel -d /tmp/$WHEELHOUSE_DIR
         mv /tmp/$WHEELHOUSE_DIR/torchaudio*linux*.whl /$WHEELHOUSE_DIR/
         popd
         pip uninstall -y torchaudio && pip install /$WHEELHOUSE_DIR/torchaudio-*linux*.whl
