@@ -909,7 +909,6 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_mem_eff_bwd_internal(
   auto diff_query_ptr = getMLUAddr(dq);
   auto diff_key_ptr = getMLUAddr(dk);
   auto diff_value_ptr = getMLUAddr(dv);
-  auto diff_bias_ptr = getMLUAddr(db);
 
   CnnlTensorDescriptor query_desc, key_desc, value_desc, bias_desc;
   CnnlTensorDescriptor diff_out_desc, fwd_out_desc, csq_desc, csk_desc;

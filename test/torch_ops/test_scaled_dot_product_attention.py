@@ -1169,7 +1169,7 @@ class TestSDPA(TestCase):
 
     @testinfo()
     @unittest.skipUnless(TEST_BFLOAT16, "Bfloat16 only support on MLU5xx")
-    def test_scaled_dot_product_flast_attention_backward_bfloat16(self):
+    def test_scaled_dot_product_flash_attention_backward_bfloat16(self):
         batch_size_list = [4, 8]
         seq_len_q_list = [512, 1024, 2048]
         seq_len_k_list = [512, 1024, 2048]

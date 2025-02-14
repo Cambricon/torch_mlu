@@ -651,10 +651,10 @@ cnnl__efficient_attention_backward(
   at::Tensor grad_v = at::empty_like(value_reshaped);
   at::Tensor grad_bias;
   if (bias_requires_grad && bias.has_value()) {
+    // TODO:CNNLEXTRAS-3443
+    TORCH_WARN_ONCE(
+        "attn_mask does not support gradient calculation in backward.");
     grad_bias = at::empty_like(*bias);
-  } else {
-    grad_bias = at::empty(
-        {batch_size * num_heads, max_seqlen_q, max_seqlen_k}, query.options());
   }
 
   at::Tensor cumulative_sequence_length_q, cumulative_sequence_length_k;
@@ -721,8 +721,6 @@ cnnl__efficient_attention_backward(
   grad_q = grad_q.view({batch_size, max_seqlen_q, num_heads, embedding});
   grad_k = grad_k.view({batch_size, max_seqlen_k, num_heads, embedding});
   grad_v = grad_v.view({batch_size, max_seqlen_k, num_heads, embedding_value});
-  grad_bias =
-      grad_bias.view({batch_size, num_heads, max_seqlen_q, max_seqlen_k});
   return std::make_tuple(grad_q, grad_k, grad_v, grad_bias);
 }
 
