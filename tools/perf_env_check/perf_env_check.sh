@@ -2,6 +2,19 @@
 #set -e
 
 ignore_check_global=${1:-"no_ignore_check"}
+is_VM=`lscpu | grep -i hypervisor`
+ignore_irq=0
+
+while getopts "i" opt
+do
+  case $opt in
+    i)
+        ignore_irq=1;;
+    ?)
+	echo "Unrecognized parameter."
+	exit 1;;
+  esac
+done
 
 function ignore_check() {
   local ignore_check=${1:-$ignore_check_global}
@@ -42,8 +55,7 @@ function check_mount() {
     first_path=$(echo $path | awk -F '/' '{print $2}')
     if [[ $dataset_path =~ $path && $dataset_first_path == $first_path ]]
     then
-      echo -e "\033[31m WARNING: The $dataset_path is mounted, it may degrade performance.\033[0m"
-      # return 1
+      echo -e "\033[33mWARNING: The $dataset_path is mounted, it may degrade performance.\033[0m"
       return 0
     fi
   done
@@ -54,7 +66,7 @@ function check_mount() {
 function check_dataset_path() {
   echo -e "\033[1;34mChecking whether the training dataset is mounted: \033[0m"
   if [ -z "$PYTORCH_TRAIN_DATASET" ]; then
-    echo -e "\033[31m  WARNING: \$PYTORCH_TRAIN_DATASET is not set, mount check will be skipped.\033[0m"
+    echo -e "\033[33mWARNING: \$PYTORCH_TRAIN_DATASET is not set, mount check will be skipped.\033[0m"
     return 0
   else
     check_mount $PYTORCH_TRAIN_DATASET
@@ -116,7 +128,7 @@ function CheckCPUExclusivePhysicalMachine () {
     fi
   else
     echo -e "\033[31m  There are multiple active users on the physical machine, please make sure you are the only non-system active user on this machine. \033[0m"
-    ignore_check 
+    ignore_check
   fi
 
 }
@@ -151,41 +163,75 @@ function checkCPUPerfMode() {
     echo -e "\033[31m  ERROR: Check CPU Performance Mode Failed. Only Support Ubuntu and Debian. \033[0m"
     ignore_check
   fi
-  performance_mode=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
-  if [ "$performance_mode" != "performance" ]
-  then
-    echo -e "\033[31m  ERROR: The CPU $performance_mode Mode Enabled! \033[0m"
-    print_log
-    ignore_check
+  if [[ -e /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]];then
+    performance_mode=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
+    if [ "$performance_mode" != "performance" ]
+    then
+      echo -e "\033[31m  ERROR: The CPU $performance_mode Mode Enabled! \033[0m"
+      print_log
+      ignore_check "ignore_check"
+    else
+      echo -e "\033[32m  The CPU Performance Mode Enabled!\033[0m"
+    fi
   else
-    echo -e "\033[32m  The CPU Performance Mode Enabled!\033[0m"
+    echo -e "\033[31mWARNING: Cannot get CPU frequency scaling info, Maybe you are running in a Virtual Machine! Please expose CPU frequency scaling capabilities to VM or make sure enable CPU performance mode on Host system!\033[0m"
+    echo -e "\033[31mFor example, if you are using VMware, you can edit the VM's '.vmx' configuration file, add the following:\033[0m"
+    echo -e "\033[31m	 vhv.enable = \"TRUE\"\033[0m"
+    echo -e "\033[31m	 monitor_control.enable_fullcpuid = \"TRUE\"\033[0m"
+    echo -e "\033[31mThen reboot the VM.\033[0m"
+    return 1
   fi
 }
 
 function irqbalanceCheck() {
   echo -e "\033[1;34mRunning irqbalance checks: \033[0m"
+  if [ -f "/.dockerenv" ]; then
+    echo -e "\033[1;31mDocker container env found, using irqbalance inside a container is not recommanded, please running irqbalance on host system. Skipping this check...\033[0m"
+    return 1
+  fi
+  if [[ -n "$is_VM" ]];then
+    echo -e "\033[33mWARNING: You are running on a Virtual Machine! Using irqbalance may cause performance issues.\033[0m"
+    echo -e "\033[33mAlternatively, you can also handle IRQs manually by setting /proc/irq/<IRQ>/smp_affinity.\033[0m"
+    if [[ "$ignore_irq" -eq 1 ]];then
+      echo -e "\033[32mNot using irqbalance, Ignore irqbalance check on this VM...\033[0m"
+      return 0
+    else
+      echo -e "\033[33mIf you are not using irqbalance and want to ignore this check on VM, you can pass '-i' option when running this script.\033[0m"
+      echo -e "\033[32mUsing irqbalance, Continue irqbalance check on this VM...\033[0m"
+      echo -e "\033[33mWARNING: You may have shared CPUs on this VM. This script can only do limited checks. Please check CPU status on Host System whether there are other VMs sharing these vCPUs.\033[0m"
+      echo -e "\033[33mYou can look for CPU Reservation(need to be 100%) and CPU Affinity(need to be assigned to specific pCPUs) in VM settings to see if the vCPUs are dedicated. You also need to check the Resource Pool Configuration to see if the VM is part of a Resource Pool which means it is shared.\033[0m"
+      num_cpu=`nproc`
+      if [[ $num_cpu -le 1 ]];then
+        echo -e "\033[31mThere only 1 CPU on this VM. Disable irqbalance...\033[0m"
+        echo -e "\033[31mPlease check CPU config on Host System and make sure the number of vCPUs pinned to this VM is greater than 1.\033[0m"
+        return 1
+      fi
+    fi
+  fi
+
   irqbalance_min_version="1.5.0"
   if [[ $OS_NAME=="Ubuntu" ]] || [[ ${OS_NAME}=="Debian"* ]]; then
     # check whether correct version of irqbalance is installed
     irqB_version=$(dpkg -l | grep irqbalance | awk '{print($3)}' | cut -d "-" -f 1)
     if [ ! -n "$irqB_version" ]; then
-      echo -e "\033[31m ERROR : irqbalance is not installed. \033[0m"
+      echo -e "\033[31mERROR: irqbalance is not installed. \033[0m"
       ignore_check
     elif test "$(echo ${irqB_version} ${irqbalance_min_version} | tr " " "\n" | sort -V | head -n 1)" != "1.5.0"
     then
-      echo -e "\033[31m ERROR : irqbalance minimal version is 1.5.0, please upgrade irqbalance\033[0m"
+      echo -e "\033[31mERROR: irqbalance minimal version is 1.5.0, please upgrade irqbalance\033[0m"
       ignore_check
-    else 
+    else
       irqbalance_status=$(service irqbalance status)
       if [[ "$irqbalance_status" =~ "running" ]]; then
-          echo -e "\033[32m irqbalance is running \033[0m"
+          echo -e "\033[32mIrqbalance is running... \033[0m"
       else
-          echo -e "\033[32m irqbalance is not running, please start irqbalance service \033[0m"
+          echo -e "\033[31mIrqbalance is not running, please start irqbalance service using 'systemctl start irqbalance'\033[0m"
+	  return 1
       fi
     fi
   else
-    echo -e "\033[31m ERROR: Check irqbalance status Failed. Only Support Ubuntu and Debian. \033[0m"
-    ignore_check   
+    echo -e "\033[31mERROR: Check irqbalance status Failed. Only Support Ubuntu and Debian. \033[0m"
+    ignore_check
   fi
 }
 
@@ -210,16 +256,16 @@ if [ $(id -u) -eq 0 ]; then
   echo -e "\033[1;32mWith sudo privileges, a full environment check will be performed: \033[0m"
   # In this check, we only focus on PYTORCH_TRAIN_DATASET, if this env variable is not set, we consider this behavior as legal and will pass the check.
   check_dataset_path
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mMount checks passed! \033[0m"; } || { echo -e "\033[1;31mMount checks failed! \033[0m" ; exit; }
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mMount checks passed! \033[0m"; } || { echo -e "\033[33mMount checks failed! Continue other checks...\033[0m";}
   checkOs
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mOS version check passed! \033[0m"; } || { echo -e "\033[1;31mOS version check failed! \033[0m"; exit;}
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mOS version check passed! \033[0m"; } || { echo -e "\033[1;31mOS version check failed! Continue other checks...\033[0m";}
   # Currently we can't strictly determine whether a process is a system process, therefore we only warn users instead of shutting down the whole script.
   CheckCPUExclusive
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU exclusive checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU exclusive checks failed! \033[0m"; exit;}
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU exclusive checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU exclusive checks failed! Continue other checks...\033[0m";}
   checkCPUPerfMode
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU performance mode checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU performance mode checks failed! \033[0m"; exit; }
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU performance mode checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU performance mode checks failed! Continue other checks...\033[0m";}
   irqbalanceCheck
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mIrqbalance checks passed! \033[0m"; } || { echo -e "\033[1;31mIrqbalance checks filed! \033[0m"; exit; }
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mIrqbalance checks passed! \033[0m"; } || { echo -e "\033[1;31mIrqbalance checks failed! Continue other checks...\033[0m";}
   ACSCheck
   ACS_check_status=$?
   if [[ $ACS_check_status -eq 0 ]]; then
@@ -234,13 +280,13 @@ else
   echo -e "\033[1;32mEnv check script will be run without a sudo privilege, only limited environment checks will be performed: \033[0m"
   # In this check, we only focus on PYTORCH_TRAIN_DATASET, if this env variable is not set, we consider this behavior as legal and will pass the check.
   check_dataset_path
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mMount checks passed! \033[0m"; } || { echo -e "\033[1;31mMount checks failed! \033[0m" ; exit; }
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mMount checks passed! \033[0m"; } || { echo -e "\033[1;31mMount checks failed! Continue other checks...\033[0m";}
   checkOs
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mOS version check passed! \033[0m"; } || { echo -e "\033[1;31mOS version check failed! \033[0m"; exit;}
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mOS version check passed! \033[0m"; } || { echo -e "\033[1;31mOS version check failed! Continue other checks...\033[0m";}
   CheckCPUExclusive
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU exclusive checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU exclusive checks failed! \033[0m"; exit;}
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU exclusive checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU exclusive checks failed! Continue other checks...\033[0m";}
   checkCPUPerfMode
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU performance mode checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU performance mode checks failed! \033[0m"; exit; }
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU performance mode checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU performance mode checks failed! Continue other checks...\033[0m";}
   irqbalanceCheck
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mIrqbalance checks passed! \033[0m"; } || { echo -e "\033[1;31mIrqbalance checks filed! \033[0m"; exit; }
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mIrqbalance checks passed! \033[0m"; } || { echo -e "\033[1;31mIrqbalance checks filed! Continue other checks...\033[0m";}
 fi
