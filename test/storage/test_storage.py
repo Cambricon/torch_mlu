@@ -114,29 +114,6 @@ class Storage(TestCase):
 
     # @unittest.skip("not test")
     @testinfo()
-    @unittest.skipUnless(TEST_FLOAT8, "float8 only support on MLU6xx")
-    def test_type_float8(self):
-        default_type = torch.Tensor().type()
-        torch.set_default_tensor_type(torch.FloatTensor)
-        x = torch.randn(5, 5).storage()
-        self.assertIsInstance(
-            x.mlu()._to(torch.float8_e5m2), torch.mlu.Float8E5M2Storage
-        )
-        self.assertIsInstance(
-            x.mlu()._to(torch.float8_e4m3fn), torch.mlu.Float8E4M3FNStorage
-        )
-
-        x = torch.randn(5, 5).untyped_storage()
-        self.assertIsInstance(
-            x.mlu()._to(torch.float8_e5m2), torch.mlu.Float8E5M2Storage
-        )
-        self.assertIsInstance(
-            x.mlu()._to(torch.float8_e4m3fn), torch.mlu.Float8E4M3FNStorage
-        )
-        torch.set_default_tensor_type(default_type)
-
-    # @unittest.skip("not test")
-    @testinfo()
     def test_has_storage(self):
         self.assertIsNotNone(torch.tensor([]).mlu().storage())
         self.assertIsNotNone(torch.empty(0).mlu().storage())
@@ -1020,12 +997,6 @@ class Storage(TestCase):
 
         if TEST_FLOAT8:
             b.storage().copy_(a.to(torch.float8_e5m2).storage())
-            self.assertIsInstance(
-                a.to(torch.float8_e5m2).storage(), torch.mlu.Float8E5M2Storage
-            )
-            self.assertIsInstance(
-                b.to(torch.float8_e5m2).storage(), torch.mlu.Float8E5M2Storage
-            )
             self.assertEqual(
                 a.to(torch.float8_e5m2).tolist(),
                 b.to(torch.float8_e5m2).tolist(),
@@ -1034,12 +1005,6 @@ class Storage(TestCase):
             )
 
             b.storage().copy_(a.to(torch.float8_e4m3fn).storage())
-            self.assertIsInstance(
-                a.to(torch.float8_e4m3fn).storage(), torch.mlu.Float8E4M3FNStorage
-            )
-            self.assertIsInstance(
-                b.to(torch.float8_e4m3fn).storage(), torch.mlu.Float8E4M3FNStorage
-            )
             self.assertEqual(
                 a.to(torch.float8_e4m3fn).tolist(),
                 b.to(torch.float8_e4m3fn).tolist(),

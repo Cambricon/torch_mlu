@@ -672,25 +672,6 @@ class ComplexFloatStorage(_MluLegacyStorage):
     def _dtype(self):
         return torch.cfloat
 
-class Float8E4M3FNStorage(_MluLegacyStorage):
-    @classproperty
-    def dtype(self):
-        _warn_typed_storage_removal()
-        return self._dtype
-
-    @classproperty
-    def _dtype(self):
-        return torch.float8_e4m3fn
-
-class Float8E5M2Storage(_MluLegacyStorage):
-    @classproperty
-    def dtype(self):
-        _warn_typed_storage_removal()
-        return self._dtype
-
-    @classproperty
-    def _dtype(self):
-        return torch.float8_e5m2
 
 del _LegacyStorage
 del _MluLegacyStorage
@@ -698,8 +679,7 @@ del _MluLegacyStorage
 _mlu_storage_classes = [
     UntypedStorage, DoubleStorage, FloatStorage, LongStorage,
     IntStorage, ShortStorage, CharStorage, ByteStorage,
-    HalfStorage, BoolStorage, BFloat16Storage, ComplexDoubleStorage, ComplexFloatStorage,
-    Float8E4M3FNStorage, Float8E5M2Storage]
+    HalfStorage, BoolStorage, BFloat16Storage, ComplexDoubleStorage, ComplexFloatStorage]
 for r in _mlu_storage_classes:
     torch._storage_classes.add(r)
 
@@ -888,8 +868,6 @@ __all__ = [
     "LongTensor",
     "ShortStorage",
     "ShortTensor",
-    "Float8E5M2Storage",
-    "Float8E4M3FNStorage",
     "MLUGraph",
     "Event",
     "ExternalStream",
