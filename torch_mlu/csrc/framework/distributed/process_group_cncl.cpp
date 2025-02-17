@@ -2015,7 +2015,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::collectiveCoalesced(
         std::make_shared<std::vector<at::Tensor>>(inputs);
   }
 
-  torch_mlu::mlu::OptionalMLUGuard mlu_guard;
+  torch_mlu::mlu::OptionalMLUGuard mlu_guard(device);
 
   // Start event should only be recorded before the cnclGroupStart()
   if (desync_debug_) {
@@ -2168,7 +2168,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::collective(
     work->stashed_for_allocator_safety_->push_back(input);
   }
 
-  torch_mlu::mlu::OptionalMLUGuard mlu_guard;
+  torch_mlu::mlu::OptionalMLUGuard mlu_guard(device);
 
   // Start event should only be recorded before the cnclGroupStart()
   if (desync_debug_) {
@@ -3262,7 +3262,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::pointToPoint(
   work->outputs_ = std::make_shared<std::vector<at::Tensor>>();
   work->outputs_->push_back(tensor);
 
-  torch_mlu::mlu::OptionalMLUGuard mlu_guard;
+  torch_mlu::mlu::OptionalMLUGuard mlu_guard(device);
 
   // Start event should only be recorded before the cnclGroupStart()
   if (desync_debug_) {
