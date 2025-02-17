@@ -536,6 +536,10 @@ def is_bf16_supported():
     r"""Returns a bool indicating if MLU is currently support bf16."""
     return torch.mlu.get_device_properties(torch.mlu.current_device()).major >= 5
 
+def is_fp8_supported(including_emulation: bool = True):
+    r"""Returns a bool indicating if MLU is currently support float8."""
+    return torch.mlu.get_device_properties(torch.mlu.current_device()).major >= 6
+
 def _sleep(cycles):
     torch_mlu._MLUC._mlu_sleep(cycles)
 
@@ -948,6 +952,7 @@ __all__ = [
     "ipc_collect",
     "is_available",
     "is_bf16_supported",
+    "is_fp8_supported",
     "is_current_stream_capturing",
     "is_initialized",
     "make_graphed_callables",

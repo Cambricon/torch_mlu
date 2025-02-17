@@ -90,10 +90,6 @@ static tensorDescPtr_t getTensorDescWithAllValues(
         desc, layout, data_type, dim, shape_info.data(), stride_info.data()));
   }
 
-  if C10_UNLIKELY (on_chip_type != CNNL_DTYPE_INVALID) {
-    TORCH_CNNL_CHECK(cnnlSetTensorDescriptorOnchipDataType(desc, on_chip_type));
-  }
-
   tensorDescPtr_t ptr(desc);
   return ptr;
 }

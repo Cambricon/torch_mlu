@@ -99,9 +99,9 @@ void cnnl_addmm_sparse_out_internal(
     auto alpha = alpha_.to<scalar_t>();
     auto beta = beta_.to<scalar_t>();
     auto handle = getCurrentHandle();
-    cnnlSparseDenseMatmulAlgo_t algo = CNNL_SPMM_ALGO_0;
+    cnnlSparseDenseMatMulAlgo_t algo = CNNL_SPMM_ALGO_0;
     size_t workspace_size;
-    TORCH_CNNL_CHECK(cnnlGetSparseDenseMatmulWorkspaceSize(
+    TORCH_CNNL_CHECK(cnnlGetSparseDenseMatMulWorkspaceSize(
         handle,
         sp_matmul_desc.desc(),
         algo,
@@ -113,7 +113,7 @@ void cnnl_addmm_sparse_out_internal(
         &workspace_size));
     auto workspace_ptr =
         torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
-    TORCH_CNNL_CHECK(cnnlSparseDenseMatmul(
+    TORCH_CNNL_CHECK(cnnlSparseDenseMatMul(
         handle,
         sp_matmul_desc.desc(),
         algo,

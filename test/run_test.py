@@ -41,6 +41,7 @@ TESTS = [
     "torch/test_complex",
     "torch/test_dataloader",
     "torch/test_set_default_type",
+    "torch/test_fp8_tensor",
     "utils/test_gpu_migration",
     "utils/test_env_migration",
     "utils/test_check_binary_symbols",

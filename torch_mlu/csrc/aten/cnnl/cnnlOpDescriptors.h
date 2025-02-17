@@ -182,8 +182,8 @@ class CnnlConvolutionDescriptor : public CnnlDescriptor<
 
 class CnnlMatmulDescriptor : public CnnlDescriptor<
                                  cnnlMatMulStruct,
-                                 &cnnlMatMulDescCreate,
-                                 &cnnlMatMulDescDestroy> {
+                                 &cnnlCreateMatMulDescriptor,
+                                 &cnnlDestroyMatMulDescriptor> {
  public:
   CnnlMatmulDescriptor() {}
   void set_attr(
@@ -214,10 +214,11 @@ class CnnlUniqueDescriptor : public CnnlDescriptor<
   void set(bool sorted, int dim, bool return_inverse, bool return_counts);
 };
 
-class CnnlStrideBatchMatmulDescriptor : public CnnlDescriptor<
-                                            cnnlStrideBatchMatMulStruct,
-                                            &cnnlStrideBatchMatMulDescCreate,
-                                            &cnnlStrideBatchMatMulDescDestroy> {
+class CnnlStrideBatchMatmulDescriptor
+    : public CnnlDescriptor<
+          cnnlStrideBatchMatMulStruct,
+          &cnnlCreateStrideBatchMatMulDescriptor,
+          &cnnlDestroyStrideBatchMatMulDescriptor> {
  public:
   CnnlStrideBatchMatmulDescriptor() {}
   void set_attr(
@@ -434,14 +435,15 @@ class CnnlEmbeddingBagDescriptor : public CnnlDescriptor<
       const bool include_last_offset);
 };
 
-class CnnlSparseDenseMatmulDescriptor : public CnnlDescriptor<
-                                            cnnlSparseDenseMatmulStruct,
-                                            &cnnlSparseDenseMatmulDescCreate,
-                                            &cnnlSparseDenseMatmulDescDestroy> {
+class CnnlSparseDenseMatmulDescriptor
+    : public CnnlDescriptor<
+          cnnlSparseDenseMatMulStruct,
+          &cnnlCreateSparseDenseMatMulDescriptor,
+          &cnnlDestroySparseDenseMatMulDescriptor> {
  public:
   CnnlSparseDenseMatmulDescriptor() {}
   void set_attr(
-      const cnnlSparseDenseMatmulDescAttribute_t attr,
+      const cnnlSparseDenseMatMulDescAttribute_t attr,
       const void* buf,
       size_t size_in_bytes);
 };

@@ -192,9 +192,10 @@ void cnnl_addmm_bias_out_internal(
         auto beta = beta_.to<math_type>();
         // Not use beta, set beta to 0.0
         beta = 0.0;
-        TORCH_CNNL_CHECK(cnnlMatMulEx(
+        TORCH_CNNL_CHECK(cnnlMatMulEx_v2(
             handle,
             matmul_desc.desc(),
+            matmul_algo.algo(),
             &alpha,
             mat1_desc.get(),
             mat1_ptr,
@@ -203,11 +204,10 @@ void cnnl_addmm_bias_out_internal(
             &beta,
             NULL,
             NULL,
-            result_desc.get(),
-            result_ptr,
-            matmul_algo.algo(),
             workspace_ptr.get(),
-            workspace_size));
+            workspace_size,
+            result_desc.get(),
+            result_ptr));
       });
 }
 

@@ -23,13 +23,24 @@ void cnnl_inverse_internal(
   auto desc_infos = getTensorDesc(infos_impl);
   auto infos_ptr = mlu_data_ptr(infos_impl);
 
-  // set descriptor config
   auto handle = getCurrentHandle();
-  TORCH_CNNL_CHECK(cnnlInverse(
+  size_t workspace_size = 0;
+  TORCH_CNNL_CHECK(cnnlGetInverseWorkspaceSize(
+      handle,
+      desc_input.get(),
+      desc_output.get(),
+      desc_infos.get(),
+      &workspace_size));
+  auto temp_ptr =
+      torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
+
+  TORCH_CNNL_CHECK(cnnlInverse_v2(
       handle,
       desc_input.get(),
       input_ptr,
       true,
+      temp_ptr.get(),
+      workspace_size,
       desc_output.get(),
       output_ptr,
       desc_infos.get(),
