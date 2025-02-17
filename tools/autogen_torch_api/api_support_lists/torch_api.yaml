@@ -1355,7 +1355,6 @@
 
   - api: torch.stft
     supported: true
-    limitations: 不支持反向求梯度。
 
   - api: torch.sub
     supported: true

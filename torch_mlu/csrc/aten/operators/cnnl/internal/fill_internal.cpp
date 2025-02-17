@@ -38,13 +38,10 @@ at::Tensor& cnnl_fill_internal(at::Tensor& input, const at::Scalar& other) {
   auto handle = getCurrentHandle();
   auto input_ptr = mlu_data_ptr(input_impl);
   auto descInput = getTensorDesc(input_impl, CNNL_LAYOUT_ARRAY);
-  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
-      at::kBool,
-      at::kBFloat16,
-      at::kHalf,
+  AT_DISPATCH_V2(
       input.scalar_type(),
       "fill_internal_with_scalar",
-      [&] {
+      AT_WRAP([&]() {
         using torch_mlu_scalar_t = torch_mlu::Convert64BitTo32Bit_t<scalar_t>;
         torch_mlu_scalar_t scalar_value = other.to<torch_mlu_scalar_t>();
         TORCH_CNNL_CHECK(cnnlFill_v3(
@@ -53,7 +50,14 @@ at::Tensor& cnnl_fill_internal(at::Tensor& input, const at::Scalar& other) {
             (void*)(&scalar_value),
             descInput.get(),
             input_ptr));
-      });
+      }),
+      AT_EXPAND(AT_ALL_TYPES_AND_COMPLEX),
+      at::kComplexHalf,
+      at::kBool,
+      at::kHalf,
+      at::kBFloat16,
+      AT_EXPAND(AT_FLOAT8_TYPES),
+      AT_EXPAND(AT_BAREBONES_UNSIGNED_TYPES));
   return input;
 }
 
@@ -68,20 +72,24 @@ at::Tensor& cnnl_fill_internal(at::Tensor& input, const at::Tensor& value) {
   // malloc mlu memory
   auto input_ptr = mlu_data_ptr(input_impl);
   void* device_value_ptr = mlu_data_ptr(getMluTensorImpl(value));
-  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
-      at::kBool,
-      at::kBFloat16,
-      at::kHalf,
+  AT_DISPATCH_V2(
       input.scalar_type(),
       "fill_internal_with_tensor",
-      [&] {
+      AT_WRAP([&]() {
         TORCH_CNNL_CHECK(cnnlFill_v3(
             handle,
             CNNL_POINTER_MODE_DEVICE,
             device_value_ptr,
             descInput.get(),
             input_ptr));
-      });
+      }),
+      AT_EXPAND(AT_ALL_TYPES_AND_COMPLEX),
+      at::kComplexHalf,
+      at::kBool,
+      at::kHalf,
+      at::kBFloat16,
+      AT_EXPAND(AT_FLOAT8_TYPES),
+      AT_EXPAND(AT_BAREBONES_UNSIGNED_TYPES));
   return input;
 }
 
