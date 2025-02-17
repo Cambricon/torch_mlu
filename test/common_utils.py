@@ -420,7 +420,7 @@ def ops_perftool(test_file_name, test_func_name, save_orig_trace=False):
                     evt
                     for evt in dic_orig["traceEvents"]
                     if evt["name"].startswith("cnnl")
-                    or evt["name"] in ["Memcpy HtoD", "Memcpy DtoH"]
+                    or evt["name"] in ["Memcpy HtoD", "Memcpy DtoH", "Memcpy DtoD"]
                 ]
                 name_lst = [evt["name"] for evt in evts_lst]
                 cnter = Counter(name_lst)

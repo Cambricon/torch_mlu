@@ -32,5 +32,5 @@ Just generate the op's new json report and move it from `torch_mlu/test/torch_op
 Baseline reports are based on the specific commit of `r2.4_develop` branch and the history logs are listed as follows:
 - **20240315**: commit SHA 8270dd60, op kernel's filtered policy -- Name equals to 'Memcpy HtoD'/'Memcpy DtoH' || Name startswith 'cnnl'. Currently, several files are missing reports: `test_distributions.py`(not using testinfo()).
 - **20240903**: commit SHA adc35ecc, add `device_count` info into each test file's JSON report, and update all baseline reports.
-
+- **20250214**: commit SHA adc35ecc, update op kernel's filtered policy: add 'Memcpy DtoD'.
 

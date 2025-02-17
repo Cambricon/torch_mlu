@@ -57,6 +57,21 @@ def parse_args():
         action="store_true",
         help="Whether to execute op's Hardware-Time comparison.",
     )
+    parser.add_argument(
+        "--base_report_dir",
+        default=base_report_dir,
+        help="Kernel launch number baseline directory.",
+    )
+    parser.add_argument(
+        "--report_dir",
+        default=report_dir,
+        help="Current Kernel launch number directory.",
+    )
+    parser.add_argument(
+        "--result_dir",
+        default=result_dir,
+        help="Kernel launch number comparison result directory.",
+    )
     return parser.parse_args()
 
 
