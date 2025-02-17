@@ -85,8 +85,8 @@ class CnnlAlgorithm {
 
 class CnnlMatmulAlgorithm : public CnnlAlgorithm<
                                 cnnlMatMulAlgoStruct,
-                                &cnnlMatMulAlgoCreate,
-                                &cnnlMatMulAlgoDestroy> {
+                                &cnnlCreateMatMulAlgo,
+                                &cnnlDestroyMatMulAlgo> {
  public:
   CnnlMatmulAlgorithm() {}
 };
@@ -101,8 +101,8 @@ class CnnlMatmulExAlgorithm : public CnnlAlgorithm<
 
 class CnnlStrideBatchMatmulAlgorithm : public CnnlAlgorithm<
                                            cnnlStrideBatchMatMulAlgoStruct,
-                                           &cnnlStrideBatchMatMulAlgoCreate,
-                                           &cnnlStrideBatchMatMulAlgoDestroy> {
+                                           &cnnlCreateStrideBatchMatMulAlgo,
+                                           &cnnlDestroyStrideBatchMatMulAlgo> {
  public:
   CnnlStrideBatchMatmulAlgorithm() {}
 };

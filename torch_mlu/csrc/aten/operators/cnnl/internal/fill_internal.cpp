@@ -38,10 +38,13 @@ at::Tensor& cnnl_fill_internal(at::Tensor& input, const at::Scalar& other) {
   auto handle = getCurrentHandle();
   auto input_ptr = input_impl->mlu_data_ptr();
   auto descInput = getTensorDesc(input_impl, CNNL_LAYOUT_ARRAY);
-  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND6(
+      at::kComplexHalf,
       at::kBool,
       at::kBFloat16,
       at::kHalf,
+      at::kFloat8_e4m3fn,
+      at::kFloat8_e5m2,
       input.scalar_type(),
       "fill_internal_with_scalar",
       [&] {
@@ -68,10 +71,13 @@ at::Tensor& cnnl_fill_internal(at::Tensor& input, const at::Tensor& value) {
   // malloc mlu memory
   auto input_ptr = input_impl->mlu_data_ptr();
   void* device_value_ptr = getMluTensorImpl(value)->mlu_data_ptr();
-  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND3(
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND6(
+      at::kComplexHalf,
       at::kBool,
       at::kBFloat16,
       at::kHalf,
+      at::kFloat8_e4m3fn,
+      at::kFloat8_e5m2,
       input.scalar_type(),
       "fill_internal_with_tensor",
       [&] {

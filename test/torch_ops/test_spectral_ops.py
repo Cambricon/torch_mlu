@@ -10,7 +10,7 @@ import os
 import librosa
 import numpy as np
 import torch
-
+import copy
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
@@ -167,6 +167,42 @@ class TestSpectralOps(TestCase):
         )
         with self.assertRaisesRegex(RuntimeError, ref_msg):
             torch.stft(x, 7, return_complex=False)
+
+    # @unittest.skip("not test")
+    @testinfo()
+    def test_stft_backward(self):
+        x_shape = [[48, 8584], [48, 9488], [48, 8142]]
+        n_fft = [1024, 2048, 512]
+        hop_length = [120, 240, 50]
+        win_length = [600, 1200, 240]
+        for dtype in [torch.half, torch.float, torch.double]:
+            for i in range(3):
+                x = torch.randn(x_shape[i], dtype=torch.float32, requires_grad=True)
+                y_cpu = torch.stft(
+                    x,
+                    n_fft=n_fft[i],
+                    hop_length=hop_length[i],
+                    win_length=win_length[i],
+                    center=False,
+                    return_complex=True,
+                )
+                grad = torch.randn_like(y_cpu)
+                y_cpu.backward(grad)
+                x_grad_cpu = copy.deepcopy(x.grad)
+                x.grad.zero_()
+
+                y = torch.stft(
+                    x.to("mlu").to(dtype),
+                    n_fft=n_fft[i],
+                    hop_length=hop_length[i],
+                    win_length=win_length[i],
+                    center=False,
+                    return_complex=True,
+                )
+                y.backward(grad.to("mlu"))
+                self.assertTensorsEqual(
+                    x_grad_cpu.float(), x.grad.float(), 0.003, use_MSE=True
+                )
 
     # @unittest.skip("not test")
     @testinfo()

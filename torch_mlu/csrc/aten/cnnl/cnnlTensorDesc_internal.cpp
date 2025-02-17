@@ -92,9 +92,6 @@ static tensorDescPtr_t getTensorDescWithAllValues(
   }
   TORCH_CNNL_CHECK(cnnlSetTensorDescriptorEx_v2(
       desc, layout, data_type, dim, size_dptr, stride_dptr));
-  if (on_chip_type != CNNL_DTYPE_INVALID) {
-    TORCH_CNNL_CHECK(cnnlSetTensorDescriptorOnchipDataType(desc, on_chip_type));
-  }
 
   tensorDescPtr_t ptr(desc);
   return ptr;

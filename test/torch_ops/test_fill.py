@@ -41,6 +41,7 @@ class TestOps(TestCase):
             (torch.bool, 0),
             (torch.double, 0),
             (torch.long, 0),
+            (torch.complex32, 0),
             (torch.complex64, 0),
             (torch.complex128, 0),
         ]

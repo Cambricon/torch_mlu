@@ -114,7 +114,7 @@ void CnnlStdVarMeanDescriptor::set(
     std::vector<int> axis,
     cnnlStdVarMeanOp_t mode,
     bool unbiased) {
-  TORCH_CNNL_CHECK(cnnlSetStdVarMeanDescriptor(
+  TORCH_CNNL_CHECK(cnnlSetStdVarMeanDescriptor_v2(
       this->mut_desc(), mode, axis.size(), axis.data(), unbiased));
 }
 
@@ -477,10 +477,10 @@ void CnnlEmbeddingBagDescriptor::set(
 }
 
 void CnnlSparseDenseMatmulDescriptor::set_attr(
-    const cnnlSparseDenseMatmulDescAttribute_t attr,
+    const cnnlSparseDenseMatMulDescAttribute_t attr,
     const void* buf,
     size_t size_in_bytes) {
-  TORCH_CNNL_CHECK(cnnlSetSparseDenseMatmulDescAttr(
+  TORCH_CNNL_CHECK(cnnlSetSparseDenseMatMulDescAttr(
       this->mut_desc(), attr, buf, size_in_bytes));
 };
 

@@ -93,14 +93,20 @@ static void addbmm_impl_(
     auto self_contiguous = cnnl_contiguous(self);
     auto bmm_contiguous = cnnl_contiguous(bmm_result);
     auto result_contiguous = cnnl_contiguous(result);
-    cnnl_optensor_out_internal(
-        result_contiguous,
-        self_contiguous,
-        bmm_contiguous,
-        beta,
-        alpha,
-        0.0,
-        CNNL_OP_TENSOR_ADD);
+    // By definition, when beta==0, values in self should be ignored. nans and
+    // infs should not propagate
+    if (beta.to<c10::complex<double>>() == 0.0) {
+      result_contiguous = bmm_result;
+    } else {
+      cnnl_optensor_out_internal(
+          result_contiguous,
+          self_contiguous,
+          bmm_contiguous,
+          beta,
+          alpha,
+          0.0,
+          CNNL_OP_TENSOR_ADD);
+    }
     if (!result.is_same(result_contiguous)) {
       result.copy_(result_contiguous);
     }

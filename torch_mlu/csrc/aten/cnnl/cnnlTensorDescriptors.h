@@ -66,8 +66,6 @@ class TORCH_MLU_API CnnlTensorDescriptor {
   // an fast setter for array layout
   void set_array(const at::Tensor& t, cnnlDataType_t data_type);
 
-  void set_onchip_dtype(cnnlDataType_t data_type);
-
   // for dimension conbined, just support 0<=dim <=3;
   // dim == 0 or 1, will combine dim 1 and dim 2 to new shape dim 1;
   // dim == 2, will combine dim 2 and dim 3 to new shape dim 2;

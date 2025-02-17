@@ -55,7 +55,9 @@ cnnlDataType_t getCnnlDataType(const caffe2::TypeMeta& data_type) {
   _(CNNL_DTYPE_BOOL, at::kBool)                     \
   _(CNNL_DTYPE_INT16, at::kShort)                   \
   _(CNNL_DTYPE_COMPLEX_HALF, at::kComplexHalf)      \
-  _(CNNL_DTYPE_COMPLEX_FLOAT, at::kComplexFloat)
+  _(CNNL_DTYPE_COMPLEX_FLOAT, at::kComplexFloat)    \
+  _(CNNL_DTYPE_FLOAT8_E4M3FN, at::kFloat8_e4m3fn)   \
+  _(CNNL_DTYPE_FLOAT8_E5M2, at::kFloat8_e5m2)
 
 cnnlDataType_t getCnnlDataType(const at::ScalarType& data_type) {
   switch (data_type) {
@@ -119,7 +121,7 @@ cnrtDataType_V2_t cnnlType2CnrtType_V2(cnnlDataType_t cnnl_data_type) {
 
 size_t getCnnlTypeSize(cnnlDataType_t cnnl_data_type) {
   // TODO(CNNLCORE-17957): Need CNNL to define CNNL_DTYPE_MAX
-  constexpr int MAX_DTYPE = CNNL_DTYPE_COMPLEX_DOUBLE;
+  constexpr int MAX_DTYPE = CNNL_DTYPE_FLOAT8_E5M2;
   static size_t size_array[MAX_DTYPE + 1];
   static bool initializer = [&]() {
     size_array[CNNL_DTYPE_INVALID] = CNNL_DTYPE_INVALID;

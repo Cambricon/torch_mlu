@@ -509,6 +509,10 @@ def is_bf16_supported():
     r"""Returns a bool indicating if MLU is currently support bf16."""
     return torch.mlu.get_device_properties(torch.mlu.current_device()).major >= 5
 
+def is_fp8_supported(including_emulation: bool = True):
+    r"""Returns a bool indicating if MLU is currently support float8."""
+    return torch.mlu.get_device_properties(torch.mlu.current_device()).major >= 6
+
 def _sleep(cycles):
     torch_mlu._MLUC._mlu_sleep(cycles)
 
@@ -668,13 +672,34 @@ class ComplexFloatStorage(_MluLegacyStorage):
     def _dtype(self):
         return torch.cfloat
 
+class Float8E4M3FNStorage(_MluLegacyStorage):
+    @classproperty
+    def dtype(self):
+        _warn_typed_storage_removal()
+        return self._dtype
+
+    @classproperty
+    def _dtype(self):
+        return torch.float8_e4m3fn
+
+class Float8E5M2Storage(_MluLegacyStorage):
+    @classproperty
+    def dtype(self):
+        _warn_typed_storage_removal()
+        return self._dtype
+
+    @classproperty
+    def _dtype(self):
+        return torch.float8_e5m2
+
 del _LegacyStorage
 del _MluLegacyStorage
 
 _mlu_storage_classes = [
     UntypedStorage, DoubleStorage, FloatStorage, LongStorage,
     IntStorage, ShortStorage, CharStorage, ByteStorage,
-    HalfStorage, BoolStorage, BFloat16Storage, ComplexDoubleStorage, ComplexFloatStorage]
+    HalfStorage, BoolStorage, BFloat16Storage, ComplexDoubleStorage, ComplexFloatStorage,
+    Float8E4M3FNStorage, Float8E5M2Storage]
 for r in _mlu_storage_classes:
     torch._storage_classes.add(r)
 
@@ -863,6 +888,8 @@ __all__ = [
     "LongTensor",
     "ShortStorage",
     "ShortTensor",
+    "Float8E5M2Storage",
+    "Float8E4M3FNStorage",
     "MLUGraph",
     "Event",
     "ExternalStream",
@@ -898,6 +925,7 @@ __all__ = [
     "ipc_collect",
     "is_available",
     "is_bf16_supported",
+    "is_fp8_supported",
     "is_current_stream_capturing",
     "is_initialized",
     "make_graphed_callables",

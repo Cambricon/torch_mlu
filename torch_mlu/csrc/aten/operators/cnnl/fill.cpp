@@ -93,6 +93,7 @@ at::Tensor& cnnl_fill_(at::Tensor& self, const at::Scalar& other) {
 // at::ScalarType::Bfloat16
 // at::ScalarType::ComplexFloat
 // at::ScalarType::ComplexDouble
+// at::ScalarType::ComplexHalf
 
 } // namespace ops
 } // namespace torch_mlu

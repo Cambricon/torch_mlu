@@ -84,18 +84,11 @@ at::Tensor cnnl_optensor_out_internal(
         auto alpha2_value = (alpha_scalar2).to<opmath_t>();
         auto beta_value = (beta_scalar).to<opmath_t>();
 
-        TORCH_CNNL_CHECK(cnnlGetOpTensorWorkspaceSize_v2(
+        TORCH_CNNL_CHECK(cnnlGetOpTensorWorkspaceSize(
             handle,
-            descOpTensor.desc(),
-            &alpha1_value,
             self_desc.get(),
-            self_ptr,
-            &alpha2_value,
             other_desc.get(),
-            other_ptr,
-            &beta_value,
             output_desc.get(),
-            output_ptr,
             &workspace_size));
         auto temp_ptr =
             torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
