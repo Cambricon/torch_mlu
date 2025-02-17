@@ -1,4 +1,5 @@
 import os
+import sys
 
 import torch
 import torch.nn as nn
@@ -7,6 +8,11 @@ import torch.multiprocessing as mp
 
 import torch_mlu
 import torch_mlu.utils.gpu_migration
+
+cur_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(cur_dir + "/../../test")
+from common_utils import TestCase, run_tests
+
 
 torch.manual_seed(0)
 
@@ -23,18 +29,11 @@ class SimpleModel(nn.Module):
         return x
 
 
-def setup(rank, world_size):
+def demo(rank, world_size):
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
     dist.init_process_group(backend="nccl", rank=rank, world_size=world_size)
 
-
-def cleanup():
-    dist.destroy_process_group()
-
-
-def test(rank, world_size):
-    setup(rank, world_size)
     torch.cuda.set_device(rank)
 
     x_static = torch.randn(32, 20, device="cuda")
@@ -82,9 +81,17 @@ def test(rank, world_size):
     x_static.copy_(x)
     g.replay()
     torch.cuda.synchronize()
-    cleanup()
+    dist.destroy_process_group()
+
+
+class TestMLUGraph(TestCase):
+    def test_mlugraph_with_multistreams(self):
+        world_size = 2
+        device_id = torch.cuda.current_device()
+        device_properties = torch.mlu.get_device_properties(device_id)
+        if "M9" in device_properties.name or device_properties.major > 5:
+            mp.spawn(demo, args=(world_size,), nprocs=world_size, join=True)
 
 
 if __name__ == "__main__":
-    world_size = 2
-    mp.spawn(test, args=(world_size,), nprocs=world_size, join=True)
+    run_tests()
