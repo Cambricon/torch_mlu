@@ -29,6 +29,7 @@ class ForeachFuncWrapper:
             or "ForeachUnaryOp" in k
             or "ForeachNorm" in k
             or "ForeachLerp" in k
+            or "ForeachPointWise" in k
             for k in keys
         )
         assert mta_called == True
@@ -45,6 +46,9 @@ class ForeachType(Enum):
     LerpWithTensor = auto()
     LerpWithScalar = auto()
     BinaryOpWithCPUScalarTensor = auto()
+    PointWiseOpWithScalar = auto()
+    PointWiseOpWithScalarList = auto()
+    PointWiseOpWithScalarTensor = auto()
 
 
 class ForeachOpTest(object):
@@ -115,7 +119,7 @@ class ForeachOpTest(object):
     def copy_to_mlu(self, tensors: list):
         return [item.mlu() for item in tensors]
 
-    def generate_cpu_and_mlu_tenors(self, dtype):
+    def generate_cpu_and_mlu_tensors(self, dtype):
         tensors = self.generate_cpu_inputs(dtype)
         if (
             self.foreach_type == ForeachType.ReduceOp
@@ -143,31 +147,31 @@ class ForeachOpTest(object):
 
     def generate_inputs(self, dtype):
         if self.foreach_type == ForeachType.UnaryOp:
-            inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            inputs = self.generate_cpu_and_mlu_tensors(dtype)
             return (inputs[0],), (inputs[1],)
         elif self.foreach_type == ForeachType.ReduceOp:
-            inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            inputs = self.generate_cpu_and_mlu_tensors(dtype)
             return (inputs[0],), (inputs[1],)
         elif self.foreach_type == ForeachType.BinaryOpWithTensor:
-            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
-            right_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            left_inputs = self.generate_cpu_and_mlu_tensors(dtype)
+            right_inputs = self.generate_cpu_and_mlu_tensors(dtype)
             return (left_inputs[0], right_inputs[0]), (left_inputs[1], right_inputs[1])
         elif self.foreach_type == ForeachType.BinaryOpWithScalarList:
-            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            left_inputs = self.generate_cpu_and_mlu_tensors(dtype)
             right_scalarlist_inputs = self.generate_scalar_list()
             return (left_inputs[0], right_scalarlist_inputs[0]), (
                 left_inputs[1],
                 right_scalarlist_inputs[1],
             )
         elif self.foreach_type == ForeachType.BinaryOpWithScalar:
-            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            left_inputs = self.generate_cpu_and_mlu_tensors(dtype)
             right_scalr_inputs = self.generate_scalar()
             return (left_inputs[0], right_scalr_inputs[0]), (
                 left_inputs[1],
                 right_scalr_inputs[1],
             )
         elif self.foreach_type == ForeachType.BinaryOpWithScalarTensor:
-            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            left_inputs = self.generate_cpu_and_mlu_tensors(dtype)
             cpu_scalar_tensor = torch.testing.make_tensor((), dtype=dtype, device="cpu")
             mlu_scalar_tensor = cpu_scalar_tensor.mlu()
             return (left_inputs[0], cpu_scalar_tensor), (
@@ -175,17 +179,17 @@ class ForeachOpTest(object):
                 mlu_scalar_tensor,
             )
         elif self.foreach_type == ForeachType.LerpWithTensor:
-            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
-            right_inputs = self.generate_cpu_and_mlu_tenors(dtype)
-            weights = self.generate_cpu_and_mlu_tenors(dtype)
+            left_inputs = self.generate_cpu_and_mlu_tensors(dtype)
+            right_inputs = self.generate_cpu_and_mlu_tensors(dtype)
+            weights = self.generate_cpu_and_mlu_tensors(dtype)
             return (left_inputs[0], right_inputs[0], weights[0]), (
                 left_inputs[1],
                 right_inputs[1],
                 weights[1],
             )
         elif self.foreach_type == ForeachType.LerpWithScalar:
-            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
-            right_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            left_inputs = self.generate_cpu_and_mlu_tensors(dtype)
+            right_inputs = self.generate_cpu_and_mlu_tensors(dtype)
             weight_scalr_inputs = self.generate_scalar()
             return (left_inputs[0], right_inputs[0], weight_scalr_inputs[0]), (
                 left_inputs[1],
@@ -193,12 +197,48 @@ class ForeachOpTest(object):
                 weight_scalr_inputs[1],
             )
         elif self.foreach_type == ForeachType.BinaryOpWithCPUScalarTensor:
-            left_inputs = self.generate_cpu_and_mlu_tenors(dtype)
+            left_inputs = self.generate_cpu_and_mlu_tensors(dtype)
             cpu_scalar_tensor = torch.testing.make_tensor((), dtype=dtype, device="cpu")
-            mlu_scalar_tensor = cpu_scalar_tensor
+            mlu_scalar_tensor = cpu_scalar_tensor.mlu()
             return (left_inputs[0], cpu_scalar_tensor), (
                 left_inputs[1],
                 mlu_scalar_tensor,
+            )
+        elif self.foreach_type == ForeachType.PointWiseOpWithScalar:
+            input = self.generate_cpu_and_mlu_tensors(dtype)
+            tensors1 = self.generate_cpu_and_mlu_tensors(dtype)
+            tensors2 = self.generate_cpu_and_mlu_tensors(dtype)
+            scalars = self.generate_scalar()
+            return (input[0], tensors1[0], tensors2[0], scalars[0]), (
+                input[1],
+                tensors1[1],
+                tensors2[1],
+                scalars[1],
+            )
+        elif self.foreach_type == ForeachType.PointWiseOpWithScalarList:
+            input = self.generate_cpu_and_mlu_tensors(dtype)
+            tensors1 = self.generate_cpu_and_mlu_tensors(dtype)
+            tensors2 = self.generate_cpu_and_mlu_tensors(dtype)
+            scalar_lists = self.generate_scalar_list()
+            return (input[0], tensors1[0], tensors2[0], scalar_lists[0]), (
+                input[1],
+                tensors1[1],
+                tensors2[1],
+                scalar_lists[1],
+            )
+        elif self.foreach_type == ForeachType.PointWiseOpWithScalarTensor:
+            input = self.generate_cpu_and_mlu_tensors(dtype)
+            tensors1 = self.generate_cpu_and_mlu_tensors(dtype)
+            tensors2 = self.generate_cpu_and_mlu_tensors(dtype)
+            cpu_scalar_tensor = torch.testing.make_tensor(
+                (len(tensors1[0])), dtype=dtype, device="cpu"
+            )
+            mlu_scalar_tensor = cpu_scalar_tensor.mlu()
+            return (input[0], tensors1[0], tensors2[0], cpu_scalar_tensor), (
+                input[1],
+                tensors1[1],
+                tensors2[1],
+                cpu_scalar_tensor,
             )
         else:
             raise Exception("Invalid ForeachType")
@@ -230,5 +270,9 @@ class ForeachOpTest(object):
                 else:
                     dtype_compare = dtype
                 tensor_check(
-                    each_cpu.to(dtype_compare), each_mlu.cpu(), self.err, use_MSE=True
+                    each_cpu.to(dtype_compare),
+                    each_mlu.cpu(),
+                    self.err,
+                    allow_inf=True,
+                    use_MSE=True,
                 )

@@ -1610,6 +1610,17 @@ void cnnl_foreach_norm_internal(
     at::TensorList outputs,
     const float pnorm);
 
+template <typename scalar_t, bool isInplace>
+void cnnl_foreach_pointwise_op(
+    at::TensorList input,
+    at::TensorList tensors1,
+    at::TensorList tensors2,
+    at::TensorList res_vec,
+    const scalar_t& scalar,
+    const at::ArrayRef<at::Scalar>& scalars,
+    const cnnlForeachOpMode_t& op_mode,
+    const cnnlForeachPointWiseMode_t& scalar_mode);
+
 void cnnl_rrelu_with_noise_internal(
     at::Tensor& output,
     const at::Tensor& noise,
