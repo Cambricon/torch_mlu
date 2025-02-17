@@ -86,11 +86,13 @@ TESTS = [
     "cnpx/test_cnpx.py",
     dir_path + "/examples/training/single_card_demo",
     dir_path + "/examples/training/multi_card_demo",
+    dir_path + "/examples/mlugraph/mlugraph_with_multistreams",
     "api_support_list/test_api_support_list",
 ]
 
 SINGLE_CARD_SKIP_TEST = [
     dir_path + "/examples/training/multi_card_demo",
+    dir_path + "/examples/mlugraph/mlugraph_with_multistreams",
     "distributed/test_distributed",
     "utils/test_distributed_timer",
     "mlu/test_mlu",
