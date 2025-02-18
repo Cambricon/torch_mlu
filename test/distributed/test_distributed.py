@@ -1765,6 +1765,25 @@ as input tensor",
 
         dist.barrier()
 
+    def test_send_recv_non_contiguous(self):
+        _, rank = self._init_global_test()
+        dist.barrier()
+        rank = dist.get_rank()
+        world_size = dist.get_world_size()
+
+        device_id = rank % torch.mlu.device_count()
+        torch.mlu.set_device(device_id)
+
+        torch.manual_seed(0)
+        send_tensor = torch.rand(10, 10, device=device_id)
+        send_tensor_view = send_tensor.t()
+        if self.rank == 0:
+            dist.send(send_tensor_view, 1)
+        if self.rank == 1:
+            recv_tensor = torch.ones(10, 10, device=device_id)
+            dist.recv(recv_tensor, 0)
+            self.assertEqual(send_tensor, recv_tensor)
+
     def test_batch_isend_irecv_no_rank_zero_cncl(self):
         _, rank = self._init_global_test()
         world_size = dist.get_world_size()

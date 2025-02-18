@@ -1898,12 +1898,22 @@ namespace {
 static constexpr int CoalActive = 0x01, CoalColl = 0x02, CoalP2P = 0x04;
 
 // Check validity of tensor
-void check_mlu_single_tensor(const at::Tensor& tensor) {
+void check_mlu_single_tensor(
+    const at::Tensor& tensor,
+    const bool p2p = false // whether operation is a P2P operation
+) {
   if (!tensor.device().is_privateuseone() || tensor.is_sparse()) {
     throw std::runtime_error("Tensors must be MLU and dense");
   }
   if (!tensor.is_contiguous(tensor.suggest_memory_format())) {
-    throw std::runtime_error("Tensors must be contiguous");
+    if (p2p) {
+      TORCH_WARN_ONCE(
+          "Detected non-contiguous tensor in P2P operations. It is user "
+          "responsibility to guarantee that source and destination tensors have "
+          "the same contiguity format.");
+    } else {
+      throw std::runtime_error("Tensors must be contiguous");
+    }
   }
 }
 
@@ -3318,7 +3328,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::send(
     int /* unused */) {
   TORCH_CHECK(tensors.size() == 1, MULTI_DEVICE_ERROR_MSG);
   auto tensor = tensors.back();
-  check_mlu_single_tensor(tensor);
+  check_mlu_single_tensor(tensor, true);
   auto ret = pointToPoint(
       tensor,
       [&](at::Tensor& input,
@@ -3346,7 +3356,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::recv(
     int /* unused */) {
   TORCH_CHECK(tensors.size() == 1, MULTI_DEVICE_ERROR_MSG);
   auto tensor = tensors.back();
-  check_mlu_single_tensor(tensor);
+  check_mlu_single_tensor(tensor, true);
   auto ret = pointToPoint(
       tensor,
       [&](at::Tensor& output,
