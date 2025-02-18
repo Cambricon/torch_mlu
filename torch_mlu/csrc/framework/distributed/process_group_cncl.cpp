@@ -1425,19 +1425,31 @@ std::exception_ptr ProcessGroupCNCL::checkForCNCLErrorsInternal(
 namespace {
 
 // Check validity of tensor
-void check_mlu_single_tensor(const at::Tensor& tensor) {
+void check_mlu_single_tensor(
+    const at::Tensor& tensor,
+    const bool p2p = false // whether operation is a P2P operation
+) {
   if (!tensor.device().is_privateuseone() || tensor.is_sparse()) {
     throw std::runtime_error("Tensors must be MLU and dense");
   }
   if (!tensor.is_contiguous(tensor.suggest_memory_format())) {
-    throw std::runtime_error("Tensors must be contiguous");
+    if (p2p) {
+      TORCH_WARN_ONCE(
+          "Detected non-contiguous tensor in P2P operations. It is user "
+          "responsibility to guarantee that source and destination tensors have "
+          "the same contiguity format.");
+    } else {
+      throw std::runtime_error("Tensors must be contiguous");
+    }
   }
 }
 
 // Check that all `tensors' have the same type and shape and are distributed
 // across distinct MLUs.
 void check_mlu_tensors_different_devices(
-    const std::vector<at::Tensor>& tensors) {
+    const std::vector<at::Tensor>& tensors,
+    const bool p2p = false // whether operation is a P2P operation
+) {
   if (tensors.size() == 0) {
     TORCH_CHECK(false, "Tensor list must be nonempty");
   }
@@ -1467,7 +1479,14 @@ void check_mlu_tensors_different_devices(
       TORCH_CHECK(false, "Tensors must have identical strides");
     }
     if (!t.is_contiguous(t.suggest_memory_format())) {
-      TORCH_CHECK(false, "Tensors must be contiguous");
+      if (p2p) {
+        TORCH_WARN_ONCE(
+            "Detected non-contiguous tensor in P2P operations. It is user "
+            "responsibility to guarantee that source and destination tensors have "
+            "the same contiguity format.");
+      } else {
+        TORCH_CHECK(false, "Tensors must be contiguous");
+      }
     }
     const auto inserted = usedDevices.insert(t.get_device()).second;
     if (!inserted) {
@@ -2460,7 +2479,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::gather(
   };
 
   c10d::assertRootRank(invalidArgument, opts.rootRank, size_);
-  check_mlu_tensors_different_devices(inputTensors);
+  check_mlu_tensors_different_devices(inputTensors, true);
   c10d::assertSingleElementInput(invalidArgument, inputTensors);
 
   // @lint-ignore CLANGTIDY
@@ -2534,7 +2553,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::scatter(
   };
 
   c10d::assertRootRank(invalidArgument, opts.rootRank, size_);
-
+  check_mlu_tensors_different_devices(outputTensors, true);
   auto outputTensor = outputTensors.back();
 
   std::vector<at::Tensor> inputs;
@@ -2739,7 +2758,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::send(
     std::vector<at::Tensor>& tensors,
     int dst_rank,
     int /* unused */) {
-  check_mlu_tensors_different_devices(tensors);
+  check_mlu_tensors_different_devices(tensors, true);
   auto ret = pointToPoint(
       tensors,
       [&](at::Tensor& input,
@@ -2765,7 +2784,7 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::recv(
     std::vector<at::Tensor>& tensors,
     int src_rank,
     int /* unused */) {
-  check_mlu_tensors_different_devices(tensors);
+  check_mlu_tensors_different_devices(tensors, true);
   auto ret = pointToPoint(
       tensors,
       [&](at::Tensor& output,
