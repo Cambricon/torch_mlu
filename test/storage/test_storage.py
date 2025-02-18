@@ -20,6 +20,7 @@ from common_utils import (
 )  # pylint: disable=C0413,C0411
 
 TEST_BFLOAT16 = read_card_info()
+TEST_FLOAT8 = torch.mlu.is_fp8_supported()
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -197,6 +198,19 @@ class Storage(TestCase):
         self.assertEqual(t1.storage()._cdata, t2_bfloat16.storage()._cdata)
         self.assertEqual(t1.size(), size)
         self.assertEqual(t1.stride(), (120, 40, 10, 1))
+
+    # @unittest.skip("not test")
+    @testinfo()
+    @unittest.skipUnless(TEST_FLOAT8, "float8 only support on MLU6xx")
+    def test_tensor_set_float8(self):
+        for dtype in [torch.float8_e5m2, torch.float8_e4m3fn]:
+            t1 = torch.Tensor().mlu().to(dtype)
+            t2 = torch.Tensor([3, 4, 9, 10]).mlu().to(dtype)
+            size = torch.Size([9, 3, 4, 10])
+            t1.set_(t2.storage(), 0, tuple(size))
+            self.assertEqual(t1.storage()._cdata, t2.storage()._cdata)
+            self.assertEqual(t1.size(), size)
+            self.assertEqual(t1.stride(), (120, 40, 10, 1))
 
     # @unittest.skip("not test")
     @testinfo()
@@ -802,6 +816,22 @@ class Storage(TestCase):
             # untyped_mlu = torch.UntypedStorage.from_buffer(f, byte_order=order, dtype=torch.complex128)
             # untyped_cpu = torch.UntypedStorage.from_buffer(f, byte_order=order, dtype=torch.complex128)
             # self.assertEqual(untyped_mlu.tolist(), untyped_cpu.tolist())
+            if TEST_FLOAT8:
+                f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
+                untyped_mlu = torch.UntypedStorage.from_buffer(
+                    f, byte_order=order, dtype=torch.float8_e5m2
+                )
+                untyped_cpu = torch.UntypedStorage.from_buffer(
+                    f, byte_order=order, dtype=torch.float8_e5m2
+                )
+                self.assertEqual(untyped_mlu.tolist(), untyped_cpu.tolist())
+                untyped_mlu = torch.UntypedStorage.from_buffer(
+                    f, byte_order=order, dtype=torch.float8_e4m3fn
+                )
+                untyped_cpu = torch.UntypedStorage.from_buffer(
+                    f, byte_order=order, dtype=torch.float8_e4m3fn
+                )
+                self.assertEqual(untyped_mlu.tolist(), untyped_cpu.tolist())
 
     # @unittest.skip("not test")
     @testinfo()
@@ -961,6 +991,31 @@ class Storage(TestCase):
         self.assertIsInstance(b.bool().storage(), torch.storage.TypedStorage)
         self.assertEqual(a.bool(), b.bool(), atol=1.0e-12, rtol=1.0e-12)
 
+        if TEST_FLOAT8:
+            b.storage().copy_(a.storage())
+            self.assertIsInstance(a.storage().float8_e5m2(), torch.storage.TypedStorage)
+            self.assertIsInstance(b.storage().float8_e5m2(), torch.storage.TypedStorage)
+            self.assertEqual(
+                a.to(torch.float8_e5m2).tolist(),
+                b.to(torch.float8_e5m2).tolist(),
+                atol=1.0e-12,
+                rtol=1.0e-12,
+            )
+
+            b.storage().copy_(a.storage())
+            self.assertIsInstance(
+                a.storage().float8_e4m3fn(), torch.storage.TypedStorage
+            )
+            self.assertIsInstance(
+                b.storage().float8_e4m3fn(), torch.storage.TypedStorage
+            )
+            self.assertEqual(
+                a.to(torch.float8_e4m3fn).tolist(),
+                b.to(torch.float8_e4m3fn).tolist(),
+                atol=1.0e-12,
+                rtol=1.0e-12,
+            )
+
     # @unittest.skip("not test")
     @testinfo()
     def test_data_ptr(self):
@@ -1070,6 +1125,23 @@ class Storage(TestCase):
         )
         self.assertEqual(typedstorage_b.type(), "torch_mlu.mlu.ComplexDoubleStorage")
         self.assertIs(typedstorage_b.dtype, torch.complex128)
+
+        if TEST_FLOAT8:
+            tensor_a = torch.randn((4, 5), device="mlu").to(torch.float8_e5m2)
+            with open("_write_file.pt", "wb") as writer:
+                tensor_a.untyped_storage()._write_file(
+                    writer, True, True, torch._utils._element_size(tensor_a.dtype)
+                )
+            with open("_write_file.pt", "rb") as reader:
+                storage_b = torch.UntypedStorage._new_with_file(
+                    reader, torch._utils._element_size(tensor_a.dtype)
+                )
+            self.assertEqual(
+                tensor_a.untyped_storage().tolist(),
+                storage_b.tolist(),
+                atol=1.0e-12,
+                rtol=1.0e-12,
+            )
         os.remove("_write_file.pt")
 
     # @unittest.skip("not test")

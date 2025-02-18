@@ -70,11 +70,13 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
 
   // local_scalar_dense
   at::Scalar r;
-  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND4(
+  AT_DISPATCH_ALL_TYPES_AND_COMPLEX_AND6(
       at::kComplexHalf,
       at::kHalf,
       at::kBool,
       at::kBFloat16,
+      at::kFloat8_e5m2,
+      at::kFloat8_e4m3fn,
       self.scalar_type(),
       "MLU _local_scalar_dense",
       [&] {
