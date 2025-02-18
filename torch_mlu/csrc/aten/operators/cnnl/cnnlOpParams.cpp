@@ -808,7 +808,12 @@ REGISTER_STRIDED_OP_PARAM_WITHOUT_MIXED_INPUT(
 REGISTER_STRIDED_OP_PARAM_WITHOUT_MIXED_INPUT(
     sign,
     std::vector<at::ScalarType>(
-        {at::kHalf, at::kBFloat16, at::kFloat, at::kDouble}),
+        {at::kHalf,
+         at::kBFloat16,
+         at::kFloat,
+         at::kDouble,
+         at::kInt,
+         at::kLong}),
     false,
     true)
 

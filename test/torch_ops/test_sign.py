@@ -331,12 +331,6 @@ class TestSignOp(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_sign_exception(self):
-        x0 = torch.randint(high=255, size=(5,), dtype=torch.int)
-        x0_mlu = x0.to("mlu")
-        ref_msg = "MLU sign don't support tensor dtype Int."
-        with self.assertRaisesRegex(RuntimeError, ref_msg):
-            x0_mlu.sign_()
-
         x1 = torch.randn((2, 3, 4, 10), dtype=torch.float)
         out1_mlu = x1.clone().to("mlu").to(torch.half)
         ref_msg = "Found dtype Half but expected Float"
