@@ -1382,6 +1382,18 @@ aten:
     derived_type: bang
   - func: _fused_adam_.tensor_lr
     derived_type: bang
+  - func: _foreach_addcdiv.Scalar
+  - func: _foreach_addcdiv.ScalarList
+  - func: _foreach_addcdiv.Tensor
+  - func: _foreach_addcdiv_.Scalar
+  - func: _foreach_addcdiv_.ScalarList
+  - func: _foreach_addcdiv_.Tensor
+  - func: _foreach_addcmul.Scalar
+  - func: _foreach_addcmul.ScalarList
+  - func: _foreach_addcmul.Tensor
+  - func: _foreach_addcmul_.Scalar
+  - func: _foreach_addcmul_.ScalarList
+  - func: _foreach_addcmul_.Tensor
   - func: _foreach_add.Scalar
   - func: _foreach_add_.Scalar
   - func: _foreach_add.List
