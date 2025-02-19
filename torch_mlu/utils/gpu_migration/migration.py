@@ -219,7 +219,6 @@ default_cuda_args_list = [
     "torch.random.fork_rng",
 ]
 
-
 # this list is for functions whose modules are not in torch, torch.distributed and torch.module
 # TODO: Merge all fn lists into one list
 other_fn_list = [

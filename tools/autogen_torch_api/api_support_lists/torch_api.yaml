@@ -5342,7 +5342,8 @@
     supported: false
 
   - api: torch.backends.cudnn.deterministic
-    supported: false
+    corresponding MLU api: torch.backends.cnnl.deterministic
+    supported: true
 
   - api: torch.backends.cudnn.enabled
     corresponding MLU api: torch.backends.mlufusion.enabled

@@ -459,6 +459,51 @@ class TestGpuMigration(TestCase):
         torch_mlu.utils.gpu_migration.apply_monkey_patches()
 
     @testinfo()
+    def test_torch_backends_cudnn(self):
+        # default value
+        # Release this code when support torch.backends.cnnl.benchmark
+        # self.assertFalse(torch.backends.cnnl.benchmark)
+        self.assertFalse(torch.backends.cnnl.deterministic)
+        self.assertTrue(torch.backends.cnnl.allow_tf32)
+
+        # self.assertFalse(torch.backends.cudnn.benchmark)
+        self.assertFalse(torch.backends.cudnn.deterministic)
+        self.assertTrue(torch.backends.cudnn.allow_tf32)
+
+        # test mode with context to set
+        with torch.backends.cudnn.flags(
+            deterministic=True, benchmark=True, allow_tf32=False
+        ):
+            # self.assertTrue(torch.backends.cnnl.benchmark)
+            self.assertTrue(torch.backends.cnnl.deterministic)
+            self.assertFalse(torch.backends.cnnl.allow_tf32)
+
+            # self.assertTrue(torch.backends.cudnn.benchmark)
+            self.assertTrue(torch.backends.cudnn.deterministic)
+            self.assertFalse(torch.backends.cudnn.allow_tf32)
+
+        # default value
+        # self.assertFalse(torch.backends.cnnl.benchmark)
+        self.assertFalse(torch.backends.cnnl.deterministic)
+        self.assertTrue(torch.backends.cnnl.allow_tf32)
+
+        # self.assertFalse(torch.backends.cudnn.benchmark)
+        self.assertFalse(torch.backends.cudnn.deterministic)
+        self.assertTrue(torch.backends.cudnn.allow_tf32)
+
+        # test mode with assignment
+        # now gpu migration not support patch module value
+
+        # with allow_nonbracketed_mutation():
+        #    torch.backends.cudnn.benchmark = True
+        #    torch.backends.cudnn.deterministic = True
+        #    torch.backends.cudnn.allow_tf32 =False
+
+        #    self.assertTrue(torch.backends.cnnl.benchmark)
+        #    self.assertTrue(torch.backends.cnnl.deterministic)
+        #    self.assertFalse(torch.backends.cnnl.allow_tf32)
+
+    @testinfo()
     def test_storage_ipc_default(self):
         self.assertEqual(
             torch.UntypedStorage._release_ipc_counter_cuda,
