@@ -14,6 +14,8 @@ import torch.distributed.fsdp.sharded_grad_scaler
 
 import torch_mlu
 import torch_mlu.distributed.fsdp.sharded_grad_scaler
+from torch.backends.cudnn import CudnnModule
+from torch.backends import ContextProp
 
 # warning once
 warnings.filterwarnings(action="once")
@@ -694,6 +696,22 @@ def replace_default_cuda_args(func_name):
         setattr(module, fn_name, replace_default_cuda_args_with_mlu(fn))
 
 
+def replace_flags():
+    # torch.backends.cudnn.allow_tf32 -> torch.backends.cnnl.allow_tf32
+    torch._C._get_cudnn_allow_tf32 = torch_mlu._MLUC._get_cnnl_allow_tf32
+    torch._C._set_cudnn_allow_tf32 = torch_mlu._MLUC._set_cnnl_allow_tf32
+    CudnnModule.allow_tf32 = ContextProp(
+        torch_mlu._MLUC._get_cnnl_allow_tf32, torch_mlu._MLUC._set_cnnl_allow_tf32
+    )
+
+    # torch.backends.cudnn.deterministic -> torch.backends.cnnl.deterministic
+    torch._C._get_cudnn_deterministic = torch_mlu._MLUC._get_cnnl_deterministic
+    torch._C._set_cudnn_deterministic = torch_mlu._MLUC._set_cnnl_deterministic
+    CudnnModule.deterministic = ContextProp(
+        torch_mlu._MLUC._get_cnnl_deterministic, torch_mlu._MLUC._set_cnnl_deterministic
+    )
+
+
 def apply_monkey_patches():
     # replace order MATTERS, this functions need to be replaced before torch_fn_list
     torch.utils._device._device_constructors = original_device_constructors
@@ -808,3 +826,6 @@ def apply_monkey_patches():
 
     for func_name in default_cuda_args_list:
         replace_default_cuda_args(func_name)
+
+    # migration backends.cudnn.*
+    replace_flags()
