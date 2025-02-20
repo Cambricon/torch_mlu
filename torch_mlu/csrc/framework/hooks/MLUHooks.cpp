@@ -44,8 +44,8 @@ at::Device MLUHooks::getDeviceFromPtr(void* ptr) const {
   cnrtPointerAttributes_t attr;
   TORCH_CNRT_CHECK(cnrtPointerGetAttributes(&attr, static_cast<void*>(ptr)));
   TORCH_MLU_CHECK(
-      attr.type == cnrtMemTypeUnregistered,
-      "Memeory is not registered in MLU side.");
+      attr.type == cnrtMemTypeDevice,
+      "The specified pointer resides on host memory and is not registered with any MLU device.");
   return {at::kPrivateUse1, static_cast<c10::DeviceIndex>(attr.device)};
 }
 
