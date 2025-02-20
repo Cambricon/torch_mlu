@@ -16,6 +16,7 @@ import torch.distributed as dist
 import torch.distributed.distributed_c10d as c10d
 from torch.distributed.fsdp.sharded_grad_scaler import ShardedGradScaler
 
+
 import torch_mlu
 import torch.nn as nn
 import torch_mlu.utils.gpu_migration
@@ -487,6 +488,51 @@ class TestGpuMigration(expecttest.TestCase):
                 "No viable backend for scaled_dot_product_attention was found.",
                 lambda: torch.nn.functional.scaled_dot_product_attention(q, k, v),
             )
+
+    @testinfo()
+    def test_torch_backends_cudnn(self):
+        # default value
+        # Release this code when support torch.backends.cnnl.benchmark
+        # self.assertFalse(torch.backends.cnnl.benchmark)
+        self.assertFalse(torch.backends.cnnl.deterministic)
+        self.assertTrue(torch.backends.cnnl.allow_tf32)
+
+        # self.assertFalse(torch.backends.cudnn.benchmark)
+        self.assertFalse(torch.backends.cudnn.deterministic)
+        self.assertTrue(torch.backends.cudnn.allow_tf32)
+
+        # test mode with context to set
+        with torch.backends.cudnn.flags(
+            deterministic=True, benchmark=True, allow_tf32=False
+        ):
+            # self.assertTrue(torch.backends.cnnl.benchmark)
+            self.assertTrue(torch.backends.cnnl.deterministic)
+            self.assertFalse(torch.backends.cnnl.allow_tf32)
+
+            # self.assertTrue(torch.backends.cudnn.benchmark)
+            self.assertTrue(torch.backends.cudnn.deterministic)
+            self.assertFalse(torch.backends.cudnn.allow_tf32)
+
+        # default value
+        # self.assertFalse(torch.backends.cnnl.benchmark)
+        self.assertFalse(torch.backends.cnnl.deterministic)
+        self.assertTrue(torch.backends.cnnl.allow_tf32)
+
+        # self.assertFalse(torch.backends.cudnn.benchmark)
+        self.assertFalse(torch.backends.cudnn.deterministic)
+        self.assertTrue(torch.backends.cudnn.allow_tf32)
+
+        # test mode with assignment
+        # now gpu migration not support patch module value
+
+        # with allow_nonbracketed_mutation():
+        #    torch.backends.cudnn.benchmark = True
+        #    torch.backends.cudnn.deterministic = True
+        #    torch.backends.cudnn.allow_tf32 =False
+
+        #    self.assertTrue(torch.backends.cnnl.benchmark)
+        #    self.assertTrue(torch.backends.cnnl.deterministic)
+        #    self.assertFalse(torch.backends.cnnl.allow_tf32)
 
     @testinfo()
     def test_model_transfer_deprecated_warning(self):

@@ -100,6 +100,22 @@ class TORCH_MLU_API Global {
     enabled_fusion_ = b;
   }
 
+  // benckmark mode management
+  bool benchmarkCNNL() const {
+    return benchmark_cnnl_;
+  }
+  void setBenchmarkCNNL(bool b) {
+    benchmark_cnnl_ = b;
+  }
+
+  // deterministic mode management
+  bool deterministicCNNL() const {
+    return deterministic_cnnl_;
+  }
+  void setDeterministicCNNL(bool b) {
+    deterministic_cnnl_ = b;
+  }
+
  private:
   cndevNameEnum_t device_name_;
   bool is_running_fp32_;
@@ -108,6 +124,10 @@ class TORCH_MLU_API Global {
   bool allow_tf32_custom_ =
       false; // control wether to allow TF32 on the rest MLU ops
   bool enabled_fusion_ = true; // control wether torch.nn.LSTM use fusion op.
+  bool benchmark_cnnl_ =
+      false; // control wether to select the fastest convolution algorithm.
+  bool deterministic_cnnl_ =
+      false; // control wether to only use deterministic convolution algorithms.
 };
 
 } // namespace torch_mlu

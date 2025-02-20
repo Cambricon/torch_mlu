@@ -82,8 +82,9 @@ at::Tensor cnnl__convolution(
       expand_param_if_needed(output_padding, "output_padding", dim);
   params.groups = groups;
   // reserved for future.
+  // params.benchmark = torch_mlu::Global::instance().benchmarkCNNL();
   params.benchmark = false;
-  params.deterministic = false;
+  params.deterministic = torch_mlu::Global::instance().deterministicCNNL();
   params.allow_tf32 = torch_mlu::Global::instance().allowCNNLTF32();
   check_shape_forward(input, weight_sizes, bias, params);
 
@@ -159,9 +160,12 @@ std::tuple<at::Tensor, at::Tensor, at::Tensor> cnnl_convolution_backward(
   params.output_padding =
       expand_param_if_needed(output_padding, "output_padding", dim);
   params.groups = groups;
+
   // reserved for future.
+  // now benchmark not support in conv backward.
+  // params.benchmark = torch_mlu::Global::instance().benchmarkCNNL();
   params.benchmark = false;
-  params.deterministic = false;
+  params.deterministic = torch_mlu::Global::instance().deterministicCNNL();
   params.allow_tf32 = torch_mlu::Global::instance().allowCNNLTF32();
 
   // Validate inputs.

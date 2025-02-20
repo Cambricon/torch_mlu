@@ -91,10 +91,17 @@ void PythonVariableMethods(py::module& m) {
 
   // TF32 mode management
   m.def("_get_cnnl_allow_tf32", []() -> bool {
-    return torch_mlu::Global::instance().allowCNNLTF32();
+    // NOTE: _get_cnnl_allow_tf32
+    // because _set_cnnl_allow_tf32 sets allow_tf32 of cnnl and cudnn together,
+    // so: If cudnn.allow_tf32 != cnnl.allow_tf32, the most recent reassignment
+    // must have been done through cudnn.allow_tf32. At this time,
+    // cudnn.allow_tf32; If cudnn.allow_tf32 == cnnl.allow_tf32, obviously, it
+    // is OK to return allow_tf32 of cudnn or cnnl.
+    return at::globalContext().allowTF32CuDNN();
   });
   m.def("_set_cnnl_allow_tf32", [](bool b) {
     torch_mlu::Global::instance().setAllowCNNLTF32(b);
+    at::globalContext().setAllowTF32CuDNN(b);
   });
   m.def("_get_mlu_custom_allow_tf32", []() -> bool {
     return torch_mlu::Global::instance().allowMLUCustomTF32();
@@ -122,6 +129,34 @@ void PythonVariableMethods(py::module& m) {
     torch_mlu::_dump_cnnl_gencase(mode);
   });
   m.def("_get_version", []() { return torch_mlu::getVersion(); });
+
+  // benchmark mode management
+  m.def("_get_cnnl_benchmark", []() -> bool {
+    // Release this code when support torch.backends.cnnl.benchmark
+    // return torch_mlu::Global::instance().benchmarkCNNL() ||
+    // at::globalContext().benchmarkCuDNN();
+    TORCH_WARN_ONCE(
+        "torch.backends.cnnl.benchmark is not available on MLU device.")
+    return torch_mlu::Global::instance().benchmarkCNNL();
+  });
+
+  m.def("_set_cnnl_benchmark", [](bool b) {
+    // Release this code when support torch.backends.cnnl.benchmark
+    // at::globalContext().setBenchmarkCuDNN(b);
+    TORCH_WARN_ONCE(
+        "torch.backends.cnnl.benchmark is not available on MLU device.")
+    torch_mlu::Global::instance().setBenchmarkCNNL(false);
+  });
+
+  // deterministic mode management
+  m.def("_get_cnnl_deterministic", []() -> bool {
+    // see NOTE: _get_cnnl_allow_tf32
+    return at::globalContext().deterministicCuDNN();
+  });
+  m.def("_set_cnnl_deterministic", [](bool b) {
+    torch_mlu::Global::instance().setDeterministicCNNL(b);
+    at::globalContext().setDeterministicCuDNN(b);
+  });
 }
 } // namespace
 
