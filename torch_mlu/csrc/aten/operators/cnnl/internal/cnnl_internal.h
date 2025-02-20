@@ -1654,5 +1654,24 @@ cnnl_rnn_backward_internal(
     const at::Tensor& fn_reserve,
     std::array<bool, 3> output_mask);
 
+void cnnl_scaled_mm_out_internal(
+    at::Tensor& result,
+    const Tensor& mat1,
+    const Tensor& mat2,
+    bool is_trans_mat1_,
+    bool is_trans_mat2_,
+    const at::Scalar& scale_a,
+    const at::Scalar& scale_b);
+
+void cnnl_scaled_mm_bias_out_internal(
+    at::Tensor& result,
+    const Tensor& mat1,
+    const Tensor& mat2,
+    bool is_trans_mat1_,
+    bool is_trans_mat2_,
+    const at::Scalar& scale_a,
+    const at::Scalar& scale_b,
+    const Tensor& bias);
+
 } // namespace ops
 } // namespace torch_mlu

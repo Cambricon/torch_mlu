@@ -36,6 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 #include <torch/csrc/distributed/c10d/logger.hpp>
 #include "cncl_utils.h"
+#include <c10/core/ScalarType.h>
 #include "framework/core/stream_guard.h"
 #include "aten/utils/utils.h"
 
@@ -200,7 +201,9 @@ std::map<at::ScalarType, cnclDataType_t> cncl_data_type = {
     {at::kHalf, cnclHalf},
     {at::kDouble, cnclFloat},
     {at::kBool, cnclUint8},
-    {at::kBFloat16, cnclBfloat16}};
+    {at::kBFloat16, cnclBfloat16},
+    {at::kFloat8_e4m3fn, cnclUint8},
+    {at::kFloat8_e5m2, cnclUint8}};
 
 // Helper function that gets the data type and issues error if not supported
 cnclDataType_t getCnclDataType(at::ScalarType type) {
@@ -2289,6 +2292,9 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::allreduce(
     const c10d::AllreduceOptions& opts) {
   TORCH_CHECK(tensors.size() == 1, MULTI_DEVICE_ERROR_MSG);
   auto tensor = tensors.back();
+  TORCH_CHECK(
+      !isFloat8Type(tensor.scalar_type()),
+      "Float8 dtypes are not currently supported for CNCL reductions");
   if (tensor.is_complex()) {
     TORCH_CHECK(
         complexViewAsRealAllowed(opts.reduceOp),
@@ -2305,6 +2311,9 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::allreduce_coalesced(
     std::vector<at::Tensor>& tensors,
     const c10d::AllreduceCoalescedOptions& opts) {
   auto total_numel = check_mlu_tensors_same_device(tensors);
+  TORCH_CHECK(
+      !isFloat8Type(tensors.back().scalar_type()),
+      "Float8 dtypes are not currenlty supported for CNCL reductions");
 
   return collectiveCoalesced(
       tensors,
@@ -2374,6 +2383,9 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::reduce(
     const c10d::ReduceOptions& opts) {
   TORCH_CHECK(tensors.size() == 1, MULTI_DEVICE_ERROR_MSG);
   auto tensor = tensors.back();
+  TORCH_CHECK(
+      !isFloat8Type(tensor.scalar_type()),
+      "Float8 dtypes are not currenlty supported for CNCL reductions");
   if (tensor.is_complex()) {
     TORCH_CHECK(
         complexViewAsRealAllowed(opts.reduceOp),
@@ -2663,6 +2675,9 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::reduce_scatter(
   auto output_tensor = output_tensors.back();
   check_mlu_single_tensor(output_tensor);
   auto input_tensors_ = input_tensors.back();
+  TORCH_CHECK(
+      !isFloat8Type(output_tensor.scalar_type()),
+      "Float8 dtypes are not currenlty supported for CNCL reductions");
 
   bool same_size = check_same_size(input_tensors_);
   if (same_size) {
@@ -2763,6 +2778,9 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::
         std::vector<at::Tensor>& outputs,
         std::vector<at::Tensor>& inputs,
         const c10d::ReduceScatterOptions& opts) {
+  TORCH_CHECK(
+      !isFloat8Type(inputs.back().scalar_type()),
+      "Float8 dtypes are not currenlty supported for CNCL reductions");
   return collectiveCoalesced(
       inputs,
       outputs,
@@ -2815,6 +2833,9 @@ c10::intrusive_ptr<c10d::Work> ProcessGroupCNCL::_reduce_scatter_base(
   // in a clever way. This setting is added for libraries like FSDP which uses
   // `reduce_scatter_tensor`.
   bool avoidRecordStreams = avoidRecordStreams_ || (!opts.asyncOp);
+  TORCH_CHECK(
+      !isFloat8Type(output_tensor.scalar_type()),
+      "Float8 dtypes are not currenlty supported for CNCL reductions");
 
   return collective(
       input_tensor,

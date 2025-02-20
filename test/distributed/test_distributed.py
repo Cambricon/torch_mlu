@@ -49,6 +49,7 @@ from common_utils import (
 )
 
 TEST_BFLOAT16 = read_card_info()
+TEST_FLOAT8 = torch.mlu.is_fp8_supported()
 INIT_METHOD = os.getenv("INIT_METHOD", "env://")
 DEFAULT_TIMEOUT = 300
 CUSTOMIZED_TIMEOUT = {
@@ -2617,6 +2618,22 @@ as input tensor",
                         self.assertEqual(recv_tensor_list[i], send_tensor_list[i])
 
         dist.barrier()
+
+    @unittest.skipUnless(TEST_FLOAT8, "float8 only support on MLU6xx")
+    def test_allgather_float8(self):
+        device = "mlu"
+        for float8_dtype in [torch.float8_e4m3fn, torch.float8_e5m2]:
+            _, rank = self._init_global_test()
+            torch.mlu.set_device(rank % torch.mlu.device_count())
+            tensor = torch.ones(10, 16, device=torch.device(device)).to(float8_dtype)
+            output_tensor = torch.zeros(
+                self.world_size, 10, 16, device=torch.device(device)
+            ).to(float8_dtype)
+            dist.all_gather_into_tensor(output_tensor, tensor)
+            for i in range(self.world_size):
+                self.assertEqual(
+                    output_tensor[i].view(torch.float32), tensor.view(torch.float32)
+                )
 
     # @unittest.skip("not test")
     def test_abnormal_and_api(self):
