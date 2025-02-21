@@ -268,3 +268,78 @@
       - 每个tensor大于对应indice维度的所有dims必须相等。
       - 所有输入必须是连续的。
     calculation lib: Cambricon CNNL。
+
+  - api: torch.ops.torch_mlu.multi_tensor_fused_adam
+    usage: torch.ops.torch_mlu.multi_tensor_fused_adam(params, exp_avgs, exp_avg_sqs, grads, params_out, grad_scale, lr, beta1, beta2, eps, step, mode, bias_correction, weight_decay)
+    functionality: 该算子实现了一次将一组模型参数按照adam和adamw算法更新，功能完全对齐apex仓库中multi_tensor_fused_adam算子。相较原生torch.optim.Adam, multi_tensor_fused_adam算子不支持amsgrad, maximize和found_inf参数。
+    args:
+      params (List[Tensor]): 一组张量，每个张量表示需要优化器按照adam或adamw算法更新的模型参数。
+      exp_avgs (List[Tensor]): 一组张量，每个张量表示优化器的一阶动量。
+      exp_avg_sqs (List[Tensor]): 一组张量，每个张量表示优化器的二阶动量。
+      grad (List[Tensor]): 一组张量，每个张量表示对应位置模型参数的梯度。
+      param_out (List[Tensor]): 一组张量, 用于存储更新后的模型参数。
+      grad_scale (Tensor): 张量，更新梯度系数, 仅仅支持float数据类型。
+      lr (Float): 学习率参数。
+      beta1 (Float): 参与一阶动量更新的系数。
+      beta2 (Float): 参与二阶动量更新的系数。
+      eps (Float): 提高数值稳定性参数。
+      step (Int): 表明当前优化器执行次数。
+      mode (Int): 0表示adam算法， 1表示adamw算法。
+      bias_correction (Int): 开启修正系数，1表示开启，否则不开启。
+      weight_decay (Float): 权重衰减系数。
+    limitations:
+      - params, exp_avgs, exp_avg_sqs, grad和param_out列表中张量数量必须相等，且对应位置的张量size必须相等，目前仅仅支持的数据类型是float, half, bfloat16。
+      - 所有张量必须是连续的。
+    calculation lib: Cambricon BANG。
+
+  - api: torch.ops.torch_mlu.multi_tensor_fused_adam_capturable
+    usage: torch.ops.torch_mlu.multi_tensor_fused_adam_capturable(params, exp_avgs, exp_avg_sqs, grads, params_out, grad_scale, lr, beta1, beta2, eps, step, mode, bias_correction, weight_decay)
+    functionality: 该算子实现了一次将一组模型参数按照adam和adamw算法更新，功能与torch.ops.torch_mlu.multi_tensor_fused_adam一致。为了满足mlu graph需求，lr和step入参类型是张量。
+    args:
+      params (List[Tensor]): 一组张量，每个张量表示需要优化器按照adam或adamw算法更新的模型参数。
+      exp_avgs (List[Tensor]): 一组张量，每个张量表示优化器的一阶动量。
+      exp_avg_sqs (List[Tensor]): 一组张量，每个张量表示优化器的二阶动量。
+      grad (List[Tensor]): 一组张量，每个张量表示对应位置模型参数的梯度。
+      param_out (List[Tensor]): 一组张量, 用于存储更新后的模型参数。
+      grad_scale (Tensor): 张量，更新梯度系数, 仅仅支持float数据类型。
+      lr (Tensor): 张量，学习率参数, 仅仅支持float数据类型。
+      beta1 (Float): 参与一阶动量更新的系数。
+      beta2 (Float): 参与二阶动量更新的系数。
+      eps (Float): 提高数值稳定性参数。
+      step (Tensor): 张量，表明当前优化器执行次数, 仅仅支持Int数据类型。
+      mode (Int): 0表示adam算法， 1表示adamw算法。
+      bias_correction (Int): 开启修正系数，1表示开启，否则不开启。
+      weight_decay (Float): 权重衰减系数。
+    limitations:
+      - params, exp_avgs, exp_avg_sqs, grad和param_out列表中张量数量必须相等，且对应位置的张量size必须相等，目前仅仅支持的数据类型是float, half, bfloat16。
+      - 所有张量必须是连续的。
+    calculation lib: Cambricon BANG。
+
+  - api: torch.ops.torch_mlu.multi_tensor_fused_adam_remainder
+    usage: torch.ops.torch_mlu.multi_tensor_fused_adam_remainder(params_in, params_rem, exp_avgs, exp_avg_sqs, grads, params_out, grad_scale, lr, beta1, beta2, eps, step, mode, bias_correction, weight_decay)
+    functionality: 该算子实现了一次将一组模型参数按照adam和adamw算法更新，功能与torch.ops.torch_mlu.multi_tensor_fused_adam基本一致。差别在于, 计算前会将bfloat16和int16合并成float32模型参数用于模型参数更新计算, 计算后将float类型的模型参数拆分成高16位bfloat16的param_in和低16位int16的param_rem尾数分别储存。
+    args:
+      params_in (List[Tensor]): 一组张量，每个张量表示需要优化器按照adam或adamw算法更新的模型参数的高16位。
+      params_rem (List[Tensor]): 一组张量，每个张量表示需要优化器按照adam或adamw算法更新的模型参数的低16位。
+      exp_avgs (List[Tensor]): 一组张量，每个张量表示优化器的一阶动量。
+      exp_avg_sqs (List[Tensor]): 一组张量，每个张量表示优化器的二阶动量。
+      grad (List[Tensor]): 一组张量，每个张量表示对应位置模型参数的梯度。
+      param_out (List[Tensor]): 一组张量, 用于存储更新后的模型参数。
+      grad_scale (Tensor): 张量，更新梯度系数, 仅仅支持float数据类型。
+      lr (float): 学习率参数。
+      beta1 (Float): 参与一阶动量更新的系数。
+      beta2 (Float): 参与二阶动量更新的系数。
+      eps (Float): 提高数值稳定性参数。
+      step (Int): 表明当前优化器执行次数。
+      mode (Int): 0表示adam算法， 1表示adamw算法。
+      bias_correction (Int): 开启修正系数，1表示开启，否则不开启。
+      weight_decay (Float): 权重衰减系数。
+    limitations:
+      - params_in, params_rem, exp_avgs, exp_avg_sqs, grad和param_out列表中张量数量必须相等，且对应位置的张量size必须相等。
+      - params_in中所有的张量数据类型必须是bfloat16。
+      - params_rem中所有的张量数据类型必须是int16。
+      - exp_avgs和exp_avg_sqs中所有的张量数据类型必须是float32。
+      - grads中所有的张量数据类型可以支持float, half, bfloat16。
+      - params_out中所有的张量数据类型必须是bfloat16。
+      - 所有张量必须是连续的。
+    calculation lib: Cambricon BANG。

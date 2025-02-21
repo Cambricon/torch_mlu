@@ -83,4 +83,32 @@ static bool is_high_sqrt_precision() {
   return value;
 }
 
+static inline void check_contiguous(const at::Tensor& tensor) {
+  if (!tensor.defined())
+    return;
+  bool is_contiguous = tensor.is_contiguous();
+  is_contiguous = is_contiguous ||
+      tensor.is_contiguous(at::MemoryFormat::ChannelsLast) ||
+      tensor.is_contiguous(at::MemoryFormat::ChannelsLast3d);
+  TORCH_CHECK(is_contiguous, "A tensor was not contiguous.");
+}
+
+static inline void check_contiguous(const std::optional<at::Tensor>& tensor) {
+  if (!tensor.has_value())
+    return;
+  check_contiguous(tensor.value());
+}
+
+template <
+    typename T,
+    std::enable_if_t<
+        std::is_same_v<T, at::Tensor> ||
+            std::is_same_v<T, std::optional<at::Tensor>>,
+        int> = 1,
+    typename... ARGS>
+static inline void check_contiguous(const T& tensor, ARGS... args) {
+  check_contiguous(tensor);
+  check_contiguous(args...);
+}
+
 } // end of namespace torch_mlu::ops

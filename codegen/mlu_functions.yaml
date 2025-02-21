@@ -1467,7 +1467,12 @@ custom:
     derived_type: bang
   - func: fused_lamb_amp.dst_param(Tensor noop_flag, Tensor[] grads, Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, Tensor[] dst_param_fp16s, Tensor learning_rate, float beta1, float beta2, float epsilon, Tensor step, int bias_correction, float weight_decay, int grad_averaging, int mode, Tensor global_grad_norm, Tensor max_grad_norm, bool use_nvlamb_python, Tensor inv_scale) -> bool
     derived_type: bang
-
+  - func: multi_tensor_fused_adam(Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, Tensor[] grads, Tensor[] params_out, Tensor grad_scale, float lr, float beta1, float beta2, float eps, int step, int mode, int bias_correction, float weight_decay) -> bool
+    derived_type: bang
+  - func: multi_tensor_fused_adam_capturable(Tensor[] params, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, Tensor[] grads, Tensor[] params_out, Tensor grad_scale, Tensor lr, float beta1, float beta2, float eps, Tensor step, int mode, int bias_correction, float weight_decay) -> bool
+    derived_type: bang
+  - func: multi_tensor_fused_adam_remainder(Tensor[] params_in, Tensor[] params_rem, Tensor[] exp_avgs, Tensor[] exp_avg_sqs, Tensor[] grads, Tensor[] params_out, Tensor grad_scale, float lr, float beta1, float beta2, float eps, int step, int mode, int bias_correction, float weight_decay) -> bool
+    derived_type: bang
   # NB: if your function has rand/dropout/... in its name
   # torchgen will check tags nondeterministic_seeded.
   # Do not use such name if your function is not really random.

@@ -213,5 +213,47 @@ void bang_fused_lamb_amp_internal(
     cnrtDataType_V2_t param_cnrt_type,
     bool high_sqrt_precision);
 
+template <
+    cnrtDataType_V2_t PARAM_VALUE,
+    cnrtDataType_V2_t GRAD_VALUE,
+    cnrtDataType_V2_t PARAM_OUT_VALUE,
+    int depth>
+void multi_tensor_fused_adam_internal(
+    const std::vector<std::array<void*, depth>>& data_ptr_list,
+    const float* grad_scale_ptr,
+    const std::vector<int64_t>& sizes,
+    const float beta1,
+    const float beta2,
+    const int step,
+    const int* step_ptr,
+    internal::ADAM_MODE mode,
+    const float epsilon,
+    const int bias_correction,
+    const float learning_rate,
+    const float* learning_rate_ptr,
+    const float weight_decay,
+    cnrtQueue_t queue,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim,
+    const int nram_size);
+
+template <cnrtDataType_V2_t GRAD_VALUE, int depth>
+void multi_tensor_fused_adam_remainders_internal(
+    const std::vector<std::array<void*, depth>>& data_ptr_list,
+    const float* grad_scale_ptr,
+    const std::vector<int64_t>& sizes,
+    const float beta1,
+    const float beta2,
+    const int step,
+    internal::ADAM_MODE mode,
+    const float epsilon,
+    const int bias_correction,
+    const float learning_rate,
+    const float weight_decay,
+    cnrtQueue_t queue,
+    cnrtFunctionType_t k_type,
+    cnrtDim3_t k_dim,
+    const int nram_size);
+
 } // namespace ops
 } // namespace torch_mlu

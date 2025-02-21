@@ -90,7 +90,12 @@ static_assert(
  * like this).
  *
  */
-template <typename tupleTypeList, int maxBlockNum, int depth>
+template <
+    typename tupleTypeList,
+    int maxBlockNum,
+    int depth,
+    typename loadFlagList = void,
+    typename storeFlagList = void>
 class MemoryPolicy {
  public:
   __mlu_func__ MemoryPolicy(
@@ -131,8 +136,16 @@ class MemoryPolicy {
       int& copy_size) {
     const int offset_index = repeat_num % MAX_STORE_CIRCLE_NUM;
     copy_size = this->block_instance_.copy_size_[offset_index];
-    static_unrool<LoadMultiDatas, tupleTypeList, depth>::with_args(
-        this->block_instance_.gdram_ptr_[offset_index], nram_ptr, copy_size);
+    static_unrool<
+        LoadMultiDatas,
+        tupleTypeList,
+        depth,
+        0 /*current*/,
+        loadFlagList>::
+        with_args(
+            this->block_instance_.gdram_ptr_[offset_index],
+            nram_ptr,
+            copy_size);
     // circle compute index.
     if (offset_index == this->block_instance_.next_start_index_) {
       this->circle_rewrite_block_info(repeat_num);
@@ -148,11 +161,17 @@ class MemoryPolicy {
       const int& offset) {
     const int offset_index = repeat_num % MAX_STORE_CIRCLE_NUM;
     copy_size = this->block_instance_.copy_size_[offset_index];
-    static_unrool<LoadMultiDatas, tupleTypeList, depth>::with_args(
-        this->block_instance_.gdram_ptr_[offset_index],
-        nram_ptr,
-        copy_size,
-        offset);
+    static_unrool<
+        LoadMultiDatas,
+        tupleTypeList,
+        depth,
+        0 /*current*/,
+        loadFlagList>::
+        with_args(
+            this->block_instance_.gdram_ptr_[offset_index],
+            nram_ptr,
+            copy_size,
+            offset);
     // circle compute index.
     if (offset_index == this->block_instance_.next_start_index_) {
       this->circle_rewrite_block_info(repeat_num);
@@ -164,8 +183,16 @@ class MemoryPolicy {
       void* nram_ptr[],
       const int& copy_size) {
     const int offset_index = repeat_num % MAX_STORE_CIRCLE_NUM;
-    static_unrool<StoreMultiDatas, tupleTypeList, depth>::with_args(
-        this->block_instance_.gdram_ptr_[offset_index], nram_ptr, copy_size);
+    static_unrool<
+        StoreMultiDatas,
+        tupleTypeList,
+        depth,
+        0 /*current*/,
+        storeFlagList>::
+        with_args(
+            this->block_instance_.gdram_ptr_[offset_index],
+            nram_ptr,
+            copy_size);
   }
 
  private:
