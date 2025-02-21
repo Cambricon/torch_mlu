@@ -18,7 +18,7 @@ TEST_FLOAT8 = torch.mlu.is_fp8_supported()
 class TestTensorCreation(TestCase):
     @unittest.skipUnless(TEST_FLOAT8, "float8 only support on specific MLU version.")
     @testinfo()
-    def test_cast_float8_to_other_dtypes(self, device):
+    def test_cast_float8_to_other_dtypes(self):
         shape = (2, 3, 4)
         type_list = [
             torch.float8_e4m3fn,
@@ -44,7 +44,7 @@ class TestTensorCreation(TestCase):
 
     @unittest.skipUnless(TEST_FLOAT8, "float8 only support on spedific MLU version.")
     @testinfo()
-    def test_cast_other_dtypes_to_float8(self, device):
+    def test_cast_other_dtypes_to_float8(self):
         shape = (2, 3, 4)
         type_list = [
             torch.float8_e4m3fn,

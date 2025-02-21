@@ -78,6 +78,8 @@ at::Tensor& cnnl_fill_(at::Tensor& self, const at::Scalar& other) {
 // at::ScalarType::BFloat16
 // at::ScalarType::Half
 // at::ScalarType::ComplexHalf
+// at::ScalarType::Float8_e4m3fn
+// at::ScalarType::Float8_e5m2
 
 // Type list supported by CNNLFill
 // iter.common_dtype()
@@ -94,6 +96,8 @@ at::Tensor& cnnl_fill_(at::Tensor& self, const at::Scalar& other) {
 // at::ScalarType::ComplexFloat
 // at::ScalarType::ComplexDouble
 // at::ScalarType::ComplexHalf
+// at::ScalarType::Float8_e4m3fn
+// at::ScalarType::Float8_e5m2
 
 } // namespace ops
 } // namespace torch_mlu
