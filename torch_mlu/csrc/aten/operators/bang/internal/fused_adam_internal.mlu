@@ -69,12 +69,12 @@ struct AdamFunctorHighPrecision {
     }
     // Here lerp compute inst same with cnnl lerp op.
     // exp_avg.lerp_(grad, 1 - beta1)
-    // exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
     __bang_sub(temp_nram, grad_nram_f, m_nram, num_align);
     __bang_fusion(FUSION_FMA, m_nram, temp_nram, beta1_minus, m_nram, num_align, num_align);
+    // exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1 - beta2)
     __bang_mul(grad_nram_f, grad_nram_f, grad_nram_f, num_align);
-    __bang_mul_scalar(grad_nram_f, grad_nram_f, beta2_minus, num_align);
-    __bang_fusion(FUSION_FMA, v_nram, v_nram, beta2, grad_nram_f, num_align, num_align);
+    __bang_mul_scalar(v_nram, v_nram, beta2, num_align);
+    __bang_fusion(FUSION_FMA, v_nram, grad_nram_f, beta2_minus, v_nram, num_align, num_align);
 
     // denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add_(eps)
     // param.addcdiv_(exp_avg, denom, value=-step_size)
