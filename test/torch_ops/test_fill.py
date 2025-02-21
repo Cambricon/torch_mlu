@@ -22,6 +22,7 @@ from common_utils import (
 )
 
 TEST_BFLOAT16 = read_card_info()
+TEST_FLOAT8 = torch.mlu.is_fp8_supported()
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -214,6 +215,29 @@ class TestOps(TestCase):
             self.assertTensorsEqual(
                 out_cpu.float(), out_mlu_3.cpu().float(), 0, use_MSE=True
             )
+
+    @testinfo()
+    @unittest.skipUnless(TEST_FLOAT8, "float8 only support on MLU6xx")
+    def test_fill_float8(self):
+        for fp8_dtype in [torch.float8_e4m3fn, torch.float8_e5m2]:
+            value_list = [2.3, 5, 0.59, 0.21, 0]
+            for value in value_list:
+                x_cpu = torch.testing.make_tensor(
+                    (1, 3, 224, 224), dtype=torch.float16, device="cpu"
+                ).to(fp8_dtype)
+                out_cpu = torch.fill_(x_cpu, value)
+                out_mlu_1 = torch.fill_(x_cpu.mlu(), value)
+                out_mlu_2 = torch.fill_(x_cpu.mlu(), torch.tensor(value).mlu())
+                out_mlu_3 = x_cpu.mlu().fill_(value)
+                self.assertTensorsEqual(
+                    out_cpu.float(), out_mlu_1.cpu().float(), 0, use_MSE=True
+                )
+                self.assertTensorsEqual(
+                    out_cpu.float(), out_mlu_2.cpu().float(), 0, use_MSE=True
+                )
+                self.assertTensorsEqual(
+                    out_cpu.float(), out_mlu_3.cpu().float(), 0, use_MSE=True
+                )
 
 
 if __name__ == "__main__":
