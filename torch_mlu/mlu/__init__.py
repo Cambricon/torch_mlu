@@ -532,6 +532,154 @@ def is_available():
         # API via `cnInit`
         return torch_mlu._MLUC._mlu_getDeviceCount() > 0
 
+def _check_cndev_err(ret):
+    if ret != 0:
+        raise RuntimeError("mlu cndev lib invoke failed!")
+    return ret
+
+def _get_cndev_device_index(device: Optional[Union[int, Device]]) -> int:
+    r"""Return the cndev index of the device, taking MLU_VISIBLE_DEVICES into account."""
+    idx = _get_device_index(device, optional=True)
+    visible_devices = _parse_visible_devices()
+    if type(visible_devices[0]) is str:
+        uuids = _raw_device_uuid_cndev()
+        if uuids is None:
+            raise RuntimeError("Can't get device UUIDs")
+        visible_devices = _transform_uuid_to_ordinals(
+            cast(List[str], visible_devices), uuids
+        )
+    visible_devices = cast(List[int], visible_devices)
+    if idx < 0 or idx >= len(visible_devices):
+        raise RuntimeError(
+            f"device {idx} is not visible (MLU_VISIBLE_DEVICES={visible_devices})"
+        )
+    return visible_devices[idx]
+
+def _get_cndev_handler(device, cndev_lib):
+    from ctypes import c_int, byref
+
+    reserved = c_int(0)
+    _check_cndev_err(cndev_lib.cndevInit(reserved))
+    device = _get_cndev_device_index(device)
+    handle = c_int()
+    _check_cndev_err(cndev_lib.cndevGetDeviceHandleByIndex(device, byref(handle)))
+    return handle
+
+def utilization(device: Optional[Union[Device, int]] = None) -> int:
+    r"""Return the percent of time over the past sample period during which one or
+    more kernels was executing on the MLU as given by `cnmon`.
+
+    Args:
+        device (torch.device or int, optional): selected device. Returns
+            statistic for the current device, given by :func:`~torch.mlu.current_device`,
+            if :attr:`device` is ``None`` (default).
+    """
+    from ctypes import byref, c_int, Structure, CDLL
+
+    class UtilizationInfo(Structure):
+        _fields_ = [
+            ("version", c_int),
+            ("averageCoreUtilization", c_int),
+            ("coreUtilization", c_int * 80),
+        ]
+
+    cndev_lib = CDLL("libcndev.so")
+    handle = _get_cndev_handler(device, cndev_lib)
+    util_info = UtilizationInfo(version=6)
+    _check_cndev_err(cndev_lib.cndevGetDeviceUtilizationInfo(byref(util_info), handle))
+    return util_info.averageCoreUtilization
+
+def temperature(device: Optional[Union[Device, int]] = None) -> int:
+    r"""Return the average temperature of the MLU sensor in Degrees C (Centigrades).
+
+    The average temperature is computed based on past sample period as given by `cnmon`.
+
+    Args:
+        device (torch.device or int, optional): selected device. Returns
+            statistic for the current device, given by :func:`~torch.mlu.current_device`,
+            if :attr:`device` is ``None`` (default).
+    """
+    from ctypes import byref, c_int, Structure, CDLL
+
+    class TemperatueInfo(Structure):
+        _fields_ = [
+            ("version", c_int),
+            ("board", c_int),
+            ("cluster", c_int * 20),
+            ("memoryDie", c_int * 8),
+            ("chip", c_int),
+            ("airInlet", c_int),
+            ("airOutlet", c_int),
+            ("memory", c_int),
+            ("videoInput", c_int),
+            ("cpu", c_int),
+            ("isp", c_int),
+        ]
+
+    cndev_lib = CDLL("libcndev.so")
+    handle = _get_cndev_handler(device, cndev_lib)
+    temper_info = TemperatueInfo(version=6)
+    _check_cndev_err(cndev_lib.cndevGetTemperatureInfo(byref(temper_info), handle))
+    return temper_info.chip
+
+def power_draw(device: Optional[Union[Device, int]] = None) -> int:
+    r"""Return the average power draw of the MLU sensor in mW (MilliWatts)
+        over the past sample period as given by `cnmon`.
+
+    Args:
+        device (torch.device or int, optional): selected device. Returns
+            statistic for the current device, given by :func:`~torch.mlu.current_device`,
+            if :attr:`device` is ``None`` (default).
+    """
+    from ctypes import byref, c_int, Structure, CDLL
+
+    class PowerInfo(Structure):
+        _fields_ = [
+            ("usage", c_int),
+            ("cap", c_int),
+            ("machine", c_int),
+            ("tdp", c_int),
+            ("maxPower", c_int),
+            ("reserved", c_int * 16),
+        ]
+
+    cndev_lib = CDLL("libcndev.so")
+    handle = _get_cndev_handler(device, cndev_lib)
+    power_info = PowerInfo()
+    _check_cndev_err(cndev_lib.cndevGetDevicePowerInfo(byref(power_info), handle))
+    return power_info.usage * 1000
+
+# Different with the API description of torch.cuda.clock_rate, we use MHz
+# as the unit of return value, ref https://github.com/pytorch/pytorch/issues/147098.
+def clock_rate(device: Optional[Union[Device, int]] = None) -> int:
+    r"""Return the clock speed of the MLU IPU in MHz (megahertz) over the past sample period as given by `cnmon`.
+
+    Args:
+        device (torch.device or int, optional): selected device. Returns
+            statistic for the current device, given by :func:`~torch.mlu.current_device`,
+            if :attr:`device` is ``None`` (default).
+    """
+    from ctypes import byref, c_int, c_uint8, c_uint16, Structure, CDLL
+
+    class FreqInfo(Structure):
+        _fields_ = [
+            ("version", c_int),
+            ("boardFreq", c_int),
+            ("ddrFreq", c_int),
+            ("overtempDfsFlag", c_uint8),
+            ("fastDfsFlag", c_uint8),
+            ("mluClusterFreqCount", c_uint16),
+            ("mluClusterFreq", c_uint16 * 20),
+            ("boardDefaultFreq", c_int),
+            ("boardFreqArange", c_int * 2),
+        ]
+
+    cndev_lib = CDLL("libcndev.so")
+    handle = _get_cndev_handler(device, cndev_lib)
+    freq_info = FreqInfo(version=6)
+    _check_cndev_err(cndev_lib.cndevGetFrequencyInfo(byref(freq_info), handle))
+    return freq_info.boardFreq
+
 def is_bf16_supported():
     r"""Returns a bool indicating if MLU is currently support bf16."""
     return torch.mlu.get_device_properties(torch.mlu.current_device()).major >= 5
@@ -951,6 +1099,10 @@ __all__ = [
     "initial_seed",
     "ipc_collect",
     "is_available",
+    "utilization",
+    "temperature",
+    "power_draw",
+    "clock_rate",
     "is_bf16_supported",
     "is_fp8_supported",
     "is_current_stream_capturing",
