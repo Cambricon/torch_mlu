@@ -1,0 +1,287 @@
+/*************************************************************************
+ * Copyright (C) [2019-2023] by Cambricon, Inc.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+
+#include "bang_internal.h"
+#include "aten/operators/bang/internal/multi_tensor_apply.h"
+#include "aten/operators/bang/internal/three_stage_pipeline.h"
+
+namespace torch_mlu {
+namespace ops {
+
+#define ALIGN_SIZE 128
+
+// Use half of the max nram size for ping-pong
+__nram__ char total_nram[MAX_NRAM_SIZE];
+
+// For noraml mode, split nram to p_nram, m_nram, v_nram, grad_nram, p_out_nram
+inline int get_char_element_num(const int& nram_size,
+                                const int& split_num) {
+  return ((nram_size - reserve_stack_size) / split_num) / ALIGN_SIZE * ALIGN_SIZE;
+}
+
+template<typename GRAD_T,
+         torch_mlu::ops::internal::ADAM_MODE mode = torch_mlu::ops::internal::ADAM_MODE::adamw,
+         typename FULL_T = float,
+         std::enable_if_t<std::is_same_v<FULL_T, float>, int> = 1,
+         std::enable_if_t<std::disjunction_v<std::is_same<float, GRAD_T>,
+                                             std::is_same<bfloat16_t, GRAD_T>,
+                                             std::is_same<half, GRAD_T>>, int> = 1>
+struct AdamFunctorRemainder {
+  __mlu_func__ inline void operator()(int16_t* param_in_nram,
+                                      int16_t* param_rem_nram,
+                                      float* m_nram,
+                                      float* v_nram,
+                                      GRAD_T* grad_nram,
+                                      int16_t* param_out_nram,
+                                      const int& num_align,
+                                      const int& load_offset,
+                                      const float grad_scale,
+                                      const float& beta1,
+                                      const float& beta2,
+                                      const int step,
+                                      const int& bias_correction,
+                                      const float& eps,
+                                      const float lr,
+                                      const float& weight_decay) {
+    // fused scalar compute.
+    float bias_correction1 = 1.0f;
+    float bias_correction2_sqrt = 1.0f;
+    if (bias_correction == 1) {
+      bias_correction1 = 1 - std::powf(beta1, step);
+      bias_correction2_sqrt = std::sqrt(1 - std::powf(beta2, step));
+    }
+    float lr_correction = -1.0 * lr * bias_correction2_sqrt / bias_correction1;
+    float eps_correction = bias_correction2_sqrt * eps;
+    float decay_correction = 0.0f;
+    if constexpr (mode == torch_mlu::ops::internal::ADAM_MODE::adamw) {
+      decay_correction = weight_decay * bias_correction1 / bias_correction2_sqrt; 
+    }
+    float negative_beta1 = -1.0 * beta1;
+    float negative_beta2 = -1.0 * beta2;
+
+    FULL_T* variable_nram_f = (FULL_T*)param_rem_nram;
+    FULL_T* m_nram_f = (FULL_T*)m_nram;
+    FULL_T* v_nram_f = (FULL_T*)v_nram;
+    FULL_T* grad_nram_f = (FULL_T*)grad_nram;
+    FULL_T* param_out_nram_f = (FULL_T*)param_out_nram;
+
+    // 64 byte alignment
+    int up_rounding_num = (num_align + 32 -1) / 32;
+    int align_64_byte_num = up_rounding_num * 32;
+    // transpose_height is used for transpose operator.
+    int transpose_height = up_rounding_num * 2;
+
+    if constexpr (std::is_same_v<GRAD_T, bfloat16_t>) {
+      __bang_bfloat162float(grad_nram_f, grad_nram + load_offset, num_align);
+    } else if constexpr (std::is_same_v<GRAD_T, half>) {
+      __bang_half2float(grad_nram_f, grad_nram + load_offset, num_align);
+    }
+    // undo rounding
+    int16_t* real_bf16_param_in_nram = param_rem_nram + align_64_byte_num;
+    __bang_lt_scalar(param_out_nram, param_rem_nram, 0, num_align);
+    __bang_sub(real_bf16_param_in_nram, param_in_nram, param_out_nram, num_align);
+
+    // Reconstruct FP32 params
+    // 2 * num_align * sizeof(int16_t) == param_rem_nram + param_rem_nram.
+    // param_out_nram is used to temp buffer.
+    __bang_transpose(param_out_nram, param_rem_nram, transpose_height, 32);
+    __bang_transpose(param_rem_nram, param_out_nram, 64, up_rounding_num);
+
+    // scaled_grad = grad * grad_scale
+    __bang_mul_scalar(grad_nram_f, grad_nram_f, grad_scale, num_align);
+    if constexpr (mode == torch_mlu::ops::internal::ADAM_MODE::adam) {
+      // scaled_grad = scaled_grad + decay * variable
+      __bang_fusion(FUSION_FMA, grad_nram_f, variable_nram_f, weight_decay, grad_nram_f, num_align, num_align);
+    }
+
+    // mt = lerp(beta1, scaled_grad, mt) converted to
+    // mt = fma(beta1, mt, fma(-beta1, scaled_grad, scaled_grad))
+    // param_out_nram_f is used to temp out of fam(-beta1, scaled_grad, scaled_grad)
+    __bang_fusion(FUSION_FMA, param_out_nram_f, grad_nram_f, negative_beta1, grad_nram_f, num_align, num_align);
+    __bang_fusion(FUSION_FMA, m_nram_f, m_nram_f, beta1, param_out_nram_f, num_align, num_align);
+
+    // vt = lerp(beta2, scaled_grad * scaled_grad, vt) converted to
+    // vt = fma(beta2, vt, fma(-beta2, scaled_grad * scaled_grad, scaled_grad * scaled_grad))
+    // param_out_nram_f is used to temp out of fma(-beta2, scaled_grad * scaled_grad, scaled_grad * scaled_grad)
+    __bang_mul(grad_nram_f, grad_nram_f, grad_nram_f, num_align);
+    __bang_fusion(FUSION_FMA, param_out_nram_f, grad_nram_f, negative_beta2, grad_nram_f, num_align, num_align);
+    __bang_fusion(FUSION_FMA, v_nram_f, v_nram_f, beta2, param_out_nram_f, num_align, num_align);
+
+    // demo = exp_avg  / (sqrtf(exp_avg_sq) + epsilon_correction)
+    // epsilon_correction = eps * sqrtf(bias_correction2)
+    // use grad_nram as temp buffer
+    __bang_sqrt(grad_nram_f, v_nram_f, num_align);
+    __bang_add_scalar(grad_nram_f, grad_nram_f, eps_correction, num_align);
+    __bang_recip(grad_nram_f, grad_nram_f, num_align);
+    __bang_mul(grad_nram_f, m_nram_f, grad_nram_f, num_align);
+
+    if constexpr (mode == torch_mlu::ops::internal::ADAM_MODE::adamw) {
+      // demo = demo + decay_correction * param
+      // decay_correction = bias_correction1 / sqrtf(bias_correction2) * decay
+      __bang_fusion(FUSION_FMA, grad_nram_f, variable_nram_f, decay_correction, grad_nram_f,
+                    num_align, num_align);
+    }
+    // param = param + learning_rate_correction * demo
+    // learning_rate_correction = -1 * lr*sqrtf(bias_correction2)/bias_correction1
+    __bang_fusion(FUSION_FMA, variable_nram_f, grad_nram_f, lr_correction,
+                  variable_nram_f, num_align, num_align);
+    // Split into BF16 params (rounded-to-nearest) and remainders
+    __bang_transpose(param_out_nram, param_rem_nram, 32, transpose_height);
+    __bang_transpose(param_rem_nram, param_out_nram, up_rounding_num, 64);
+    __bang_lt_scalar(param_out_nram, param_rem_nram, 0, num_align);
+    __bang_add(param_out_nram, real_bf16_param_in_nram, param_out_nram, num_align);
+  }
+};  // struct AdamFunctorRemainder
+
+template<typename tupleTypeList, int maxBlockNum, int depth, typename AdamFunctorRemainder, typename... ARGS>
+__mlu_func__ static void const adam_remainder_call_internal(const torch_mlu::bangcommon::BlockInfoContainer<maxBlockNum, depth>& block_info_container,
+                                             AdamFunctorRemainder&& compute_func,
+                                             ARGS&&... args) {
+
+  using TureConstant = torch_mlu::bangcommon::BoolConstant<true>;
+  using FalseConstant = torch_mlu::bangcommon::BoolConstant<false>;
+  // param_out_nram needn't to be loaded.
+  using LoadFLagList = std::tuple<TureConstant, TureConstant, TureConstant, TureConstant, TureConstant, FalseConstant>;
+  // grad_nram and param_in_nram needn't to be stored.
+  using StoreFLagList = std::tuple<FalseConstant, TureConstant, TureConstant, TureConstant, FalseConstant, TureConstant>;
+
+  torch_mlu::bangcommon::MemoryPolicy<tupleTypeList, maxBlockNum, depth, LoadFLagList, StoreFLagList>
+    data_handler(block_info_container);
+  const int element_num = block_info_container.block_size;
+  const int char_element_num = element_num * sizeof(float);
+  void* load_ping_nram_array[depth] = {nullptr};
+  void* load_pong_nram_array[depth] = {nullptr};
+  void* store_ping_nram_array[depth] = {nullptr};
+  void* store_pong_nram_array[depth] = {nullptr};
+  // params(p_in and p_rem)--exp_avg--exp_avg_sq--grad--param_out
+  int char_ping_pong_offset = char_element_num * 5;
+  void** load_ping_nram_array_internal = load_ping_nram_array + 1;
+  void** load_pong_nram_array_internal = load_pong_nram_array + 1;
+  void** store_ping_nram_array_internal = store_ping_nram_array + 1;
+  void** store_pong_nram_array_internal = store_pong_nram_array + 1;
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    load_ping_nram_array_internal, &(total_nram[0]), char_element_num);
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    load_pong_nram_array_internal, &(total_nram[char_ping_pong_offset]), char_element_num);
+  // Store and Load with different nums.
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    store_ping_nram_array_internal, &(total_nram[0]), char_element_num);
+  torch_mlu::bangcommon::static_unrool<torch_mlu::bangcommon::CaculateDataPtrOffset, tupleTypeList, depth>::with_args(
+    store_pong_nram_array_internal, &(total_nram[char_ping_pong_offset]), char_element_num);
+  // params_nram is divided between p_in and p_rem.
+  // int param_offset = element_num * sizeof(int16_t);
+  load_ping_nram_array[0] = (int16_t*)load_ping_nram_array[1] + element_num;
+  load_ping_nram_array[1] = load_ping_nram_array[1];
+  load_pong_nram_array[0] = (int16_t*)load_pong_nram_array[1] + element_num;
+  load_pong_nram_array[1] = load_pong_nram_array[1];
+  store_ping_nram_array[0] = (int16_t*)store_ping_nram_array[1] + element_num;
+  store_ping_nram_array[1] = store_ping_nram_array[1];
+  store_pong_nram_array[0] = (int16_t*)store_pong_nram_array[1] + element_num;
+  store_pong_nram_array[1] = store_pong_nram_array[1];
+  // load_offset for half and bfloat16_t, and copy data to last part of nram,
+  // for using same nram space to convert from half/bfloat16_t to float.
+  // This is not need for store data back to gdram.
+  // char_element_num size: |-----------------|-----------------|
+  //                    float start    half/bfloat16_t start
+  const int load_offset = char_element_num / sizeof(float);
+  do_three_stage_pipeline_compute(data_handler, compute_func, load_ping_nram_array,
+                                  store_ping_nram_array, load_pong_nram_array,
+                                  store_pong_nram_array, load_offset, args...);
+}
+
+template<typename tupleTypeList, int maxBlockNum, int depth>
+struct ApplyAdamRemainder {
+__mlu_global__ static void call(const torch_mlu::bangcommon::BlockInfoContainer<maxBlockNum, depth> block_info_container,
+                                const float* grad_scale_ptr,
+                                const float beta1,
+                                const float beta2,
+                                const int step,
+                                const int bias_correction,
+                                const float eps,
+                                const float lr,
+                                internal::ADAM_MODE adam_mode,
+                                const float weight_decay) {
+  if (__is_mpu()) return;
+  float gpr_grad_scale = __load_gdram(grad_scale_ptr);
+  using GRAD_T = std::tuple_element_t<4, tupleTypeList>;
+  switch (adam_mode) {
+    case torch_mlu::ops::internal::ADAM_MODE::adam:
+      adam_remainder_call_internal<tupleTypeList, maxBlockNum, depth>(block_info_container,
+                    AdamFunctorRemainder<GRAD_T, torch_mlu::ops::internal::ADAM_MODE::adam>(),
+                    gpr_grad_scale, beta1, beta2, step, bias_correction, eps, lr, weight_decay);
+      break;
+    case torch_mlu::ops::internal::ADAM_MODE::adamw:
+      adam_remainder_call_internal<tupleTypeList, maxBlockNum, depth>(block_info_container,
+                    AdamFunctorRemainder<GRAD_T, torch_mlu::ops::internal::ADAM_MODE::adamw>(),
+                    gpr_grad_scale, beta1, beta2, step, bias_correction, eps, lr, weight_decay);
+      break;
+    default:
+      break;
+  }
+}
+};  // struct ApplyAdam
+
+template<cnrtDataType_V2_t GRAD_VALUE, int depth>
+void multi_tensor_fused_adam_remainders_internal(const std::vector<std::array<void*, depth>>& data_ptr_list,
+                              const float* grad_scale_ptr,
+                              const std::vector<int64_t>& sizes,
+                              const float beta1,
+                              const float beta2,
+                              const int step,
+                              internal::ADAM_MODE mode,
+                              const float epsilon,
+                              const int bias_correction,
+                              const float learning_rate,
+                              const float weight_decay,
+                              cnrtQueue_t queue,
+                              cnrtFunctionType_t k_type,
+                              cnrtDim3_t k_dim,
+                              const int nram_size) {
+  constexpr int maxBlockNum = torch_mlu::bangcommon::depth_to_max_blockinfo[4];
+  using GRAD_T = CNRTTypeValueToBangcCppType_t<GRAD_VALUE>;
+  using tupleTypeList = std::tuple<int16_t, int16_t, float, float, GRAD_T, int16_t>;
+  const int element_num = get_char_element_num(nram_size, 10) / sizeof(float);
+  torch_mlu::bangcommon::multi_tensor_apply<maxBlockNum, depth, tupleTypeList>(
+              data_ptr_list, sizes, element_num, queue, k_type, k_dim,
+              ApplyAdamRemainder<tupleTypeList, maxBlockNum, depth>(),
+              grad_scale_ptr, beta1, beta2, step, bias_correction, epsilon,
+              learning_rate, mode, weight_decay);
+}
+
+
+// add explicit instantiation for float, half, bfloat16_t
+#define APEX_MULTI_TENSOR_FUSED_ADAM_REMAINDER_INTERNAL(GRAD_T, DEPTH)    \
+template void multi_tensor_fused_adam_remainders_internal<GRAD_T, DEPTH>( \
+    const std::vector<std::array<void*, DEPTH>>& data_ptr_list,           \
+    const float* grad_scale_ptr,                                          \
+    const std::vector<int64_t>& sizes,                                    \
+    const float beta1,                                                    \
+    const float beta2,                                                    \
+    const int step,                                                       \
+    internal::ADAM_MODE mode,                                             \
+    const float epsilon,                                                  \
+    const int bias_correction,                                            \
+    const float learning_rate,                                            \
+    const float weight_decay,                                             \
+    cnrtQueue_t queue,                                                    \
+    cnrtFunctionType_t k_type,                                            \
+    cnrtDim3_t k_dim,                                                     \
+    const int nram_size);
+
+APEX_MULTI_TENSOR_FUSED_ADAM_REMAINDER_INTERNAL(cnrtDataType_V2_t::cnrtFloat, 6)
+APEX_MULTI_TENSOR_FUSED_ADAM_REMAINDER_INTERNAL(cnrtDataType_V2_t::cnrtHalf, 6)
+APEX_MULTI_TENSOR_FUSED_ADAM_REMAINDER_INTERNAL(cnrtDataType_V2_t::cnrtBfloat, 6)
+
+#undef APEX_MULTI_TENSOR_FUSED_ADAM_REMAINDER_INTERNAL
+
+} // namespace ops
+} // namespace torch_mlu

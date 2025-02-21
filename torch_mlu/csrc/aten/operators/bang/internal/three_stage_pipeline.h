@@ -72,12 +72,19 @@ template <
     typename tupleTypeList,
     int maxBlockNum,
     int depth,
-    template <typename, int, int>
+    typename LoadFlagList,
+    typename StoreFlagList,
+    template <typename, int, int, typename, typename>
     typename MemoryPolicy,
     typename Functor,
     typename... ARGS>
 __mlu_func__ constexpr void do_three_stage_pipeline_compute(
-    MemoryPolicy<tupleTypeList, maxBlockNum, depth>& data_handler,
+    MemoryPolicy<
+        tupleTypeList,
+        maxBlockNum,
+        depth,
+        LoadFlagList,
+        StoreFlagList>& data_handler,
     Functor&& compute_func,
     void* (&load_ping_nram)[depth],
     void* (&store_ping_nram)[depth],

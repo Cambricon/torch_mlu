@@ -34,33 +34,41 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace torch_mlu::bangcommon {
 
+template <bool Value>
+struct BoolConstant {
+  static constexpr bool value = Value;
+};
+
 // Compile-time expansion.
 template <
-    template <int, typename UtupleTypeList>
+    template <int, typename UtupleTypeList, typename UflagList>
     typename className,
     typename tupleTypeList,
     int end,
-    int current = 0>
+    int current = 0,
+    typename flagList = void>
 struct static_unrool {
   template <typename... ARGS>
   __mlu_func__ __mlu_host__ static inline void with_args(ARGS&&... args) {
-    className<current, tupleTypeList>::apply(std::forward<ARGS>(args)...);
-    static_unrool<className, tupleTypeList, end, current + 1>::with_args(
-        args...);
+    className<current, tupleTypeList, flagList>::apply(
+        std::forward<ARGS>(args)...);
+    static_unrool<className, tupleTypeList, end, current + 1, flagList>::
+        with_args(args...);
   }
 };
 
 template <
-    template <int, typename UtupleTypeList>
+    template <int, typename UtupleTypeList, typename UflagList>
     typename className,
     typename tupleTypeList,
-    int end>
-struct static_unrool<className, tupleTypeList, end, end> {
+    int end,
+    typename flagList>
+struct static_unrool<className, tupleTypeList, end, end, flagList> {
   template <typename... ARGS>
   __mlu_func__ __mlu_host__ static inline void with_args(ARGS&&... args) {}
 };
 
-template <int index, typename tupleTypeList>
+template <int index, typename tupleTypeList, typename flagList = void>
 struct CaculateDataPtrOffset {
   template <typename array_t, typename container_t>
   __mlu_func__ __mlu_host__ static inline void apply(
@@ -101,19 +109,33 @@ struct CaculateDataPtrOffset {
 };
 
 // Load multi gdram data to nram, and tupleTypeList is for using each data type.
-template <int index, typename tupleTypeList>
+template <int index, typename tupleTypeList, typename flagList = void>
 struct LoadMultiDatas {
   template <typename array_t, typename container_t>
   __mlu_func__ static inline void apply(
       const container_t& data_ptr,
       const array_t& array,
       const int& copy_size) {
+    if (array[index] == nullptr)
+      return;
     using T = std::tuple_element_t<index, tupleTypeList>;
-    __memcpy_async(
-        array[index],
-        data_ptr[index],
-        copy_size * sizeof(T),
-        mluMemcpyDirection_t::GDRAM2NRAM);
+    if constexpr (std::is_same_v<flagList, void> == 0) {
+      if constexpr (std::tuple_element_t<index, flagList>::value == 0) {
+        return;
+      } else {
+        __memcpy_async(
+            array[index],
+            data_ptr[index],
+            copy_size * sizeof(T),
+            mluMemcpyDirection_t::GDRAM2NRAM);
+      }
+    } else {
+      __memcpy_async(
+          array[index],
+          data_ptr[index],
+          copy_size * sizeof(T),
+          mluMemcpyDirection_t::GDRAM2NRAM);
+    }
   }
 
   // The offset will only take effect when the data type
@@ -129,17 +151,31 @@ struct LoadMultiDatas {
     if constexpr (std::is_same_v<T, half> || std::is_same_v<T, bfloat16_t>) {
       nram_addr += offset;
     }
-    __memcpy_async(
-        nram_addr,
-        data_ptr[index],
-        copy_size * sizeof(T),
-        mluMemcpyDirection_t::GDRAM2NRAM);
+    if (nram_addr == nullptr)
+      return;
+    if constexpr (std::is_same_v<flagList, void> == 0) {
+      if constexpr (std::tuple_element_t<index, flagList>::value == 0) {
+        return;
+      } else {
+        __memcpy_async(
+            nram_addr,
+            data_ptr[index],
+            copy_size * sizeof(T),
+            mluMemcpyDirection_t::GDRAM2NRAM);
+      }
+    } else {
+      __memcpy_async(
+          nram_addr,
+          data_ptr[index],
+          copy_size * sizeof(T),
+          mluMemcpyDirection_t::GDRAM2NRAM);
+    }
   }
 };
 
 // Store multi nram data to gdram, and tupleTypeList is for using each data
 // type.
-template <int index, typename tupleTypeList>
+template <int index, typename tupleTypeList, typename flagList = void>
 struct StoreMultiDatas {
   template <typename array_t, typename container_t>
   __mlu_func__ static inline void apply(
@@ -149,11 +185,23 @@ struct StoreMultiDatas {
     using T = std::tuple_element_t<index, tupleTypeList>;
     if (array[index] == nullptr)
       return;
-    __memcpy_async(
-        data_ptr[index],
-        array[index],
-        copy_size * sizeof(T),
-        mluMemcpyDirection_t::NRAM2GDRAM);
+    if constexpr (std::is_same_v<flagList, void> == 0) {
+      if constexpr (std::tuple_element_t<index, flagList>::value == 0) {
+        return;
+      } else {
+        __memcpy_async(
+            data_ptr[index],
+            array[index],
+            copy_size * sizeof(T),
+            mluMemcpyDirection_t::NRAM2GDRAM);
+      }
+    } else {
+      __memcpy_async(
+          data_ptr[index],
+          array[index],
+          copy_size * sizeof(T),
+          mluMemcpyDirection_t::NRAM2GDRAM);
+    }
   }
 };
 

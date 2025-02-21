@@ -59,6 +59,7 @@ TESTS = [
     "optimizer/test_torch_fused_sgd",
     "optimizer/test_torch_fused_adam_high_precision",
     "optimizer/test_torch_fused_adamw_high_precision",
+    "optimizer/test_multi_tensor_fused_adam",
     "distributions/test_distributions",
     "fallback/test_fallback",
     "view_chain/test_close_view_chain",
