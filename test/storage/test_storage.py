@@ -734,14 +734,14 @@ class Storage(TestCase):
             a = bytearray([1, 2, 3, 4])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 a, byte_order=order, dtype=torch.uint8
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 a, byte_order=order, dtype=torch.uint8
             )
             self.assertEqual(untyped_mlu.tolist(), untyped_cpu.tolist())
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 a, byte_order=order, dtype=torch.short
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 a, byte_order=order, dtype=torch.short
             )
@@ -749,7 +749,7 @@ class Storage(TestCase):
             f = bytearray([0x40, 0x10, 0x00, 0x00])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.float32
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.float32
             )
@@ -757,7 +757,7 @@ class Storage(TestCase):
             f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.bool
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.bool
             )
@@ -765,7 +765,7 @@ class Storage(TestCase):
             f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.float64
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.float64
             )
@@ -773,7 +773,7 @@ class Storage(TestCase):
             f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.int32
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.int32
             )
@@ -781,7 +781,7 @@ class Storage(TestCase):
             f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.int64
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.int64
             )
@@ -789,7 +789,7 @@ class Storage(TestCase):
             f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.float16
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.float16
             )
@@ -797,7 +797,7 @@ class Storage(TestCase):
             f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.bfloat16
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.bfloat16
             )
@@ -805,7 +805,7 @@ class Storage(TestCase):
             f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
             untyped_mlu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.complex64
-            )
+            ).mlu()
             untyped_cpu = torch.UntypedStorage.from_buffer(
                 f, byte_order=order, dtype=torch.complex64
             )
@@ -820,14 +820,14 @@ class Storage(TestCase):
                 f = bytearray([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x40])
                 untyped_mlu = torch.UntypedStorage.from_buffer(
                     f, byte_order=order, dtype=torch.float8_e5m2
-                )
+                ).mlu()
                 untyped_cpu = torch.UntypedStorage.from_buffer(
                     f, byte_order=order, dtype=torch.float8_e5m2
                 )
                 self.assertEqual(untyped_mlu.tolist(), untyped_cpu.tolist())
                 untyped_mlu = torch.UntypedStorage.from_buffer(
                     f, byte_order=order, dtype=torch.float8_e4m3fn
-                )
+                ).mlu()
                 untyped_cpu = torch.UntypedStorage.from_buffer(
                     f, byte_order=order, dtype=torch.float8_e4m3fn
                 )
@@ -941,7 +941,7 @@ class Storage(TestCase):
         mlu_new_storage = mlu_untyped_storage.new()
         self.assertTrue(mlu_new_storage.device.type == "mlu")
 
-        cpu_untyped_storage = torch.UntypedStorage([1, 2, 3, 4, 5], device="mlu")
+        cpu_untyped_storage = torch.UntypedStorage([1, 2, 3, 4, 5], device="cpu")
         cpu_new_storage = cpu_untyped_storage.new()
         self.assertEqual(cpu_new_storage.size(), mlu_new_storage.size())
 
