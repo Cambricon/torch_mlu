@@ -204,6 +204,22 @@ class CnnlMatmulExDescriptor : public CnnlDescriptor<
       size_t size_in_bytes);
 };
 
+class CnnlQuantizeExDescriptor : public CnnlDescriptor<
+                                     cnnlQuantizeExStruct,
+                                     cnnlCreateQuantizeExDescriptor,
+                                     cnnlDestroyQuantizeExDescriptor> {
+ public:
+  CnnlQuantizeExDescriptor() {}
+  void set(
+      const void* position_ptr,
+      const void* scale_ptr,
+      const void* offset_ptr,
+      cnnlPointerMode_t pointer_mode,
+      cnnlQuantizeScheme_t quant_scheme,
+      cnnlQuantizeMode_t quant_mode,
+      cnnlDataType_t onchip_dtype);
+};
+
 class CnnlUniqueDescriptor : public CnnlDescriptor<
                                  cnnlUniqueStruct,
                                  &cnnlCreateUniqueDescriptor,

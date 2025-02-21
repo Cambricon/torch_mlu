@@ -179,6 +179,19 @@ namespace torch_mlu {
     }                                                                   \
   }()
 
+#define AT_DISPATCH_MLU_FLOAT8(TYPE, NAME, ...)                          \
+  [&] {                                                                  \
+    constexpr const char* at_dispatch_name = NAME;                       \
+    switch (TYPE) {                                                      \
+      AT_DISPATCH_CASE_MLU(                                              \
+          at::ScalarType::Float8_e5m2, at::Float8_e5m2, __VA_ARGS__)     \
+      AT_DISPATCH_CASE_MLU(                                              \
+          at::ScalarType::Float8_e4m3fn, at::Float8_e4m3fn, __VA_ARGS__) \
+      default:                                                           \
+        AT_ERROR(#NAME, " not implemented for '", toString(TYPE), "'");  \
+    }                                                                    \
+  }()
+
 #define AT_DISPATCH_MLU_FLOATING_TYPES_AND_HALF(TYPE, NAME, ...)        \
   [&] {                                                                 \
     constexpr const char* at_dispatch_name = NAME;                      \

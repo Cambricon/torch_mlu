@@ -200,6 +200,25 @@ void CnnlMatmulExDescriptor::set_attr(
       cnnlSetMatMulExDescAttr(this->mut_desc(), attr, buf, size_in_bytes));
 }
 
+void CnnlQuantizeExDescriptor::set(
+    const void* position_ptr,
+    const void* scale_ptr,
+    const void* offset_ptr,
+    cnnlPointerMode_t pointer_mode,
+    cnnlQuantizeScheme_t quant_scheme,
+    cnnlQuantizeMode_t quant_mode,
+    cnnlDataType_t onchip_dtype) {
+  TORCH_CNNL_CHECK(cnnlSetQuantizeExDescriptorScalarQuant(
+      this->mut_desc(),
+      position_ptr,
+      scale_ptr,
+      offset_ptr,
+      pointer_mode,
+      quant_scheme,
+      quant_mode,
+      onchip_dtype));
+}
+
 void CnnlStrideBatchMatmulDescriptor::set_attr(
     cnnlStrideBatchMatMulDescAttribute_t attr,
     const void* buf,

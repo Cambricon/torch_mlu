@@ -244,6 +244,8 @@ aten:
     structured_delegate: _addmm_activation.out
   - func: _addmm_activation.out
     structured: True
+  - func: _scaled_mm
+  - func: _scaled_mm.out
   - func: baddbmm
     structured_delegate: baddbmm.out
   - func: baddbmm_

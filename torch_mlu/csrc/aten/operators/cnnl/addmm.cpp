@@ -29,108 +29,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "aten/operators/cnnl/cnnl_kernel.h"
+#include "aten/operators/cnnl/scaled_matmul_utils.h"
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 
 namespace torch_mlu {
 namespace ops {
-namespace {
-// TODO:
-// https://github.com/pytorch/pytorch/pull/59380#pullrequestreview-725310492
-c10::MaybeOwned<Tensor> inline resolve_conj_if_indicated(
-    const Tensor& tensor,
-    bool resolve_conj) {
-  if (resolve_conj && tensor.is_conj()) {
-    return c10::MaybeOwned<Tensor>::owned(tensor.resolve_conj());
-  } else {
-    return c10::MaybeOwned<Tensor>::borrowed(tensor);
-  }
-}
-
-c10::MaybeOwned<Tensor> inline prepare_matrix_for_cnnl(
-    const Tensor& tensor,
-    bool& transpose_tensor,
-    bool transpose_result) {
-  if (tensor.is_non_overlapping_and_dense()) { // common case
-    transpose_tensor = !tensor.is_contiguous();
-    return resolve_conj_if_indicated(
-        tensor, transpose_result ? transpose_tensor : !transpose_tensor);
-  }
-  IntArrayRef tensor_strides = tensor.strides();
-  IntArrayRef tensor_sizes = tensor.sizes();
-  if ((tensor_strides[1] == 1) &&
-      (tensor_strides[0] >= std::max<int64_t>(1, tensor_sizes[1]))) {
-    transpose_tensor = false;
-    return resolve_conj_if_indicated(tensor, !transpose_result);
-  } else if (
-      (tensor_strides[0] == 1) &&
-      (tensor_strides[1] >= std::max<int64_t>(1, tensor_sizes[0]))) {
-    transpose_tensor = true;
-    return resolve_conj_if_indicated(tensor, transpose_result);
-  } else {
-    transpose_tensor = false;
-    return c10::MaybeOwned<Tensor>::owned(
-        tensor.clone(at::MemoryFormat::Contiguous));
-  }
-}
-
-c10::MaybeOwned<Tensor> inline prepare_matrix_for_cnnl(
-    const Tensor& tensor,
-    bool& transpose_tensor) {
-  if (tensor.is_non_overlapping_and_dense()) { // common case
-    transpose_tensor = !tensor.is_contiguous();
-    return resolve_conj_if_indicated(tensor, true);
-  }
-  IntArrayRef tensor_strides = tensor.strides();
-  IntArrayRef tensor_sizes = tensor.sizes();
-  if ((tensor_strides[1] == 1) &&
-      (tensor_strides[0] >= std::max<int64_t>(1, tensor_sizes[1]))) {
-    transpose_tensor = false;
-    return resolve_conj_if_indicated(tensor, true);
-  } else if (
-      (tensor_strides[0] == 1) &&
-      (tensor_strides[1] >= std::max<int64_t>(1, tensor_sizes[0]))) {
-    transpose_tensor = true;
-    return resolve_conj_if_indicated(tensor, true);
-  } else {
-    transpose_tensor = false;
-    return c10::MaybeOwned<Tensor>::owned(
-        tensor.clone(at::MemoryFormat::Contiguous));
-  }
-}
-
-struct cnCommonArgs {
-  cnCommonArgs(const Tensor& mat1, const Tensor& mat2, Tensor& c) {
-    bool transpose_result, transpose_mat1, transpose_mat2;
-    result = prepare_matrix_for_cnnl(c, transpose_result);
-    mata = prepare_matrix_for_cnnl(
-        transpose_result ? mat2 : mat1, transpose_mat1, transpose_result);
-    matb = prepare_matrix_for_cnnl(
-        transpose_result ? mat1 : mat2, transpose_mat2, transpose_result);
-    auto mat1_sizes = mat1.sizes();
-    auto mat2_sizes = mat2.sizes();
-    if (transpose_result) {
-      transpose_mat1 = !transpose_mat1;
-      transpose_mat2 = !transpose_mat2;
-      mat1_sizes = mata->sizes();
-      mat2_sizes = matb->sizes();
-    }
-
-    m = mat1_sizes[transpose_result ? 1 : 0];
-    k = mat1_sizes[transpose_result ? 0 : 1];
-    n = mat2_sizes[transpose_result ? 0 : 1];
-    lda = mata->stride((transpose_mat1 == transpose_result) ? 0 : 1);
-    ldb = matb->stride((transpose_mat2 == transpose_result) ? 0 : 1);
-    result_ld = result->stride(transpose_result ? 1 : 0);
-    transa = transpose_mat1 ? 1 : 0;
-    transb = transpose_mat2 ? 1 : 0;
-    trans_result = transpose_result;
-  }
-  bool transa, transb, trans_result;
-  int64_t m, n, k;
-  int64_t lda, ldb, result_ld;
-  c10::MaybeOwned<Tensor> mata, matb, result;
-};
-} // namespace
 
 at::Tensor getMMInput(const at::Tensor& self, const bool& trans) {
   if (trans) {
@@ -147,7 +50,7 @@ enum class Activation {
 };
 
 at::Tensor& addmm_out_mlu_impl(
-    at::Tensor& result,
+    at::Tensor& out,
     const at::Tensor& self,
     const at::Tensor& mat1,
     const at::Tensor& mat2,
@@ -157,10 +60,7 @@ at::Tensor& addmm_out_mlu_impl(
   TORCH_CHECK(mat1.dim() == 2 && mat2.dim() == 2, "tensors must be 2-D");
 
   at::TensorArg targs[]{
-      {result, "out", 0},
-      {self, "self", 1},
-      {mat1, "mat1", 2},
-      {mat2, "mat2", 3}};
+      {out, "out", 0}, {self, "self", 1}, {mat1, "mat1", 2}, {mat2, "mat2", 3}};
   checkAllSameMLU(__func__, targs);
 
   at::IntArrayRef mat1_sizes = mat1.sizes();
@@ -169,10 +69,10 @@ at::Tensor& addmm_out_mlu_impl(
   c10::MaybeOwned<at::Tensor> self_;
   bool useExInterface = false;
   at::ScalarType scalar_type = self.scalar_type();
-  if (&result != &self) {
+  if (&out != &self) {
     useExInterface = beta.toComplexDouble() == 1.0 && self.dim() == 1 &&
-        result.dim() == 2 && self.sizes()[0] == mat2_sizes[1] &&
-        self.is_contiguous() && result.is_contiguous() &&
+        out.dim() == 2 && self.sizes()[0] == mat2_sizes[1] &&
+        self.is_contiguous() && out.is_contiguous() &&
         (scalar_type == at::ScalarType::Float ||
          scalar_type == at::ScalarType::Half ||
          scalar_type == at::ScalarType::BFloat16);
@@ -183,26 +83,26 @@ at::Tensor& addmm_out_mlu_impl(
   } else {
     self_ = c10::MaybeOwned<Tensor>::borrowed(self);
     self__sizes = self_->sizes();
-    TORCH_CHECK(result.dim() == 2, "tensors must be 2-D");
+    TORCH_CHECK(out.dim() == 2, "tensors must be 2-D");
     TORCH_CHECK(
         self__sizes[0] == mat1_sizes[0], "self_ dim 0 must match mat1 dim 0");
     TORCH_CHECK(
         self__sizes[1] == mat2_sizes[1], "self_ dim 1 must match mat2 dim 1");
   }
 
-  if (&result != &self) {
-    at::native::resize_output(result, {mat1_sizes[0], mat2_sizes[1]});
+  if (&out != &self) {
+    at::native::resize_output(out, {mat1_sizes[0], mat2_sizes[1]});
     if (beta.toComplexDouble() != 0.0 && !useExInterface) {
-      cnnl_copy_internal(result, *self_);
+      cnnl_copy_internal(out, *self_);
     }
   }
 
-  at::IntArrayRef result_sizes = result.sizes();
+  at::IntArrayRef result_sizes = out.sizes();
   if ((result_sizes[0] == 0) || (result_sizes[1] == 0)) {
-    return result;
+    return out;
   }
 
-  cnCommonArgs args(mat1, mat2, result);
+  cnCommonArgs args(mat1, mat2, out);
 
   // for some cases, GPU and CPU have different results, and MLU
   // results are same with GPU. For example, [b] + [a, 0] x [0, b],
@@ -211,10 +111,10 @@ at::Tensor& addmm_out_mlu_impl(
     // By definition, when beta==0, values in self should be ignored. nans and
     // infs should not propagate
     if (beta.toComplexDouble() == 0.) {
-      return result.zero_();
+      return out.zero_();
     }
     return at::mul_out(
-        result,
+        out,
         self,
         at::native::scalar_tensor(
             beta,
@@ -237,15 +137,15 @@ at::Tensor& addmm_out_mlu_impl(
       " but found ",
       mat2.scalar_type());
   TORCH_CHECK(
-      scalar_type == result.scalar_type(),
+      scalar_type == out.scalar_type(),
       "expected scalar type ",
       scalar_type,
       " but found ",
-      result.scalar_type());
+      out.scalar_type());
 
   at::Tensor mata_tensor = *args.mata;
   at::Tensor matb_tensor = *args.matb;
-  at::Tensor result_tensor = *args.result;
+  at::Tensor result_tensor = *args.out;
   mata_tensor = getMMInput(mata_tensor, (args.transa != args.trans_result));
   matb_tensor = getMMInput(matb_tensor, (args.transb != args.trans_result));
   result_tensor = getMMInput(result_tensor, args.trans_result);
@@ -304,16 +204,16 @@ at::Tensor& addmm_out_mlu_impl(
     }
   }
 
-  if (!result.is_same(*args.result)) {
-    result.copy_(*args.result);
+  if (!out.is_same(*args.out)) {
+    out.copy_(*args.out);
   }
 
-  return result;
+  return out;
 }
 
 TORCH_IMPL_FUNC(mm_out_mlu)
-(const at::Tensor& self, const at::Tensor& mat2, const at::Tensor& result) {
-  addmm_out_mlu_impl(const_cast<at::Tensor&>(result), result, self, mat2, 0, 1);
+(const at::Tensor& self, const at::Tensor& mat2, const at::Tensor& out) {
+  addmm_out_mlu_impl(const_cast<at::Tensor&>(out), out, self, mat2, 0, 1);
 }
 
 TORCH_IMPL_FUNC(addmm_out_mlu)
@@ -322,9 +222,9 @@ TORCH_IMPL_FUNC(addmm_out_mlu)
  const at::Tensor& mat2,
  const at::Scalar& beta,
  const at::Scalar& alpha,
- const at::Tensor& result) {
+ const at::Tensor& out) {
   addmm_out_mlu_impl(
-      const_cast<at::Tensor&>(result), self, mat1, mat2, beta, alpha);
+      const_cast<at::Tensor&>(out), self, mat1, mat2, beta, alpha);
 }
 
 TORCH_IMPL_FUNC(_addmm_activation_out_mlu)
@@ -334,9 +234,9 @@ TORCH_IMPL_FUNC(_addmm_activation_out_mlu)
  const at::Scalar& beta,
  const at::Scalar& alpha,
  bool use_gelu,
- const at::Tensor& result) {
+ const at::Tensor& out) {
   addmm_out_mlu_impl(
-      const_cast<at::Tensor&>(result),
+      const_cast<at::Tensor&>(out),
       self,
       mat1,
       mat2,
