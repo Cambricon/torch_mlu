@@ -4834,7 +4834,6 @@
   - api: torch.cuda.Event
     corresponding MLU api: torch.mlu.Event
     supported: true
-    limitations: 目前不支持 blocking=True 的初始化。
 
   - api: torch.cuda.Event.elapsed_time
     corresponding MLU api: torch.mlu.Event.elapsed_time
