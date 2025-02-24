@@ -155,10 +155,6 @@ TEST(HostMemoryAllocator, check_empty_cache) {
         ptr, ctx, torch_mlu::getCurrentMLUStream()));
   }
 
-  // Even this test case without async operations, still get not ready
-  // from notify status query sometimes. This will cause this test case failed.
-  // So add a time sleep for notify query status ready.
-  std::this_thread::sleep_for(std::chrono::milliseconds(5));
   torch_mlu::MLUCachingHostAllocator_emptyCache();
   ASSERT_FALSE(torch_mlu::MLUCachingHostAllocator_recordEvent(
       ptr, ctx, torch_mlu::getCurrentMLUStream()));

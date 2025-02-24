@@ -30,12 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-// #include <iostream>
-#include <memory>
-#include "c10/util/Exception.h"
-#include "utils/common.h"
 #include "framework/core/MLUStream.h"
-#include "framework/hooks/MLUHooks.h"
 
 namespace torch_mlu {
 

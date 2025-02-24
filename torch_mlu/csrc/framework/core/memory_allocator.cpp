@@ -41,6 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "c10/core/Storage.h"
 
 #include "framework/core/caching_event.h"
+#include "framework/hooks/MLUHooks.h"
 #include "framework/core/memory_allocator.h"
 
 namespace torch_mlu {
