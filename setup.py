@@ -357,6 +357,7 @@ setup(
             "csrc/framework/core/MLUEvent.h",
             "csrc/framework/core/MLUStream.h",
             "csrc/framework/core/caching_allocator.h",
+            "csrc/framework/core/memory_allocator.h",
             "csrc/framework/generator/generator_impl.h",
             "csrc/framework/distributed/process_group_cncl.hpp",
             "csrc/utils/Export.h",
