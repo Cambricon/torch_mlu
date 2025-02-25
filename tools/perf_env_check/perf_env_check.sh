@@ -26,7 +26,7 @@ function ignore_check() {
 }
 
 function print_log() {
-  echo -e "\033[31m ERROR: Run following command: cd torch_mlu/tools/perf_env_check/; sudo bash set_env.sh\033[0m"
+  echo -e "\033[31m ERROR: Run the following command: cd torch_mlu/tools/perf_env_check/; sudo bash set_env.sh\033[0m"
 }
 
 OS_NAME=NULL
@@ -40,7 +40,7 @@ function checkOs() {
       return 1
     fi
   else
-    echo -e "\033[31m ERROR: Only Support Ubuntu and Debian.\033[0m"
+    echo -e "\033[31m ERROR: Only Ubuntu and Debian are supported.\033[0m"
     return 1
   fi
 }
@@ -55,7 +55,7 @@ function check_mount() {
     first_path=$(echo $path | awk -F '/' '{print $2}')
     if [[ $dataset_path =~ $path && $dataset_first_path == $first_path ]]
     then
-      echo -e "\033[33mWARNING: The $dataset_path is mounted, it may degrade performance.\033[0m"
+      echo -e "\033[33mWARNING: The $dataset_path is mounted, which may degrade performance.\033[0m"
       return 0
     fi
   done
@@ -91,14 +91,14 @@ function CheckCPUExclusiveDocker() {
       command = $11
 
       if (user != "root" && user >= 1000 && pid >= 1000 && command !~ "^/sbin/" && command !~ "^/lib/" && command !~ "^/usr/" && command !~ "^/bin/") {
-        printf("\033[1;31mThe following processes are not system processes and do not belong to the current user, please check if you need to kill them: \033[0m")
+        printf("\033[1;31mThe following processes are not system processes and do not belong to the current user, please check whether you need to terminate them: \033[0m")
       }
   }')
   if [ -z "$non_sys_proc" ]; then
     echo -e "\033[1;32mNo non-system process found \033[0m"
     return 0
   else
-    echo -e "\033[1;31mFollowing processes are determined to be non-system processes and do not belong to the current user, please check if you need to kill them:\033[0m"
+    echo -e "\033[1;31mFollowing processes are determined to be non-system processes and do not belong to the current user, please check whether you need to terminate them:\033[0m"
     ps aux | awk ' NR > 1{
       pid = $2
       user = $1
@@ -122,12 +122,12 @@ function CheckCPUExclusivePhysicalMachine () {
     filtered_users=$(echo "$active_users" | grep -v "^root$")
 
     if [ -n "$filtered_users" ]; then
-      echo "There is only one active user on the physical machine: $filtered_users"
+      echo "There is only one active user on the physical machine: $filtered_users."
     else
-      echo "There are no non-system users on the physical machine."
+      echo "No non-system users on the physical machine."
     fi
   else
-    echo -e "\033[31m  There are multiple active users on the physical machine, please make sure you are the only non-system active user on this machine. \033[0m"
+    echo -e "\033[31m There are multiple active users on the physical machine, please make sure you are the only non-system active user on this machine. \033[0m"
     ignore_check
   fi
 
@@ -153,21 +153,21 @@ function checkCPUPerfMode() {
     sys_version=$(uname -r | awk -F '-generic' '{print $1}')
     bool_match=$(echo $installed_version | grep $sys_version)
     if [ "$bool_match" == "" ]; then
-      echo -e "\033[31m  ERROR: linux-tools-$(uname -r) does not match os kernel version. \033[0m"
+      echo -e "\033[31m ERROR: linux-tools-$(uname -r) does not match os kernel version. \033[0m"
     else
-      echo -e "\033[32m  linux-tools version matches os kernel version! \033[0m"
+      echo -e "\033[32m linux-tools version matches os kernel version! \033[0m"
     fi
   elif [[ ${OS_NAME}=="Debian"* ]]; then
     : 
   else
-    echo -e "\033[31m  ERROR: Check CPU Performance Mode Failed. Only Support Ubuntu and Debian. \033[0m"
+    echo -e "\033[31m ERROR: Check CPU Performance Mode Failed. Only Ubuntu and Debian are supported. \033[0m"
     ignore_check
   fi
   if [[ -e /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor ]];then
     performance_mode=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)
     if [ "$performance_mode" != "performance" ]
     then
-      echo -e "\033[31m  ERROR: The CPU $performance_mode Mode Enabled! \033[0m"
+      echo -e "\033[31m ERROR: The CPU $performance_mode Mode Enabled! \033[0m"
       print_log
       ignore_check "ignore_check"
     else
@@ -186,7 +186,7 @@ function checkCPUPerfMode() {
 function irqbalanceCheck() {
   echo -e "\033[1;34mRunning irqbalance checks: \033[0m"
   if [ -f "/.dockerenv" ]; then
-    echo -e "\033[1;31mDocker container env found, using irqbalance inside a container is not recommanded, please running irqbalance on host system. Skipping this check...\033[0m"
+    echo -e "\033[1;31mDocker container env found, using irqbalance inside a container is not recommended, please running irqbalance on host system. Skipping this check...\033[0m"
     return 1
   fi
   if [[ -n "$is_VM" ]];then
@@ -214,11 +214,11 @@ function irqbalanceCheck() {
     # check whether correct version of irqbalance is installed
     irqB_version=$(dpkg -l | grep irqbalance | awk '{print($3)}' | cut -d "-" -f 1)
     if [ ! -n "$irqB_version" ]; then
-      echo -e "\033[31mERROR: irqbalance is not installed. \033[0m"
+      echo -e "\033[31m ERROR: irqbalance is not installed. \033[0m"
       ignore_check
     elif test "$(echo ${irqB_version} ${irqbalance_min_version} | tr " " "\n" | sort -V | head -n 1)" != "1.5.0"
     then
-      echo -e "\033[31mERROR: irqbalance minimal version is 1.5.0, please upgrade irqbalance\033[0m"
+      echo -e "\033[31m ERROR: irqbalance minimum version is 1.5.0, please upgrade irqbalance\033[0m"
       ignore_check
     else
       irqbalance_status=$(service irqbalance status)
@@ -230,7 +230,7 @@ function irqbalanceCheck() {
       fi
     fi
   else
-    echo -e "\033[31mERROR: Check irqbalance status Failed. Only Support Ubuntu and Debian. \033[0m"
+    echo -e "\033[31m ERROR: Check irqbalance status Failed. Only Support Ubuntu and Debian. \033[0m"
     ignore_check
   fi
 }
@@ -288,5 +288,5 @@ else
   checkCPUPerfMode
   [[ $? -eq 0 ]] && { echo -e "\033[1;32mCPU performance mode checks passed! \033[0m"; } || { echo -e "\033[1;31mCPU performance mode checks failed! Continue other checks...\033[0m";}
   irqbalanceCheck
-  [[ $? -eq 0 ]] && { echo -e "\033[1;32mIrqbalance checks passed! \033[0m"; } || { echo -e "\033[1;31mIrqbalance checks filed! Continue other checks...\033[0m";}
+  [[ $? -eq 0 ]] && { echo -e "\033[1;32mIrqbalance checks passed! \033[0m"; } || { echo -e "\033[1;31mIrqbalance checks failed! Continue other checks...\033[0m";}
 fi
