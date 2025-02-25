@@ -224,11 +224,12 @@ class TestOps(TestCase):
             for value in value_list:
                 x_cpu = torch.testing.make_tensor(
                     (1, 3, 224, 224), dtype=torch.float16, device="cpu"
-                ).to(fp8_dtype)
-                out_cpu = torch.fill_(x_cpu, value)
-                out_mlu_1 = torch.fill_(x_cpu.mlu(), value)
-                out_mlu_2 = torch.fill_(x_cpu.mlu(), torch.tensor(value).mlu())
-                out_mlu_3 = x_cpu.mlu().fill_(value)
+                )
+                x_cpu_fp8 = x_cpu.to(fp8_dtype)
+                out_cpu = torch.fill_(x_cpu, value).to(fp8_dtype)
+                out_mlu_1 = torch.fill_(x_cpu_fp8.mlu(), value)
+                out_mlu_2 = torch.fill_(x_cpu_fp8.mlu(), torch.tensor(value).mlu())
+                out_mlu_3 = x_cpu_fp8.mlu().fill_(value)
                 self.assertTensorsEqual(
                     out_cpu.float(), out_mlu_1.cpu().float(), 0, use_MSE=True
                 )
