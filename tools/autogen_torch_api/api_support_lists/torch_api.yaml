@@ -12519,13 +12519,13 @@
     supported: true
 
   - api: torch.TypedStorage.float8_e4m3fn
-    supported: false
+    supported: true
 
   - api: torch.TypedStorage.float8_e4m3fnuz
     supported: false
 
   - api: torch.TypedStorage.float8_e5m2
-    supported: false
+    supported: true
 
   - api: torch.TypedStorage.float8_e5m2fnuz
     supported: false
@@ -12676,13 +12676,13 @@
     limitations: 参考torch.UntypedStorage。
 
   - api: torch.UntypedStorage.float8_e4m3fn
-    supported: false
+    supported: true
 
   - api: torch.UntypedStorage.float8_e4m3fnuz
     supported: false
 
   - api: torch.UntypedStorage.float8_e5m2
-    supported: false
+    supported: true
 
   - api: torch.UntypedStorage.float8_e5m2fnuz
     supported: false
