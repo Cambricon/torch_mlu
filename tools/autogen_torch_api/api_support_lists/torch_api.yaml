@@ -232,6 +232,7 @@
 
   - api: torch.add
     supported: true
+    limitations: 如果dense tensor与sparse tensor相加，仅支持0<sparse_dim<=2。
 
   - api: torch.addbmm
     supported: true
@@ -2965,9 +2966,11 @@
 
   - api: torch.Tensor.add
     supported: true
+    limitations: 如果dense tensor与sparse tensor相加，仅支持0<sparse_dim<=2。
 
   - api: torch.Tensor.add_
     supported: true
+    limitations: 如果dense tensor与sparse tensor相加，仅支持0<sparse_dim<=2。
 
   - api: torch.Tensor.addbmm
     supported: true

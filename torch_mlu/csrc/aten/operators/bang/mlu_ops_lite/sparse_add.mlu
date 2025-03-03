@@ -1,0 +1,118 @@
+/*************************************************************************
+ * Copyright (C) [2025] by Cambricon, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+#include "sparse_add.h"
+#include "sparse_add_kernel.h"
+
+NAMESPACE_BANGC_KERNELS_BEGIN
+
+template <typename T>
+cnnlDataType_t getCnnlTypeName() {
+  if (std::is_same<T, float>::value) {
+    return CNNL_DTYPE_FLOAT;
+  } else if (std::is_same<T, bang_half_t>::value) {
+    return CNNL_DTYPE_HALF;
+  } else if (std::is_same<T, bang_bfloat16_t>::value) {
+    return CNNL_DTYPE_BFLOAT16;
+  } else if (std::is_same<T, int32_t>::value) {
+    return CNNL_DTYPE_INT32;
+  } else if (std::is_same<T, int64_t>::value) {
+    return CNNL_DTYPE_INT64;
+  }
+  return CNNL_DTYPE_FLOAT;
+}
+
+template <typename IndiceType, typename ValueType>
+bangcKernelsStatus_t BANGC_KERNELS_WIN_API
+mluSparseAddDense(const cnnlHandle_t handle,
+                  IndiceType *sparse_indices,
+                  ValueType *sparse_values,
+                  ValueType *dense_tensor,
+                  const float alpha,
+                  const size_t nnz,
+                  const int64_t *tensor_shape,
+                  const int sparse_dim,
+                  const int dense_dim,
+                  const size_t output_num,
+                  ValueType *output) {
+  // set job type
+  int ordinal = -1;
+  int cluster_num;
+  int core_dim;
+  cnrtGetDevice(&ordinal);
+  cnrtDeviceGetAttribute(&core_dim, cnrtAttrMcorePerCluster, ordinal);
+  cnrtDeviceGetAttribute(&cluster_num, cnrtAttrMaxClusterPerUnionLimitTask,
+                         ordinal);
+  cnrtFunctionType_t k_type = cnrtFuncTypeUnion1;
+  cnrtDim3_t k_dim{.x = (uint32_t)core_dim, .y = (uint32_t)cluster_num, .z = 1};
+
+  // copy dense_tensor to output
+  if (dense_tensor != output) {
+    cnnlTensorDescriptor_t dense_tensor_desc;
+    cnnlTensorDescriptor_t output_desc;
+    int64_t dims[1] = {static_cast<int64_t>(output_num)};
+    cnnlDataType_t dtype = getCnnlTypeName<ValueType>();
+    cnnlCreateTensorDescriptor(&dense_tensor_desc);
+    cnnlCreateTensorDescriptor(&output_desc);
+    cnnlSetTensorDescriptor_v2(dense_tensor_desc, CNNL_LAYOUT_ARRAY, dtype,
+                               1, dims);
+    cnnlSetTensorDescriptor_v2(output_desc, CNNL_LAYOUT_ARRAY, dtype, 1, dims);
+    cnnlCopy_v2(handle, dense_tensor_desc, dense_tensor, output_desc, output,
+                nullptr, 0);
+    cnnlDestroyTensorDescriptor(dense_tensor_desc);
+    cnnlDestroyTensorDescriptor(output_desc);
+  }
+
+  // output_dim = sparse_dim + dense_dim
+  // once compute in dense_size, gap_size is two compute gap in output
+  size_t dense_size = 1;
+  for (int i = sparse_dim; i < sparse_dim + dense_dim; i++) {
+    dense_size *= tensor_shape[i];
+  }
+  size_t gap_size = dense_size;
+  for (int i = 1; i < sparse_dim; i++) {
+    gap_size *= tensor_shape[i];
+  }
+
+  // launch kernel
+  cnrtQueue_t queue;
+  cnnlGetQueue(handle, &queue);
+  unionApplySparseAddDense<<<k_dim, k_type, queue>>>(
+      BANG_UNWRAP_T(sparse_indices), BANG_UNWRAP_T(sparse_values),
+      BANG_UNWRAP_T(output), alpha, nnz, sparse_dim, dense_size, gap_size);
+  return BANGC_KERNELS_STATUS_SUCCESS;
+}
+
+#define IMPL_MLU_APPLY_SPARSE_ADD(IndiceType, ValueType)                       \
+  template bangcKernelsStatus_t BANGC_KERNELS_WIN_API mluSparseAddDense(       \
+      const cnnlHandle_t, IndiceType *, ValueType *, ValueType *,              \
+      const float, const size_t, const int64_t *, const int, const int,        \
+      const size_t, ValueType *)
+
+IMPL_MLU_APPLY_SPARSE_ADD(int32_t, float);
+IMPL_MLU_APPLY_SPARSE_ADD(int32_t, bang_half_t);
+IMPL_MLU_APPLY_SPARSE_ADD(int32_t, bang_bfloat16_t);
+IMPL_MLU_APPLY_SPARSE_ADD(int64_t, float);
+IMPL_MLU_APPLY_SPARSE_ADD(int64_t, bang_half_t);
+IMPL_MLU_APPLY_SPARSE_ADD(int64_t, bang_bfloat16_t);
+
+NAMESPACE_BANGC_KERNELS_END

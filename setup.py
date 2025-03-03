@@ -37,16 +37,6 @@ RUN_BUILD_USE_PYTHON = bool(
     or (os.getenv("USE_PYTHON").upper() not in ["OFF", "0", "NO", "FALSE", "N"])
 )
 
-RUN_BUILD_USE_BANG = bool(
-    (os.getenv("USE_BANG") is None)
-    or (os.getenv("USE_BANG").upper() not in ["OFF", "0", "NO", "FALSE", "N"])
-)
-
-RUN_BUILD_USE_MLUOP = bool(
-    (os.getenv("USE_MLUOP") is None)
-    or (os.getenv("USE_MLUOP").upper() not in ["OFF", "0", "NO", "FALSE", "N"])
-)
-
 for i, arg in enumerate(sys.argv):
     if arg == "clean":
         RUN_BUILD_CORE_LIBS = False
@@ -111,10 +101,11 @@ def make_relative_rpath(path):
 # Generate parts of header/source files in torch_mlu automatically
 def gen_torch_mlu_code():
     order = "python -m codegen.gen_mlu_stubs --source_yaml ./codegen/mlu_functions.yaml"
-    if RUN_BUILD_USE_BANG:
-        order += " --use_bang"
-    if RUN_BUILD_USE_MLUOP:
-        order += " --use_mluop"
+    os.system(order)
+
+
+def prepare_mlu_ops_lite():
+    order = f"python {cwd}/tools/mlu_ops_lite/prepare_mlu_ops_lite.py"
     os.system(order)
 
 
@@ -140,8 +131,6 @@ def build_libs():
     # set up the gtest compile runtime environment.
     my_env["BUILD_TEST"] = "ON" if _check_env_flag("BUILD_TEST") else "OFF"
     my_env["USE_PYTHON"] = "OFF" if _check_env_off_flag("USE_PYTHON") else "ON"
-    my_env["USE_BANG"] = "OFF" if _check_env_off_flag("USE_BANG") else "ON"
-    my_env["USE_MLUOP"] = "OFF" if _check_env_off_flag("USE_MLUOP") else "ON"
     my_env["USE_CNCL"] = "OFF" if _check_env_off_flag("USE_CNCL") else "ON"
     my_env["USE_PROFILE"] = "OFF" if _check_env_off_flag("USE_PROFILE") else "ON"
     my_env["USE_MAGICMIND"] = "ON" if _check_env_flag("USE_MAGICMIND") else "OFF"
@@ -268,9 +257,7 @@ shutil.copy(base_dir + "/cmake/modules/FindCNNL.cmake", modules_dir)
 shutil.copy(base_dir + "/cmake/modules/FindCNRT.cmake", modules_dir)
 shutil.copy(base_dir + "/cmake/modules/FindCNDRV.cmake", modules_dir)
 shutil.copy(base_dir + "/cmake/modules/FindCNPAPI.cmake", modules_dir)
-
-if _check_env_flag("USE_MLUOP"):
-    shutil.copy(base_dir + "/cmake/modules/FindMLUOP.cmake", modules_dir)
+shutil.copy(base_dir + "/cmake/modules/FindMLUOP.cmake", modules_dir)
 
 # Replace pre-commit of .git to use cpplint
 if os.path.exists(os.path.join(cwd, ".git")):
@@ -286,6 +273,9 @@ if os.path.exists(os.path.join(cwd, ".git")):
 # Generate parts of torch_mlu code
 if RUN_AUTO_GEN_TORCH_MLU_CODE:
     gen_torch_mlu_code()
+
+# prepare mlu_ops_lite code
+prepare_mlu_ops_lite()
 
 # Build torch_mlu Core Libs
 if RUN_BUILD_CORE_LIBS:

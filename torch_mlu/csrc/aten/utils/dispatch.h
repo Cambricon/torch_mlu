@@ -192,6 +192,19 @@ namespace torch_mlu {
     }                                                                    \
   }()
 
+#define AT_DISPATCH_MLU_FLOAT_HALF_AND_BFLOAT16(TYPE, NAME, ...)        \
+  [&] {                                                                 \
+    constexpr const char* at_dispatch_name = NAME;                      \
+    switch (TYPE) {                                                     \
+      AT_DISPATCH_CASE_MLU(at::ScalarType::Half, at::Half, __VA_ARGS__) \
+      AT_DISPATCH_CASE_MLU(at::ScalarType::Float, float, __VA_ARGS__)   \
+      AT_DISPATCH_CASE_MLU(                                             \
+          at::ScalarType::BFloat16, at::BFloat16, __VA_ARGS__)          \
+      default:                                                          \
+        AT_ERROR(#NAME, " not implemented for '", toString(TYPE), "'"); \
+    }                                                                   \
+  }()
+
 #define AT_DISPATCH_MLU_FLOATING_TYPES_AND_HALF(TYPE, NAME, ...)        \
   [&] {                                                                 \
     constexpr const char* at_dispatch_name = NAME;                      \

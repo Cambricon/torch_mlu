@@ -1,0 +1,12 @@
+29c29,31
+< #define NAMESPACE_BANGC_KERNELS_BEGIN namespace bangc_kernels {
+---
+> #define NAMESPACE_BANGC_KERNELS_BEGIN \
+>   namespace torch_mlu {               \
+>   namespace ops {
+73c75,77
+< #define NAMESPACE_BANGC_KERNELS_END }
+---
+> #define NAMESPACE_BANGC_KERNELS_END \
+>   }                                 \
+>   }

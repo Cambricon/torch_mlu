@@ -1,0 +1,2 @@
+# mlu_ops_lite kernel name, copied from mlu ops respository
+- mluSparseAddDense

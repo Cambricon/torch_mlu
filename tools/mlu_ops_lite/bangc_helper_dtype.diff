@@ -1,0 +1,19 @@
+29c29
+<  * to bridge Eigen:: type and BANGC type
+---
+>  * to bridge aten type and BANGC type
+32a33,34
+> #include <c10/util/BFloat16.h>
+> #include <c10/util/Half.h>
+73,77d74
+< namespace Eigen {
+< struct half;
+< struct bfloat16;
+< }  // namespace Eigen
+< 
+86,87c83,84
+< BANG_WRAP_TYPE_FROM_TO(Eigen::half, bang_half_t);
+< BANG_WRAP_TYPE_FROM_TO(Eigen::bfloat16, bang_bfloat16_t);
+---
+> BANG_WRAP_TYPE_FROM_TO(c10::Half, bang_half_t);
+> BANG_WRAP_TYPE_FROM_TO(c10::BFloat16, bang_bfloat16_t);

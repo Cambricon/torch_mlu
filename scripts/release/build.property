@@ -11,5 +11,8 @@
     "mluops": ["release", "1.5.1-1"],
     "benchmark": ["release", "0.7.1-torch1.13.1"]
   },
+  "src_requires": {
+    "mluops-lite": ["release", "1.5.1"]
+  },
   "package_type": ["whl", "docker"]
 }

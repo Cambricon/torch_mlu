@@ -232,5 +232,12 @@ at::Tensor cnnl__copy_from_and_resize_sparse(
   return dst;
 }
 
+at::sparse::SparseTensor& cnnl_copy_sparse_to_sparse__sparse(
+    at::sparse::SparseTensor& self,
+    const at::sparse::SparseTensor& src,
+    bool non_blocking) {
+  return at::native::copy_sparse_(self, src, non_blocking);
+}
+
 } // namespace ops
 } // namespace torch_mlu
