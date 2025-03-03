@@ -134,8 +134,6 @@ function build_ext_lib() {
                          -DCMAKE_BUILD_TYPE=$cmake_build_type \
                          -DBUILD_TEST="$BUILD_TEST" \
                          -DUSE_PYTHON="$USE_PYTHON" \
-                         -DUSE_BANG="$USE_BANG" \
-                         -DUSE_MLUOP="$USE_MLUOP" \
                          -DUSE_CNCL="$USE_CNCL" \
                          -DUSE_PROFILE="$USE_PROFILE" \
                          -DUSE_MAGICMIND="$USE_MAGICMIND" \

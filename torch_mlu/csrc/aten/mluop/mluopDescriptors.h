@@ -29,9 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
-#ifdef USE_MLUOP
 
 #include "mluopCommonDescriptors.h"
 #include "mluopTensorDescriptors.h"
-
-#endif

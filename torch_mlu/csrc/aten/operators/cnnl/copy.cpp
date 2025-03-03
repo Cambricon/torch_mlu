@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <ATen/ExpandUtils.h>
 #include <ATen/MemoryOverlap.h>
+#include <ATen/native/SparseTensorUtils.h>
 #include "framework/core/tensor_impl.h"
 #include "aten/operators/cnnl/cnnl_kernel.h"
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
@@ -203,6 +204,13 @@ at::Tensor cnnl__copy_from_and_resize(
   }
   cnnl_copy_(const_cast<at::Tensor&>(dst), self);
   return dst;
+}
+
+at::sparse::SparseTensor& cnnl_copy_sparse_to_sparse__sparse(
+    at::sparse::SparseTensor& self,
+    const at::sparse::SparseTensor& src,
+    bool non_blocking) {
+  return at::native::copy_sparse_(self, src, non_blocking);
 }
 
 } // namespace ops

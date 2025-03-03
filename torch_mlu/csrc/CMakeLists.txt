@@ -74,29 +74,27 @@ message(STATUS "pybind11 include dirs: " "${pybind11_INCLUDE_DIRS}")
 list(APPEND DEPENDENT_INCLUDE_DIRS ${pybind11_INCLUDE_DIRS})
 
 # Set bangc compile flags
-if (USE_BANG)
-    # Find bang files and libs
-    find_package(BANG)
-    if(NOT BANG_FOUND)
-    	message(FATAL_ERROR "BANG cannot be found !!!!!")
-    endif()
-	# cncc gflags
-    set(BANG_CNCC_FLAGS "-Wall -Werror -fPIC -std=c++17 -pthread")
-
-    set(cmake_build_type "")
-    string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type)
-    if(${cmake_build_type} MATCHES "debug")
-        set(BANG_CNCC_FLAGS "${BANG_CNCC_FLAGS} -O3")
-    else()
-        set(BANG_CNCC_FLAGS "${BANG_CNCC_FLAGS} -O3 -DNDEBUG")
-    endif()
-    get_filename_component(C_COMPILER_DIR ${CMAKE_C_COMPILER} DIRECTORY)
-    set(BANG_CNCC_FLAGS "${BANG_CNCC_FLAGS}" " --bang-mlu-arch=mtp_372"
-                                             " --bang-mlu-arch=mtp_592"
-					     " --bang-mlu-arch=mtp_613"
-					     " --no-neuware-version-check"
-				             " --gcc-toolchain=${C_COMPILER_DIR}/../")
+# Find bang files and libs
+find_package(BANG)
+if(NOT BANG_FOUND)
+  message(FATAL_ERROR "BANG cannot be found !!!!!")
 endif()
+# cncc gflags
+set(BANG_CNCC_FLAGS "-Wall -Werror -fPIC -std=c++17 -pthread")
+
+set(cmake_build_type "")
+string(TOLOWER "${CMAKE_BUILD_TYPE}" cmake_build_type)
+if(${cmake_build_type} MATCHES "debug")
+    set(BANG_CNCC_FLAGS "${BANG_CNCC_FLAGS} -O3")
+else()
+    set(BANG_CNCC_FLAGS "${BANG_CNCC_FLAGS} -O3 -DNDEBUG")
+endif()
+get_filename_component(C_COMPILER_DIR ${CMAKE_C_COMPILER} DIRECTORY)
+set(BANG_CNCC_FLAGS "${BANG_CNCC_FLAGS}" " --bang-mlu-arch=mtp_372"
+                                          " --bang-mlu-arch=mtp_592"
+                                          " --bang-mlu-arch=mtp_613"
+                                          " --no-neuware-version-check"
+                                          " --gcc-toolchain=${C_COMPILER_DIR}/../")
 
 # Set cndev header files and libs
 find_package(CNDEV)
@@ -129,7 +127,7 @@ endif()
 
 # Find mlu_op header files and libs
 find_package(MLUOP)
-if (USE_MLUOP AND MLUOP_FOUND)
+if (MLUOP_FOUND)
     list(APPEND DEPENDENT_INCLUDE_DIRS ${MLUOP_INCLUDE_DIRS})
     list(APPEND DEPENDENT_LIBRARIES ${MLUOP_LIBRARIES})
     add_definitions("-DUSE_MLUOP")
@@ -223,12 +221,12 @@ add_subdirectory(aten)
 add_subdirectory(framework)
 
 # Build Bangc Kernel
-if (USE_BANG)
-    # Set the header files' path of bangc kernel
-    # Build bangc op
-    file(GLOB_RECURSE bang_op_files FOLLOW_SYMLINKS "${CMAKE_CURRENT_SOURCE_DIR}/aten/operators/bang/internal/*.mlu" "${CMAKE_CURRENT_SOURCE_DIR}/aten/utils/sleep.mlu")
-    bang_add_library(bangc SHARED "${bang_op_files}")
-endif()
+# Set the header files' path of bangc kernel
+# Build bangc op
+file(GLOB_RECURSE bang_op_files FOLLOW_SYMLINKS "${CMAKE_CURRENT_SOURCE_DIR}/aten/operators/bang/internal/*.mlu"
+                                                "${CMAKE_CURRENT_SOURCE_DIR}/aten/utils/sleep.mlu"
+                                                "${CMAKE_CURRENT_SOURCE_DIR}/aten/operators/bang/mlu_ops_lite/*.mlu")
+bang_add_library(bangc SHARED "${bang_op_files}")
 
 # Compile torch_mlu_python Library
 if(NOT TORCH_MLU_INSTALL_LIB_DIR)
@@ -263,10 +261,9 @@ if(USE_PROFILE AND CNPAPI_FOUND)
     target_link_libraries(torch_mlu kineto_mlu)
 endif()
 
-if(USE_BANG)
-    target_link_libraries(torch_mlu ${DEPENDENT_LIBRARIES} bangc)
-    install(TARGETS bangc DESTINATION "${TORCH_MLU_INSTALL_LIB_DIR}")
-endif()
+# link bangc
+target_link_libraries(torch_mlu ${DEPENDENT_LIBRARIES} bangc)
+install(TARGETS bangc DESTINATION "${TORCH_MLU_INSTALL_LIB_DIR}")
 
 install(TARGETS torch_mlu DESTINATION "${TORCH_MLU_INSTALL_LIB_DIR}")
 
@@ -286,7 +283,7 @@ if (USE_PYTHON)
       target_compile_options(torch_mlu_python PRIVATE -fvisibility-inlines-hidden)
     endif()
     target_link_libraries(torch_mlu_python torch_mlu ${DEPENDENT_LIBRARIES})
-    if(USE_MLUOP AND MLUOP_FOUND)
+    if(MLUOP_FOUND)
         target_link_libraries(torch_mlu_python ${MLUOP_LIBRARIES})
     endif()
     set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/python/ProcessGroupCNCL.cpp PROPERTIES COMPILE_FLAGS "-fvisibility=hidden")

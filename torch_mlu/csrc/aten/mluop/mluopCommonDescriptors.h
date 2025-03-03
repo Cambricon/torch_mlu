@@ -29,7 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
-#ifdef USE_MLUOP
 
 #include <ATen/ATen.h>
 #include <vector>
@@ -79,5 +78,3 @@ class TORCH_MLU_API MluOpDescriptor {
 };
 
 } // namespace torch_mlu
-
-#endif

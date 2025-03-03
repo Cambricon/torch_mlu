@@ -29,8 +29,6 @@ class TestGenBackendStubs(expecttest.TestCase):
             fp.flush()
             options.source_yaml = fp.name
             options.dry_run = True
-            options.use_bang = True
-            options.use_mluop = True
             run(options)
 
     def get_errors_from_gen_backend_stubs(self, yaml_str: str) -> str:
@@ -40,8 +38,6 @@ class TestGenBackendStubs(expecttest.TestCase):
             try:
                 options.source_yaml = fp.name
                 options.dry_run = True
-                options.use_bang = True
-                options.use_mluop = True
                 run(options)
             except AssertionError as e:
                 # Scrub out the temp file name from any error messages to simplify assertions.
@@ -191,7 +187,16 @@ custom:
   - func: my_op2(Tensor a) -> Tensor
     derived_type: bang
     custom_autograd: True
-    dispatch: PrivateUse1, SparsePrivateUse1"""
+    dispatch: PrivateUse1, SparsePrivateUse1
+  - func: my_op3(Tensor a) -> Tensor
+    dispatch: PrivateUse1, SparsePrivateUse1
+    derived_type:
+      PrivateUse1: cnnl
+      SparsePrivateUse1: bang
+  - func: my_op4(Tensor a) -> Tensor
+    dispatch: PrivateUse1, SparsePrivateUse1
+    derived_type:
+      SparsePrivateUse1: bang"""
         self.assert_success_from_gen_backend_stubs(yaml_str)
 
     def test_invalid_dispatch(self) -> None:

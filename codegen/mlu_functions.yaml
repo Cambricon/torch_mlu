@@ -52,6 +52,8 @@ aten:
   - func: cat.out
     structured: True
   - func: copy_
+  - func: copy_sparse_to_sparse_
+    dispatch: SparsePrivateUse1
   - func: lstm.input
     custom_autograd: True
   - func: lstm.data
@@ -421,6 +423,10 @@ aten:
   - func: add.out
     structured: true
     structured_inherits: TensorIteratorBase
+    dispatch: PrivateUse1, SparsePrivateUse1
+    derived_type:
+      PrivateUse1: cnnl
+      SparsePrivateUse1: bang
   - func: addcdiv.out
     structured: true
     structured_inherits: TensorIteratorBase

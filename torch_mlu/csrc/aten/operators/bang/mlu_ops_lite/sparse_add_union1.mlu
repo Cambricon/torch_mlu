@@ -1,0 +1,341 @@
+/*************************************************************************
+ * Copyright (C) [2024] by Cambricon, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sublicense, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *************************************************************************/
+#include "sparse_add.h"
+#include "sparse_add_kernel.h"
+
+__nram__ int8_t nram_buff[MAX_NRAM_SIZE];
+
+// func for atomic
+template <typename T>
+__mlu_func__ void atomic_add_func(T *dst,
+                                  T *src,
+                                  uint32_t element_count,
+                                  bool is_async) {
+  if (is_async) {
+    __bang_atomic_reduce_add_async(dst, src, element_count);
+  } else {
+    __bang_atomic_reduce_add(dst, src, element_count);
+  }
+}
+
+template <>
+__mlu_func__ void atomic_add_func(bfloat16_t *dst,
+                                  bfloat16_t *src,
+                                  uint32_t element_count,
+                                  bool is_async) {
+#if __BANG_ARCH__ > 500
+  if (is_async) {
+    __bang_atomic_reduce_add_async(dst, src, element_count);
+  } else {
+    __bang_atomic_reduce_add(dst, src, element_count);
+  }
+#endif
+}
+
+
+// funcs for pipline
+template <typename IndiceType, typename ValueType>
+__mlu_func__ void ioAtomicReduceAdd(IndiceType *indices,
+                                    ValueType *output,
+                                    ValueType *values_nram,
+                                    size_t dense_size,
+                                    int atomic_size) {
+  for (size_t i = 0; i < atomic_size; i++) {
+    IndiceType output_idx = __load_nram((IndiceType *)indices + i);
+    size_t value_idx = i * dense_size;
+    atomic_add_func((ValueType *)output + (IndiceType)output_idx,
+                    (ValueType *)values_nram + value_idx, dense_size, true);
+  }
+}
+
+template <typename T>
+__mlu_func__ void comMulAlpha(T *dst,
+                              float alpha,
+                              int size) {
+  if (alpha != 1.0f) {
+    __bang_mul_scalar((T *)dst, (T *)dst, (T)alpha, size);
+  }
+}
+
+template <>
+__mlu_func__ void comMulAlpha(bfloat16_t *dst,
+                              float alpha,
+                              int size) {
+#if __BANG_ARCH__ > 500
+  if (alpha != 1.0f) {
+    __bang_mul_scalar((bfloat16_t *)dst, (bfloat16_t *)dst,
+                      (bfloat16_t)alpha, size);
+  }
+#endif
+}
+
+template <typename T>
+__mlu_func__ void comFlatternIndices(T *indices_row_nram,
+                                     T *indices_col_nram,
+                                     T dense_size,
+                                     T gap_size,
+                                     int compute_size,
+                                     int sparse_dim) {
+  if (sparse_dim == 1 && dense_size != 1) {
+    __bang_mul_scalar((T *)indices_row_nram, (T *)indices_row_nram,
+                      (T)gap_size, compute_size);
+  } else if (sparse_dim == 2) {
+    if (dense_size != 1) {
+      __bang_mul_scalar((T *)indices_col_nram, (T *)indices_col_nram,
+                        (T)dense_size, compute_size);
+    }
+    __bang_fusion(FUSION_FMA, (T *)indices_row_nram, (T *)indices_row_nram,
+                  (T)gap_size, (T *)indices_col_nram, compute_size,
+                  compute_size);
+  }
+}
+
+template <>
+__mlu_func__ void comFlatternIndices(int64_t *indices_row_nram,
+                                     int64_t *indices_col_nram,
+                                     int64_t dense_size,
+                                     int64_t gap_size,
+                                     int compute_size,
+                                     int sparse_dim) {
+  if (sparse_dim == 1 && dense_size != 1) {
+    __bang_mul_scalar((int64_t *)indices_row_nram, (int64_t *)indices_row_nram,
+                      gap_size, compute_size);
+  } else if (sparse_dim == 2) {
+    if (dense_size != 1) {
+      __bang_mul_scalar((int64_t *)indices_col_nram,
+                        (int64_t *)indices_col_nram, dense_size, compute_size);
+    }
+    __bang_mul_scalar((int64_t *)indices_row_nram,
+                      (int64_t *)indices_row_nram, gap_size, compute_size);
+    __bang_add((int64_t *)indices_row_nram, (int64_t *)indices_row_nram,
+               (int64_t *)indices_col_nram, compute_size);
+  }
+}
+
+template <typename IndiceType, typename ValueType>
+__mlu_func__ void ldIndicesValues(IndiceType *indices_row_gdram,
+                                  IndiceType *indices_col_gdram,
+                                  ValueType *values_gdram,
+                                  IndiceType *indices_row_nram,
+                                  IndiceType *indices_col_nram,
+                                  ValueType *values_nram,
+                                  size_t dense_size,
+                                  int load_size,
+                                  int sparse_dim) {
+  __memcpy_async(indices_row_nram, indices_row_gdram,
+                 load_size * sizeof(IndiceType), GDRAM2NRAM);
+  if (sparse_dim == 2) {
+    __memcpy_async(indices_col_nram, indices_col_gdram,
+                   load_size * sizeof(IndiceType), GDRAM2NRAM);
+  }
+  __memcpy_async(values_nram, values_gdram,
+                 load_size * dense_size * sizeof(ValueType),
+                 GDRAM2NRAM);
+}
+
+
+// funcs for split nnz or dense_size
+template <typename IndiceType, typename ValueType>
+__mlu_func__ void splitNnzKernel(IndiceType *indices,
+                                 ValueType *values,
+                                 ValueType *output,
+                                 const float alpha,
+                                 const size_t nnz,
+                                 const int sparse_dim,
+                                 const size_t dense_size,
+                                 const size_t gap_size) {
+  // per core compute
+  size_t core_deal_rem = nnz % taskDim;
+  size_t core_deal     = nnz / taskDim + (taskId < core_deal_rem);
+  if (core_deal == 0) {
+    return;
+  }
+  size_t core_begin = taskId * core_deal +
+                      (taskId >= core_deal_rem ? core_deal_rem : 0);
+  // when sparse_dim == 1, index is (0, x)
+  IndiceType *indices_row = (IndiceType *)indices;
+  IndiceType *indices_col = (IndiceType *)indices + (sparse_dim == 2 ? nnz : 0);
+
+  IndiceType *indices_row_core_gdram = (IndiceType *)indices_row + core_begin;
+  IndiceType *indices_col_core_gdram = (IndiceType *)indices_col + core_begin;
+  ValueType *values_core_gdram = (ValueType *)values + core_begin * dense_size;
+
+  /*
+   ------------------------------------ --------------------------------
+  |       indices_nram_ping/pong       |       value_nram_ping/pong     |
+  |2 * sparse_dim * x * eof(IndiceType)|  2 * x * ds * sizeof(ValueType)|
+   ------------------------------------ --------------------------------
+  */
+  int max_repeat_deal = MAX_NRAM_SIZE / (2 * sparse_dim * sizeof(IndiceType) +
+                        2 * dense_size * sizeof(ValueType));
+  size_t repeat_rem = core_deal % max_repeat_deal;
+  size_t repeat_num = core_deal / max_repeat_deal + (int)(repeat_rem != 0);
+
+  // nram distribute
+  size_t offset = 0;
+  int8_t *indices_row_nram = (int8_t *)nram_buff + offset;
+  offset += (sparse_dim == 2 ? 2 * max_repeat_deal * sizeof(IndiceType) : 0);
+
+  int8_t *indices_col_nram = (int8_t *)nram_buff + offset;
+  offset += 2 * max_repeat_deal * sizeof(IndiceType);
+
+  int8_t *values_nram = (int8_t *)nram_buff + offset;
+  offset += 2 * max_repeat_deal * dense_size * sizeof(ValueType);
+
+  // main loop
+  int load_size    = max_repeat_deal;
+  int compute_size = max_repeat_deal;
+  int atomic_size  = max_repeat_deal;
+  for (size_t loop = 0; loop < repeat_num + 2; loop++) {
+    int io_offset  = (loop % 2) * max_repeat_deal;
+    int com_offset = ((loop + 1) % 2) * max_repeat_deal;
+    if (repeat_rem != 0) {
+      if (loop > 1 && (loop - 2) == (repeat_num - 1)) {
+        atomic_size = repeat_rem;
+      }
+      if (loop > 0 && (loop - 1) == (repeat_num - 1)) {
+        compute_size = repeat_rem;
+      }
+      if (loop == (repeat_num - 1)) {
+        load_size = repeat_rem;
+      }
+    }
+
+    // atomic
+    if (loop > 1) {
+      ioAtomicReduceAdd((IndiceType *)indices_row_nram + io_offset,
+                         (ValueType *)output, (ValueType *)values_nram +
+                         io_offset * dense_size, dense_size, atomic_size);
+    }
+
+    // compute
+    if (loop > 0 && loop <= repeat_num) {
+      comFlatternIndices((IndiceType *)indices_row_nram + com_offset,
+                         (IndiceType *)indices_col_nram + com_offset,
+                         (IndiceType)dense_size, (IndiceType)gap_size,
+                         compute_size, sparse_dim);
+      comMulAlpha((ValueType *)values_nram + com_offset * dense_size, alpha,
+                  compute_size * dense_size);
+    }
+
+    // load
+    if (loop < repeat_num) {
+      size_t dram_offset = loop * max_repeat_deal;
+      ldIndicesValues((IndiceType *)indices_row_core_gdram + dram_offset,
+                      (IndiceType *)indices_col_core_gdram + dram_offset,
+                      (ValueType *)values_core_gdram + dram_offset * dense_size,
+                      (IndiceType *)indices_row_nram + io_offset,
+                      (IndiceType *)indices_col_nram + io_offset,
+                      (ValueType *)values_nram + io_offset * dense_size,
+                      dense_size, load_size, sparse_dim);
+    }
+    __sync();
+  }
+}
+
+template <typename IndiceType, typename ValueType>
+__mlu_func__ void splitDenseKernel(IndiceType *indices,
+                                   ValueType *values,
+                                   ValueType *output,
+                                   const float alpha,
+                                   const size_t nnz,
+                                   const int sparse_dim,
+                                   const size_t dense_size,
+                                   const size_t gap_size) {
+  // per core compute
+  size_t core_deal_rem = dense_size % taskDim;
+  size_t core_deal     = dense_size / taskDim + (taskId < core_deal_rem);
+  size_t core_begin = taskId * core_deal +
+                      (taskId >= core_deal_rem ? core_deal_rem : 0);
+  ValueType *values_core_gdram = (ValueType *)values + core_begin;
+  ValueType *output_core_gdram = (ValueType *)output + core_begin;
+
+  int max_repeat_deal = MAX_NRAM_SIZE / sizeof(ValueType);
+  int repeat_rem = core_deal % max_repeat_deal;
+  int repeat_num = core_deal / max_repeat_deal + (int)(repeat_rem != 0);
+  // when sparse_dim == 1, index is (0, x)
+  IndiceType *indices_row = (IndiceType *)indices;
+  IndiceType *indices_col = (IndiceType *)indices + (sparse_dim == 2 ? nnz : 0);
+
+  // nnz loop
+  for (size_t i = 0; i < nnz; i++) {
+    IndiceType idx = __load_gdram(indices_col + i) * (IndiceType)dense_size +
+                    (sparse_dim == 2 ? __load_gdram(indices_row + i) *
+                                       (IndiceType)gap_size : 0);
+    ValueType *values_cur = (ValueType *)values_core_gdram + i * dense_size;
+    int size = max_repeat_deal;
+    // dense loop
+    for (size_t loop = 0; loop < repeat_num; loop++) {
+      if (repeat_rem != 0 && loop == repeat_num - 1) {
+        size = repeat_rem;
+      }
+      __memcpy((ValueType *)nram_buff,
+               (ValueType *)values_cur + loop * max_repeat_deal,
+               size * sizeof(ValueType), GDRAM2NRAM);
+      comMulAlpha((ValueType *)nram_buff, alpha, size);
+      atomic_add_func((ValueType *)output_core_gdram + idx,
+                      (ValueType *)nram_buff, size, false);
+    }
+  }
+}
+
+template <typename IndiceType, typename ValueType>
+__mlu_global__ void unionApplySparseAddDense(IndiceType *indices,
+                                             ValueType *values,
+                                             ValueType *output,
+                                             const float alpha,
+                                             const size_t nnz,
+                                             const int sparse_dim,
+                                             const size_t dense_size,
+                                             const size_t gap_size) {
+  if (__is_mpu()) {
+    return;
+  }
+
+  // if large dense, per loop only due one nnz because of nram limit
+  // so split dense_size, in different core due difference dense_size
+  bool is_large_dense = (2 * sparse_dim * sizeof(IndiceType) +
+           2 * dense_size * sizeof(ValueType)) > MAX_NRAM_SIZE;
+  if (is_large_dense) {
+    splitDenseKernel((IndiceType *)indices, (ValueType *)values,
+                     (ValueType *)output, alpha, nnz, sparse_dim, dense_size,
+                     gap_size);
+  } else {
+    splitNnzKernel((IndiceType *)indices, (ValueType *)values,
+                   (ValueType *)output, alpha, nnz, sparse_dim, dense_size,
+                   gap_size);
+  }
+}
+
+#define KERNEL_IMPL(IndiceType, ValueType)                                     \
+  template __mlu_global__ void unionApplySparseAddDense(                       \
+      IndiceType *, ValueType *, ValueType *, const float, const size_t,       \
+      const int, const size_t, const size_t)
+KERNEL_IMPL(int32_t, float);
+KERNEL_IMPL(int32_t, half);
+KERNEL_IMPL(int32_t, bfloat16_t);
+KERNEL_IMPL(int64_t, float);
+KERNEL_IMPL(int64_t, half);
+KERNEL_IMPL(int64_t, bfloat16_t);
+
+

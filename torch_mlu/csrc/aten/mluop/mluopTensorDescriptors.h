@@ -29,7 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
-#ifdef USE_MLUOP
 
 #include "aten/mluop/mluopCommonDescriptors.h"
 #include "aten/mluop/mluopUtils.h"
@@ -74,5 +73,3 @@ class TORCH_MLU_API MluOpTensorDescriptor : public MluOpDescriptor<
 };
 
 } // namespace torch_mlu
-
-#endif

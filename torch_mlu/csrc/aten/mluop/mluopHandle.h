@@ -29,7 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
-#ifdef USE_MLUOP
 
 #include "mlu_op.h"
 #include "aten/utils/exceptions.h"
@@ -60,5 +59,3 @@ TORCH_MLU_API mluOpHandle_t
 getCurrentMluOpHandle(c10::DeviceIndex device_index = -1);
 
 } // namespace torch_mlu
-
-#endif

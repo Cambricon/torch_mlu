@@ -14,5 +14,8 @@
   "python_wheel_requires": {
     "genesis": ["release", "1.4.0", "3.0.0"]
   },
+  "src_requires": {
+    "mluops-lite": ["release", "1.5.1"]
+  },
   "package_type": ["whl", "docker"]
 }

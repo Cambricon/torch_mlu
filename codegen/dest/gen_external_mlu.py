@@ -150,13 +150,9 @@ class GenExternalMLU:
             if derived_type == 'cnnl':
                 return kernel_decl
         elif self.target == Target.BANG_KERNEL_DECLARATION:
-            if not self.aux[f.func.name].get('use_bang', None):
-                return None
             if derived_type == 'bang':
                 return kernel_decl
         elif self.target == Target.MLUOP_KERNEL_DECLARATION:
-            if not self.aux[f.func.name].get('use_mluop', None):
-                return None
             if derived_type == 'mluop':
                 return kernel_decl
         else:
@@ -305,16 +301,18 @@ void impl({', '.join(a.decl() for a in out_args)});
         if self.target == Target.CNNL_KERNEL_DECLARATION:
             if derived_type == 'cnnl':
                 return res
-        elif self.target == Target.BANG_KERNEL_DECLARATION:
-            if not self.aux[g.out.func.name].get('use_bang', None):
+            else:
                 return []
+        elif self.target == Target.BANG_KERNEL_DECLARATION:
             if derived_type == 'bang':
                 return res
-        elif self.target == Target.MLUOP_KERNEL_DECLARATION:
-            if not self.aux[g.out.func.name].get('use_mluop', None):
+            else:
                 return []
+        elif self.target == Target.MLUOP_KERNEL_DECLARATION:
             if derived_type == 'mluop':
                 return res
+            else:
+                return []
         else:
             assert_never(self.target)
 

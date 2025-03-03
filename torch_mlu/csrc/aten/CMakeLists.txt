@@ -18,20 +18,16 @@ file(GLOB_RECURSE ATen_CNNL_OP_SRCS
 
 list(APPEND ATEN_DEPENDENT_SRCS ${ATen_BASIC_SRCS} ${ATen_CNNL_OP_SRCS})
 
-if(USE_BANG)
-	file(GLOB_RECURSE ATen_BANG_OP_SRCS
-	    ${CMAKE_CURRENT_SOURCE_DIR}/operators/bang/*.cpp
-	)
-	list(APPEND ATEN_DEPENDENT_SRCS ${ATen_BANG_OP_SRCS})
-endif()
+file(GLOB_RECURSE ATen_BANG_OP_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/operators/bang/*.cpp
+)
+list(APPEND ATEN_DEPENDENT_SRCS ${ATen_BANG_OP_SRCS})
 
-if(USE_MLUOP)
-    file(GLOB_RECURSE ATen_MLU_OPS_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/operators/mluop/*.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/mluop/*.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/operators/mluop/internal/*.cpp
-    )
-    list(APPEND ATEN_DEPENDENT_SRCS ${ATen_MLU_OPS_SRCS})
-endif()
+file(GLOB_RECURSE ATen_MLU_OPS_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/operators/mluop/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/mluop/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/operators/mluop/internal/*.cpp
+)
+list(APPEND ATEN_DEPENDENT_SRCS ${ATen_MLU_OPS_SRCS})
 
 set(BASIC_SRCS ${ATEN_DEPENDENT_SRCS} PARENT_SCOPE)

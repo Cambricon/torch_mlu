@@ -35,9 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "c10/macros/Macros.h"
 #include "cnrt.h" //NOLINT
 #include "cndev.h" // NOLINT
-#ifdef USE_MLUOP
 #include "mlu_op.h" // NOLINT
-#endif
 
 #define TORCH_BANGC_CHECK(EXPR)                                   \
   do {                                                            \
@@ -93,7 +91,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     }                                                                   \
   } while (0);
 
-#ifdef USE_MLUOP
 #define TORCH_MLUOP_CHECK(EXPR)                                          \
   do {                                                                   \
     mluOpStatus_t status = EXPR;                                         \
@@ -101,7 +98,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       TORCH_CHECK(false, "MLUOPS error: ", mluOpGetErrorString(status)); \
     }                                                                    \
   } while (0);
-#endif
 
 #define TORCH_CNDRV_CHECK(EXPR)                                       \
   do {                                                                \

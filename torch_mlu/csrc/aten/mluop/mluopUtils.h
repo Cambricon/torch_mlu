@@ -29,7 +29,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #pragma once
-#ifdef USE_MLUOP
 
 #include <ATen/ATen.h>
 #include <c10/core/ScalarType.h>
@@ -46,5 +45,3 @@ TORCH_MLU_API mluOpDataType_t
 cnnlTypeToMluOpType(const cnnlDataType_t& data_type);
 
 } // namespace torch_mlu
-
-#endif
