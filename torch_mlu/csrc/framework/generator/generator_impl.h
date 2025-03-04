@@ -30,11 +30,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #pragma once
 
-#include <unordered_set>
 #include <c10/core/GeneratorImpl.h>
 #include <ATen/core/Generator.h>
-#include "framework/core/device.h"
-#include "aten/cnnl/cnnlHandle.h"
+#include "utils/Export.h"
 
 namespace torch_mlu {
 
