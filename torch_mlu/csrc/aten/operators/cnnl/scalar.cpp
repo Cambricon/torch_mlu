@@ -42,30 +42,44 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
 
   // Data representation of type double is only supported using float.
   if (self.scalar_type() == at::ScalarType::Double) {
-    float value;
+    auto value = at::detail::empty_cpu(
+        {1}, /* size */
+        at::ScalarType::Float, /* dtype */
+        std::nullopt, /* layout */
+        std::nullopt, /* device */
+        true, /* pin_memory */
+        std::nullopt /* memory format */
+    );
     cnrtMemcpyAsync_V2(
-        &value,
+        (void*)value.const_data_ptr<float>(),
         tensor_ptr,
         sizeof(float),
         stream.stream(),
         cnrtMemcpyDevToHost);
     stream.synchronize();
-    return at::Scalar(static_cast<double>(value));
+    return at::Scalar(static_cast<double>((*value.const_data_ptr<float>())));
   }
 
   // Data representation of type complex<double> is only supported using
   // complex<float>.
   if (self.scalar_type() == at::ScalarType::ComplexDouble) {
-    c10::complex<float> value;
+    auto value = at::detail::empty_cpu(
+        {1}, /* size */
+        at::ScalarType::ComplexFloat, /* dtype */
+        std::nullopt, /* layout */
+        std::nullopt, /* device */
+        true, /* pin_memory */
+        std::nullopt /* memory format */
+    );
     cnrtMemcpyAsync_V2(
-        &value,
+        (void*)value.const_data_ptr<c10::complex<float>>(),
         tensor_ptr,
         2 * sizeof(float),
         stream.stream(),
         cnrtMemcpyDevToHost);
     stream.synchronize();
-    c10::complex<double> valueDouble = value;
-    return at::Scalar(valueDouble);
+    return at::Scalar(static_cast<c10::complex<double>>(
+        (*value.const_data_ptr<c10::complex<float>>())));
   }
 
   // local_scalar_dense
@@ -80,15 +94,22 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
       self.scalar_type(),
       "MLU _local_scalar_dense",
       [&] {
-        scalar_t value;
+        auto value = at::detail::empty_cpu(
+            {1}, /* size */
+            c10::CppTypeToScalarType<scalar_t>(), /* dtype */
+            std::nullopt, /* layout */
+            std::nullopt, /* device */
+            true, /* pin_memory */
+            std::nullopt /* memory format */
+        );
         cnrtMemcpyAsync_V2(
-            &value,
+            (void*)value.const_data_ptr<scalar_t>(),
             tensor_ptr,
             sizeof(scalar_t),
             stream.stream(),
             cnrtMemcpyDevToHost);
         stream.synchronize();
-        r = at::Scalar(value);
+        r = at::Scalar(*value.const_data_ptr<scalar_t>());
       });
   return r;
 }
