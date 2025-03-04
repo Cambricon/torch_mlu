@@ -28,7 +28,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <torch/autograd.h>
 #include "aten/operators/cnnl/cnnl_kernel.h"
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 
@@ -69,90 +68,6 @@ at::Tensor cnnl_repeat(const at::Tensor& self, at::IntArrayRef repeats) {
 
   cnnl_repeat_internal(output, input_contiguous);
   return output;
-}
-
-at::Tensor cnnl_repeat_backward(
-    const at::Tensor& self,
-    at::Tensor& grad,
-    at::IntArrayRef repeats) {
-  auto input_shape = self.sym_sizes();
-  auto find_iter = std::find(repeats.cbegin(), repeats.cend(), 0);
-  if (find_iter != repeats.cend()) {
-    return at::zeros_symint(input_shape, grad.options());
-  }
-  const auto input_dims = input_shape.size();
-  auto num_unsqueezed = grad.dim() - input_dims;
-  for (const auto i : c10::irange(num_unsqueezed)) {
-    (void)i; // Suppress unused variable warning
-    grad = grad.sum(0, false);
-  }
-
-  // Origin algorithm will increase grad's dimensions by grad =
-  // grad.reshape(grad_size), then do add operation on specific dimensions.
-  // Reshape in this process is easily surpass MLU dimension limits. Currently
-  // MLU uses an old algorithm from Pytorch1.6. Two algorithms have the same
-  // functions but different implementation methods, and the performance of the
-  // old algorithm is poor. For details:
-  // https://github.com/pytorch/pytorch/issues/43192
-  // https://github.com/pytorch/pytorch/pull/46726
-  if (grad.device().type() == c10::DeviceType::PrivateUse1) {
-    for (size_t j = num_unsqueezed; j < repeats.size(); ++j) {
-      auto repeat = repeats[j];
-      if (repeat == 1) {
-        continue;
-      }
-      int64_t dim = j - num_unsqueezed;
-      auto sum_tensorlist = [](at::TensorList tl) {
-        if (tl.size() == 0) {
-          throw std::runtime_error("Can't sum tensorlist of size 0");
-        }
-        at::Tensor sum = tl[0];
-        for (size_t i = 1; i < tl.size(); ++i) {
-          sum = sum + tl[i];
-        }
-        return sum;
-      };
-
-      grad = sum_tensorlist(grad.chunk(repeat, dim));
-    }
-    return grad;
-  }
-}
-
-class RepeatFunction : public torch::autograd::Function<RepeatFunction> {
- public:
-  static torch::autograd::variable_list forward(
-      torch::autograd::AutogradContext* ctx,
-      const at::Tensor& self,
-      const at::IntArrayRef repeats) {
-    at::AutoDispatchBelowADInplaceOrView g;
-    ctx->save_for_backward({self});
-    ctx->saved_data["repeats"] = repeats;
-    static auto op = c10::Dispatcher::singleton()
-                         .findSchemaOrThrow("aten::repeat", "")
-                         .typed<decltype(cnnl_repeat)>();
-    auto result = op.call(self, repeats);
-    return {result};
-  }
-
-  static torch::autograd::variable_list backward(
-      torch::autograd::AutogradContext* ctx,
-      torch::autograd::variable_list grad_output) {
-    auto saved = ctx->get_saved_variables();
-    auto self = saved[0];
-    std::vector<int64_t> repeats_vector =
-        ctx->saved_data["repeats"].toIntVector();
-    at::IntArrayRef repeats = repeats_vector;
-    auto result = cnnl_repeat_backward(self, grad_output[0], repeats);
-    return {result, at::Tensor()};
-  }
-};
-
-at::Tensor cnnl_repeat_autograd(
-    const at::Tensor& self,
-    at::IntArrayRef repeats) {
-  auto result = RepeatFunction::apply(self, repeats);
-  return result[0];
 }
 
 } // namespace ops
