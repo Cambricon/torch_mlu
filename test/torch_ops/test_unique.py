@@ -85,7 +85,14 @@ class TestUniqueOp(TestCase):
     # @unittest.skip("not test")
     @testinfo()
     def test_unique(self):
-        type_list = [torch.float, torch.int, torch.long, torch.double, torch.half]
+        type_list = [
+            torch.float,
+            torch.int16,
+            torch.int,
+            torch.long,
+            torch.double,
+            torch.half,
+        ]
         shape_list = [
             (64,),
             (4, 64),
