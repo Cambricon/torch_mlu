@@ -49,6 +49,7 @@ namespace torch_mlu {
     switch (_st) {                                                           \
       AT_DISPATCH_CASE_MLU(at::ScalarType::Float, float, __VA_ARGS__)        \
       AT_DISPATCH_CASE_MLU(at::ScalarType::Int, int32_t, __VA_ARGS__)        \
+      AT_DISPATCH_CASE_MLU(at::ScalarType::Short, int16_t, __VA_ARGS__)      \
       AT_DISPATCH_CASE_MLU(at::ScalarType::Half, at::Half, __VA_ARGS__)      \
       AT_DISPATCH_CASE_MLU(at::ScalarType::Long, int64_t, __VA_ARGS__)       \
       AT_DISPATCH_CASE_MLU(at::ScalarType::Double, float, __VA_ARGS__)       \
