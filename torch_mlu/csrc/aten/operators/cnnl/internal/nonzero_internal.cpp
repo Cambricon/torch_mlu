@@ -28,7 +28,6 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <ATen/EmptyTensor.h>
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 #include "aten/utils/tensor_util.h"
 #include "aten/utils/utils.h"
@@ -74,23 +73,11 @@ at::Tensor& cnnl_nonzero_internal(at::Tensor& out, const at::Tensor& self) {
 
   // call cnnlWhere to output the index of nonzero elements
   auto stream = getCurrentMLUStream();
-  int num_nonzeros = 0;
-  auto pinned_num_nonzeros = at::detail::empty_cpu(
-      {1}, /* size */
-      c10::CppTypeToScalarType<int>(), /* dtype */
-      c10::nullopt, /* layout */
-      c10::nullopt, /* device */
-      true, /* pin_memory */
-      c10::nullopt /* memory format */
-  );
-  TORCH_CNRT_CHECK(cnrtMemcpyAsync_V2(
-      (void*)pinned_num_nonzeros.const_data_ptr<int>(),
-      num_true_ptr,
-      sizeof(int),
-      stream.stream(),
-      cnrtMemcpyDevToHost));
+  uint32_t num_nonzeros = 0;
+  // we use sync copy instead of async copy here for performance.
   stream.synchronize();
-  num_nonzeros = (int)*(pinned_num_nonzeros.const_data_ptr<int>());
+  TORCH_CNRT_CHECK(cnrtMemcpy(
+      &num_nonzeros, num_true_ptr, sizeof(uint32_t), cnrtMemcpyDevToHost));
   std::vector<int64_t> outshape = {num_nonzeros, dim_num};
 
   if (!out.sizes().equals(outshape)) {
