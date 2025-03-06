@@ -42,44 +42,21 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
 
   // Data representation of type double is only supported using float.
   if (self.scalar_type() == at::ScalarType::Double) {
-    auto value = at::detail::empty_cpu(
-        {1}, /* size */
-        at::ScalarType::Float, /* dtype */
-        std::nullopt, /* layout */
-        std::nullopt, /* device */
-        true, /* pin_memory */
-        std::nullopt /* memory format */
-    );
-    cnrtMemcpyAsync_V2(
-        (void*)value.const_data_ptr<float>(),
-        tensor_ptr,
-        sizeof(float),
-        stream.stream(),
-        cnrtMemcpyDevToHost);
+    float value;
+    // we use sync copy instead of async copy here for performance.
     stream.synchronize();
-    return at::Scalar(static_cast<double>((*value.const_data_ptr<float>())));
+    cnrtMemcpy(&value, tensor_ptr, sizeof(float), cnrtMemcpyDevToHost);
+    return at::Scalar(static_cast<double>(value));
   }
 
   // Data representation of type complex<double> is only supported using
   // complex<float>.
   if (self.scalar_type() == at::ScalarType::ComplexDouble) {
-    auto value = at::detail::empty_cpu(
-        {1}, /* size */
-        at::ScalarType::ComplexFloat, /* dtype */
-        std::nullopt, /* layout */
-        std::nullopt, /* device */
-        true, /* pin_memory */
-        std::nullopt /* memory format */
-    );
-    cnrtMemcpyAsync_V2(
-        (void*)value.const_data_ptr<c10::complex<float>>(),
-        tensor_ptr,
-        2 * sizeof(float),
-        stream.stream(),
-        cnrtMemcpyDevToHost);
+    c10::complex<float> value;
     stream.synchronize();
-    return at::Scalar(static_cast<c10::complex<double>>(
-        (*value.const_data_ptr<c10::complex<float>>())));
+    cnrtMemcpy(&value, tensor_ptr, 2 * sizeof(float), cnrtMemcpyDevToHost);
+    c10::complex<double> valueDouble = value;
+    return at::Scalar(valueDouble);
   }
 
   // local_scalar_dense
@@ -94,22 +71,10 @@ at::Scalar cnnl__local_scalar_dense(const at::Tensor& self) {
       self.scalar_type(),
       "MLU _local_scalar_dense",
       [&] {
-        auto value = at::detail::empty_cpu(
-            {1}, /* size */
-            c10::CppTypeToScalarType<scalar_t>(), /* dtype */
-            std::nullopt, /* layout */
-            std::nullopt, /* device */
-            true, /* pin_memory */
-            std::nullopt /* memory format */
-        );
-        cnrtMemcpyAsync_V2(
-            (void*)value.const_data_ptr<scalar_t>(),
-            tensor_ptr,
-            sizeof(scalar_t),
-            stream.stream(),
-            cnrtMemcpyDevToHost);
+        scalar_t value;
         stream.synchronize();
-        r = at::Scalar(*value.const_data_ptr<scalar_t>());
+        cnrtMemcpy(&value, tensor_ptr, sizeof(scalar_t), cnrtMemcpyDevToHost);
+        r = at::Scalar(value);
       });
   return r;
 }

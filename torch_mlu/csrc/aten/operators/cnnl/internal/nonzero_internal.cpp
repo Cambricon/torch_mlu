@@ -71,23 +71,11 @@ at::Tensor& cnnl_nonzero_internal(at::Tensor& out, const at::Tensor& self) {
 
   // call cnnlWhere to output the index of nonzero elements
   auto stream = getCurrentMLUStream();
-  int num_nonzeros = 0;
-  auto pinned_num_nonzeros = at::detail::empty_cpu(
-      {1}, /* size */
-      c10::CppTypeToScalarType<int>(), /* dtype */
-      std::nullopt, /* layout */
-      std::nullopt, /* device */
-      true, /* pin_memory */
-      std::nullopt /* memory format */
-  );
-  TORCH_CNRT_CHECK(cnrtMemcpyAsync_V2(
-      (void*)pinned_num_nonzeros.const_data_ptr<int>(),
-      num_true_ptr,
-      sizeof(int),
-      stream.stream(),
-      cnrtMemcpyDevToHost));
+  uint32_t num_nonzeros = 0;
+  // we use sync copy instead of async copy here for performance.
   stream.synchronize();
-  num_nonzeros = (int)*(pinned_num_nonzeros.const_data_ptr<int>());
+  TORCH_CNRT_CHECK(cnrtMemcpy(
+      &num_nonzeros, num_true_ptr, sizeof(uint32_t), cnrtMemcpyDevToHost));
   const c10::SmallVector<int64_t, 2> outshape = {num_nonzeros, dim_num};
 
   if (!out.sizes().equals(outshape)) {
