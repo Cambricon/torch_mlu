@@ -1022,7 +1022,7 @@ class TestSDPA(TestCase):
 
     @testinfo()
     @unittest.skipUnless(read_card_info(), "Only test on selected MLU series")
-    def test_scaled_dot_product_flast_attention_backward(self):
+    def test_scaled_dot_product_flash_attention_backward(self):
         batch_size_list = [4, 8]
         seq_len_q_list = [512, 1024, 2048]
         seq_len_k_list = [512, 1024, 2048]
@@ -1102,28 +1102,53 @@ class TestSDPA(TestCase):
                 return_debug_mask=True,
             )
             out = output_tuple[0]
+            dbug_mask = output_tuple[-1]
+            dropout_mask = dbug_mask > 0.0
 
-            with sdp_kernel(
-                enable_math=True, enable_flash=False, enable_mem_efficient=False
-            ):
+            is_dropout = dropout_p > 0.0
+            if not is_dropout:
+                with sdp_kernel(
+                    enable_math=True, enable_flash=False, enable_mem_efficient=False
+                ):
+                    # High Precision Math Reference
+                    out_ref = F.scaled_dot_product_attention(
+                        query_ref,
+                        key_ref,
+                        value_ref,
+                        dropout_p=dropout_p,
+                        is_causal=is_causal,
+                        scale=scale,
+                    )
+                    # Low Precision Math Reference
+                    out_lp_ref = F.scaled_dot_product_attention(
+                        query_lp_ref,
+                        key_lp_ref,
+                        value_lp_ref,
+                        dropout_p=dropout_p,
+                        is_causal=is_causal,
+                        scale=scale,
+                    )
+            else:
                 # High Precision Math Reference
-                out_ref = F.scaled_dot_product_attention(
+                out_ref = torch.ops.aten._scaled_dot_product_attention_math(
                     query_ref,
                     key_ref,
                     value_ref,
                     dropout_p=dropout_p,
                     is_causal=is_causal,
                     scale=scale,
-                )
+                    dropout_mask=dropout_mask,
+                )[0]
                 # Low Precision Math Reference
-                out_lp_ref = F.scaled_dot_product_attention(
+                out_lp_ref = torch.ops.aten._scaled_dot_product_attention_math(
                     query_lp_ref,
                     key_lp_ref,
                     value_lp_ref,
                     dropout_p=dropout_p,
                     is_causal=is_causal,
                     scale=scale,
-                )
+                    dropout_mask=dropout_mask,
+                )[0]
 
             upstream_grad = torch.rand_like(out, requires_grad=False)
             out.backward(upstream_grad)
@@ -1249,28 +1274,53 @@ class TestSDPA(TestCase):
                 return_debug_mask=True,
             )
             out = output_tuple[0]
+            dbug_mask = output_tuple[-1]
+            dropout_mask = dbug_mask > 0.0
 
-            with sdp_kernel(
-                enable_math=True, enable_flash=False, enable_mem_efficient=False
-            ):
+            is_dropout = dropout_p > 0.0
+            if not is_dropout:
+                with sdp_kernel(
+                    enable_math=True, enable_flash=False, enable_mem_efficient=False
+                ):
+                    # High Precision Math Reference
+                    out_ref = F.scaled_dot_product_attention(
+                        query_ref,
+                        key_ref,
+                        value_ref,
+                        dropout_p=dropout_p,
+                        is_causal=is_causal,
+                        scale=scale,
+                    )
+                    # Low Precision Math Reference
+                    out_lp_ref = F.scaled_dot_product_attention(
+                        query_lp_ref,
+                        key_lp_ref,
+                        value_lp_ref,
+                        dropout_p=dropout_p,
+                        is_causal=is_causal,
+                        scale=scale,
+                    )
+            else:
                 # High Precision Math Reference
-                out_ref = F.scaled_dot_product_attention(
+                out_ref = torch.ops.aten._scaled_dot_product_attention_math(
                     query_ref,
                     key_ref,
                     value_ref,
                     dropout_p=dropout_p,
                     is_causal=is_causal,
                     scale=scale,
-                )
+                    dropout_mask=dropout_mask,
+                )[0]
                 # Low Precision Math Reference
-                out_lp_ref = F.scaled_dot_product_attention(
+                out_lp_ref = torch.ops.aten._scaled_dot_product_attention_math(
                     query_lp_ref,
                     key_lp_ref,
                     value_lp_ref,
                     dropout_p=dropout_p,
                     is_causal=is_causal,
                     scale=scale,
-                )
+                    dropout_mask=dropout_mask,
+                )[0]
 
             upstream_grad = torch.rand_like(out, requires_grad=False)
             out.backward(upstream_grad)
