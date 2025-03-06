@@ -6,6 +6,9 @@ import os
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
 
+# must set before import torch/torch_mlu
+os.environ["TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE"] = "1"
+
 import torch
 import torch_mlu
 
@@ -24,18 +27,21 @@ class TF32TestCases(TestCase):
         torch.backends.mlu.custom.allow_tf32 = orig
 
     def test_float32_matmul_precision_get_set(self):
-        self.assertEqual(torch.get_float32_matmul_precision(), "highest")
         skip_tf32_cnmatmul = "TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE" in os.environ and int(
             os.environ["TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE"]
         )
-        if not skip_tf32_cnmatmul:
-            orig = torch.backends.mlu.matmul.allow_tf32
-            self.assertEqual(orig, False)
-            torch.backends.mlu.matmul.allow_tf32 = not orig
-            self.assertEqual(torch.backends.mlu.matmul.allow_tf32, True)
-            torch.backends.cuda.matmul.allow_tf32 = False
-            self.assertEqual(torch.backends.mlu.matmul.allow_tf32, True)
-            torch.backends.mlu.matmul.allow_tf32 = orig
+        self.assertTrue(skip_tf32_cnmatmul)
+        self.assertTrue(torch.backends.mlu.matmul.allow_tf32)
+        torch.backends.mlu.matmul.allow_tf32 = False
+        self.assertFalse(torch.backends.mlu.matmul.allow_tf32)
+        self.assertEqual(torch.get_float32_matmul_precision(), "highest")
+        orig = torch.backends.mlu.matmul.allow_tf32
+        self.assertEqual(orig, False)
+        torch.backends.mlu.matmul.allow_tf32 = not orig
+        self.assertEqual(torch.backends.mlu.matmul.allow_tf32, True)
+        torch.backends.cuda.matmul.allow_tf32 = False
+        self.assertEqual(torch.backends.mlu.matmul.allow_tf32, True)
+        torch.backends.mlu.matmul.allow_tf32 = orig
         for p in ("medium", "high"):
             torch.set_float32_matmul_precision(p)
             self.assertEqual(torch.get_float32_matmul_precision(), p)

@@ -2,13 +2,12 @@ diff --git a/aten/src/ATen/Context.cpp b/aten/src/ATen/Context.cpp
 index 1ec545dfc0..f99ace3574 100644
 --- a/aten/src/ATen/Context.cpp
 +++ b/aten/src/ATen/Context.cpp
-@@ -183,6 +183,15 @@ void Context::setAllowTF32CuBLAS(bool b) {
+@@ -183,6 +183,14 @@ void Context::setAllowTF32CuBLAS(bool b) {
    float32_matmul_precision = b ? at::Float32MatmulPrecision::HIGH : at::Float32MatmulPrecision::HIGHEST;
  }
  
 +bool Context::allowTF32CnMatMul() const {
-+  static bool allow_tf32_cnmatmul_override = c10::utils::check_env("TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE") == true;
-+  return allow_tf32_cnmatmul_override || float32_matmul_precision != at::Float32MatmulPrecision::HIGHEST;
++  return allowTF32CuBLAS();
 +}
 +
 +void Context::setAllowTF32CnMatMul(bool b) {

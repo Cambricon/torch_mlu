@@ -48,6 +48,16 @@ index 285c6f7f1f..bd56e21136 100644
    c10::once_flag thh_init;
    bool enabled_cudnn = true;
    bool deterministic_cudnn = false;
+@@ -305,7 +317,8 @@ class TORCH_API Context {
+   bool benchmark_cudnn = false;
+ #endif
+   Float32MatmulPrecision float32_matmul_precision =
+-      c10::utils::check_env("TORCH_ALLOW_TF32_CUBLAS_OVERRIDE") == true
++      (c10::utils::check_env("TORCH_ALLOW_TF32_CUBLAS_OVERRIDE") == true ||
++      c10::utils::check_env("TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE") == true)
+       ? at::Float32MatmulPrecision::HIGH
+       : at::Float32MatmulPrecision::HIGHEST;
+   int benchmark_limit_cudnn = 10;
 diff --git a/build_variables.bzl b/build_variables.bzl
 index bf9cf2b46e..6f5b046475 100644
 --- a/build_variables.bzl
