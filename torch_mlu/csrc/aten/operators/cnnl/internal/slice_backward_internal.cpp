@@ -28,49 +28,38 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
+#include "aten/operators/cnnl/internal/cnnl_internal.h"
 
-#include "cnnl.h" //  NOLINT
-#include "c10/core/TensorImpl.h"
+namespace torch_mlu {
+namespace ops {
 
-namespace torch_mlu::ops {
+void cnnl_slice_backward_internal(
+    const at::Tensor& grad_output,
+    const std::vector<int>& begins,
+    const std::vector<int>& ends,
+    const std::vector<int>& strides,
+    at::Tensor& grad_input) {
+  auto grad_output_impl = getMluTensorImpl(grad_output);
+  auto grad_input_impl = getMluTensorImpl(grad_input);
 
-#define CNNL_MAX_DIM_SIZE 8
+  auto grad_output_desc = getTensorDesc(grad_output_impl);
+  auto grad_input_desc = getTensorDesc(grad_input_impl);
 
-inline cnnlTensorLayout_t suggestCnnlLayout(
-    const c10::TensorImpl* self) {
-  auto dim = self->dim();
-  if (dim != 4 && dim != 5) {
-    return CNNL_LAYOUT_ARRAY;
-  }
+  auto grad_output_ptr = grad_output_impl->mlu_data_ptr();
+  auto grad_input_ptr = grad_input_impl->mlu_data_ptr();
 
-  if (self->is_contiguous(at::MemoryFormat::Contiguous)) {
-    return CNNL_LAYOUT_ARRAY;
-  }
+  auto handle = getCurrentHandle();
 
-  if (dim == 4) {
-    bool is_channel_last = self->is_contiguous(at::MemoryFormat::ChannelsLast);
-    return is_channel_last ? CNNL_LAYOUT_NHWC : CNNL_LAYOUT_NCHW;
-  }
-
-  if (dim == 5) {
-    bool is_channel_last =
-        self->is_contiguous(at::MemoryFormat::ChannelsLast3d);
-    return is_channel_last ? CNNL_LAYOUT_NDHWC : CNNL_LAYOUT_NCDHW;
-  }
-
-  return CNNL_LAYOUT_ARRAY;
+  TORCH_CNNL_CHECK(cnnlStridedSliceBackward(
+      handle,
+      begins.data(),
+      ends.data(),
+      strides.data(),
+      grad_output_desc.get(),
+      grad_output_ptr,
+      grad_input_desc.get(),
+      grad_input_ptr));
 }
 
-inline cnnlTensorLayout_t suggestCnnlLayout(
-    const at::MemoryFormat& memory_format) {
-  if (memory_format == at::MemoryFormat::ChannelsLast) {
-    return CNNL_LAYOUT_NHWC;
-  } else if (memory_format == at::MemoryFormat::ChannelsLast3d) {
-    return CNNL_LAYOUT_NDHWC;
-  } else {
-    return CNNL_LAYOUT_ARRAY;
-  }
-}
-
-} // namespace torch_mlu::ops
+} // namespace ops
+} // namespace torch_mlu

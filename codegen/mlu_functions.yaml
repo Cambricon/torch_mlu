@@ -38,6 +38,7 @@
 #    if it does not support both, it is best to add checks and error messages.
 
 aten:
+  - func: slice_backward
   - func: _linalg_svd
     structured_delegate: _linalg_svd.U
   - func: _linalg_svd.U
