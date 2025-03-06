@@ -189,6 +189,30 @@ class TestSliceOps(TestCase):
         output_mlu = input_mlu[:, 1:, 2:-1:3, 10:20][0:1:1, 1:2:1, 3:-1:2, 2:5:2]
         self.assertTensorsEqual(output_cpu, output_mlu.cpu(), 0.003, use_MSE=True)
 
+    # @unittest.skip("not test")
+    @testinfo()
+    @unittest.skipUnless(
+        TEST_LARGETENSOR, "run largeTensorCases by `TEST_LARGETENSOR=TRUE` or `--large`"
+    )
+    @largeTensorTest("44GB")
+    def test_slice_large_backward(self):
+        # use cnnlStridedSliceBackward when tensor.nbytes smaller than 2GB.
+        for shape in [(8, 256, 256, 1023), (5, 256, 1024, 1024)]:
+            x = torch.randn(shape, requires_grad=True)
+            x_mlu = self.to_device(x)
+            z = x[:, 1:, 2:-1:3, 10:20][0:1:1, 1:2:1, 3:-1:2, 2:5:2]
+            z_mlu = x_mlu[:, 1:, 2:-1:3, 10:20][0:1:1, 1:2:1, 3:-1:2, 2:5:2]
+            grad = torch.randn_like(z)
+            grad_mlu = self.to_device(grad)
+            print(z.shape, z_mlu.shape)
+            z.backward(grad)
+            out_grad = copy.deepcopy(x.grad)
+            x.grad.zero_()
+            z_mlu.backward(grad_mlu)
+            out_grad_mlu = x.grad
+            self.assertTensorsEqual(z, z_mlu.cpu(), 0.0, use_MSE=True)
+            self.assertTensorsEqual(out_grad, out_grad_mlu.cpu(), 0.0, use_MSE=True)
+
 
 if __name__ == "__main__":
     unittest.main()

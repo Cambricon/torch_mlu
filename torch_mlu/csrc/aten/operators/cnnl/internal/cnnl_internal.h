@@ -1673,5 +1673,12 @@ void cnnl_scaled_mm_bias_out_internal(
     const at::Scalar& scale_b,
     const Tensor& bias);
 
+void cnnl_slice_backward_internal(
+    const at::Tensor& grad_output,
+    const std::vector<int>& begin,
+    const std::vector<int>& end,
+    const std::vector<int>& stride,
+    at::Tensor& grad_input);
+
 } // namespace ops
 } // namespace torch_mlu
