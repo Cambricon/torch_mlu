@@ -63,21 +63,16 @@ Global::Global() {
   TORCH_CNDEV_CHECK(cndevGetCardName(&card_name, 0));
   device_name_ = card_name.id;
 
-  return;
-}
-
-Global::~Global() {}
-
-bool Global::allowTF32CnMatMul() const {
   static const bool allow_tf32_cnmatmul_override = []() {
     const std::vector<std::string> TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE = {
         "TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE",
         "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE"};
     return getCvarBool(TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE, false);
   }();
-  auto float32_matmul_precision = at::globalContext().float32MatmulPrecision();
-  return allow_tf32_cnmatmul_override ||
-      float32_matmul_precision != at::Float32MatmulPrecision::HIGHEST;
+  setAllowTF32CnMatMul(allow_tf32_cnmatmul_override);
+  return;
 }
+
+Global::~Global() {}
 
 } // namespace torch_mlu

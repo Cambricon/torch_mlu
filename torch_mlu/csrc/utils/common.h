@@ -87,7 +87,9 @@ class TORCH_MLU_API Global {
   void setAllowMLUCustomTF32(bool b) {
     allow_tf32_custom_ = b;
   }
-  bool allowTF32CnMatMul() const;
+  bool allowTF32CnMatMul() const {
+    return at::globalContext().allowTF32CuBLAS();
+  }
   void setAllowTF32CnMatMul(bool b) {
     at::globalContext().setAllowTF32CuBLAS(b);
   }
