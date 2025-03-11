@@ -47,6 +47,31 @@ mlu_env_map = {
     "NCCL_USE_TENSOR_REGISTER_ALLOCATOR_HOOK": "",
 }
 
+# Custom Environment Variable Retrieval Blacklist
+#
+# The implementation of CUDA environment variable compatibility in torch_mlu
+# is based on two key principles:
+#
+# 1. On the C++ side, implemented in the torch_mlu csrc directory,
+# CUDA-compatible environments are accessed using the following three functions:
+# getCvarString, getCvarInt, and getCvarBool. This ensures that both CUDA
+# and MLU environment variables are handled simultaneously in the csrc backend.
+#
+# 2. On the Python side, implemented in the torch_mlu mlu directory,
+# CUDA-compatible environment variables are retrieved using getenv.
+#
+# The environment variable retrieval logic in torch_mlu follows these two principles.
+#
+# Therefore, if you define a custom MLU environment variable using
+# getCvarString, getCvarInt, or getCvarBool on the C++ side, or if you use
+# getenv on the Python side, and the environment variable name contains any of
+# the following keywords: ["TORCH_CNCL", "MLU", "CAMBRICON", "CNMATMUL"], you
+# must add it to the Custom Environment Variable Retrieval Blacklist. This ensures
+# that it is excluded when retrieving CUDA-compatible environment variables.
+mlu_env_blacklist = [
+    "",
+]
+
 
 # Check for unsupported Pytorch CUDA environment variables.
 def unsupport_env_check():
