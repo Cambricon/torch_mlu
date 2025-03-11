@@ -87,7 +87,8 @@ class CnnlReduceDescriptor : public CnnlDescriptor<
       cnnlReduceIndices_t is_indices,
       cnnlIndicesType_t indices_type,
       cnnlDataType_t tensor_type,
-      float p);
+      float p,
+      bool acc_sqrt);
 };
 
 class CnnlStdVarMeanDescriptor : public CnnlDescriptor<

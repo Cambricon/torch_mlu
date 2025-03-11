@@ -26,8 +26,8 @@ class TestFusedL2NormHighPrecision(TestCase):
         self._dummy_overflow_buf = torch.tensor([0], dtype=torch.int).to(
             torch.device("mlu")
         )
-        os.environ["CNNL_ACC_SQRT"] = "1"
-        os.environ["TORCH_MLU_SQRT_HIGH_PRECISION"] = "ON"
+        torch.mlu.set_precision_mode("high", "sqrt")
+        torch.mlu.set_precision_mode("high", "custom_fused_l2_norm")
 
     def fused_l2norm_dtype(self, op, test_type, shape, per_tensor=False, len=2):
         tensors_cpu = []

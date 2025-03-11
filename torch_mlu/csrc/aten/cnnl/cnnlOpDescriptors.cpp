@@ -92,13 +92,14 @@ void CnnlReduceDescriptor::set(
     cnnlReduceIndices_t is_indices,
     cnnlIndicesType_t indices_type,
     cnnlDataType_t tensor_type,
-    float p) {
+    float p,
+    bool acc_sqrt) {
   int axis_num = axis.size();
   std::vector<int> axis_list(axis_num);
   for (int i = 0; i < axis_num; i++) {
     axis_list[i] = static_cast<int>(axis[i]);
   }
-  TORCH_CNNL_CHECK(cnnlSetReduceDescriptor_v2(
+  TORCH_CNNL_CHECK(cnnlSetReduceDescriptor_v3(
       this->mut_desc(),
       axis_list.data(),
       axis_num,
@@ -107,7 +108,8 @@ void CnnlReduceDescriptor::set(
       CNNL_NOT_PROPAGATE_NAN,
       is_indices,
       indices_type,
-      p));
+      p,
+      acc_sqrt));
 }
 
 void CnnlStdVarMeanDescriptor::set(

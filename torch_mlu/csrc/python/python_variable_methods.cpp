@@ -29,6 +29,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <ATen/Parallel.h>
+#include <pybind11/cast.h>
+#include <string>
+#include <vector>
 
 #include "torch/csrc/python_headers.h" // the python headers should be first included
 #include "python/python_variable_methods.h"
@@ -49,6 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "framework/core/caching_allocator.h"
 #include "framework/core/device.h"
 #include "framework/core/device_utils.h"
+#include "utils/common.h"
 #include "utils/version.h"
 #include "utils/cndumper.h"
 #include "python/THMP.h"
@@ -151,6 +155,27 @@ void PythonVariableMethods(py::module& m) {
   m.def("_set_cnnl_deterministic", [](bool b) {
     torch_mlu::Global::instance().setDeterministicCNNL(b);
   });
+
+  // Op's precision mode management
+  m.def("_get_precision_supported_op_list", []() -> std::vector<std::string> {
+    return torch_mlu::Global::instance().getPrecisionSupportedOpList();
+  });
+  m.def(
+      "_get_precision_mode",
+      [](const std::string& op_name) -> std::string {
+        if (torch_mlu::Global::instance().getPrecisionMode(op_name) ==
+            torch_mlu::OpPrecisionMode::LOW)
+          return "low";
+        return "high";
+      },
+      py::arg("op_name"));
+  m.def(
+      "_set_precision_mode",
+      [](const std::string& mode, const std::string& op_name = "all_op") {
+        torch_mlu::Global::instance().setPrecisionMode(mode, op_name);
+      },
+      py::arg("mode"),
+      py::arg("op_name") = "all_op");
 }
 } // namespace
 

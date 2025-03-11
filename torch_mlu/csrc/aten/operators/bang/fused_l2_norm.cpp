@@ -41,7 +41,11 @@ std::tuple<at::Tensor, at::Tensor> bang_fused_l2_norm_common(
     c10::optional<bool>& per_tensor_python,
     const bool& is_amp) {
   // add high sqrt percision control.
-  static bool high_sqrt_precision = is_high_sqrt_precision();
+  static bool high_sqrt_precision = false;
+  if (torch_mlu::Global::instance().getPrecisionMode("custom_fused_l2_norm") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    high_sqrt_precision = true;
+  }
   bool per_tensor =
       per_tensor_python.has_value() ? per_tensor_python.value() : false;
   auto tensor_num = inputs.size();

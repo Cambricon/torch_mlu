@@ -41,10 +41,17 @@ at::Tensor& cnnl_normal_internal(
     rng_engine_inputs = gen_impl->philox_mlu_state(counter_offset);
   }
 
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_FAST;
+  if (torch_mlu::Global::instance().getPrecisionMode("normal") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+  }
+
   if (rng_engine_inputs.captured_) {
-    TORCH_CNNL_CHECK(cnnlGenerateRandNormal(
+    TORCH_CNNL_CHECK(cnnlGenerateRandNormal_v2(
         handle,
         rng_type,
+        prefer,
         true,
         0,
         0,
@@ -56,9 +63,10 @@ at::Tensor& cnnl_normal_internal(
         output_desc.desc(),
         output_ptr));
   } else {
-    TORCH_CNNL_CHECK(cnnlGenerateRandNormal(
+    TORCH_CNNL_CHECK(cnnlGenerateRandNormal_v2(
         handle,
         rng_type,
+        prefer,
         false,
         rng_engine_inputs.seed_.val,
         rng_engine_inputs.offset_.val,

@@ -17,8 +17,8 @@ class TestFusedOptimizer(unittest.TestCase):
         self.max_rel_diff = max_rel_diff
         self.iters = iters
         torch.manual_seed(9876)
-        os.environ["CNNL_ACC_SQRT"] = "1"
-        os.environ["TORCH_MLU_SQRT_HIGH_PRECISION"] = "ON"
+        torch.mlu.set_precision_mode("high", "sqrt")
+        torch.mlu.set_precision_mode("high", "adam")
 
     def tearDown(self):
         pass

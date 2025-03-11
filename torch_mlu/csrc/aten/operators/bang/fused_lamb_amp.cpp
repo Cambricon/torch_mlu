@@ -46,7 +46,11 @@ void _fused_lamb_amp_common(
       "MultiTensorLAMBAMP: The data type of exp_avg_sqs must be float");
 
   // add high sqrt percision control.
-  static bool high_sqrt_precision = is_high_sqrt_precision();
+  static bool high_sqrt_precision = false;
+  if (torch_mlu::Global::instance().getPrecisionMode("custom_fused_lamb") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    high_sqrt_precision = true;
+  }
   auto beta1_cvt = c10::checked_convert<float, double>(beta1, "float");
   auto beta2_cvt = c10::checked_convert<float, double>(beta2, "float");
   auto epsilon_cvt = c10::checked_convert<float, double>(epsilon, "float");

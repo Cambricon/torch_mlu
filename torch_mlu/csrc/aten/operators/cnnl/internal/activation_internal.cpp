@@ -27,6 +27,7 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include <string>
 #include "aten/operators/cnnl/internal/cnnl_internal.h"
 #include "ATen/NativeFunctions.h"
 #include "aten/utils/dispatch.h"
@@ -46,8 +47,24 @@ void set_activation_op_desc(
     /*only for elu, silu*/ const at::Scalar& scale = 0.0,
     /*only for elu, silu*/ const at::Scalar& input_scale = 0.0,
     /*only for elu */ bool is_result = false,
-    /*only for gelu*/ bool approximate = true) {
+    /*only for gelu*/ bool approximate = true,
+    bool is_backward = false) {
   cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+  auto is_low_precision = [](const std::string& op) {
+    return torch_mlu::Global::instance().getPrecisionMode(op) ==
+        torch_mlu::OpPrecisionMode::LOW;
+  };
+  if ((!is_backward && mode == CNNL_ACTIVATION_SILU &&
+       is_low_precision("silu")) ||
+      (is_backward && mode == CNNL_ACTIVATION_SILU &&
+       is_low_precision("silu_backward")) ||
+      (!is_backward && mode == CNNL_ACTIVATION_SIGMOID &&
+       is_low_precision("sigmoid")) ||
+      (is_backward && mode == CNNL_ACTIVATION_SIGMOID &&
+       is_low_precision("sigmoid_backward"))) {
+    prefer = CNNL_COMPUTATION_FAST;
+  }
+
   cnnlNanPropagation_t nan_prop = CNNL_PROPAGATE_NAN;
   if (mode == CNNL_ACTIVATION_GLU) {
     dim = modify_dim_based_on_layout(dim, memory_format);
@@ -143,7 +160,8 @@ void cnnl_activation_internal(
       scale,
       input_scale,
       false,
-      approximate);
+      approximate,
+      false);
 
   // call cnnl activation interface
   auto handle = getCurrentHandle();
@@ -200,7 +218,8 @@ void cnnl_activation_backward_internal(
       scale,
       input_scale,
       is_result,
-      approximate);
+      approximate,
+      true);
 
   // call cnnl activation interface
   auto handle = getCurrentHandle();

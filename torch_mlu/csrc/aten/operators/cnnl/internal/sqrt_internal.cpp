@@ -21,8 +21,19 @@ at::Tensor& cnnl_sqrt_internal(at::Tensor& output, const at::Tensor& input) {
   auto input_ptr = input_impl->mlu_data_ptr();
   auto output_ptr = output_impl->mlu_data_ptr();
 
-  TORCH_CNNL_CHECK(cnnlSqrt(
-      handle, desc_input.get(), input_ptr, desc_output.get(), output_ptr));
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_FAST;
+  if (torch_mlu::Global::instance().getPrecisionMode("sqrt") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+  }
+
+  TORCH_CNNL_CHECK(cnnlSqrt_v2(
+      handle,
+      prefer,
+      desc_input.get(),
+      input_ptr,
+      desc_output.get(),
+      output_ptr));
   return output;
 }
 

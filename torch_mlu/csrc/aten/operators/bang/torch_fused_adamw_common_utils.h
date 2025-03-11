@@ -52,7 +52,11 @@ void _fused_adam_common_mlu_impl_(
     const c10::optional<at::Tensor>& grad_scale,
     const c10::optional<at::Tensor>& found_inf) {
   // add high sqrt percision control.
-  static bool high_sqrt_precision = is_high_sqrt_precision();
+  static bool high_sqrt_precision = false;
+  if (torch_mlu::Global::instance().getPrecisionMode("adam") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    high_sqrt_precision = true;
+  }
   float* grad_scale_ptr =
       grad_scale.has_value() ? grad_scale->data_ptr<float>() : nullptr;
   float* found_inf_ptr =

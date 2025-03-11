@@ -26,6 +26,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
+from contextlib import contextmanager
 import threading
 import traceback
 import os
@@ -990,6 +991,69 @@ class StreamContext(object):
 def stream(stream: Optional["torch.mlu.Stream"]) -> StreamContext:
     return StreamContext(stream)
 
+
+def get_precision_supported_op_list() -> List[str]:
+    r"""Returns the currently supported operator list that can set precision mode."""
+    return torch_mlu._MLUC._get_precision_supported_op_list()
+
+
+def get_precision_mode(op_name: str) -> str:
+    r"""Returns the current value of given operator's precision mode. Currently,
+    only support to query the operator in our supported op lis. Otherwise, will
+    return 'high' mode. The supported operator list can be accessed by calling
+    ``torch.mlu.get_precision_supported_op_list``.
+
+    Args:
+        op_name(str):  one of operators in our defined list (see above).
+
+    """
+    return torch_mlu._MLUC._get_precision_mode(op_name)
+
+
+def set_precision_mode(mode: str, op_name: str = "all_op"):
+    r"""Sets the given precision mode for the internal kernel corresbonding the
+    passed ``op_name``. Will take no effect either arg ``mode`` or ``op_name`` is
+    an invalid value, throwing the warnings as well.
+
+    ``op_name`` here only supports two cases:
+
+        * one of operators in ``torch.mlu.get_precision_supported_op_list``
+          returned list.
+        * "all_op", default value, means all of operators in
+          ``torch.mlu.get_precision_supported_op_list``.
+
+    ``mode`` only supports two settings now:
+
+        * "low", using high-performance kernel for internal computations of the
+          given operator, but in lower precision.
+        * "high", using high-precision kernel for given operator.
+
+    Args:
+        mode(str): can be set to "low" or "high".
+        op_name(str): the operator[s] to be applied in given precision mode, default
+          as "all_op" (means setting for all supported operators).
+
+    """
+    torch_mlu._MLUC._set_precision_mode(mode, op_name)
+
+
+@contextmanager
+def precision_mode(
+    mode: str = "high",
+    op_name: str = "all_op",
+):
+    op_list = get_precision_supported_op_list() if op_name == "all_op" else [op_name]
+    orig_mode_dict = {}
+    for key in op_list:
+        orig_mode_dict[key] = get_precision_mode(key)
+    set_precision_mode(mode, op_name)
+    try:
+        yield
+    finally:
+        # recover the previous mode for given op_name
+        for k,v in orig_mode_dict.items():
+            set_precision_mode(v, k)
+
 from . import amp, cnpx, profiler
 
 __all__ = [
@@ -1091,4 +1155,8 @@ __all__ = [
     "streams",
     "synchronize",
     "profiler",
+    "get_precision_supported_op_list",
+    "get_precision_mode",
+    "set_precision_mode",
+    "precision_mode",
 ]

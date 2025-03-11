@@ -113,13 +113,19 @@ void cnnl_reduce_internal(
   // and other cnnlReduceOp_t will not.
   auto tensor_type = getCnnlDataType(input.dtype());
   CnnlReduceDescriptor reduce_desc;
+  bool using_high_precision = false;
+  if (torch_mlu::Global::instance().getPrecisionMode("reduce") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    using_high_precision = true;
+  }
   reduce_desc.set(
       reduce_dim,
       reduce_mode,
       reduce_indices,
       CNNL_64BIT_INDICES,
       tensor_type,
-      norm_p);
+      norm_p,
+      using_high_precision);
 
   size_t workspace_size = 0;
   auto handle = getCurrentHandle();
