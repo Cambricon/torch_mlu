@@ -6,7 +6,7 @@ import logging
 import warnings
 import torch
 import torch_mlu
-from torch_mlu.utils.gpu_migration.env_migration import mlu_env_map
+from torch_mlu.utils.gpu_migration.env_migration import mlu_env_map, mlu_env_blacklist
 
 cur_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(cur_dir + "/../")
@@ -50,8 +50,15 @@ class TestEnvMigration(TestCase):
                     ]
                     env_set.update(var_list)
                 env_set.update(patterns[3].findall(line))  # pattern check_env
-                env_set.update(patterns[4].findall(line))  # pattern getenv
                 buffer = ""
+        return env_set
+
+    def find_mlu_py_env_in_file(self, file_path, patterns):
+        env_set = set()
+        with open(file_path, "r", encoding="utf-8") as file:
+            buffer = ""
+            for line in file:
+                env_set.update(patterns[0].findall(line))  # pattern getenv
         return env_set
 
     # Get the latest CUDA environment variables.
@@ -134,12 +141,12 @@ class TestEnvMigration(TestCase):
 
     # Get the latest MLU environment variables.
     def find_mlu_env(self):
+        # find mlu csrc environment variables.
         search_folders = [
             os.path.join(self.torch_mlu_home, "torch_mlu/csrc/utils"),
             os.path.join(self.torch_mlu_home, "torch_mlu/csrc/framework/core"),
             os.path.join(self.torch_mlu_home, "torch_mlu/csrc/framework/distributed"),
             os.path.join(self.torch_mlu_home, "pytorch_patches"),
-            os.path.join(self.torch_mlu_home, "torch_mlu/mlu"),
         ]
         exclude_file = ["Utils.h"]
         functions = ["getCvarString", "getCvarInt", "getCvarBool"]
@@ -150,7 +157,6 @@ class TestEnvMigration(TestCase):
             re.compile(r"\b(?:" + "|".join(functions) + r")\(\s*{([^}]+)}\s*,"),
             re.compile(r"\b(?:" + "|".join(functions) + r")\(\s*$"),
             re.compile(r'\bcheck_env\(\s*"([A-Za-z0-9_]+)"\s*\)'),
-            re.compile(r'\bgetenv\(\s*"([A-Za-z0-9_]+)"\s*\)'),
         ]
 
         all_env_set = set()
@@ -165,12 +171,31 @@ class TestEnvMigration(TestCase):
                         env_set = self.find_mlu_env_in_file(file_path, patterns)
                         all_env_set.update(env_set)
 
-        # Define the keywords for filtering
+        # find mlu py environment variables.
+        py_search_folders = [
+            os.path.join(self.torch_mlu_home, "torch_mlu/mlu"),
+        ]
+        py_patterns = [
+            re.compile(r'\bgetenv\(\s*"([A-Za-z0-9_]+)"\s*\)'),
+        ]
+        for folder in py_search_folders:
+            for root, _, files in os.walk(folder):
+                for file in files:
+                    if file.endswith((".py")) and file not in exclude_file:
+                        file_path = os.path.join(root, file)
+                        env_set = self.find_mlu_py_env_in_file(file_path, py_patterns)
+                        all_env_set.update(env_set)
+
+        # define the keywords for filtering
         mlu_keywords = ["TORCH_CNCL", "MLU", "CAMBRICON", "CNMATMUL"]
         mlu_env_list = [
             var
             for var in all_env_set
             if any(keyword in var for keyword in mlu_keywords)
+        ]
+        # filter out custom environment variables in blacklist
+        mlu_env_list = [
+            var for var in mlu_env_list if var not in set(mlu_env_blacklist)
         ]
 
         print(f"Found {len(mlu_env_list)} MLU environment variables:")
