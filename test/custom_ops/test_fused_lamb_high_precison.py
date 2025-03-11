@@ -169,8 +169,8 @@ class TestFusedLAMBHighPrecision(TestCase):
         self.iters = 10
         self.max_abs_diff = 1e-3
         self.max_rel_diff = 1
-        os.environ["CNNL_ACC_SQRT"] = "1"
-        os.environ["TORCH_MLU_SQRT_HIGH_PRECISION"] = "ON"
+        torch.mlu.set_precision_mode("high", "sqrt")
+        torch.mlu.set_precision_mode("high", "custom_fused_lamb")
 
     def fused_lamb_dtype(
         self, test_type=torch.float, sz=[40, 40], len=2, is_mixed=False

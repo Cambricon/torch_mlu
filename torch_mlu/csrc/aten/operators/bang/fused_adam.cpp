@@ -50,20 +50,15 @@ bool bang_fused_adam(
   // Get precision level of apex adam.
   static std::once_flag initialized;
   static bool using_high_precision = false;
-  // Environment TORCH_MLU_APEX_ADAM_HIGH_PRECISION is used to control compute
-  // type of mlu-apex fused adam. When set TORCH_MLU_APEX_ADAM_HIGH_PRECISION to
-  // ON, on or 1 value, mlu-apex fused adam compute type will be same with
-  // torch.optim.AdamW, torch.optim.Adam with parameter foreach == False and
-  // fused == False.
-  std::call_once(initialized, []() -> void {
-    const char* str = std::getenv("TORCH_MLU_APEX_ADAM_HIGH_PRECISION");
-    if (str != nullptr) {
-      std::string value(str);
-      if (value == "ON" || value == "on" || value == "1") {
-        using_high_precision = true;
-      }
-    }
-  });
+  // using_high_precision is used to control compute type of
+  // mlu-apex fused adam. When set using_high_precision to
+  // true, mlu-apex fused adam compute type will be same with
+  // torch.optim.AdamW, torch.optim.Adam with parameter
+  // foreach == False and fused == False.
+  if (torch_mlu::Global::instance().getPrecisionMode("custom_fused_adam") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    using_high_precision = true;
+  }
   TORCH_CHECK(
       !(bias_correction != 1 && using_high_precision == true),
       "high precision is not support when bias_correction is False.");

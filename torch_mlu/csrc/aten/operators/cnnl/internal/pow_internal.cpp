@@ -59,8 +59,15 @@ at::Tensor& cnnl_pow_internal(
         auto workspace_ptr =
             torch_mlu::MLUCachingAllocator::get()->allocate(sz);
 
-        TORCH_CNNL_CHECK(cnnlPow_v2(
+        cnnlComputationPreference_t prefer = CNNL_COMPUTATION_FAST;
+        if (torch_mlu::Global::instance().getPrecisionMode("pow") ==
+            torch_mlu::OpPrecisionMode::HIGH) {
+          prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+        }
+
+        TORCH_CNNL_CHECK(cnnlPow_v3(
             handle,
+            prefer,
             descInput.get(),
             input_ptr,
             descExp.get(),

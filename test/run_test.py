@@ -27,6 +27,7 @@ TESTS = [
     "mlu/test_autograd",
     "mlu/test_mlu_cndev_based_avail",
     "mlu/test_pluggable_allocator",
+    "mlu/test_op_precision_mode",
     "torch_ops/",
     "custom_ops/",
     "test_foreach_op/test_foreach_binary",

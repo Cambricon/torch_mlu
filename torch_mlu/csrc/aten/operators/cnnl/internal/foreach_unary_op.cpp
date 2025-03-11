@@ -58,9 +58,16 @@ void cnnl_foreach_unary_op(
         torch_mlu::MLUCachingAllocator::get()->allocate(workspace_size);
   }
 
-  TORCH_CNNL_CHECK(cnnlForeachUnaryOp(
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_FAST;
+  if (torch_mlu::Global::instance().getPrecisionMode("foreach_unary") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+  }
+
+  TORCH_CNNL_CHECK(cnnlForeachUnaryOp_v2(
       handle,
       mode,
+      prefer,
       tensor_num,
       input_desc_array,
       input_ptr_array,

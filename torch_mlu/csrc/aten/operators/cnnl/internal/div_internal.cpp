@@ -89,6 +89,12 @@ at::Tensor& cnnl_div_out_internal(
     div_mode = CNNL_DIV_FLOOR;
     div_desc.set_attr(CNNL_DIV_MODE, &div_mode, sizeof(div_mode));
   }
+  cnnlComputationPreference_t prefer = CNNL_COMPUTATION_HIGH_PRECISION;
+  if (torch_mlu::Global::instance().getPrecisionMode("div") ==
+      torch_mlu::OpPrecisionMode::LOW) {
+    prefer = CNNL_COMPUTATION_FAST;
+  }
+  div_desc.set_attr(CNNL_DIV_PREFERENCE, &prefer, sizeof(prefer));
 
   // workspace
   size_t workspace_size = 0;

@@ -72,8 +72,8 @@ class TestFusedOptimizer(unittest.TestCase):
     def setUp(self, max_abs_diff=0.0, iters=10):
         self.max_abs_diff = max_abs_diff
         self.iters = iters
-        os.environ["CNNL_ACC_SQRT"] = "1"
-        os.environ["TORCH_MLU_APEX_ADAM_HIGH_PRECISION"] = "ON"
+        torch.mlu.set_precision_mode("high", "sqrt")
+        torch.mlu.set_precision_mode("high", "custom_fused_adam")
         torch.manual_seed(9876)
 
     def tearDown(self):

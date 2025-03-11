@@ -25,7 +25,11 @@ bool bang_fused_lamb(
     double max_grad_norm,
     bool use_nvlamb_python) {
   // add high sqrt percision control.
-  static bool high_sqrt_precision = is_high_sqrt_precision();
+  static bool high_sqrt_precision = false;
+  if (torch_mlu::Global::instance().getPrecisionMode("custom_fused_lamb") ==
+      torch_mlu::OpPrecisionMode::HIGH) {
+    high_sqrt_precision = true;
+  }
   auto stream = getCurMLUStream();
   auto tensor_num = grads.size();
   cnrtDataType_V2_t cnrt_type =

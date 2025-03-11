@@ -30,7 +30,7 @@ int main() {
     // stream when tmp goes out of scope. E1 will be checked when
     // caching allocator tries to malloc.
     tmp.record_stream(torch_mlu::getCurrentMLUStream());
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 100000; i++) {
       // out style op is needed if tmp used as output
       // the loop needs to be long enough so that that chunk wont be freed when
       // tmps2 is created.

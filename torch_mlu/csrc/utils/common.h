@@ -32,6 +32,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <memory>
 #include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include <ATen/Context.h>
 
@@ -43,6 +46,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "framework/distributed/Utils.h"
 
 namespace torch_mlu {
+
+enum class TORCH_MLU_API OpPrecisionMode { LOW, HIGH };
 
 #define SINGLETON(CLASS)                   \
  public:                                   \
@@ -118,6 +123,11 @@ class TORCH_MLU_API Global {
     deterministic_cnnl_ = b;
   }
 
+  // Op's precision mode management
+  std::vector<std::string> getPrecisionSupportedOpList() const;
+  OpPrecisionMode getPrecisionMode(const std::string& op) const;
+  void setPrecisionMode(const std::string& mode, const std::string& op);
+
  private:
   cndevNameEnum_t device_name_;
   bool is_running_fp32_;
@@ -130,6 +140,9 @@ class TORCH_MLU_API Global {
       false; // control wether to select the fastest convolution algorithm.
   bool deterministic_cnnl_ =
       false; // control wether to only use deterministic convolution algorithms.
+  std::unordered_map<std::string, OpPrecisionMode>
+      op_precision_map_; // control each op to use high-precision mode or
+                         // high-performance mode.
 };
 
 } // namespace torch_mlu
