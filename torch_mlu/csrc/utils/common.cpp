@@ -114,6 +114,20 @@ std::unordered_map<std::string, std::string> getOpPrecisionEnvMap() {
 } // namespace
 
 namespace torch_mlu {
+
+static void initGlobalTF32Settings() {
+  const std::vector<std::string> TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE = {
+      "TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE", "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE"};
+  bool allow_tf32_cnmatmul_override =
+      getCvarBool(TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE, false);
+  at::globalContext().setAllowTF32CuBLAS(allow_tf32_cnmatmul_override);
+}
+
+static const bool global_tf32_initialized = []() {
+  initGlobalTF32Settings();
+  return true;
+}();
+
 const std::map<std::string, cndevNameEnum_t> device_name_table{
     {"MLU100", MLU100},
     {"MLU270", MLU270},
@@ -142,14 +156,6 @@ Global::Global() {
       "Cannot find any visiale MLU decvice to specify device name");
   TORCH_CNDEV_CHECK(cndevGetCardName(&card_name, 0));
   device_name_ = card_name.id;
-
-  static const bool allow_tf32_cnmatmul_override = []() {
-    const std::vector<std::string> TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE = {
-        "TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE",
-        "TORCH_ALLOW_TF32_CUBLAS_OVERRIDE"};
-    return getCvarBool(TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE, false);
-  }();
-  setAllowTF32CnMatMul(allow_tf32_cnmatmul_override);
 
   // default map as initial value
   op_precision_map_ = DEFAULT_OP_PRECISION_MAP;

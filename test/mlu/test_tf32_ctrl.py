@@ -28,7 +28,15 @@ class TF32TestCases(TestCase):
         self.assertEqual(torch.backends.mlu.custom.allow_tf32, True)
         torch.backends.mlu.custom.allow_tf32 = orig
 
-    def test_float32_matmul_precision_get_set(self):
+    def test_1_float32_matmul_precision_init(self):
+        # env set tf32 must before all api set
+        self.assertEqual(torch.get_float32_matmul_precision(), "high")
+        torch.set_float32_matmul_precision("highest")
+        self.assertFalse(torch.backends.mlu.matmul.allow_tf32)
+        torch.set_float32_matmul_precision("high")
+        self.assertTrue(torch.backends.mlu.matmul.allow_tf32)
+
+    def test_2_float32_matmul_precision_get_set(self):
         skip_tf32_cnmatmul = "TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE" in os.environ and int(
             os.environ["TORCH_ALLOW_TF32_CNMATMUL_OVERRIDE"]
         )
@@ -44,17 +52,15 @@ class TF32TestCases(TestCase):
         torch.backends.cuda.matmul.allow_tf32 = False
         self.assertEqual(torch.backends.mlu.matmul.allow_tf32, True)
         torch.backends.mlu.matmul.allow_tf32 = orig
+        torch.set_float32_matmul_precision("highest")
+        self.assertEqual(torch.get_float32_matmul_precision(), "highest")
+        self.assertFalse(torch.backends.mlu.matmul.allow_tf32)
         for p in ("medium", "high"):
             torch.set_float32_matmul_precision(p)
             self.assertEqual(torch.get_float32_matmul_precision(), p)
-            if not skip_tf32_cnmatmul:
-                self.assertTrue(torch.backends.mlu.matmul.allow_tf32)
-        torch.set_float32_matmul_precision("highest")
-        self.assertEqual(torch.get_float32_matmul_precision(), "highest")
-        if not skip_tf32_cnmatmul:
-            self.assertFalse(torch.backends.mlu.matmul.allow_tf32)
+            self.assertTrue(torch.backends.mlu.matmul.allow_tf32)
 
-    def test__C_api(self):
+    def test_3__C_api(self):
         self.assertTrue(torch._C._get_cnmatmul_allow_tf32())
         torch._C._set_cnmatmul_allow_tf32(False)
         self.assertFalse(torch._C._get_cnmatmul_allow_tf32())
