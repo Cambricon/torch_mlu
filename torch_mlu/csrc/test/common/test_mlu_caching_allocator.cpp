@@ -355,4 +355,13 @@ TEST(AllocatorTestMLU, test_pluggable_allocator_deleters) {
   ASSERT_TRUE(called_dummy_free_1 == 1);
 }
 
+TEST(MLUCachingAllocatorTest, test_get_device_from_ptr) {
+  auto ca = torch_mlu::MLUCachingAllocator::get();
+  int16_t device_index = current_device();
+  auto data_ptr = ca->allocate(size);
+  auto device =
+      at::detail::getPrivateUse1Hooks().getDeviceFromPtr(data_ptr.get());
+  ASSERT_TRUE(device.type() == DeviceType::PrivateUse1);
+}
+
 } // namespace torch_mlu
