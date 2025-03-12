@@ -1,0 +1,41 @@
+- mlu_custom_api:
+
+  - api: torch.mlu.get_precision_supported_op_list
+    usage: torch.mlu.get_precision_supported_op_list() -> List[str]
+    functionality: 返回MLU上支持设置精度模式的算子列表。
+    args:
+      None: 无。
+    limitations:
+      - 无。
+    ret: List[str]类型，由op_name组成的列表。
+
+  - api: torch.mlu.get_precision_mode
+    usage: torch.mlu.get_precision_mode(op_name) -> str
+    functionality: 获取MLU上给定算子对应的精度模式。
+    args:
+      op_name: str类型，待查询的算子名字。
+    limitations:
+      - 若查询的op_name不在 torch.mlu.get_precision_supported_op_list() 返回的列表中，将返回默认值 'high' 。
+    ret: str类型， 'high' 或者 'low' ，分别对应高精度模式和低精度模式。
+
+  - api: torch.mlu.set_precision_mode
+    usage: torch.mlu.set_precision_mode(mode, op_name = 'all_op' )
+    functionality: 在MLU上，将给定算子的精度模式设置为传入的精度模式值。
+    args:
+      mode: str类型，待设置的精度模式。
+      op_name: str类型，可选，传入的算子名字，默认为 'all_op' ，默认设置所有已支持的算子。
+    limitations:
+      - 传入的mode值仅限于 'high' 和 'low' ，分别对应高精度模式和低精度模式，否则接口不生效并抛出warning。
+      - 传入的op_name值仅限于 torch.mlu.get_precision_supported_op_list() 返回的列表中的值和'all_op'，否则接口不生效并抛出warning。
+    ret: 无。
+
+  - api: torch.mlu.precision_mode
+    usage: torch.mlu.precision_mode(mode = 'high', op_name = 'all_op' )
+    functionality: 上下文管理器，用于在MLU上，临时将给定算子的精度模式设置为传入的精度模式值。
+    args:
+      mode: str类型，可选，待设置的精度模式，默认为 'high' ，默认设置为高精度模式。
+      op_name: str类型，可选，传入的算子名字，默认为 'all_op' ，默认设置所有已支持的算子。
+    limitations:
+      - 传入的mode值仅限于 'high' 和 'low' ，分别对应高精度模式和低精度模式，否则接口不生效并抛出warning。
+      - 传入的op_name值仅限于 torch.mlu.get_precision_supported_op_list() 返回的列表中的值和'all_op'，否则接口不生效并抛出warning。
+    ret: 无。
