@@ -114,11 +114,8 @@ def addmm_float8_unwrapped(
     output_scale: Optional[torch.Tensor],
     bias: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
-    # change back to reciprocal after cnnl 2.0.1 release
-    # a_inverse_scale = a_scale.reciprocal()
-    # b_inverse_scale = b_scale.reciprocal()
-    a_inverse_scale = a_scale
-    b_inverse_scale = b_scale
+    a_inverse_scale = a_scale.reciprocal()
+    b_inverse_scale = b_scale.reciprocal()
     if output_dtype == torch.float32 and bias is not None:
         # Bias is not supported by _scaled_mm when output is fp32
         output, output_amax = torch._scaled_mm(
