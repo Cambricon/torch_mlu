@@ -40,8 +40,9 @@ void cnnl_scaled_mm_out_internal(
     const at::Tensor& mat2,
     bool is_trans_mat1_,
     bool is_trans_mat2_,
-    const at::Scalar& scale_a,
-    const at::Scalar& scale_b) {
+    const at::Tensor& scale_a,
+    const at::Tensor& scale_b,
+    const at::Tensor& bias) {
   auto mat1_impl = getMluTensorImpl(mat1);
   auto mat1_desc = getTensorDesc(mat1_impl);
   auto mat1_ptr = mat1_impl->mlu_data_ptr();
@@ -57,6 +58,11 @@ void cnnl_scaled_mm_out_internal(
   auto result_desc = getTensorDesc(result_impl);
   auto result_ptr = result_impl->mlu_data_ptr();
 
+  auto scale_a_impl = getMluTensorImpl(scale_a);
+  auto scale_a_ptr = scale_a_impl->mlu_data_ptr();
+  auto scale_b_impl = getMluTensorImpl(scale_b);
+  auto scale_b_ptr = scale_b_impl->mlu_data_ptr();
+
   // create desc
   CnnlMatmulExDescriptor matmul_desc;
   CnnlMatmulExAlgorithm matmul_algo;
@@ -68,52 +74,23 @@ void cnnl_scaled_mm_out_internal(
   int32_t matmul_use_beta = 0;
   int32_t is_trans_mat1 = is_trans_mat1_;
   int32_t is_trans_mat2 = is_trans_mat2_;
-  float scale_a_ = scale_a.toFloat();
-  float scale_b_ = scale_b.toFloat();
   int32_t allow_tf32 = 0;
-  int64_t ldc = result.strides()[0];
-  int64_t lda = mat1.strides()[0];
-  int64_t ldb = mat2.strides()[0];
-  int64_t m = is_trans_mat1_ ? mat1.sizes()[1] : mat1.sizes()[0];
-  int64_t k = is_trans_mat1_ ? mat1.sizes()[0] : mat1.sizes()[1];
-  int64_t n = is_trans_mat2_ ? mat2.sizes()[0] : mat2.sizes()[1];
-  if (m <= 1) {
-    ldc = std::max<int64_t>(n, 1);
-  }
-  if (is_trans_mat1_) {
-    if (k <= 1) {
-      lda = std::max<int64_t>(m, 1);
-    }
-  } else {
-    if (m <= 1) {
-      lda = std::max<int64_t>(k, 1);
-    }
-  }
-  if (is_trans_mat2_) {
-    if (n <= 1) {
-      ldb = std::max<int64_t>(k, 1);
-    }
-  } else {
-    if (k <= 1) {
-      ldb = std::max<int64_t>(n, 1);
-    }
-  }
 
   CnnlQuantizeExDescriptor quant_desc_a, quant_desc_b;
   quant_desc_a.set(
       nullptr,
-      (void*)&scale_a_,
+      scale_a_ptr,
       nullptr,
-      CNNL_POINTER_MODE_HOST,
+      CNNL_POINTER_MODE_DEVICE,
       CNNL_QUANTIZE_PER_TENSOR,
       CNNL_QUANTIZE_SCALE,
       mat1_cnnl_type);
 
   quant_desc_b.set(
       nullptr,
-      (void*)&scale_b_,
+      scale_b_ptr,
       nullptr,
-      CNNL_POINTER_MODE_HOST,
+      CNNL_POINTER_MODE_DEVICE,
       CNNL_QUANTIZE_PER_TENSOR,
       CNNL_QUANTIZE_SCALE,
       mat2_cnnl_type);
@@ -133,13 +110,18 @@ void cnnl_scaled_mm_out_internal(
       CNNL_MATMUL_EX_USE_BETA, &(matmul_use_beta), sizeof(int32_t));
   matmul_desc.set_attr(
       CNNL_MATMUL_EX_ALLOW_TF32, &(allow_tf32), sizeof(int32_t));
-  matmul_desc.set_attr(CNNL_MATMUL_EX_DESC_LDA, &(lda), sizeof(int32_t));
-  matmul_desc.set_attr(CNNL_MATMUL_EX_DESC_LDB, &(ldb), sizeof(int32_t));
-  matmul_desc.set_attr(CNNL_MATMUL_EX_DESC_LDC, &(ldc), sizeof(int32_t));
   matmul_desc.set_attr(
       CNNL_MATMUL_EX_A_QUANT, &(quant_desc_a), sizeof(quant_desc_a));
   matmul_desc.set_attr(
       CNNL_MATMUL_EX_B_QUANT, &(quant_desc_b), sizeof(quant_desc_b));
+
+  if (bias.defined()) {
+    auto bias_impl = getMluTensorImpl(bias);
+    auto bias_desc = getTensorDesc(bias_impl);
+    auto bias_ptr = bias_impl->mlu_data_ptr();
+    TORCH_CNNL_CHECK(
+        cnnlSetMatMulExBias(matmul_desc.desc(), bias_desc.get(), bias_ptr));
+  }
 
   auto handle = getCurrentHandle();
   matmul_hr.get(

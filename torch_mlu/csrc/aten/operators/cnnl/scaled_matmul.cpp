@@ -257,30 +257,15 @@ std::tuple<Tensor&, Tensor&> cnnl__scaled_mm_out(
   matb_tensor = getMMInput(matb_tensor, (args.transb != args.trans_result));
   result_tensor = getMMInput(result_tensor, args.trans_result);
 
-  // Currently we only support scale_a/scale_b to be scalar
-  at::Scalar scale_a_scalar = scale_a_.item();
-  at::Scalar scale_b_scalar = scale_b_.item();
-
-  if (bias.has_value()) {
-    cnnl_scaled_mm_bias_out_internal(
-        result_tensor,
-        mata_tensor,
-        matb_tensor,
-        args.transa,
-        args.transb,
-        scale_a_scalar,
-        scale_b_scalar,
-        bias.value());
-  } else {
-    cnnl_scaled_mm_out_internal(
-        result_tensor,
-        mata_tensor,
-        matb_tensor,
-        args.transa,
-        args.transb,
-        scale_a_scalar,
-        scale_b_scalar);
-  }
+  cnnl_scaled_mm_out_internal(
+      result_tensor,
+      mata_tensor,
+      matb_tensor,
+      args.transa,
+      args.transb,
+      scale_a_,
+      scale_b_,
+      bias.value_or(at::Tensor()));
 
   if (!out.is_same(result_tensor)) {
     out.copy_(result_tensor);

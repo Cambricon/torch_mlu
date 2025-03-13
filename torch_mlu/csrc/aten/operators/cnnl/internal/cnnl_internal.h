@@ -1640,17 +1640,8 @@ void cnnl_scaled_mm_out_internal(
     const Tensor& mat2,
     bool is_trans_mat1_,
     bool is_trans_mat2_,
-    const at::Scalar& scale_a,
-    const at::Scalar& scale_b);
-
-void cnnl_scaled_mm_bias_out_internal(
-    at::Tensor& result,
-    const Tensor& mat1,
-    const Tensor& mat2,
-    bool is_trans_mat1_,
-    bool is_trans_mat2_,
-    const at::Scalar& scale_a,
-    const at::Scalar& scale_b,
+    const at::Tensor& scale_a,
+    const at::Tensor& scale_b,
     const Tensor& bias);
 
 void cnnl_slice_backward_internal(
